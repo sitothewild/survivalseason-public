@@ -257,6 +257,8 @@ function parseSimcString(simcText) {
     result.stats.mastery = +(secondaryBudget * 0.30 / 180).toFixed(2);  // ~30% (SV priority)
     result.stats.versatility = +(secondaryBudget * 0.17 / 205).toFixed(2); // ~17%
   }
+
+  return result;
 }
 
 // ============================================================
