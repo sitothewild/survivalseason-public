@@ -95,8 +95,8 @@ serve(async (req) => {
         if (!name) throw new Error("name is required");
         const token = await getAccessToken(region);
         const host = `${region}.api.blizzard.com`;
-        const url = `https://${host}/data/wow/search/item?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&_page=${page}&access_token=${token}`;
-        const resp = await fetch(url);
+        const url = `https://${host}/data/wow/search/item?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&_page=${page}`;
+        const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!resp.ok) {
           const text = await resp.text();
           throw new Error(`Search failed: ${resp.status} ${text}`);
