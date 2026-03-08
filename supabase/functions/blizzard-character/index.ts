@@ -108,14 +108,14 @@ serve(async (req) => {
           
           const host = `${region}.api.blizzard.com`;
           
-          // Test profile API
-          const profileUrl = `https://${host}/profile/wow/character/turalyon/blezaa?namespace=profile-${region}&locale=en_US&access_token=${token}`;
-          const profileResp = await fetch(profileUrl);
-          profileTest = `status=${profileResp.status}`;
+          // Test profile API with Bearer header
+          const profileUrl = `https://${host}/profile/wow/character/turalyon/blezaa?namespace=profile-${region}&locale=en_US`;
+          const profileResp = await fetch(profileUrl, { headers: { Authorization: `Bearer ${token}` } });
+          profileTest = `status=${profileResp.status} body=${(await profileResp.text()).substring(0, 200)}`;
           
-          // Test game data API
-          const itemUrl = `https://${host}/data/wow/item/19019?namespace=static-${region}&locale=en_US&access_token=${token}`;
-          const itemResp = await fetch(itemUrl);
+          // Test game data API with Bearer header
+          const itemUrl = `https://${host}/data/wow/item/19019?namespace=static-${region}&locale=en_US`;
+          const itemResp = await fetch(itemUrl, { headers: { Authorization: `Bearer ${token}` } });
           gameDataTest = `status=${itemResp.status} body=${(await itemResp.text()).substring(0, 200)}`;
         } catch (e) {
           tokenDebug += ` error: ${e.message}`;
