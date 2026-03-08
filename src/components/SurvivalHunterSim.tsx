@@ -776,7 +776,7 @@ export default function SurvivalHunterSim() {
                     <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#86efac', marginBottom: 8 }}>
                       ✓ CHARACTER LOADED
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontFamily: "'EB Garamond', serif", fontSize: 13 }}>
+                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13 }}>
                       {parsedChar.character.name && <span style={{ color: '#e8c88a' }}>Name: <b>{parsedChar.character.name}</b></span>}
                       {parsedChar.character.level && <span style={{ color: '#c8a870' }}>Level: {parsedChar.character.level}</span>}
                       {parsedChar.character.race && <span style={{ color: '#c8a870' }}>Race: {parsedChar.character.race}</span>}
