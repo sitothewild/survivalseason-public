@@ -1629,7 +1629,7 @@ export default function SurvivalHunterSim() {
                             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#5a4030' }}>DPS</div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: heroTalent === 'sentinel' ? '#38bdf8' : '#a78bfa' }}>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#f0a830', textShadow: '0 0 8px #e0703044' }}>
                               {MIDNIGHT_DATA.talents.hero[heroTalent].name}
                             </div>
                             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#4a3020' }}>
