@@ -970,7 +970,9 @@ export default function SurvivalHunterSim() {
                           GEAR ({parsedChar.gear.length} PIECES)
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          {parsedChar.gear.map((g, gi) => (
+                          {parsedChar.gear.map((g, gi) => {
+                            const qualityColor = g.ilvl >= 250 ? '#ff8000' : g.ilvl >= 230 ? '#a335ee' : g.ilvl >= 200 ? '#0070dd' : g.ilvl > 0 ? '#1eff00' : '#9d9d9d';
+                            return (
                             <div key={gi} style={{
                               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                               padding: '4px 8px', borderRadius: 4,
@@ -978,11 +980,13 @@ export default function SurvivalHunterSim() {
                               fontFamily: "'EB Garamond', serif", fontSize: 12
                             }}>
                               <span style={{ color: '#8a7050', minWidth: 80 }}>{g.slotLabel}</span>
-                              <span style={{ color: g.ilvl >= 639 ? '#a78bfa' : g.ilvl >= 636 ? '#60a5fa' : '#c8a870', fontWeight: 600 }}>
+                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 11 }}>{g.name}</span>
+                              <span style={{ color: qualityColor, fontWeight: 600, minWidth: 30, textAlign: 'right' }}>
                                 {g.ilvl > 0 ? g.ilvl : '—'}
                               </span>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </>
                     )}
