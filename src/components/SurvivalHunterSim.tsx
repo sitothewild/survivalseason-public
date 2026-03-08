@@ -643,6 +643,39 @@ export default function SurvivalHunterSim() {
           animation: spin 0.8s linear infinite;
           margin: 0 auto;
         }
+
+        .responsive-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 6px;
+        }
+        @media (max-width: 768px) {
+          .responsive-grid {
+            grid-template-columns: 1fr;
+          }
+          .hero-grid {
+            grid-template-columns: 1fr;
+          }
+          .tab-btn {
+            padding: 10px 12px;
+            font-size: 10px;
+            letter-spacing: 1px;
+          }
+          .mode-btn {
+            padding: 8px 10px;
+            font-size: 10px;
+          }
+        }
       `}</style>
 
       {/* Background particles */}
@@ -698,7 +731,7 @@ export default function SurvivalHunterSim() {
 
         {/* ===== SIM TAB ===== */}
         {activeTab === 'sim' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="responsive-grid">
 
             {/* LEFT: Inputs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -743,7 +776,7 @@ export default function SurvivalHunterSim() {
                     <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#86efac', marginBottom: 8 }}>
                       ✓ CHARACTER LOADED
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontFamily: "'EB Garamond', serif", fontSize: 13 }}>
+                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13 }}>
                       {parsedChar.character.name && <span style={{ color: '#e8c88a' }}>Name: <b>{parsedChar.character.name}</b></span>}
                       {parsedChar.character.level && <span style={{ color: '#c8a870' }}>Level: {parsedChar.character.level}</span>}
                       {parsedChar.character.race && <span style={{ color: '#c8a870' }}>Race: {parsedChar.character.race}</span>}
@@ -770,7 +803,7 @@ export default function SurvivalHunterSim() {
                   <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
                     HERO TALENT
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="hero-grid">
                     <button className={`hero-btn ${heroTalent === 'sentinel' ? 'selected' : ''}`}
                       onClick={() => setHeroTalent('sentinel')}>
                       <div className="sentinel-badge" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>🦉 SENTINEL</div>
@@ -958,7 +991,7 @@ export default function SurvivalHunterSim() {
 
         {/* ===== TALENTS TAB ===== */}
         {activeTab === 'talents' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="responsive-grid">
 
             {/* Optimal Builds */}
             <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
@@ -1090,7 +1123,7 @@ export default function SurvivalHunterSim() {
 
         {/* ===== GUIDE TAB ===== */}
         {activeTab === 'guide' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="responsive-grid">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {/* Rotation */}
               <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
