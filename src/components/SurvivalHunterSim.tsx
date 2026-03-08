@@ -597,34 +597,51 @@ const REALM_DATA: Record<string, string[]> = {
   ],
 };
 
-const SAMPLE_SIMC = `hunter="Azurethane"
-level=80
-race=night_elf
+const SAMPLE_SIMC = `hunter="blezaa"
+level=90
+race=tauren
 region=us
-server=stormrage
+server=turalyon
 spec=survival
-talents=C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxohBwMBbGzMjZmlBAAAAAAzYmZGMeAzYGMmMAAAAAAgxy2MzsYmZGzMzAAGwwYMjN
-agility=48200
-attack_power=96400
-haste_rating=3240
-crit_rating=4500
-mastery_rating=6300
-versatility_rating=1850
+talents=C8PAo4YcvOcqUdzB9zV+NhSAcMgxMG2ILwMM0gFzMzMzwyAAAAAAgZMjZYGjZMDGTzAAAAAGAALLzMziZmZmZGzMgZ2AgxYmZhB
+agility=1558
+attack_power=1635
+haste_rating=370
+crit_rating=282
+mastery_rating=722
+versatility_rating=285
+# Midnight Suneater Crown (639)
 head=,id=232011,item_level=639
+# Midnight Thread Choker (636)
 neck=,id=231814,item_level=636
+# Midnight Suneater Shoulderguards (639)
 shoulders=,id=232013,item_level=639
+# Midnight Drape of Dusk (636)
 back=,id=231756,item_level=636
+# Midnight Suneater Hauberk (639)
 chest=,id=232009,item_level=639
+# Midnight Bindings of Twilight (636)
 wrist=,id=231758,item_level=636
+# Midnight Suneater Grips (639)
 hands=,id=232012,item_level=639
+# Midnight Cord of Shadows (636)
 waist=,id=231760,item_level=636
+# Midnight Suneater Legguards (639)
 legs=,id=232010,item_level=639
+# Midnight Boots of the Nightborne (636)
 feet=,id=231762,item_level=636
+# Midnight Signet of Dusk (636)
 finger1=,id=231770,item_level=636
+# Midnight Band of Eternal Night (636)
 finger2=,id=231772,item_level=636
+# Kroluk's Warbanner (636)
 trinket1=,id=231780,item_level=636
+# Light's Potential (636)
 trinket2=,id=231782,item_level=636
-main_hand=,id=231800,item_level=639`;
+# Midnight Suneater Glaive (639)
+main_hand=,id=231800,item_level=639
+# Midnight Suneater Dirk (636)
+off_hand=,id=231802,item_level=636`;
 
 export default function SurvivalHunterSim() {
   const [simcInput, setSimcInput] = useState('');
