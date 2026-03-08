@@ -1440,6 +1440,80 @@ export default function SurvivalHunterSim() {
                 </div>
               </div>
 
+              {/* Mythic+ Dungeon Tips */}
+              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
+                  🏰 MYTHIC+ DUNGEON TIPS (Survival Hunter)
+                </h3>
+                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, color: '#6a5030', marginBottom: 16, lineHeight: 1.6 }}>
+                  Survival excels in M+ with strong sustained AoE, solid ST priority damage, and Sentinel's Lunar Storm for burst windows. Use Flamefang Pitch + Boomstick on cooldown during pulls, and save Takedown for dangerous packs or bosses.
+                </div>
+
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#c8a870', margin: '0 0 10px', textTransform: 'uppercase' }}>General Route Tips</div>
+                {[
+                  { icon: '🎯', tip: 'Pull around Takedown cooldown', desc: 'Your burst is on a ~60-90s cycle. Chain pulls so Takedown is ready for each dangerous pack. Communicate with your tank.' },
+                  { icon: '🔥', tip: 'Pre-place Flamefang Pitch', desc: 'Drop the fire puddle where mobs are being gathered before they arrive. Free ticking damage as the tank positions.' },
+                  { icon: '💣', tip: 'Never cap WFB charges', desc: 'Wildfire Bomb is your highest priority in AoE. With Grenade Juggler giving extra charges, always keep one cycling. Maintain Lethal Calibration uptime.' },
+                  { icon: '🐾', tip: 'Use Misdirection on CD', desc: 'MD your tank every 30s. Especially important on big pulls and at the start of boss fights. Macro it to your tank.' },
+                  { icon: '🛡️', tip: 'Survival of the Fittest for tank deaths', desc: 'SotF is your external DR. If the tank drops low or dies, you can kite with Aspect of the Cheetah + Harpoon mobility.' },
+                  { icon: '⚡', tip: 'Sentinel: Lunar Storm placement', desc: 'Lunar Storm triggers on Sentinel Mark consumption. Position yourself so the AoE hits the full pack. It does massive damage on stacked mobs.' },
+                ].map((t, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
+                    <div style={{ fontSize: 14, flexShrink: 0, width: 20, textAlign: 'center' }}>{t.icon}</div>
+                    <div>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: '#e8c88a', marginBottom: 2 }}>{t.tip}</div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#5a4030', lineHeight: 1.5 }}>{t.desc}</div>
+                    </div>
+                  </div>
+                ))}
+
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#c8a870', margin: '18px 0 10px', textTransform: 'uppercase' }}>Mob Priority Targets</div>
+                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#5a4030', marginBottom: 10, lineHeight: 1.5 }}>
+                  Focus these mob types first in every dungeon. Use Raptor Strike + Kill Command to burn priority targets while your AoE (WFB, Pitch, Swipe) handles the rest.
+                </div>
+                {[
+                  { priority: '1', label: 'Healers & Casters (Interruptible)', color: '#f87171', desc: 'Always #1 kill target. Use Counter Shot / Intimidation to lock them down. Survival has a 24s interrupt — coordinate with group.' },
+                  { priority: '2', label: 'Inspiring / Bolstering Mobs', color: '#fbbf24', desc: 'Kill Inspiring mobs first (they make nearby mobs immune to CC). With Bolstering, burn the smallest HP mob last to avoid buffing the pack.' },
+                  { priority: '3', label: 'Raging / Enraged Mobs', color: '#fb923c', desc: 'Tranq Shot removes enrage effects. You are one of the few classes with a reliable enrage dispel — use it proactively.' },
+                  { priority: '4', label: 'Frontals & Swirlies', color: '#60a5fa', desc: 'As melee, dodge telegraphed abilities. Harpoon back in after mechanics. Aspect of the Cheetah for emergency repositioning.' },
+                  { priority: '5', label: 'Boss Add Spawns', color: '#a78bfa', desc: 'Save Boomstick + Flamefang Pitch for add phases. Takedown if adds are high priority. Your AoE burst is excellent for burning adds before they reach the group.' },
+                ].map((m, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: '50%', background: '#1a0a0a', border: `1px solid ${m.color}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: "'Cinzel', serif", fontSize: 10, color: m.color, flexShrink: 0
+                    }}>{m.priority}</div>
+                    <div>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: m.color, marginBottom: 2 }}>{m.label}</div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#5a4030', lineHeight: 1.5 }}>{m.desc}</div>
+                    </div>
+                  </div>
+                ))}
+
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#c8a870', margin: '18px 0 10px', textTransform: 'uppercase' }}>Utility Toolkit</div>
+                {[
+                  { ability: 'Binding Shot', key: 'AoE Root', color: '#22d3ee', desc: 'Place on stacked mobs. 5s root after they leave the area. Excellent for kiting and grouping.' },
+                  { ability: 'Intimidation', key: 'ST Stun', color: '#fbbf24', desc: '3s stun on a 1min CD. Save for critical casts that Counter Shot can\'t reach (stun-only interrupts).' },
+                  { ability: 'Tar Trap', key: 'AoE Slow', color: '#34d399', desc: '50% slow zone. Drop on patrol paths or kite routes. Stacks with Binding Shot for complete control.' },
+                  { ability: 'Aspect of the Turtle', key: 'Immunity', color: '#60a5fa', desc: 'Full immunity for 8s. Use for soaking mechanics or surviving one-shots. Cannot attack during.' },
+                  { ability: 'Tranquilizing Shot', key: 'Enrage Dispel', color: '#fb923c', desc: 'Removes 1 enrage and 1 magic buff. Critical utility in M+ — always watch for purgeable buffs.' },
+                ].map((u, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 10, alignItems: 'flex-start' }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: u.color, width: 90, flexShrink: 0 }}>
+                      {u.ability} <span style={{ fontSize: 9, color: '#4a3020' }}>({u.key})</span>
+                    </div>
+                    <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#5a4030', lineHeight: 1.4 }}>{u.desc}</div>
+                  </div>
+                ))}
+
+                <div style={{ marginTop: 12, padding: '10px 14px', background: '#0a0c10', borderRadius: 6, border: '1px solid #1a1208' }}>
+                  <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#4a3020', fontStyle: 'italic' }}>
+                    Source: Method.gg M+ Survival Guide, Mythicstats.com comp data, Archon.gg dungeon rankings — Midnight 12.0.1
+                  </div>
+                </div>
+              </div>
+
               {/* Data disclaimer */}
               <div style={{ background: '#0a0c10', border: '1px solid #1a1208', borderRadius: 8, padding: 16 }}>
                 <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#4a3020', lineHeight: 1.6, fontStyle: 'italic' }}>
