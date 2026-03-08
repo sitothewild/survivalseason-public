@@ -1821,6 +1821,90 @@ export default function SurvivalHunterSim() {
           </p>
         </div>
       </div>
+
+      {/* Item Tooltip */}
+      {hoveredItem && (
+        <div className="item-tooltip" style={{
+          left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
+          top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
+        }}>
+          {tooltipLoading && !itemCache[hoveredItem] ? (
+            <div className="item-tooltip-loading">Loading item data...</div>
+          ) : itemCache[hoveredItem]?._error ? (
+            <div className="item-tooltip-loading">Could not load item data</div>
+          ) : itemCache[hoveredItem] ? (() => {
+            const item = itemCache[hoveredItem];
+            const qualityColors = {
+              LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd',
+              UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d', HEIRLOOM: '#00ccff'
+            };
+            const nameColor = qualityColors[item.quality?.type] || '#a335ee';
+            return (
+              <>
+                {item._icon && <img className="item-tooltip-icon" src={item._icon} alt="" />}
+                <div className="item-tooltip-name" style={{ color: nameColor }}>
+                  {item.name || 'Unknown Item'}
+                </div>
+                <div className="item-tooltip-ilvl">
+                  Item Level {item.level || item.item_level || '?'}
+                </div>
+                {item.preview_item?.binding?.type && (
+                  <div className="item-tooltip-binding">
+                    {item.preview_item.binding.type === 'ON_EQUIP' ? 'Binds when equipped' : 'Binds when picked up'}
+                  </div>
+                )}
+                {(item.preview_item?.inventory_type?.name || item.preview_item?.item_subclass?.name) && (
+                  <div className="item-tooltip-type">
+                    <span>{item.preview_item?.inventory_type?.name || ''}</span>
+                    <span>{item.preview_item?.item_subclass?.name || ''}</span>
+                  </div>
+                )}
+                {item.preview_item?.armor && (
+                  <div className="item-tooltip-stat">
+                    <b>{item.preview_item.armor.value.toLocaleString()}</b> Armor
+                  </div>
+                )}
+                {item.preview_item?.stats?.map((stat: any, si: number) => {
+                  const statColors: Record<string, string> = {
+                    AGILITY: '#a0d0a0', INTELLECT: '#6080ff', STRENGTH: '#c07060',
+                    STAMINA: '#c8b890', CRIT_RATING: '#f59e0b', HASTE_RATING: '#60a5fa',
+                    MASTERY_RATING: '#a78bfa', VERSATILITY: '#34d399'
+                  };
+                  const c = statColors[stat.type?.type] || '#c8b890';
+                  const prefix = stat.is_negated ? '-' : '+';
+                  return (
+                    <div key={si} className="item-tooltip-stat" style={{ color: c }}>
+                      {prefix}{stat.value} {stat.type?.name || stat.type?.type || ''}
+                    </div>
+                  );
+                })}
+                {item.preview_item?.spells?.map((spell: any, si: number) => (
+                  <div key={si} style={{ fontSize: 11, color: '#1eff00', marginTop: 4, lineHeight: 1.4 }}>
+                    {spell.description || spell.spell?.name || ''}
+                  </div>
+                ))}
+                {item.preview_item?.set && (
+                  <div style={{ marginTop: 6, fontSize: 11, color: '#f0c880' }}>
+                    Set: {item.preview_item.set.display_string || item.preview_item.set.item_set?.name || ''}
+                  </div>
+                )}
+                {item.preview_item?.durability && (
+                  <div style={{ marginTop: 4, fontSize: 10, color: '#6a5030' }}>
+                    Durability {item.preview_item.durability.value} / {item.preview_item.durability.value}
+                  </div>
+                )}
+                {item.required_level && (
+                  <div style={{ fontSize: 10, color: '#6a5030' }}>
+                    Requires Level {item.required_level}
+                  </div>
+                )}
+              </>
+            );
+          })() : (
+            <div className="item-tooltip-loading">Hover to load...</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
