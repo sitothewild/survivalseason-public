@@ -242,23 +242,23 @@ function parseSimcString(simcText) {
   }
 
   // Estimate stats from average ilvl when explicit stat lines are missing
+  // Calibrated to TWW/Midnight stat scaling: ilvl 600 ~ 35K agi, ilvl 639 ~ 48K agi
   const avgIlvl = result.character.avgIlvl || 0;
   if (result.stats.agility === 0 && avgIlvl > 0) {
-    // Rough scaling: ilvl 200 ~ 6000 agi, ilvl 250 ~ 12000 agi
-    result.stats.agility = Math.round(6000 + (avgIlvl - 200) * 120);
+    // Exponential-ish scaling: base at ilvl 500 = 15K, scales ~600 agi per ilvl above 500
+    result.stats.agility = Math.round(15000 + Math.max(0, avgIlvl - 500) * 240);
   }
-  if (result.stats.agility === 0) result.stats.agility = 9500;
-  if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.1;
+  if (result.stats.agility === 0) result.stats.agility = 45000;
+  if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.0;
 
   // Estimate secondary stats from ilvl if not explicitly provided
   if (result.stats.haste === 0 && avgIlvl > 0) {
-    // Estimate secondary ratings from ilvl. At ilvl 230, expect ~1800 rating per secondary stat.
-    // Total secondary budget scales roughly as (ilvl - 150) * 80
-    const totalSecondary = Math.max(0, (avgIlvl - 150) * 80);
-    result.stats.haste = +(totalSecondary * 0.28 / 180).toFixed(2);       // ~28% budget → ~10% haste
-    result.stats.crit = +(totalSecondary * 0.25 / 180).toFixed(2);        // ~25% → ~9% crit
-    result.stats.mastery = +(totalSecondary * 0.30 / 180).toFixed(2);      // ~30% → ~11% mastery
-    result.stats.versatility = +(totalSecondary * 0.17 / 205).toFixed(2);  // ~17% → ~5% vers
+    // At ilvl 639, expect roughly: 18% haste, 25% crit, 35% mastery, 5% vers
+    const ilvlScale = Math.max(0, (avgIlvl - 500)) / 139; // 0 at ilvl 500, 1 at ilvl 639
+    result.stats.haste = +(8 + ilvlScale * 10).toFixed(2);
+    result.stats.crit = +(12 + ilvlScale * 13).toFixed(2);
+    result.stats.mastery = +(15 + ilvlScale * 20).toFixed(2);
+    result.stats.versatility = +(2 + ilvlScale * 3).toFixed(2);
   }
 
   return result;
