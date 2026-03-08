@@ -846,7 +846,7 @@ export default function SurvivalHunterSim() {
 
   return (
     <div className="sim-root" style={{
-      minHeight: '100vh', background: '#0a0c10', color: '#e8dcc8',
+      minHeight: '100vh', background: 'linear-gradient(180deg, #06080f 0%, #0a0e1a 30%, #0d1020 60%, #080c18 100%)', color: '#e8dcc8',
       fontFamily: "'Cinzel Decorative', 'Palatino Linotype', serif",
       position: 'relative', overflow: 'hidden'
     }}>
@@ -893,19 +893,19 @@ export default function SurvivalHunterSim() {
         }
 
         .hero-btn {
-          background: linear-gradient(135deg, #1a0e06, #2a1808);
-          border: 1px solid #4a2c14;
+          background: linear-gradient(135deg, #0c0e1a, #141828);
+          border: 1px solid #2a3050;
           border-radius: 6px;
           padding: 14px 18px;
           cursor: pointer;
           transition: all 0.2s;
           text-align: left;
         }
-        .hero-btn:hover { border-color: #8b5e3c; transform: translateY(-1px); }
+        .hero-btn:hover { border-color: #4a5a80; transform: translateY(-1px); }
         .hero-btn.selected {
           border-color: #e07030;
-          background: linear-gradient(135deg, #2a1200, #3a1a08);
-          box-shadow: 0 0 16px #e0703044;
+          background: linear-gradient(135deg, #1a1008, #201810);
+          box-shadow: 0 0 16px #e0703044, inset 0 0 30px rgba(224,112,48,0.05);
         }
         
         .sim-btn {
@@ -943,11 +943,11 @@ export default function SurvivalHunterSim() {
         .tab-btn:hover { color: #c8a870; }
 
         .mode-btn {
-          background: #0f1118;
-          border: 1px solid #2a2018;
+          background: #0a0d18;
+          border: 1px solid #1e2a40;
           border-radius: 6px;
           padding: 10px 18px;
-          color: #7a6040;
+          color: #7a8aaa;
           font-family: 'Cinzel', serif;
           font-size: 11px;
           letter-spacing: 1px;
@@ -955,14 +955,14 @@ export default function SurvivalHunterSim() {
           transition: all 0.2s;
         }
         .mode-btn.active {
-          background: #1e1208;
+          background: #141020;
           border-color: #e07030;
           color: #e8c88a;
         }
 
         .input-field {
-          background: #0f1118;
-          border: 1px solid #2a2018;
+          background: #0a0d18;
+          border: 1px solid #1e2a40;
           border-radius: 6px;
           color: #c8b890;
           font-family: 'EB Garamond', serif;
@@ -972,7 +972,7 @@ export default function SurvivalHunterSim() {
           outline: none;
           width: 100%;
         }
-        .input-field:focus { border-color: #8b5e3c; }
+        .input-field:focus { border-color: #4a5a80; }
 
         .result-card { animation: fadeIn 0.4s ease forwards; }
         .bar-fill { animation: barGrow 0.8s ease forwards; }
@@ -995,7 +995,7 @@ export default function SurvivalHunterSim() {
         
         .divider {
           height: 1px;
-          background: linear-gradient(90deg, transparent, #3a2810, #8b5e3c, #3a2810, transparent);
+          background: linear-gradient(90deg, transparent, #1e2a40, #3a5070, #1e2a40, transparent);
           margin: 24px 0;
         }
         
@@ -1003,8 +1003,8 @@ export default function SurvivalHunterSim() {
           text-shadow: 0 0 20px #e0703066, 0 0 40px #c44e0033;
         }
         
-        .sentinel-badge { color: #38bdf8; }
-        .pack-badge { color: #a78bfa; }
+        .sentinel-badge { color: #f0a830; text-shadow: 0 0 12px #e0703066, 0 0 24px #c44e0033; }
+        .pack-badge { color: #e8b840; text-shadow: 0 0 12px #d4940066, 0 0 24px #b8780033; }
         
         .loading-ring {
           width: 48px; height: 48px;
@@ -1031,7 +1031,7 @@ export default function SurvivalHunterSim() {
 
         .tabs-row {
           display: flex;
-          border-bottom: 1px solid #1a1208;
+          border-bottom: 1px solid #141e30;
           margin-bottom: 28px;
           gap: 4px;
         }
@@ -1226,22 +1226,34 @@ export default function SurvivalHunterSim() {
         }
       `}</style>
 
-      {/* Background particles */}
+      {/* Background particles — midnight + ember mix */}
       {particles.map(p => (
         <div key={p.id} style={{
           position: 'fixed', left: `${p.x}%`, top: `${p.y}%`,
           width: p.size, height: p.size, borderRadius: '50%',
-          background: '#e07030', opacity: p.opacity,
+          background: p.id % 3 === 0 ? '#4a6aaf' : p.id % 3 === 1 ? '#e07030' : '#8090c0',
+          opacity: p.opacity * (p.id % 3 === 0 ? 0.6 : 1),
           animation: `float ${p.speed}s ease-in-out infinite`,
           animationDelay: `${p.delay}s`,
           '--op': p.opacity, pointerEvents: 'none', zIndex: 0
         }} />
       ))}
 
+      {/* Midnight ambient glow */}
+      <div style={{
+        position: 'fixed', top: '-20%', left: '30%', width: '40%', height: '50%',
+        background: 'radial-gradient(ellipse, rgba(30,50,120,0.12) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0
+      }} />
+      <div style={{
+        position: 'fixed', bottom: '-10%', right: '20%', width: '35%', height: '40%',
+        background: 'radial-gradient(ellipse, rgba(100,40,10,0.08) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0
+      }} />
       {/* Background grid */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: 'linear-gradient(rgba(139,94,60,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(139,94,60,0.04) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(rgba(60,80,139,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(60,80,139,0.03) 1px, transparent 1px)',
         backgroundSize: '40px 40px'
       }} />
 
@@ -1271,7 +1283,7 @@ export default function SurvivalHunterSim() {
         </div>
 
         {/* Tabs */}
-        <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #1a1208', marginBottom: 28, gap: 4 }}>
+        <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #141e30', marginBottom: 28, gap: 4 }}>
           <button className={`tab-btn ${activeTab === 'sim' ? 'active' : ''}`} onClick={() => setActiveTab('sim')}>⚔ Simulator</button>
           <button className={`tab-btn ${activeTab === 'talents' ? 'active' : ''}`} onClick={() => setActiveTab('talents')}>🌿 Talents</button>
           <button className={`tab-btn ${activeTab === 'guide' ? 'active' : ''}`} onClick={() => setActiveTab('guide')}>📖 Guide</button>
@@ -1285,7 +1297,7 @@ export default function SurvivalHunterSim() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Armory Lookup */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 12px' }}>
                   🌐 ARMORY LOOKUP
                 </h3>
@@ -1322,7 +1334,7 @@ export default function SurvivalHunterSim() {
                       return (
                         <div style={{
                           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                          background: '#0d0f16', border: '1px solid #2a2018', borderRadius: '0 0 6px 6px',
+                          background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: '0 0 6px 6px',
                           maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
                         }}>
                           {filtered.slice(0, 50).map(realm => (
@@ -1378,7 +1390,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* SimC Import */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: 0 }}>
                     📋 SIMULATIONCRAFT IMPORT
@@ -1489,7 +1501,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* Sim Config */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
                   ⚙ SIMULATION CONFIG
                 </h3>
@@ -1506,7 +1518,7 @@ export default function SurvivalHunterSim() {
                       <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030', lineHeight: 1.4 }}>
                         Owl procs on WFB · Resets WFB CD · Best overall
                       </div>
-                      <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#38bdf8' }}>
+              <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#f0a830' }}>
                         ★ Currently Recommended · 2H weapon
                       </div>
                     </button>
@@ -1516,7 +1528,7 @@ export default function SurvivalHunterSim() {
                       <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030', lineHeight: 1.4 }}>
                         Beast procs on Kill Command · Focus regen
                       </div>
-                      <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#a78bfa' }}>
+              <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#d4a030' }}>
                         Dual wield · Bleed talents underperform
                       </div>
                     </button>
@@ -1603,7 +1615,7 @@ export default function SurvivalHunterSim() {
                     const sortedBreakdown = Object.entries(result.breakdown).sort((a, b) => b[1] - a[1]);
                     return (
                       <div key={ri} className="result-card" style={{
-                        background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20,
+                        background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20,
                         animationDelay: `${ri * 0.1}s`
                       }}>
                         <div className="result-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
@@ -1617,7 +1629,7 @@ export default function SurvivalHunterSim() {
                             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#5a4030' }}>DPS</div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: heroTalent === 'sentinel' ? '#38bdf8' : '#a78bfa' }}>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#f0a830', textShadow: '0 0 8px #e0703044' }}>
                               {MIDNIGHT_DATA.talents.hero[heroTalent].name}
                             </div>
                             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#4a3020' }}>
@@ -1652,7 +1664,7 @@ export default function SurvivalHunterSim() {
 
                   {/* Multi-target comparison chart */}
                   {simResults.length > 1 && (
-                    <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
+                    <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
                       <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#7a6040', marginBottom: 14 }}>
                         📊 TARGET SCALING COMPARISON
                       </div>
@@ -1682,7 +1694,7 @@ export default function SurvivalHunterSim() {
 
                   {/* Stat Weights */}
                   {statWeights && (
-                    <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20, marginTop: 16 }}>
+                    <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20, marginTop: 16 }}>
                       <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#7a6040', marginBottom: 14 }}>
                         ⚖️ STAT WEIGHTS <span style={{ fontSize: 10, color: '#5a4030', letterSpacing: 1 }}>(normalized to Agility = 1.00)</span>
                       </div>
@@ -1742,7 +1754,7 @@ export default function SurvivalHunterSim() {
           <div className="responsive-grid">
 
             {/* Optimal Builds */}
-            <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+            <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
               <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 6px' }}>
                 🌿 OPTIMAL TALENT BUILDS
               </h3>
@@ -1759,7 +1771,7 @@ export default function SurvivalHunterSim() {
                 const opt = getOptimalTalents(build.targets, build.hero);
                 return (
                   <div key={bi} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: bi < 3 ? '1px solid #1a1208' : 'none' }}>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: build.hero === 'sentinel' ? '#38bdf8' : '#a78bfa', marginBottom: 10 }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#f0a830', textShadow: '0 0 8px #e0703044', marginBottom: 10 }}>
                       {build.label}
                     </div>
                     <div style={{ marginBottom: 10 }}>
@@ -1810,14 +1822,14 @@ export default function SurvivalHunterSim() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {Object.entries(MIDNIGHT_DATA.talents.hero).map(([key, hero]) => (
                 <div key={key} style={{
-                  background: '#0d0f16', border: `1px solid ${key === 'sentinel' ? '#1a3040' : '#2a1840'}`,
+                  background: '#0a0e1a', border: `1px solid ${key === 'sentinel' ? '#1a2a48' : '#201840'}`,
                   borderRadius: 10, padding: 20
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
                       <div style={{
                         fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 700, marginBottom: 4,
-                        color: key === 'sentinel' ? '#38bdf8' : '#a78bfa'
+                        color: '#f0a830', textShadow: '0 0 12px #e0703044'
                       }}>
                         {key === 'sentinel' ? '🦉' : '🐾'} {hero.name}
                         {hero.recommended && <span style={{ marginLeft: 8, fontSize: 10, color: '#86efac', fontWeight: 400 }}>★ RECOMMENDED</span>}
@@ -1853,7 +1865,7 @@ export default function SurvivalHunterSim() {
               ))}
 
               {/* Spec talent notes */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
                 <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#e8c88a', marginBottom: 14 }}>
                   🔑 KEY MIDNIGHT CHANGES
                 </div>
@@ -1883,7 +1895,7 @@ export default function SurvivalHunterSim() {
           <div className="responsive-grid">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {/* Rotation */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
                   ⚔ SINGLE TARGET ROTATION
                 </h3>
@@ -1911,7 +1923,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* AoE Rotation */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
                   💥 AoE ROTATION (3+ targets)
                 </h3>
@@ -1940,7 +1952,7 @@ export default function SurvivalHunterSim() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {/* Stats */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
                   📊 STAT PRIORITY (Midnight 12.0)
                 </h3>
@@ -1965,7 +1977,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* How to use */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
                   📋 HOW TO USE THIS SIMULATOR
                 </h3>
@@ -1991,7 +2003,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* Consumables */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
                   🧪 CONSUMABLES (Midnight 12.0.1)
                 </h3>
@@ -2023,7 +2035,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* Mythic+ Dungeon Tips */}
-              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
                 <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
                   🏰 MYTHIC+ DUNGEON TIPS (Survival Hunter)
                 </h3>
