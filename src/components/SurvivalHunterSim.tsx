@@ -808,7 +808,7 @@ export default function SurvivalHunterSim() {
         backgroundSize: '40px 40px'
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '24px 20px' }}>
+      <div className="sim-shell">
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
