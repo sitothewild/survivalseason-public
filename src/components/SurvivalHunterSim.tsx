@@ -1359,10 +1359,10 @@ export default function SurvivalHunterSim() {
                 </h3>
                 {[
                   { stat: 'Agility', color: '#f0c880', note: 'Primary stat. Always highest value per point.' },
-                  { stat: 'Haste', color: '#60a5fa', note: 'Reduces GCD and ability CDs. Top secondary for both ST and AoE.' },
-                  { stat: 'Critical Strike', color: '#f59e0b', note: 'Strong scaling with Mongoose Fury stacks. Close 2nd to Haste.' },
-                  { stat: 'Mastery', color: '#a78bfa', note: 'Increases pet and Kill Command damage. Scales well in AoE.' },
-                  { stat: 'Versatility', color: '#34d399', note: 'Flat damage increase + survivability. Good floor stat.' },
+                  { stat: 'Mastery', color: '#a78bfa', note: 'Spirit Bond: increases you and pet damage. Top secondary in Midnight due to Strike as One + pet scaling. (Method.gg)' },
+                  { stat: 'Critical Strike', color: '#f59e0b', note: 'Strong scaling with Lethal Calibration (+15% crit dmg) and Stargazer (+2% stacking). Equal to Haste in ST.' },
+                  { stat: 'Haste', color: '#60a5fa', note: 'Reduces GCD, focus regen, Kill Command throughput. Equal to Crit in ST, better in AoE. (Method.gg)' },
+                  { stat: 'Versatility', color: '#34d399', note: 'Flat damage + survivability. Lowest priority but solid floor stat.' },
                 ].map((s, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
