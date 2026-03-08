@@ -995,7 +995,7 @@ export default function SurvivalHunterSim() {
         
         .divider {
           height: 1px;
-          background: linear-gradient(90deg, transparent, #3a2810, #8b5e3c, #3a2810, transparent);
+          background: linear-gradient(90deg, transparent, #1e2a40, #3a5070, #1e2a40, transparent);
           margin: 24px 0;
         }
         
