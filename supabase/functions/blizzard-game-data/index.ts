@@ -36,7 +36,7 @@ async function getAccessToken(region = "us"): Promise<string> {
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`OAuth token request failed (${oauthHost}): ${resp.status} ${text}`);
+    throw new Error(`OAuth token request failed (${oauthUrl}): ${resp.status} ${text}`);
   }
 
   const data = await resp.json();
