@@ -151,7 +151,7 @@ serve(async (req) => {
         const { itemIds } = params;
         if (!itemIds || !Array.isArray(itemIds)) throw new Error("itemIds array is required");
         const ids = itemIds.slice(0, 20); // limit to 20
-        const token = await getAccessToken();
+        const token = await getAccessToken(region);
         const host = `${region}.api.blizzard.com`;
         const results = await Promise.all(
           ids.map(async (id: number) => {
