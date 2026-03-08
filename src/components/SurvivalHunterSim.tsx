@@ -1003,8 +1003,8 @@ export default function SurvivalHunterSim() {
           text-shadow: 0 0 20px #e0703066, 0 0 40px #c44e0033;
         }
         
-        .sentinel-badge { color: #38bdf8; }
-        .pack-badge { color: #a78bfa; }
+        .sentinel-badge { color: #f0a830; text-shadow: 0 0 12px #e0703066, 0 0 24px #c44e0033; }
+        .pack-badge { color: #e8b840; text-shadow: 0 0 12px #d4940066, 0 0 24px #b8780033; }
         
         .loading-ring {
           width: 48px; height: 48px;
