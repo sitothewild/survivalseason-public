@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect } from "react";
-import { getFullCharacter, equipmentToSimData, getItemsBatch } from "@/lib/blizzardApi";
+import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -482,6 +482,11 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+  // Item tooltip state
+  const [itemCache, setItemCache] = useState<Record<string, any>>({});
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [tooltipLoading, setTooltipLoading] = useState(false);
 
   useEffect(() => {
     const ps = Array.from({ length: 18 }, (_, i) => ({
@@ -580,6 +585,33 @@ export default function SurvivalHunterSim() {
       setArmoryLoading(false);
     }
   }, [armoryRealm, armoryName, armoryRegion]);
+
+  const handleItemHover = useCallback(async (itemId: string, event: any) => {
+    if (!itemId) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPos({ x: rect.right + 8, y: rect.top });
+    setHoveredItem(itemId);
+
+    if (itemCache[itemId]) return; // already cached
+
+    setTooltipLoading(true);
+    try {
+      const [itemData, mediaData] = await Promise.all([
+        getItem(parseInt(itemId), armoryRegion || 'us'),
+        getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null),
+      ]);
+      const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
+      setItemCache(prev => ({ ...prev, [itemId]: { ...itemData, _icon: icon } }));
+    } catch (e) {
+      setItemCache(prev => ({ ...prev, [itemId]: { _error: e.message } }));
+    } finally {
+      setTooltipLoading(false);
+    }
+  }, [itemCache, armoryRegion]);
+
+  const handleItemLeave = useCallback(() => {
+    setHoveredItem(null);
+  }, []);
 
   const getTargets = () => {
     if (simMode === 'single') return [1];
@@ -944,6 +976,72 @@ export default function SurvivalHunterSim() {
             font-size: 11px !important;
           }
         }
+
+        .item-tooltip {
+          position: fixed;
+          z-index: 9999;
+          background: linear-gradient(180deg, #1a0e2e, #0c0816);
+          border: 1px solid #4a3080;
+          border-radius: 8px;
+          padding: 14px 16px;
+          min-width: 260px;
+          max-width: 320px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 20px rgba(100,60,180,0.2);
+          pointer-events: none;
+          animation: fadeIn 0.15s ease;
+          font-family: 'EB Garamond', serif;
+        }
+        .item-tooltip-name {
+          font-family: 'Cinzel', serif;
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+        .item-tooltip-ilvl {
+          font-size: 12px;
+          color: #f0c880;
+          margin-bottom: 6px;
+        }
+        .item-tooltip-stat {
+          font-size: 12px;
+          color: #c8b890;
+          padding: 1px 0;
+        }
+        .item-tooltip-stat b {
+          color: #e8dcc8;
+        }
+        .item-tooltip-binding {
+          font-size: 11px;
+          color: #7a6040;
+          margin-bottom: 2px;
+        }
+        .item-tooltip-type {
+          font-size: 11px;
+          color: #8a7050;
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 4px;
+        }
+        .item-tooltip-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 4px;
+          border: 1px solid #4a3080;
+          margin-right: 10px;
+          float: left;
+        }
+        .item-tooltip-loading {
+          color: #7a6040;
+          font-size: 11px;
+          font-style: italic;
+        }
+        .gear-row {
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .gear-row:hover {
+          background: #1a1a10 !important;
+        }
       `}</style>
 
       {/* Background particles */}
@@ -1122,14 +1220,21 @@ export default function SurvivalHunterSim() {
                           {parsedChar.gear.map((g, gi) => {
                             const qualityColor = g.ilvl >= 250 ? '#ff8000' : g.ilvl >= 230 ? '#a335ee' : g.ilvl >= 200 ? '#0070dd' : g.ilvl > 0 ? '#1eff00' : '#9d9d9d';
                             return (
-                            <div key={gi} style={{
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              padding: '4px 8px', borderRadius: 4,
-                              background: gi % 2 === 0 ? '#0a0e08' : 'transparent',
-                              fontFamily: "'EB Garamond', serif", fontSize: 12
-                            }}>
+                            <div key={gi} className="gear-row"
+                              onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}
+                              onMouseLeave={handleItemLeave}
+                              style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '4px 8px', borderRadius: 4,
+                                background: gi % 2 === 0 ? '#0a0e08' : 'transparent',
+                                fontFamily: "'EB Garamond', serif", fontSize: 12,
+                                position: 'relative'
+                              }}>
                               <span style={{ color: '#8a7050', minWidth: 80 }}>{g.slotLabel}</span>
-                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 11 }}>{g.name}</span>
+                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 11 }}>
+                                {g.name}
+                                {g.itemId && <span style={{ color: '#4a3020', fontSize: 10 }}> 🔍</span>}
+                              </span>
                               <span style={{ color: qualityColor, fontWeight: 600, minWidth: 30, textAlign: 'right' }}>
                                 {g.ilvl > 0 ? g.ilvl : '—'}
                               </span>
@@ -1716,6 +1821,90 @@ export default function SurvivalHunterSim() {
           </p>
         </div>
       </div>
+
+      {/* Item Tooltip */}
+      {hoveredItem && (
+        <div className="item-tooltip" style={{
+          left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
+          top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
+        }}>
+          {tooltipLoading && !itemCache[hoveredItem] ? (
+            <div className="item-tooltip-loading">Loading item data...</div>
+          ) : itemCache[hoveredItem]?._error ? (
+            <div className="item-tooltip-loading">Could not load item data</div>
+          ) : itemCache[hoveredItem] ? (() => {
+            const item = itemCache[hoveredItem];
+            const qualityColors = {
+              LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd',
+              UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d', HEIRLOOM: '#00ccff'
+            };
+            const nameColor = qualityColors[item.quality?.type] || '#a335ee';
+            return (
+              <>
+                {item._icon && <img className="item-tooltip-icon" src={item._icon} alt="" />}
+                <div className="item-tooltip-name" style={{ color: nameColor }}>
+                  {item.name || 'Unknown Item'}
+                </div>
+                <div className="item-tooltip-ilvl">
+                  Item Level {item.level || item.item_level || '?'}
+                </div>
+                {item.preview_item?.binding?.type && (
+                  <div className="item-tooltip-binding">
+                    {item.preview_item.binding.type === 'ON_EQUIP' ? 'Binds when equipped' : 'Binds when picked up'}
+                  </div>
+                )}
+                {(item.preview_item?.inventory_type?.name || item.preview_item?.item_subclass?.name) && (
+                  <div className="item-tooltip-type">
+                    <span>{item.preview_item?.inventory_type?.name || ''}</span>
+                    <span>{item.preview_item?.item_subclass?.name || ''}</span>
+                  </div>
+                )}
+                {item.preview_item?.armor && (
+                  <div className="item-tooltip-stat">
+                    <b>{item.preview_item.armor.value.toLocaleString()}</b> Armor
+                  </div>
+                )}
+                {item.preview_item?.stats?.map((stat: any, si: number) => {
+                  const statColors: Record<string, string> = {
+                    AGILITY: '#a0d0a0', INTELLECT: '#6080ff', STRENGTH: '#c07060',
+                    STAMINA: '#c8b890', CRIT_RATING: '#f59e0b', HASTE_RATING: '#60a5fa',
+                    MASTERY_RATING: '#a78bfa', VERSATILITY: '#34d399'
+                  };
+                  const c = statColors[stat.type?.type] || '#c8b890';
+                  const prefix = stat.is_negated ? '-' : '+';
+                  return (
+                    <div key={si} className="item-tooltip-stat" style={{ color: c }}>
+                      {prefix}{stat.value} {stat.type?.name || stat.type?.type || ''}
+                    </div>
+                  );
+                })}
+                {item.preview_item?.spells?.map((spell: any, si: number) => (
+                  <div key={si} style={{ fontSize: 11, color: '#1eff00', marginTop: 4, lineHeight: 1.4 }}>
+                    {spell.description || spell.spell?.name || ''}
+                  </div>
+                ))}
+                {item.preview_item?.set && (
+                  <div style={{ marginTop: 6, fontSize: 11, color: '#f0c880' }}>
+                    Set: {item.preview_item.set.display_string || item.preview_item.set.item_set?.name || ''}
+                  </div>
+                )}
+                {item.preview_item?.durability && (
+                  <div style={{ marginTop: 4, fontSize: 10, color: '#6a5030' }}>
+                    Durability {item.preview_item.durability.value} / {item.preview_item.durability.value}
+                  </div>
+                )}
+                {item.required_level && (
+                  <div style={{ fontSize: 10, color: '#6a5030' }}>
+                    Requires Level {item.required_level}
+                  </div>
+                )}
+              </>
+            );
+          })() : (
+            <div className="item-tooltip-loading">Hover to load...</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
