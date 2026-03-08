@@ -1822,7 +1822,7 @@ export default function SurvivalHunterSim() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {Object.entries(MIDNIGHT_DATA.talents.hero).map(([key, hero]) => (
                 <div key={key} style={{
-                  background: '#0d0f16', border: `1px solid ${key === 'sentinel' ? '#1a3040' : '#2a1840'}`,
+                  background: '#0a0e1a', border: `1px solid ${key === 'sentinel' ? '#1a2a48' : '#201840'}`,
                   borderRadius: 10, padding: 20
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
