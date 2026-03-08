@@ -1271,11 +1271,15 @@ export default function SurvivalHunterSim() {
                   🔑 KEY MIDNIGHT CHANGES
                 </div>
                 {[
-                  { title: 'Explosive Shot REMOVED', desc: 'Button bloat reduction. No more essential active DPS choices in class tree — pick passive increases (Keen Eyesight, Unnatural Causes, Trigger Finger) then utility.' },
-                  { title: 'Boomstick ⟷ Wildfire Bomb Loop', desc: 'Each Boomstick shot reduces WFB CD by 2s. Each WFB hit reduces Boomstick CD by 2s. Core feedback loop of the spec.' },
-                  { title: 'Mongoose Fury now baseline', desc: 'Tree position makes it always available. Mongoose Rounds talent adds Kill Command → Mongoose Fury CD reduction synergy.' },
-                  { title: 'Flamefang Pitch (new AoE)', desc: '60s CD AoE DoT. Second charge talent very strong for M+ cleave situations.' },
-                  { title: 'Raptor Swipe (AoE)', desc: 'Replaces Raptor Strike in AoE builds. Hits 5 targets + grants 3% Haste proc.' },
+                  { title: 'Explosive Shot & Kill Shot REMOVED', desc: 'No more essential active DPS in class tree. Pick passive increases (Keen Eyesight, Unnatural Causes, Trigger Finger, Serrated Tips) then utility. (Azortharion/Method)' },
+                  { title: 'Kill Command — No Cooldown', desc: 'KC is now a spammable focus builder (20 focus w/ talent). Freedom to dump and rebuild focus at will enables Mongoose Fury overlap gameplay. (Azortharion)' },
+                  { title: 'Takedown replaces Coordinated Assault', desc: '1:30 CD (→1min w/ Savagery). 20% amp for 8s (10s Sentinel). Generates 50 focus. Flanked: +4 targets +100% attack speed. TLDR: WFB > Pitch/Boom > Takedown > RS spam. (Azortharion)' },
+                  { title: 'Mongoose Fury Rework', desc: 'No longer stacks to 6. Now an overlap mechanic: each RS adds 10% for 8s, multiple overlaps stack. ~2-3% real DPS from proper management vs yolo. (Azortharion analysis)' },
+                  { title: 'Boomstick replaces Fury of the Eagle', desc: 'Frontal AoE shotgun, 1min CD. Shellshock: +40% ST (-5% per target). Mongoose Rounds grants MF stacks for pre-Takedown setup. (Maxroll)' },
+                  { title: 'Flamefang Pitch (new AoE)', desc: '30s CD ground-targeted AoE + fire puddle. Grenade Juggler: +1 charge & grants WFB charge. Wildfire Imbuement: fire damage buff 10s. (Azortharion)' },
+                  { title: 'Raptor Swipe — Apex Talent', desc: '4-point Apex: RS has 25% chance → Raptor Swipe (5 targets). Rank 3: every 2nd RS → Swipe. During Takedown: 100% proc + Strike as One at 300%. (Maxroll/Method)' },
+                  { title: 'Dual Wield Support', desc: 'Survival can now dual wield 1H axes/swords/daggers. 2H still preferred with Sentinel. Pack Leader + Lethal Barbs favors DW. WDPS calculations matter — see Azortharion analysis. (Azortharion)' },
+                  { title: 'Stat Priority Changed', desc: 'Mastery (Spirit Bond) overtook Haste as top secondary due to Strike as One + pet scaling. ST: Agi > Mastery > Crit = Haste > Vers. AoE: Agi > Mastery > Haste > Crit > Vers. (Method.gg Symex)' },
                 ].map((note, i) => (
                   <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < 4 ? '1px solid #1a1208' : 'none' }}>
                     <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: '#e07030', marginBottom: 4 }}>▸ {note.title}</div>
