@@ -21,8 +21,9 @@ async function getAccessToken(region = "us"): Promise<string> {
   }
 
   // Use region-specific OAuth endpoint to get a region-appropriate token
-  const oauthHost = region === "cn" ? "oauth.battlenet.com.cn" : `oauth.${region}.battle.net`;
-  const oauthUrl = `https://${oauthHost}/token`;
+  const oauthUrl = region === "cn"
+    ? "https://oauth.battlenet.com.cn/token"
+    : `https://${region}.battle.net/oauth/token`;
 
   const resp = await fetch(oauthUrl, {
     method: "POST",
