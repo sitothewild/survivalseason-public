@@ -897,18 +897,48 @@ export default function SurvivalHunterSim() {
                     <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#86efac', marginBottom: 8 }}>
                       ✓ CHARACTER LOADED
                     </div>
-                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13 }}>
+                    {/* Character info */}
+                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
                       {parsedChar.character.name && <span style={{ color: '#e8c88a' }}>Name: <b>{parsedChar.character.name}</b></span>}
                       {parsedChar.character.level && <span style={{ color: '#c8a870' }}>Level: {parsedChar.character.level}</span>}
                       {parsedChar.character.race && <span style={{ color: '#c8a870' }}>Race: {parsedChar.character.race}</span>}
-                      {parsedChar.character.avgIlvl > 0 && <span style={{ color: '#f0c880' }}>Avg iLvl: {parsedChar.character.avgIlvl}</span>}
-                      <span style={{ color: '#a0a0a0' }}>AGI: {parsedChar.stats.agility.toLocaleString()}</span>
-                      <span style={{ color: '#60a5fa' }}>Haste: {parsedChar.stats.haste}%</span>
-                      <span style={{ color: '#f59e0b' }}>Crit: {parsedChar.stats.crit}%</span>
-                      <span style={{ color: '#a78bfa' }}>Mastery: {parsedChar.stats.mastery}%</span>
-                      <span style={{ color: '#34d399' }}>Vers: {parsedChar.stats.versatility}%</span>
-                      {parsedChar.gear.length > 0 && <span style={{ color: '#7a6040' }}>Gear pieces: {parsedChar.gear.length}</span>}
+                      {parsedChar.character.avgIlvl > 0 && <span style={{ color: '#f0c880' }}>Avg iLvl: <b>{parsedChar.character.avgIlvl}</b></span>}
                     </div>
+
+                    {/* Stats */}
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 1, color: '#7a6040', marginBottom: 6 }}>STATS</div>
+                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
+                      <span style={{ color: '#a0a0a0' }}>AGI: <b>{parsedChar.stats.agility.toLocaleString()}</b></span>
+                      <span style={{ color: '#c8a870' }}>AP: <b>{Math.round(parsedChar.stats.attackPower).toLocaleString()}</b></span>
+                      <span style={{ color: '#60a5fa' }}>Haste: <b>{parsedChar.stats.haste}%</b></span>
+                      <span style={{ color: '#f59e0b' }}>Crit: <b>{parsedChar.stats.crit}%</b></span>
+                      <span style={{ color: '#a78bfa' }}>Mastery: <b>{parsedChar.stats.mastery}%</b></span>
+                      <span style={{ color: '#34d399' }}>Vers: <b>{parsedChar.stats.versatility}%</b></span>
+                    </div>
+
+                    {/* Gear list */}
+                    {parsedChar.gear.length > 0 && (
+                      <>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 1, color: '#7a6040', marginBottom: 6 }}>
+                          GEAR ({parsedChar.gear.length} PIECES)
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {parsedChar.gear.map((g, gi) => (
+                            <div key={gi} style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '4px 8px', borderRadius: 4,
+                              background: gi % 2 === 0 ? '#0a0e08' : 'transparent',
+                              fontFamily: "'EB Garamond', serif", fontSize: 12
+                            }}>
+                              <span style={{ color: '#8a7050', minWidth: 80 }}>{g.slotLabel}</span>
+                              <span style={{ color: g.ilvl >= 639 ? '#a78bfa' : g.ilvl >= 636 ? '#60a5fa' : '#c8a870', fontWeight: 600 }}>
+                                {g.ilvl > 0 ? g.ilvl : '—'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
