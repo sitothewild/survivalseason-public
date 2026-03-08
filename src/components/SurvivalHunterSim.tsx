@@ -135,16 +135,26 @@ function parseSimcString(simcText) {
   });
 
   // Try to extract gear items
+  const slotLabels = {
+    head: 'Head', neck: 'Neck', shoulders: 'Shoulders', back: 'Back', chest: 'Chest',
+    wrist: 'Wrist', hands: 'Hands', waist: 'Waist', legs: 'Legs', feet: 'Feet',
+    finger1: 'Ring 1', finger2: 'Ring 2', trinket1: 'Trinket 1', trinket2: 'Trinket 2',
+    main_hand: 'Main Hand', off_hand: 'Off Hand'
+  };
   const gearLines = lines.filter(l => /^(head|neck|shoulders|back|chest|wrist|hands|waist|legs|feet|finger1|finger2|trinket1|trinket2|main_hand|off_hand)=/.test(l));
   gearLines.forEach(gl => {
     const slotMatch = gl.match(/^(\w+)=/);
     const iLvlMatch = gl.match(/item_level=(\d+)/);
+    const idMatch = gl.match(/id=(\d+)/);
     const nameMatch = gl.match(/,([^,=]+),/) || gl.match(/="([^"]+)"/);
     if (slotMatch) {
+      const slotKey = slotMatch[1];
       result.gear.push({
-        slot: slotMatch[1],
+        slot: slotKey,
+        slotLabel: slotLabels[slotKey] || slotKey,
         ilvl: iLvlMatch ? parseInt(iLvlMatch[1]) : 0,
-        name: nameMatch ? nameMatch[1] : slotMatch[1]
+        itemId: idMatch ? idMatch[1] : null,
+        name: nameMatch ? nameMatch[1] : (slotLabels[slotKey] || slotKey)
       });
     }
   });
