@@ -1123,7 +1123,7 @@ export default function SurvivalHunterSim() {
 
         {/* ===== GUIDE TAB ===== */}
         {activeTab === 'guide' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="responsive-grid">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {/* Rotation */}
               <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
