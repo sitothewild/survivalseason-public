@@ -644,36 +644,147 @@ export default function SurvivalHunterSim() {
           margin: 0 auto;
         }
 
+        .sim-root {
+          width: 100%;
+          overflow-x: hidden;
+        }
+
+        .sim-shell {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 24px 20px;
+        }
+
+        .tabs-row {
+          display: flex;
+          border-bottom: 1px solid #1a1208;
+          margin-bottom: 28px;
+          gap: 4px;
+        }
+
+        .sim-mode-grid {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
         .responsive-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 24px;
         }
+
         .hero-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
         }
+
         .stats-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 6px;
         }
+
+        .result-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 14px;
+          gap: 10px;
+        }
+
+        .breakdown-head {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 3px;
+          gap: 8px;
+        }
+
+        .breakdown-label {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+
+        .breakdown-value {
+          white-space: nowrap;
+        }
+
         @media (max-width: 768px) {
+          .sim-shell {
+            padding: 16px 12px;
+          }
+
           .responsive-grid {
             grid-template-columns: 1fr;
+            gap: 16px;
           }
-          .hero-grid {
+
+          .hero-grid,
+          .stats-grid {
             grid-template-columns: 1fr;
           }
+
+          .tabs-row {
+            flex-wrap: wrap;
+            gap: 2px;
+          }
+
           .tab-btn {
-            padding: 10px 12px;
+            flex: 1 1 calc(50% - 2px);
+            min-width: 0;
+            text-align: center;
+            padding: 10px 8px;
             font-size: 10px;
             letter-spacing: 1px;
           }
+
           .mode-btn {
+            flex: 1 1 100% !important;
             padding: 8px 10px;
             font-size: 10px;
+          }
+
+          .hero-btn {
+            padding: 12px 14px;
+          }
+
+          .sim-btn {
+            padding: 14px 16px;
+            font-size: 12px;
+            letter-spacing: 1px;
+            width: 100%;
+          }
+
+          .title-row {
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+
+          .glow-text {
+            letter-spacing: 2px !important;
+          }
+
+          .subtitle-line {
+            letter-spacing: 2px !important;
+            font-size: 10px !important;
+          }
+
+          .result-card {
+            padding: 14px !important;
+          }
+
+          .result-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+          }
+
+          .breakdown-value {
+            font-size: 11px !important;
           }
         }
       `}</style>
