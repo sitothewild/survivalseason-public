@@ -523,6 +523,7 @@ export default function SurvivalHunterSim() {
   const [heroTalent, setHeroTalent] = useState('sentinel');
   const [fightDuration, setFightDuration] = useState(300);
   const [simResults, setSimResults] = useState(null);
+  const [statWeights, setStatWeights] = useState(null);
   const [optimalTalents, setOptimalTalents] = useState(null);
   const [isSimming, setIsSimming] = useState(false);
   const [activeTab, setActiveTab] = useState('sim'); // 'sim' | 'talents'
