@@ -1220,14 +1220,21 @@ export default function SurvivalHunterSim() {
                           {parsedChar.gear.map((g, gi) => {
                             const qualityColor = g.ilvl >= 250 ? '#ff8000' : g.ilvl >= 230 ? '#a335ee' : g.ilvl >= 200 ? '#0070dd' : g.ilvl > 0 ? '#1eff00' : '#9d9d9d';
                             return (
-                            <div key={gi} style={{
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              padding: '4px 8px', borderRadius: 4,
-                              background: gi % 2 === 0 ? '#0a0e08' : 'transparent',
-                              fontFamily: "'EB Garamond', serif", fontSize: 12
-                            }}>
+                            <div key={gi} className="gear-row"
+                              onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}
+                              onMouseLeave={handleItemLeave}
+                              style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '4px 8px', borderRadius: 4,
+                                background: gi % 2 === 0 ? '#0a0e08' : 'transparent',
+                                fontFamily: "'EB Garamond', serif", fontSize: 12,
+                                position: 'relative'
+                              }}>
                               <span style={{ color: '#8a7050', minWidth: 80 }}>{g.slotLabel}</span>
-                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 11 }}>{g.name}</span>
+                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 11 }}>
+                                {g.name}
+                                {g.itemId && <span style={{ color: '#4a3020', fontSize: 10 }}> 🔍</span>}
+                              </span>
                               <span style={{ color: qualityColor, fontWeight: 600, minWidth: 30, textAlign: 'right' }}>
                                 {g.ilvl > 0 ? g.ilvl : '—'}
                               </span>
