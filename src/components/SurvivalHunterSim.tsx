@@ -1408,6 +1408,38 @@ export default function SurvivalHunterSim() {
                 ))}
               </div>
 
+              {/* Consumables */}
+              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
+                  🧪 CONSUMABLES (Midnight 12.0.1)
+                </h3>
+                {[
+                  { icon: '🧪', label: 'Flask', item: 'Flask of the Magisters', color: '#a78bfa', note: 'Best flask for Agility DPS. Provides a large primary stat boost for 30 minutes (persists through death).' },
+                  { icon: '⚗️', label: 'Combat Potion', item: 'Draught of Rampant Abandon', color: '#f87171', note: 'Use on pull and during Takedown windows. Grants a burst of primary stat at the cost of some stamina. Pre-pot 1s before pull.' },
+                  { icon: '🗡️', label: 'Weapon Oil', item: 'Thalassian Phoenix Oil', color: '#fb923c', note: 'Apply to weapon(s). Chance to ignite enemies on hit dealing fire damage. Synergizes with Flamefang Pitch and fire talents.' },
+                  { icon: '🍖', label: 'Food', item: 'Silvermoon Parade', color: '#fbbf24', note: 'Agility food buff. Use when no Feast is available. Always have personal food as backup in raid/M+.' },
+                  { icon: '💎', label: 'Meta Gem', item: 'Eversong Diamond', color: '#22d3ee', note: 'Best meta gem for Survival. Provides Agility proc with high uptime. Socket in your helmet.' },
+                  { icon: '🪨', label: 'Gems', item: 'Mastery + Secondary', color: '#a78bfa', note: 'Prioritize Mastery gems in Midnight. Fill remaining sockets with Mastery/Crit or Mastery/Haste based on stat weights from Raidbots.' },
+                  { icon: '🔮', label: 'Enchants', item: 'Enchant Weapon — Authority of Radiant Power', color: '#c084fc', note: 'Weapon enchant. Ring: Mastery. Cloak: Avoidance or Leech. Chest: Crystalline Radiance. Legs: Stormbound Armor Kit. Boots: Defender\'s March.' },
+                ].map((c, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
+                    <div style={{ fontSize: 16, flexShrink: 0, width: 24, textAlign: 'center' }}>{c.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2, flexWrap: 'wrap', gap: 4 }}>
+                        <span style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: '#8a7050', textTransform: 'uppercase', letterSpacing: 1 }}>{c.label}</span>
+                        <span style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: c.color }}>{c.item}</span>
+                      </div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#5a4030', lineHeight: 1.5 }}>{c.note}</div>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ marginTop: 12, padding: '10px 14px', background: '#0a0c10', borderRadius: 6, border: '1px solid #1a1208' }}>
+                  <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#4a3020', fontStyle: 'italic' }}>
+                    Source: Method.gg (Symex) & Maxroll Survival Hunter Consumables Guide — Midnight 12.0.1
+                  </div>
+                </div>
+              </div>
+
               {/* Data disclaimer */}
               <div style={{ background: '#0a0c10', border: '1px solid #1a1208', borderRadius: 8, padding: 16 }}>
                 <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#4a3020', lineHeight: 1.6, fontStyle: 'italic' }}>
