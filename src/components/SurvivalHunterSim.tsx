@@ -400,6 +400,59 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 }
 
 // ============================================================
+// STAT WEIGHT CALCULATOR — Delta method (SimC-style)
+// Bumps each stat by a small amount and measures DPS delta
+// ============================================================
+function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build) {
+  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build).totalDps;
+
+  const DELTA = {
+    agility: 200,       // +200 agility
+    haste: 1.5,         // +1.5% haste (≈270 rating)
+    crit: 1.5,          // +1.5% crit (≈270 rating)
+    mastery: 1.5,       // +1.5% mastery (≈270 rating)
+    versatility: 1.5,   // +1.5% vers (≈308 rating)
+  };
+
+  const RATING_PER_PERCENT = {
+    haste: 180,
+    crit: 180,
+    mastery: 180,
+    versatility: 205,
+  };
+
+  const weights = {};
+
+  // Agility: bump agi and AP together
+  const agiChar = JSON.parse(JSON.stringify(charData));
+  agiChar.stats.agility += DELTA.agility;
+  agiChar.stats.attackPower = agiChar.stats.agility * 2.1;
+  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build).totalDps;
+  const agiDelta = (agiDps - baseDps) / DELTA.agility; // DPS per 1 agility
+  weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
+
+  // Secondary stats: bump percentage, convert to per-rating-point
+  ['haste', 'crit', 'mastery', 'versatility'].forEach(stat => {
+    const bumpChar = JSON.parse(JSON.stringify(charData));
+    bumpChar.stats[stat] = (bumpChar.stats[stat] || 0) + DELTA[stat];
+    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build).totalDps;
+    const dpsDelta = bumpDps - baseDps;
+    const ratingBump = DELTA[stat] * RATING_PER_PERCENT[stat]; // equivalent rating
+    const perRating = dpsDelta / ratingBump;
+    const label = stat.charAt(0).toUpperCase() + stat.slice(1);
+    weights[label] = { perPoint: perRating, perRating, delta: dpsDelta, bump: `+${DELTA[stat]}%`, ratingBump: Math.round(ratingBump) };
+  });
+
+  // Normalize to agility = 1.00
+  const agiWeight = weights['Agility'].perPoint;
+  Object.keys(weights).forEach(k => {
+    weights[k].normalized = agiWeight > 0 ? +(weights[k].perPoint / agiWeight).toFixed(3) : 0;
+  });
+
+  return { weights, baseDps };
+}
+
+// ============================================================
 // OPTIMAL TALENT RECOMMENDER — Export strings from Method.gg (Symex)
 // ============================================================
 function getOptimalTalents(targetCount, heroTalent) {
@@ -470,6 +523,7 @@ export default function SurvivalHunterSim() {
   const [heroTalent, setHeroTalent] = useState('sentinel');
   const [fightDuration, setFightDuration] = useState(300);
   const [simResults, setSimResults] = useState(null);
+  const [statWeights, setStatWeights] = useState(null);
   const [optimalTalents, setOptimalTalents] = useState(null);
   const [isSimming, setIsSimming] = useState(false);
   const [activeTab, setActiveTab] = useState('sim'); // 'sim' | 'talents'
@@ -634,6 +688,11 @@ export default function SurvivalHunterSim() {
         const st = runSimulation(parsedChar, t, fightDuration, heroTalent, build);
         return st;
       });
+
+      // Calculate stat weights for the primary target scenario (first target count)
+      const primaryBuild = targets[0] === 1 ? 'st' : 'aoe';
+      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild);
+      setStatWeights(sw);
 
       const optimal = getOptimalTalents(targets[targets.length - 1], heroTalent);
       setSimResults(results);
@@ -1439,6 +1498,58 @@ export default function SurvivalHunterSim() {
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stat Weights */}
+                  {statWeights && (
+                    <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20, marginTop: 16 }}>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#7a6040', marginBottom: 14 }}>
+                        ⚖️ STAT WEIGHTS <span style={{ fontSize: 10, color: '#5a4030', letterSpacing: 1 }}>(normalized to Agility = 1.00)</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {Object.entries(statWeights.weights)
+                          .sort(([,a], [,b]) => b.normalized - a.normalized)
+                          .map(([stat, data]) => {
+                            const maxNorm = Math.max(...Object.values(statWeights.weights).map(w => w.normalized));
+                            const barPct = maxNorm > 0 ? (data.normalized / maxNorm) * 100 : 0;
+                            const statColors = {
+                              'Agility': '#22c55e',
+                              'Mastery': '#f59e0b',
+                              'Crit': '#ef4444',
+                              'Haste': '#38bdf8',
+                              'Versatility': '#a78bfa',
+                            };
+                            const color = statColors[stat] || '#6b7280';
+                            return (
+                              <div key={stat}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                  <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, color }}>
+                                    {stat}
+                                  </span>
+                                  <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870' }}>
+                                    {data.normalized.toFixed(3)}
+                                    <span style={{ color: '#5a4030', marginLeft: 8, fontSize: 11 }}>
+                                      (+{Math.round(data.delta)} DPS from {data.bump})
+                                    </span>
+                                  </span>
+                                </div>
+                                <div style={{ height: 6, background: '#1a1208', borderRadius: 3, overflow: 'hidden' }}>
+                                  <div style={{
+                                    height: '100%', borderRadius: 3,
+                                    width: `${barPct}%`,
+                                    background: color,
+                                    transition: 'width 0.6s ease',
+                                  }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#4a3020', marginTop: 12, lineHeight: 1.5 }}>
+                        Weights calculated via delta method: each stat is bumped independently and DPS change measured.
+                        Per-rating values normalized to Agility = 1.00. Higher = more valuable per point.
                       </div>
                     </div>
                   )}
