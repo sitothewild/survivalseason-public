@@ -643,6 +643,39 @@ export default function SurvivalHunterSim() {
           animation: spin 0.8s linear infinite;
           margin: 0 auto;
         }
+
+        .responsive-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 6px;
+        }
+        @media (max-width: 768px) {
+          .responsive-grid {
+            grid-template-columns: 1fr;
+          }
+          .hero-grid {
+            grid-template-columns: 1fr;
+          }
+          .tab-btn {
+            padding: 10px 12px;
+            font-size: 10px;
+            letter-spacing: 1px;
+          }
+          .mode-btn {
+            padding: 8px 10px;
+            font-size: 10px;
+          }
+        }
       `}</style>
 
       {/* Background particles */}
