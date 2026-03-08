@@ -11,13 +11,6 @@ const RACE_IDS: Record<string, number> = {
   mechagnome: 37, dracthyr: 52, earthen: 85,
 };
 
-// Blizzard slot type → WoWHead slot ID
-const SLOT_MAP: Record<string, number> = {
-  head: 1, shoulder: 3, shirt: 4, chest: 5, waist: 6, legs: 7,
-  feet: 8, wrist: 9, hands: 10, back: 15, main_hand: 16, off_hand: 17,
-  tabard: 19,
-};
-
 interface WowModelViewerProps {
   raceId?: number;
   raceName?: string;
@@ -40,7 +33,6 @@ export default function WowModelViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Resolve race ID
   const resolvedRaceId = raceId || (raceName ? RACE_IDS[raceName.toLowerCase()] : undefined);
   const genderNum = gender === "FEMALE" ? 0 : 1;
 
@@ -51,39 +43,34 @@ export default function WowModelViewer({
       return;
     }
 
-    // Check if ZamModelViewer is available
-    const checkViewer = () => {
-      if (typeof window.ZamModelViewer !== "undefined") {
-        return true;
-      }
-      return false;
-    };
-
     const initViewer = () => {
       if (!containerRef.current) return;
+      if (typeof window.ZamModelViewer === "undefined" || typeof window.jQuery === "undefined") {
+        setError("3D viewer scripts not loaded");
+        setLoading(false);
+        return;
+      }
 
-      // Clear previous viewer
+      // Clear previous
       if (viewerRef.current) {
         try { containerRef.current.innerHTML = ""; } catch {}
         viewerRef.current = null;
       }
 
       try {
-        // Build items array from equipment
-        const items = equipment
-          .filter(e => e.displayId && SLOT_MAP[e.slot])
-          .map(e => [SLOT_MAP[e.slot], e.displayId]);
+        // ZamModelViewer expects a jQuery element as container
+        const $container = window.jQuery(containerRef.current);
 
         const viewer = new window.ZamModelViewer({
-          type: 2, // character
+          type: 2, // character type
           contentPath: "https://wow.zamimg.com/modelviewer/live/",
-          container: containerRef.current,
+          container: $container,
           aspect: width / height,
           hd: true,
           models: {
-            id: resolvedRaceId * 2 - 1 + (genderNum === 0 ? 1 : 0), // approximate model ID
-            type: 16,
-            ...(items.length > 0 ? { items } : {}),
+            id: resolvedRaceId,
+            type: 16, // character
+            gender: genderNum,
           },
         });
 
@@ -97,14 +84,14 @@ export default function WowModelViewer({
       }
     };
 
-    // Wait for ZamModelViewer to be available
-    if (checkViewer()) {
+    // Wait for scripts
+    if (typeof window.ZamModelViewer !== "undefined") {
       initViewer();
     } else {
       let attempts = 0;
       const interval = setInterval(() => {
         attempts++;
-        if (checkViewer()) {
+        if (typeof window.ZamModelViewer !== "undefined") {
           clearInterval(interval);
           initViewer();
         } else if (attempts > 50) {
@@ -122,7 +109,7 @@ export default function WowModelViewer({
         viewerRef.current = null;
       }
     };
-  }, [resolvedRaceId, genderNum, width, height, JSON.stringify(equipment)]);
+  }, [resolvedRaceId, genderNum, width, height]);
 
   return (
     <div style={{ width, height, position: "relative", borderRadius: 8, overflow: "hidden", background: "#080c06" }}>
