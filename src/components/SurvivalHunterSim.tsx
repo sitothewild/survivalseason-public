@@ -1694,7 +1694,7 @@ export default function SurvivalHunterSim() {
 
                   {/* Stat Weights */}
                   {statWeights && (
-                    <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20, marginTop: 16 }}>
+                    <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20, marginTop: 16 }}>
                       <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#7a6040', marginBottom: 14 }}>
                         ⚖️ STAT WEIGHTS <span style={{ fontSize: 10, color: '#5a4030', letterSpacing: 1 }}>(normalized to Agility = 1.00)</span>
                       </div>
