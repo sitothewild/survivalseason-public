@@ -250,12 +250,13 @@ function parseSimcString(simcText) {
 
   // Estimate secondary stats from ilvl if not explicitly provided
   if (result.stats.haste === 0 && avgIlvl > 0) {
-    // Rough estimate: higher ilvl = more secondary rating
-    const secondaryBudget = Math.max(0, (avgIlvl - 170) * 18); // rating per secondary
-    result.stats.haste = +(secondaryBudget * 0.28 / 180).toFixed(2);   // ~28% of budget
-    result.stats.crit = +(secondaryBudget * 0.25 / 180).toFixed(2);    // ~25%
-    result.stats.mastery = +(secondaryBudget * 0.30 / 180).toFixed(2);  // ~30% (SV priority)
-    result.stats.versatility = +(secondaryBudget * 0.17 / 205).toFixed(2); // ~17%
+    // Estimate secondary ratings from ilvl. At ilvl 230, expect ~1800 rating per secondary stat.
+    // Total secondary budget scales roughly as (ilvl - 150) * 80
+    const totalSecondary = Math.max(0, (avgIlvl - 150) * 80);
+    result.stats.haste = +(totalSecondary * 0.28 / 180).toFixed(2);       // ~28% budget → ~10% haste
+    result.stats.crit = +(totalSecondary * 0.25 / 180).toFixed(2);        // ~25% → ~9% crit
+    result.stats.mastery = +(totalSecondary * 0.30 / 180).toFixed(2);      // ~30% → ~11% mastery
+    result.stats.versatility = +(totalSecondary * 0.17 / 205).toFixed(2);  // ~17% → ~5% vers
   }
 
   return result;
