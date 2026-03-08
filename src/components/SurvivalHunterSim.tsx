@@ -1438,6 +1438,18 @@ export default function SurvivalHunterSim() {
                       <span style={{ color: '#a78bfa' }}>Mastery: <b>{parsedChar.stats.mastery}%</b></span>
                       <span style={{ color: '#34d399' }}>Vers: <b>{parsedChar.stats.versatility}%</b></span>
                     </div>
+                      </div>
+                      {/* 3D Character Model */}
+                      <div style={{ flexShrink: 0 }}>
+                        <WowModelViewer
+                          raceName={parsedChar.character.race}
+                          raceId={parsedChar.character.raceId}
+                          gender={parsedChar.character.gender || "MALE"}
+                          width={200}
+                          height={240}
+                        />
+                      </div>
+                    </div>
 
                     {/* Gear list */}
                     {parsedChar.gear.length > 0 && (
