@@ -400,6 +400,59 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 }
 
 // ============================================================
+// STAT WEIGHT CALCULATOR — Delta method (SimC-style)
+// Bumps each stat by a small amount and measures DPS delta
+// ============================================================
+function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build) {
+  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build).totalDps;
+
+  const DELTA = {
+    agility: 200,       // +200 agility
+    haste: 1.5,         // +1.5% haste (≈270 rating)
+    crit: 1.5,          // +1.5% crit (≈270 rating)
+    mastery: 1.5,       // +1.5% mastery (≈270 rating)
+    versatility: 1.5,   // +1.5% vers (≈308 rating)
+  };
+
+  const RATING_PER_PERCENT = {
+    haste: 180,
+    crit: 180,
+    mastery: 180,
+    versatility: 205,
+  };
+
+  const weights = {};
+
+  // Agility: bump agi and AP together
+  const agiChar = JSON.parse(JSON.stringify(charData));
+  agiChar.stats.agility += DELTA.agility;
+  agiChar.stats.attackPower = agiChar.stats.agility * 2.1;
+  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build).totalDps;
+  const agiDelta = (agiDps - baseDps) / DELTA.agility; // DPS per 1 agility
+  weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
+
+  // Secondary stats: bump percentage, convert to per-rating-point
+  ['haste', 'crit', 'mastery', 'versatility'].forEach(stat => {
+    const bumpChar = JSON.parse(JSON.stringify(charData));
+    bumpChar.stats[stat] = (bumpChar.stats[stat] || 0) + DELTA[stat];
+    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build).totalDps;
+    const dpsDelta = bumpDps - baseDps;
+    const ratingBump = DELTA[stat] * RATING_PER_PERCENT[stat]; // equivalent rating
+    const perRating = dpsDelta / ratingBump;
+    const label = stat.charAt(0).toUpperCase() + stat.slice(1);
+    weights[label] = { perPoint: perRating, perRating, delta: dpsDelta, bump: `+${DELTA[stat]}%`, ratingBump: Math.round(ratingBump) };
+  });
+
+  // Normalize to agility = 1.00
+  const agiWeight = weights['Agility'].perPoint;
+  Object.keys(weights).forEach(k => {
+    weights[k].normalized = agiWeight > 0 ? +(weights[k].perPoint / agiWeight).toFixed(3) : 0;
+  });
+
+  return { weights, baseDps };
+}
+
+// ============================================================
 // OPTIMAL TALENT RECOMMENDER — Export strings from Method.gg (Symex)
 // ============================================================
 function getOptimalTalents(targetCount, heroTalent) {
