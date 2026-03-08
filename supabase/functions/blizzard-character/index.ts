@@ -12,8 +12,14 @@ let tokenExpiry = 0;
 async function getAccessToken(): Promise<string> {
   if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
 
-  const clientId = Deno.env.get("BLIZZARD_CLIENT_ID")!;
-  const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET")!;
+  const clientId = Deno.env.get("BLIZZARD_CLIENT_ID");
+  const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET");
+
+  console.log(`[blizzard-character] OAuth: clientId=${clientId ? clientId.substring(0, 6) + '...' : 'MISSING'}, secret=${clientSecret ? 'SET' : 'MISSING'}`);
+
+  if (!clientId || !clientSecret) {
+    throw new Error("BLIZZARD_CLIENT_ID or BLIZZARD_CLIENT_SECRET not configured");
+  }
 
   const resp = await fetch("https://oauth.battle.net/token", {
     method: "POST",
@@ -26,10 +32,12 @@ async function getAccessToken(): Promise<string> {
 
   if (!resp.ok) {
     const text = await resp.text();
+    console.log(`[blizzard-character] OAuth failed: ${resp.status} ${text}`);
     throw new Error(`OAuth token request failed: ${resp.status} ${text}`);
   }
 
   const data = await resp.json();
+  console.log(`[blizzard-character] OAuth success, token expires in ${data.expires_in}s`);
   cachedToken = data.access_token;
   tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
   return cachedToken!;
