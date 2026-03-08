@@ -163,30 +163,56 @@ function parseSimcString(simcText) {
   });
 
   // Try to extract gear items
-  const slotLabels = {
+  const slotLabels: Record<string, string> = {
     head: 'Head', neck: 'Neck', shoulders: 'Shoulders', back: 'Back', chest: 'Chest',
     wrist: 'Wrist', hands: 'Hands', waist: 'Waist', legs: 'Legs', feet: 'Feet',
     finger1: 'Ring 1', finger2: 'Ring 2', trinket1: 'Trinket 1', trinket2: 'Trinket 2',
-    main_hand: 'Main Hand', off_hand: 'Off Hand'
+    main_hand: 'Main Hand', off_hand: 'Off Hand', tabard: 'Tabard', shirt: 'Shirt'
   };
-  const gearSlotPattern = /^(head|neck|shoulders|shoulder|back|chest|wrist|wrists|hands|waist|legs|feet|finger1|finger2|trinket1|trinket2|main_hand|off_hand)=/;
-  const gearLines = lines.filter(l => gearSlotPattern.test(l));
-  console.log('[SV-SIM] Gear lines found:', gearLines.length, gearLines.slice(0, 3));
-  gearLines.forEach(gl => {
-    const slotMatch = gl.match(/^(\w+)=/);
-    const iLvlMatch = gl.match(/item_level=(\d+)/);
-    const idMatch = gl.match(/,id=(\d+)/);
-    const nameMatch = gl.match(/,([^,=]+),/) || gl.match(/="([^"]+)"/);
-    if (slotMatch) {
-      const slotKey = slotMatch[1].replace('shoulder', 'shoulders').replace('wrists', 'wrist');
-      result.gear.push({
-        slot: slotKey,
-        slotLabel: slotLabels[slotKey] || slotKey,
-        ilvl: iLvlMatch ? parseInt(iLvlMatch[1]) : 0,
-        itemId: idMatch ? idMatch[1] : null,
-        name: nameMatch ? nameMatch[1] : (slotLabels[slotKey] || slotKey)
-      });
+  const gearSlotNames = Object.keys(slotLabels).join('|');
+  const gearSlotPattern = new RegExp(`^(${gearSlotNames})=`);
+
+  // Stop parsing gear once we hit "Gear from Bags" section
+  const bagSectionIdx = lines.findIndex(l => /gear from bags/i.test(l));
+  const equipLines = bagSectionIdx >= 0 ? lines.slice(0, bagSectionIdx) : lines;
+
+  // Build a map of comment lines preceding gear lines: "# Item Name (ilvl)"
+  const commentItemPattern = /^#\s+(.+?)\s+\((\d+)\)\s*$/;
+
+  equipLines.forEach((line, idx) => {
+    if (!gearSlotPattern.test(line)) return;
+    const slotMatch = line.match(/^(\w+)=/);
+    if (!slotMatch) return;
+
+    const rawSlot = slotMatch[1];
+    const slotKey = rawSlot.replace(/^shoulder$/, 'shoulders').replace(/^wrists$/, 'wrist');
+    if (slotKey === 'tabard' || slotKey === 'shirt') return; // skip non-gear
+
+    const idMatch = line.match(/,id=(\d+)/);
+
+    // Look at the comment line immediately above for name & ilvl
+    let itemName = slotLabels[slotKey] || slotKey;
+    let ilvl = 0;
+    if (idx > 0) {
+      const prevLine = equipLines[idx - 1];
+      const cm = prevLine.match(commentItemPattern);
+      if (cm) {
+        itemName = cm[1];
+        ilvl = parseInt(cm[2]) || 0;
+      }
     }
+
+    // Fallback: try item_level= in the line itself
+    const iLvlInline = line.match(/item_level=(\d+)/);
+    if (iLvlInline) ilvl = parseInt(iLvlInline[1]);
+
+    result.gear.push({
+      slot: slotKey,
+      slotLabel: slotLabels[slotKey] || slotKey,
+      ilvl,
+      itemId: idMatch ? idMatch[1] : null,
+      name: itemName
+    });
   });
   console.log('[SV-SIM] Parsed gear items:', result.gear.length);
 
