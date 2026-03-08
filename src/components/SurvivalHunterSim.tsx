@@ -1334,7 +1334,7 @@ export default function SurvivalHunterSim() {
                       return (
                         <div style={{
                           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                          background: '#0d0f16', border: '1px solid #2a2018', borderRadius: '0 0 6px 6px',
+                          background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: '0 0 6px 6px',
                           maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
                         }}>
                           {filtered.slice(0, 50).map(realm => (
