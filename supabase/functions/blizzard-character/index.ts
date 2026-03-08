@@ -88,8 +88,9 @@ serve(async (req) => {
         let profileTest = "not attempted";
         let gameDataTest = "not attempted";
         try {
-          // Get raw token response
-          const tokenResp = await fetch("https://oauth.battle.net/token", {
+          // Get raw token response using region-specific endpoint
+          const oauthUrl = `https://${region}.battle.net/oauth/token`;
+          const tokenResp = await fetch(oauthUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
