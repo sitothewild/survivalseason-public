@@ -242,187 +242,160 @@ function parseSimcString(simcText) {
   }
 
   // Estimate stats from average ilvl when explicit stat lines are missing
-  // Calibrated to TWW/Midnight stat scaling: ilvl 600 ~ 35K agi, ilvl 639 ~ 48K agi
+  // Calibrated to Midnight 12.0.1 stat scaling: level 90, ilvl 636 ~ 1558 agi
   const avgIlvl = result.character.avgIlvl || 0;
   if (result.stats.agility === 0 && avgIlvl > 0) {
-    // Exponential-ish scaling: base at ilvl 500 = 15K, scales ~600 agi per ilvl above 500
-    result.stats.agility = Math.round(15000 + Math.max(0, avgIlvl - 500) * 240);
+    // Midnight stat scaling: ilvl 600 ~ 1000 agi, ilvl 636 ~ 1558
+    result.stats.agility = Math.round(400 + Math.max(0, avgIlvl - 550) * 13.5);
   }
-  if (result.stats.agility === 0) result.stats.agility = 45000;
-  if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.0;
+  if (result.stats.agility === 0) result.stats.agility = 1500;
+  if (result.stats.attackPower === 0) result.stats.attackPower = Math.round(result.stats.agility * 1.05);
 
   // Estimate secondary stats from ilvl if not explicitly provided
   if (result.stats.haste === 0 && avgIlvl > 0) {
-    // At ilvl 639, expect roughly: 18% haste, 25% crit, 35% mastery, 5% vers
-    const ilvlScale = Math.max(0, (avgIlvl - 500)) / 139; // 0 at ilvl 500, 1 at ilvl 639
-    result.stats.haste = +(8 + ilvlScale * 10).toFixed(2);
-    result.stats.crit = +(12 + ilvlScale * 13).toFixed(2);
-    result.stats.mastery = +(15 + ilvlScale * 20).toFixed(2);
-    result.stats.versatility = +(2 + ilvlScale * 3).toFixed(2);
+    const ilvlScale = Math.max(0, (avgIlvl - 550)) / 86; // 0 at ilvl 550, 1 at ilvl 636
+    result.stats.haste = +(5 + ilvlScale * 5.6).toFixed(2);
+    result.stats.crit = +(8 + ilvlScale * 12.1).toFixed(2);
+    result.stats.mastery = +(10 + ilvlScale * 20.2).toFixed(2);
+    result.stats.versatility = +(2 + ilvlScale * 6.3).toFixed(2);
   }
 
   return result;
 }
 
 // ============================================================
-// CORE DPS SIMULATION ENGINE — Calibrated to SimC TWW1 data
-// Sources: SimC APL, Azortharion rotation priority, WoW tooltips, Method.gg
-// Calibration target: ilvl 639 = ~1.6-2.0M ST DPS (SimC Patchwerk 5min)
+// CORE DPS SIMULATION ENGINE — Calibrated to SimC 1201-01 real data
+// Anchor: Blezaa (Survival Hunter, Pack Leader, level 90)
+//   AP=1635, Crit=20.13%, Haste=10.58%, Mastery=30.16%, Vers=8.28%
+//   SimC Patchwerk 300s, 100K iterations → 51,024 DPS
+// Method: formula-based scaling anchored to real SimC output
 // ============================================================
+
+// Real SimC breakdown percentages (Pack Leader ST)
+const SIMC_BREAKDOWN_PL_ST = {
+  'Strike as One':     0.1883,
+  'Raptor Swipe':      0.1471,
+  'Raptor Strike':     0.1271,
+  'Boomstick':         0.0772,
+  'Auto Attack (MH)':  0.0711,
+  'Kill Command':      0.0499,
+  'Wildfire Bomb':     0.0821, // damage + bleed combined
+  'Auto Attack (OH)':  0.0339,
+  'Takedown':          0.0331,
+  'Pack Leader Beasts': 0.0716, // boar_charge + boar_charge_cleave + stampede
+  'Pet (Claw)':        0.0246,
+  'Kroluk\'s Warbanner': 0.0220,
+  'Pet Melee':         0.0200,
+  'Bear (Rend + Melee)': 0.0261,
+};
+
+// Sentinel ST breakdown (estimated, ~7% higher total)
+const SIMC_BREAKDOWN_SENT_ST = {
+  'Raptor Strike':         0.1400,
+  'Raptor Swipe':          0.1350,
+  'Strike as One':         0.1200,
+  'Wildfire Bomb':         0.1050,
+  'Boomstick':             0.0800,
+  'Auto Attack (MH)':      0.0650,
+  'Kill Command':          0.0500,
+  'Moonlight Chakram':     0.0450,
+  'Sentinel Mark + Lunar Storm': 0.0700,
+  'Takedown':              0.0380,
+  'Auto Attack (OH)':      0.0300,
+  'Pet (Claw)':            0.0250,
+  'Pet Melee':             0.0220,
+  'Kroluk\'s Warbanner':   0.0200,
+};
+
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
   const stats = charData.stats;
-  const agi = stats.agility || 45000;
-  const ap = stats.attackPower || agi * 2.0;
+  const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
 
-  // Secondary stat percentages (already in % form, e.g. 25 = 25%)
-  const hastePct = stats.haste || 18;
-  const critPct = stats.crit || 25;
-  const masteryPct = stats.mastery || 35;
-  const versPct = stats.versatility || 5;
+  // Secondary stat percentages (already in % form, e.g. 20.13 = 20.13%)
+  const hastePct = stats.haste || 10.58;
+  const critPct = stats.crit || 20.13;
+  const masteryPct = stats.mastery || 30.16;
+  const versPct = stats.versatility || 8.28;
 
-  // Derived multipliers
-  const hasteBonus = 1 + hastePct / 100;
-  // Crit: average damage increase = critChance * (critDamageMultiplier - 1). WoW crit = 2x damage.
-  const critMult = 1 + (critPct / 100) * 1.0; // 25% crit → 1.25x avg
-  // Mastery: Spirit Bond — increases you and your pet damage. Survival mastery is ~2x the rating value.
-  const masteryMult = 1 + (masteryPct / 100) * 1.8; // 35% mastery → 1.63x
-  // Versatility: flat damage bonus
-  const versMult = 1 + versPct / 100;
+  // ---- Calibration anchor ----
+  // At AP=1635, crit=20.13%, haste=10.58%, mastery=30.16%, vers=8.28% → 51,024 DPS
+  const ANCHOR_AP = 1635;
+  const ANCHOR_DPS = 51024;
+  const ANCHOR_CRIT = 20.13;
+  const ANCHOR_HASTE = 10.58;
+  const ANCHOR_MASTERY = 30.16;
+  const ANCHOR_VERS = 8.28;
 
-  // Class aura + talent amp (passive multipliers from spec aura, always-on talents, enchants, consumables)
-  const classAura = MIDNIGHT_DATA.classAura;
-  // Talent amplifier — accounts for passive talent damage increases not individually modeled
-  const talentAmp = 1.25;
-  // Gear amp — tier sets, trinket average procs, enchants, consumables
-  const gearAmp = 1.15;
-
-  // Combined stat multiplier
-  const statMult = critMult * masteryMult * versMult * classAura * talentAmp * gearAmp;
-
-  const T = targetCount;
-  const gcdBase = 1.5 / hasteBonus;
-  const gcdsPerSec = 1 / gcdBase;
-
-  // Rotation time fractions — what % of GCD budget each ability uses
-  const rot = build === 'st' ? {
-    raptorStrike: 0.30,
-    killCommand: 0.20,
-    wildfireBomb: 0.10,
-    boomstick: 0.05,
-    takedown: 0.03,
-    raptorSwipe: 0.06,
-    strikeAsOne: 0.08,
-    autoAttack: 0.12,
-    moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
-    hatchetToss: heroTalent === 'packLeader' ? 0.01 : 0,
-  } : {
-    raptorStrike: 0.16,
-    killCommand: 0.12,
-    wildfireBomb: 0.12,
-    boomstick: 0.07,
-    flamefangPitch: 0.08,
-    takedown: 0.03,
-    raptorSwipe: 0.12,
-    strikeAsOne: 0.06,
-    autoAttack: 0.10,
-    moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
-    hatchetToss: heroTalent === 'packLeader' ? 0.02 : 0,
+  // Multiplicative stat scaling model
+  const calcStatMult = (c, h, m, v) => {
+    return (1 + c / 100 * 1.0)    // crit: critChance * 1.0 extra damage
+         * (1 + h / 100 * 0.80)    // haste: ~80% DPS scaling (focus-constrained)
+         * (1 + m / 100 * 1.0)     // mastery (Spirit Bond): 1:1 damage increase
+         * (1 + v / 100);          // versatility: flat damage bonus
   };
 
-  let breakdown = {};
+  const anchorStatMult = calcStatMult(ANCHOR_CRIT, ANCHOR_HASTE, ANCHOR_MASTERY, ANCHOR_VERS);
+  const currentStatMult = calcStatMult(critPct, hastePct, masteryPct, versPct);
 
-  // Core damage formula: apCoef * AP * statMult * (uptimeFraction * gcdsPerSec) * targetMult
-  const calcAbility = (key, uptimeFraction, targetMult) => {
-    const spell = MIDNIGHT_DATA.spells[key];
-    if (!spell) return 0;
-    const dmgPerCast = spell.apCoef * ap * statMult;
-    const effectiveCastsPerSec = uptimeFraction * gcdsPerSec;
-    return dmgPerCast * effectiveCastsPerSec * targetMult;
-  };
+  // Base coefficient: DPS = baseCoef * AP * statMult
+  const baseCoef = ANCHOR_DPS / (ANCHOR_AP * anchorStatMult);
 
-  // Raptor Strike — Mongoose Fury overlap: avg ~3 stacks = 30% bonus
-  breakdown['Raptor Strike'] = calcAbility('raptorStrike', rot.raptorStrike || 0, 1) * 1.30;
+  // Scale DPS based on AP and stat differences
+  let totalDps = baseCoef * ap * currentStatMult;
 
-  // Kill Command — spammable focus builder
-  breakdown['Kill Command'] = calcAbility('killCommand', rot.killCommand || 0, 1);
-
-  // Wildfire Bomb — AoE with DoT component
-  breakdown['Wildfire Bomb'] = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8));
-
-  // Boomstick — Shellshock: +40% ST, diminishing per extra target
-  const shellshockMult = T === 1 ? 1.40 : Math.max(1.05, 1.40 - (T - 1) * 0.05);
-  breakdown['Boomstick'] = calcAbility('boomstick', rot.boomstick || 0, Math.min(T, 5)) * shellshockMult;
-
-  // Raptor Swipe (Apex talent) — procs from RS
-  breakdown['Raptor Swipe'] = calcAbility('raptorSwipe', rot.raptorSwipe || 0, Math.min(T, 5));
-
-  // Flamefang Pitch (AoE build)
-  if (build === 'aoe' && rot.flamefangPitch) {
-    breakdown['Flamefang Pitch'] = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8));
+  // Hero talent adjustment
+  const isPL = heroTalent === 'packLeader';
+  // Sentinel is ~5-7% higher in ST, Pack Leader is the anchor
+  if (!isPL) {
+    totalDps *= 1.06;
   }
 
-  // Strike as One — passive pet attacks from all abilities
-  breakdown['Strike as One'] = calcAbility('strikeAsOne', rot.strikeAsOne || 0, Math.min(T, 3));
-
-  // Auto Attacks — melee white hits (significant portion of melee DPS)
-  breakdown['Auto Attacks'] = calcAbility('autoAttack', rot.autoAttack || 0, 1) * hasteBonus;
-
-  // Pet baseline damage (Spirit Bond mastery scaling + basic attacks)
-  // Pet inherits AP and does ~8-12% of total independently
-  const petBaseDps = MIDNIGHT_DATA.petApScaling * ap * masteryMult * versMult * classAura * gcdsPerSec * 0.15;
-  breakdown['Pet (Spirit Bond)'] = petBaseDps;
-
-  // Lethal Calibration — +15% crit damage when WFB is active
-  const lcUptime = Math.min(1, 12 / (18 / hasteBonus));
-  const lcAffected = (breakdown['Raptor Strike'] + breakdown['Kill Command'] + breakdown['Boomstick'] + breakdown['Raptor Swipe']);
-  breakdown['Lethal Calibration'] = lcAffected * 0.15 * lcUptime * (critPct / 100);
-
-  // Moonlight Chakram (Sentinel)
-  if (heroTalent === 'sentinel' && rot.moonlightChakram) {
-    breakdown['Moonlight Chakram'] = calcAbility('moonlightChakram', rot.moonlightChakram, Math.min(T, 8));
-  }
-
-  // Hatchet Toss (Pack Leader)
-  if (heroTalent === 'packLeader' && rot.hatchetToss) {
-    breakdown['Hatchet Toss'] = calcAbility('hatchetToss', rot.hatchetToss, Math.min(T, 4));
-  }
-
-  // Takedown (20% amp for 8-10s window)
-  const tdDur = heroTalent === 'sentinel' ? 10 : 8;
-  const tdCD = 90 - (build === 'st' ? 30 : 15);
-  const tdUptime = tdDur / tdCD;
-  breakdown['Takedown (20% amp)'] = Object.values(breakdown).reduce((s, v) => s + v, 0) * 0.20 * tdUptime;
-
-  // Hero talent bonus
-  const heroData = MIDNIGHT_DATA.talents.hero[heroTalent];
-  const heroPct = build === 'st' ? heroData.stBonus : heroData.aoeBonus;
-  const baseTotal = Object.values(breakdown).reduce((s, v) => s + v, 0);
-  if (heroTalent === 'sentinel') {
-    breakdown['Sentinel Mark + Lunar Storm'] = baseTotal * heroPct;
-  } else {
-    breakdown['Pack Leader Beasts'] = baseTotal * heroPct;
-  }
-
-  let totalDps = Object.values(breakdown).reduce((s, v) => s + v, 0);
-
-  // Multi-target scaling (diminishing returns per target)
-  if (T > 1) {
-    const cleaveFactor = T <= 3 ? 1 + (T - 1) * 0.60
-      : T <= 5 ? 2.2 + (T - 3) * 0.40
-      : T <= 8 ? 3.0 + (T - 5) * 0.25
-      : 3.75 + (T - 8) * 0.15;
-    const stDps = totalDps / (1 + heroPct);
-    totalDps = stDps * cleaveFactor * (1 + heroPct * 0.85);
-  }
-
-  // Cooldown alignment efficiency (longer fights allow better CD stacking)
-  const cdEfficiency = Math.min(1.10, 1 + (fightDuration - 180) / 900 * 0.10);
+  // Fight duration efficiency (longer fights = better CD alignment)
+  const cdEfficiency = Math.min(1.05, 1 + (fightDuration - 180) / 1200 * 0.05);
   totalDps *= cdEfficiency;
 
-  // Normalize breakdown to sum to totalDps
-  const rawSum = Object.values(breakdown).reduce((s, v) => s + v, 0);
-  const normFactor = totalDps / rawSum;
-  Object.keys(breakdown).forEach(k => { breakdown[k] = Math.round(breakdown[k] * normFactor); });
+  const T = targetCount;
+
+  // Multi-target scaling
+  if (T > 1) {
+    const cleaveFactor = T <= 3 ? 1 + (T - 1) * 0.55
+      : T <= 5 ? 2.1 + (T - 3) * 0.35
+      : T <= 8 ? 2.8 + (T - 5) * 0.20
+      : 3.4 + (T - 8) * 0.12;
+    totalDps *= cleaveFactor;
+  }
+
+  // Build breakdown using real SimC percentages
+  const breakdown = {};
+  const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
+
+  // For AoE, shift percentages toward AoE abilities
+  if (build === 'aoe' || T > 2) {
+    const aoeTemplate = {};
+    Object.entries(breakdownTemplate).forEach(([key, pct]) => {
+      if (key.includes('Wildfire') || key.includes('Boomstick') || key.includes('Swipe') || key.includes('Flamefang') || key.includes('Beasts') || key.includes('Lunar')) {
+        aoeTemplate[key] = pct * 1.4;
+      } else if (key.includes('Strike as One')) {
+        aoeTemplate[key] = pct * 1.3;
+      } else {
+        aoeTemplate[key] = pct * 0.7;
+      }
+    });
+    // Add Flamefang Pitch for AoE
+    if (!aoeTemplate['Flamefang Pitch']) {
+      aoeTemplate['Flamefang Pitch'] = 0.08;
+    }
+    // Normalize
+    const aoeSum = Object.values(aoeTemplate).reduce((s, v) => s + v, 0);
+    Object.keys(aoeTemplate).forEach(k => { aoeTemplate[k] /= aoeSum; });
+    Object.entries(aoeTemplate).forEach(([key, pct]) => {
+      breakdown[key] = Math.round(totalDps * pct);
+    });
+  } else {
+    Object.entries(breakdownTemplate).forEach(([key, pct]) => {
+      breakdown[key] = Math.round(totalDps * pct);
+    });
+  }
 
   return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build };
 }
@@ -454,7 +427,7 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   // Agility: bump agi and AP together
   const agiChar = JSON.parse(JSON.stringify(charData));
   agiChar.stats.agility += DELTA.agility;
-  agiChar.stats.attackPower = agiChar.stats.agility * 2.0;
+  agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
   const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build).totalDps;
   const agiDelta = (agiDps - baseDps) / DELTA.agility; // DPS per 1 agility
   weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
@@ -624,34 +597,51 @@ const REALM_DATA: Record<string, string[]> = {
   ],
 };
 
-const SAMPLE_SIMC = `hunter="Azurethane"
-level=80
-race=night_elf
+const SAMPLE_SIMC = `hunter="blezaa"
+level=90
+race=tauren
 region=us
-server=stormrage
+server=turalyon
 spec=survival
-talents=C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxohBwMBbGzMjZmlBAAAAAAzYmZGMeAzYGMmMAAAAAAgxy2MzsYmZGzMzAAGwwYMjN
-agility=48200
-attack_power=96400
-haste_rating=3240
-crit_rating=4500
-mastery_rating=6300
-versatility_rating=1850
+talents=C8PAo4YcvOcqUdzB9zV+NhSAcMgxMG2ILwMM0gFzMzMzwyAAAAAAgZMjZYGjZMDGTzAAAAAGAALLzMziZmZmZGzMgZ2AgxYmZhB
+agility=1558
+attack_power=1635
+haste_rating=370
+crit_rating=282
+mastery_rating=722
+versatility_rating=285
+# Midnight Suneater Crown (639)
 head=,id=232011,item_level=639
+# Midnight Thread Choker (636)
 neck=,id=231814,item_level=636
+# Midnight Suneater Shoulderguards (639)
 shoulders=,id=232013,item_level=639
+# Midnight Drape of Dusk (636)
 back=,id=231756,item_level=636
+# Midnight Suneater Hauberk (639)
 chest=,id=232009,item_level=639
+# Midnight Bindings of Twilight (636)
 wrist=,id=231758,item_level=636
+# Midnight Suneater Grips (639)
 hands=,id=232012,item_level=639
+# Midnight Cord of Shadows (636)
 waist=,id=231760,item_level=636
+# Midnight Suneater Legguards (639)
 legs=,id=232010,item_level=639
+# Midnight Boots of the Nightborne (636)
 feet=,id=231762,item_level=636
+# Midnight Signet of Dusk (636)
 finger1=,id=231770,item_level=636
+# Midnight Band of Eternal Night (636)
 finger2=,id=231772,item_level=636
+# Kroluk's Warbanner (636)
 trinket1=,id=231780,item_level=636
+# Light's Potential (636)
 trinket2=,id=231782,item_level=636
-main_hand=,id=231800,item_level=639`;
+# Midnight Suneater Glaive (639)
+main_hand=,id=231800,item_level=639
+# Midnight Suneater Dirk (636)
+off_hand=,id=231802,item_level=636`;
 
 export default function SurvivalHunterSim() {
   const [simcInput, setSimcInput] = useState('');
