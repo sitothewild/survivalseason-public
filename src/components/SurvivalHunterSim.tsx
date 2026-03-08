@@ -1238,10 +1238,21 @@ export default function SurvivalHunterSim() {
         }} />
       ))}
 
+      {/* Midnight ambient glow */}
+      <div style={{
+        position: 'fixed', top: '-20%', left: '30%', width: '40%', height: '50%',
+        background: 'radial-gradient(ellipse, rgba(30,50,120,0.12) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0
+      }} />
+      <div style={{
+        position: 'fixed', bottom: '-10%', right: '20%', width: '35%', height: '40%',
+        background: 'radial-gradient(ellipse, rgba(100,40,10,0.08) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0
+      }} />
       {/* Background grid */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: 'linear-gradient(rgba(139,94,60,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(139,94,60,0.04) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(rgba(60,80,139,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(60,80,139,0.03) 1px, transparent 1px)',
         backgroundSize: '40px 40px'
       }} />
 
