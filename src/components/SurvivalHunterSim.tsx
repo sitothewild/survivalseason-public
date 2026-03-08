@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
+import WowModelViewer from "@/components/WowModelViewer";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -1416,13 +1417,16 @@ export default function SurvivalHunterSim() {
                     <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#86efac', marginBottom: 8 }}>
                       ✓ CHARACTER LOADED
                     </div>
-                    {/* Character info */}
-                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
-                      {parsedChar.character.name && <span style={{ color: '#e8c88a' }}>Name: <b>{parsedChar.character.name}</b></span>}
-                      {parsedChar.character.level && <span style={{ color: '#c8a870' }}>Level: {parsedChar.character.level}</span>}
-                      {parsedChar.character.race && <span style={{ color: '#c8a870' }}>Race: {parsedChar.character.race}</span>}
-                      {parsedChar.character.avgIlvl > 0 && <span style={{ color: '#f0c880' }}>Avg iLvl: <b>{parsedChar.character.avgIlvl}</b></span>}
-                    </div>
+                    {/* Character info + 3D Model row */}
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        {/* Character info */}
+                        <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
+                          {parsedChar.character.name && <span style={{ color: '#e8c88a' }}>Name: <b>{parsedChar.character.name}</b></span>}
+                          {parsedChar.character.level && <span style={{ color: '#c8a870' }}>Level: {parsedChar.character.level}</span>}
+                          {parsedChar.character.race && <span style={{ color: '#c8a870' }}>Race: {parsedChar.character.race}</span>}
+                          {parsedChar.character.avgIlvl > 0 && <span style={{ color: '#f0c880' }}>Avg iLvl: <b>{parsedChar.character.avgIlvl}</b></span>}
+                        </div>
 
                     {/* Stats */}
                     <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 1, color: '#7a6040', marginBottom: 6 }}>STATS</div>
@@ -1433,6 +1437,18 @@ export default function SurvivalHunterSim() {
                       <span style={{ color: '#f59e0b' }}>Crit: <b>{parsedChar.stats.crit}%</b></span>
                       <span style={{ color: '#a78bfa' }}>Mastery: <b>{parsedChar.stats.mastery}%</b></span>
                       <span style={{ color: '#34d399' }}>Vers: <b>{parsedChar.stats.versatility}%</b></span>
+                    </div>
+                      </div>
+                      {/* 3D Character Model */}
+                      <div style={{ flexShrink: 0 }}>
+                        <WowModelViewer
+                          raceName={parsedChar.character.race}
+                          raceId={parsedChar.character.raceId}
+                          gender={parsedChar.character.gender || "MALE"}
+                          width={200}
+                          height={240}
+                        />
+                      </div>
                     </div>
 
                     {/* Gear list */}

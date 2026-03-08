@@ -109,6 +109,8 @@ export function equipmentToSimData(fullData: any) {
       name: profile?.name || "Unknown",
       level: profile?.level || 80,
       race: profile?.race?.name || "",
+      raceId: profile?.race?.id || null,
+      gender: profile?.gender?.type || "MALE",
       realm: profile?.realm?.name || "",
       region: "us",
       avgIlvl: profile?.equipped_item_level || avgIlvl,
