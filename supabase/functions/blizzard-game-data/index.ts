@@ -56,6 +56,9 @@ async function blizzardGet(path: string, region: string, namespace: string, loca
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!resp.ok) {
+    if (resp.status === 404) {
+      return null; // Item not found — return null instead of throwing
+    }
     const text = await resp.text();
     throw new Error(`Blizzard API ${resp.status}: ${text}`);
   }
