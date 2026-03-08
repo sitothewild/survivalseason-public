@@ -1501,6 +1501,58 @@ export default function SurvivalHunterSim() {
                       </div>
                     </div>
                   )}
+
+                  {/* Stat Weights */}
+                  {statWeights && (
+                    <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20, marginTop: 16 }}>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#7a6040', marginBottom: 14 }}>
+                        ⚖️ STAT WEIGHTS <span style={{ fontSize: 10, color: '#5a4030', letterSpacing: 1 }}>(normalized to Agility = 1.00)</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {Object.entries(statWeights.weights)
+                          .sort(([,a], [,b]) => b.normalized - a.normalized)
+                          .map(([stat, data]) => {
+                            const maxNorm = Math.max(...Object.values(statWeights.weights).map(w => w.normalized));
+                            const barPct = maxNorm > 0 ? (data.normalized / maxNorm) * 100 : 0;
+                            const statColors = {
+                              'Agility': '#22c55e',
+                              'Mastery': '#f59e0b',
+                              'Crit': '#ef4444',
+                              'Haste': '#38bdf8',
+                              'Versatility': '#a78bfa',
+                            };
+                            const color = statColors[stat] || '#6b7280';
+                            return (
+                              <div key={stat}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                  <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, color }}>
+                                    {stat}
+                                  </span>
+                                  <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870' }}>
+                                    {data.normalized.toFixed(3)}
+                                    <span style={{ color: '#5a4030', marginLeft: 8, fontSize: 11 }}>
+                                      (+{Math.round(data.delta)} DPS from {data.bump})
+                                    </span>
+                                  </span>
+                                </div>
+                                <div style={{ height: 6, background: '#1a1208', borderRadius: 3, overflow: 'hidden' }}>
+                                  <div style={{
+                                    height: '100%', borderRadius: 3,
+                                    width: `${barPct}%`,
+                                    background: color,
+                                    transition: 'width 0.6s ease',
+                                  }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                      <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#4a3020', marginTop: 12, lineHeight: 1.5 }}>
+                        Weights calculated via delta method: each stat is bumped independently and DPS change measured.
+                        Per-rating values normalized to Agility = 1.00. Higher = more valuable per point.
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
