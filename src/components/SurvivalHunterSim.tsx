@@ -343,7 +343,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 }
 
 // ============================================================
-// OPTIMAL TALENT RECOMMENDER
+// OPTIMAL TALENT RECOMMENDER — Export strings from Method.gg (Symex)
 // ============================================================
 function getOptimalTalents(targetCount, heroTalent) {
   const isAoe = targetCount > 2;
@@ -362,13 +362,14 @@ function getOptimalTalents(targetCount, heroTalent) {
     hero: MIDNIGHT_DATA.talents.hero[heroTalent],
     heroKey: heroTalent,
     mode: isAoe ? 'AoE' : 'Single Target',
+    // Export strings from Method.gg (Symex) — Midnight 12.0.1, updated Feb 26 2026
     exportString: isAoe
       ? (heroTalent === 'sentinel'
-        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxohBwMBbzMzMjZmtZAAAAAAYGzMzYbGPgZMDGTGAAAAwAAYZbmx2MmZMmZAADAjhZWA'
-        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMG2IgZYoBLmZmZmZeglBAAAAAAzYmZGbGjZMDGTGAAAAwAAYZZm5B2MzMDzYAwGAMGzMLA')
+        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNzMzMmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAALbzMziZmZmZGDAMDbMLGjZmNG'
+        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMG2ILwMM0gFzMzMz4BWGAAAAAAMzMzMDzYMjBGTGAAAAwAAYZZmZ2MzMjZGDgZ2AMLGjZmNG')
       : (heroTalent === 'sentinel'
-        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxohBwMBbGzMjZmlBAAAAAAzYmZGMeAzYGMmMAAAAAAgxy2MzsYmZGzMzAAGwwYMjN'
-        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxAQ2gZYoBLGzMzMjlBAAAAAAzYmZGMGzYGMmMAAAAAAgxy2MzsYmZmxMzAYmNADjxM2A')
+        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNjZmxMPwy8AAAAAAAMzMzMDzYMjBGTGAAAAwAAYZbmZWMzMzMzYAgZYjZxYMjNG'
+        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMGWILwMM0gFjZmZmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAwYZbmZWMzMzMzYAMzGgZxYMjNG')
   };
 }
 
