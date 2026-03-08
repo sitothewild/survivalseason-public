@@ -276,10 +276,13 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
   const versBonus = 1 + (stats.versatility || 6) / 100;
   const ap = stats.attackPower || agi * 2.1;
 
-  // Stat multiplier (no AP here — applied per ability)
-  const statMult = hasteBonus * critBonus * masteryBonus * versBonus;
+  // Stat multiplier — haste excluded here (already affects cast speed via GCD)
+  const statMult = critBonus * masteryBonus * versBonus;
   const T = targetCount;
   const gcdBase = 1.5 / hasteBonus;
+
+  // Weapon normalization constant — calibrated so ilvl 230 (~20K AP) produces ~20K ST DPS
+  const WEAPON_NORM = 1.5;
 
   // Rotation time fractions — how much GCD budget each ability uses
   const rot = build === 'st' ? {
@@ -305,11 +308,11 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 
   let breakdown = {};
 
-  // Core calc: (apCoef * AP / 7200) * statMult * castsPerSec * targets
+  // Core calc: (apCoef * AP / WEAPON_NORM) * statMult * castsPerSec * targets
   const calcAbility = (key, uptimeFraction, targetMult) => {
     const spell = MIDNIGHT_DATA.spells[key];
     if (!spell) return 0;
-    const dmgPerCast = spell.apCoef * ap / 7200 * statMult;
+    const dmgPerCast = spell.apCoef * (ap / WEAPON_NORM) * statMult;
     const castsPerSec = uptimeFraction / gcdBase;
     return dmgPerCast * castsPerSec * targetMult;
   };
