@@ -1528,7 +1528,7 @@ export default function SurvivalHunterSim() {
                       <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030', lineHeight: 1.4 }}>
                         Beast procs on Kill Command · Focus regen
                       </div>
-                      <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#a78bfa' }}>
+              <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#d4a030' }}>
                         Dual wield · Bleed talents underperform
                       </div>
                     </button>
