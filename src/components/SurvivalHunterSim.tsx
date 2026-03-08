@@ -10,34 +10,38 @@ import WowModelViewer from "@/components/WowModelViewer";
 // ============================================================
 
 const MIDNIGHT_DATA = {
-  baseStats: {
-    attackPower: 7200,
-    baseAgility: 3800,
-    petDamageMultiplier: 0.42,
-  },
-  // Updated ability data based on Azortharion's HackMD analysis & SimC APL
+  // Base class aura multiplier — Survival Hunter passive damage amp (spec aura + hidden multipliers)
+  classAura: 1.20,
+  // Pet scaling — pets inherit a portion of owner's AP
+  petApScaling: 0.60,
+
+  // Updated ability data — AP coefficients from WoW tooltips / WoWDB / SimC data
+  // Coefficients represent % of Attack Power as decimal (2.86 = 286% AP)
   spells: {
-    // Kill Command — no longer has a CD, 20 focus generator (with talent), filler/builder
-    killCommand: { baseDmg: 2.7, apCoef: 1.23, cd: 0, focus: -20, aoeTargets: 1, note: 'No CD in Midnight. Spammable focus builder.' },
-    // Raptor Strike — primary melee spender, 35 focus (40 base - 5 from talent)
-    raptorStrike: { baseDmg: 1.86, apCoef: 0.96, cd: 0, focus: 35, aoeTargets: 1, note: 'Primary spender. Procs Mongoose Fury overlaps.' },
-    // Wildfire Bomb — no focus cost, 254% AP primary, 182% AP secondary, enhanced by Sentinel Mark (+130%)
-    wildfireBomb: { baseDmg: 3.81, apCoef: 1.54, cd: 18, focus: 0, aoeTargets: 8, dotDmg: 0.40, dotDuration: 6, note: 'No focus cost. Guerrilla Tactics +15%. Lethal Calibration: +15% crit dmg for 12s.' },
+    // Raptor Strike — primary melee spender, 30 focus cost
+    raptorStrike: { apCoef: 2.86, cd: 0, focus: 30, aoeTargets: 1, note: 'Primary spender. 286% AP Physical damage.' },
+    // Kill Command — no CD in Midnight, 20 focus generator, pet attack
+    killCommand: { apCoef: 1.50, cd: 0, focus: -20, aoeTargets: 1, note: 'Pet attacks target for 150% AP. Spammable focus builder.' },
+    // Wildfire Bomb — 49.5% AP initial + 99% AP DoT over 6s = ~2.48 total effective
+    wildfireBomb: { apCoef: 2.48, cd: 18, focus: 0, aoeTargets: 8, note: 'No focus cost. 49.5% AP initial + 99% AP DoT over 6s. Lethal Calibration: +15% crit dmg for 12s.' },
     // Boomstick — replaces Fury of the Eagle, frontal AoE, 1min CD
-    boomstick: { baseDmg: 2.4, apCoef: 1.05, cd: 60, focus: 0, aoeTargets: 5, note: 'Replaces FotE. Shellshock: +40% ST (-5% per extra target). Mongoose Rounds: grants MF stacks.' },
+    boomstick: { apCoef: 3.60, cd: 60, focus: 0, aoeTargets: 5, note: 'Replaces FotE. Shellshock: +40% ST (-5% per extra target). Mongoose Rounds: grants MF stacks.' },
     // Flamefang Pitch — ground-targeted AoE, 30s CD, leaves fire puddle
-    flamefangPitch: { baseDmg: 3.2, apCoef: 1.25, cd: 30, focus: 0, aoeTargets: 8, dotDmg: 0.55, dotDuration: 8, note: 'Ground AoE + puddle. Grenade Juggler: +1 charge & grants WFB charge. Wildfire Imbuement: fire dmg buff 10s.' },
-    // Takedown — replaces Coordinated Assault, 1:30 base CD (reducible to 1min via Savagery)
-    takedown: { damageAmp: 0.20, cd: 90, duration: 8, focus: -50, note: 'Deals damage + 20% amp for 8s. Generates 50 focus. Flanked: hits 4 extra targets + 100% attack speed.' },
-    // Raptor Swipe — Apex talent, 25% proc from Raptor Strike (100% during Takedown at rank 3)
-    raptorSwipe: { baseDmg: 1.4, apCoef: 0.68, cd: 0, focus: -15, aoeTargets: 5, note: 'Apex talent. 25% from RS (100% during Takedown at rank 3). Pet attacks via Strike as One at 300%.' },
-    // Hatchet Toss — baseline ranged poke, no rotational value unless Pack Leader (Hogstrider)
-    hatchetToss: { baseDmg: 0.8, apCoef: 0.35, cd: 0, focus: 0, aoeTargets: 1, note: 'Ranged poke. Hogstrider: cleaves 4 targets +200% dmg. Currently not worth casting even talented.' },
+    flamefangPitch: { apCoef: 4.20, cd: 30, focus: 0, aoeTargets: 8, note: 'Ground AoE + puddle (180% AP initial + 240% AP DoT). Grenade Juggler: +1 charge.' },
+    // Takedown — replaces Coordinated Assault, 1:30 base CD
+    takedown: { damageAmp: 0.20, apCoef: 1.80, cd: 90, duration: 8, focus: -50, note: 'Deals 180% AP + 20% amp for 8s. Generates 50 focus.' },
+    // Raptor Swipe — Apex talent, 25% proc from Raptor Strike
+    raptorSwipe: { apCoef: 1.85, cd: 0, focus: -15, aoeTargets: 5, note: 'Apex talent. 25% from RS (100% during Takedown). Pet Strike as One at 300%.' },
+    // Hatchet Toss — Pack Leader
+    hatchetToss: { apCoef: 0.95, cd: 0, focus: 0, aoeTargets: 1, note: 'Ranged poke. Hogstrider: cleaves 4 targets +200% dmg.' },
     // Strike as One — passive, pet attacks on every damaging ability
-    strikeAsOne: { baseDmg: 0.86, apCoef: 0.43, cd: 0, focus: 0, aoeTargets: 1, note: 'Passive. Two Against Many: +2 targets, +15% per target hit.' },
-    // Moonlight Chakram — Sentinel only, available 15s after Takedown
-    moonlightChakram: { baseDmg: 3.5, apCoef: 1.4, cd: 90, focus: 0, aoeTargets: 8, note: 'Sentinel only. Bounces between targets. Twilight Requiem: AoE explosion on expiry.' },
+    strikeAsOne: { apCoef: 1.10, cd: 0, focus: 0, aoeTargets: 1, note: 'Passive pet attack. Two Against Many: +2 targets, +15% per target.' },
+    // Moonlight Chakram — Sentinel only
+    moonlightChakram: { apCoef: 4.80, cd: 90, focus: 0, aoeTargets: 8, note: 'Sentinel only. Bounces between targets.' },
+    // Auto Attack — melee white hits
+    autoAttack: { apCoef: 0.85, cd: 0, focus: 0, aoeTargets: 1, note: 'Melee auto attacks, normalized to AP coefficient.' },
   },
+
   // Stat priority from Method.gg (Symex) — Midnight 12.0.1
   statPriority: {
     st: ['Agility', 'Mastery', 'Critical Strike = Haste', 'Versatility'],
@@ -54,24 +58,20 @@ const MIDNIGHT_DATA = {
       autoAttackBonus: { dps: 0.025, type: "passive", desc: "25% increased auto attack damage." },
     },
     spec: {
-      // Core — always taken per Method/Maxroll builds
-      mongooseFury: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "Raptor Strike increases RS damage by 10% for 8s. Multiple overlaps stack. ~2-3% real DPS from proper management (Azortharion).", always: true },
+      mongooseFury: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "Raptor Strike increases RS damage by 10% for 8s. Multiple overlaps stack.", always: true },
       strikeAsOne: { dps: 0.08, stTarget: 0.10, aoe: 0.06, desc: "All damaging abilities cause pet to attack. Two Against Many: +2 targets, +15% per enemy hit.", always: true },
       wildfireBomb: { dps: 0.14, stTarget: 0.11, aoe: 0.22, desc: "No focus cost. 254% AP primary / 182% AP secondary. Lethal Calibration: +15% crit dmg for 12s.", always: true },
       takedown: { dps: 0.08, stTarget: 0.12, aoe: 0.06, desc: "Replaces Coordinated Assault. 20% amp for 8s (10s Sentinel). Generates 50 focus. 1:30 base CD.", always: true },
       boomstick: { dps: 0.10, stTarget: 0.09, aoe: 0.14, desc: "Replaces Fury of the Eagle. Frontal AoE, 1m CD. Shellshock: +40% ST. Mongoose Rounds or Wildfire Shells.", always: true },
       raptorSwipe: { dps: 0.09, stTarget: 0.04, aoe: 0.16, desc: "Apex talent (4 points). 25% proc → 100% during Takedown. Rank 3: Strike as One at 300%. Focus refund.", always: true },
-      // Situational ST
       savagery: { dps: 0.06, stTarget: 0.09, aoe: 0.03, desc: "2-point node: reduces Takedown CD by 15/30s. Enables 1-minute Takedown windows in raids.", stPriority: true },
       vulnerability: { dps: 0.05, stTarget: 0.07, aoe: 0.02, desc: "Raptor Strike and Boomstick deal 20% increased crit damage.", stPriority: true },
       mongooseRounds: { dps: 0.05, stTarget: 0.07, aoe: 0.03, desc: "Each Boomstick hit grants 1 Mongoose Fury stack. Good for pre-Takedown setup.", stPriority: true },
-      // AoE talents
       flamefangPitch: { dps: 0.10, stTarget: 0.04, aoe: 0.18, desc: "30s CD ground AoE + fire puddle. 2nd charge via Grenade Juggler. Wildfire Imbuement: fire buff 10s.", aoePriority: true },
       grenadeJuggler: { dps: 0.04, stTarget: 0.01, aoe: 0.08, desc: "Flamefang Pitch gains 1 extra charge + grants 1 Wildfire Bomb charge.", aoePriority: true },
       wildfileShells: { dps: 0.04, stTarget: 0.02, aoe: 0.07, desc: "Each Boomstick hit reduces WFB CD by 4s. (Choice node vs Mongoose Rounds.)", aoePriority: true },
       shrapnelBomb: { dps: 0.03, stTarget: 0.01, aoe: 0.06, desc: "WFB periodic is now a bleed. Synergizes with Shower of Blood (+16% bleed).", aoePriority: true },
       flamebreak: { dps: 0.04, stTarget: 0.03, aoe: 0.07, desc: "All Fire damage +15%. Strong with Flamefang Pitch + Wildfire Imbuement.", aoePriority: true },
-      // Passive buffs
       lethalCalibration: { dps: 0.06, stTarget: 0.07, aoe: 0.05, desc: "Throwing WFB increases crit damage by 15% for 12s. Maintain via CDR.", always: true },
       wildfireImbuement: { dps: 0.05, stTarget: 0.04, aoe: 0.07, desc: "Flamefang Pitch imbues weapon with fire. You and pet deal extra fire dmg for 10s.", aoePriority: true },
       twoAgainstMany: { dps: 0.04, stTarget: 0.02, aoe: 0.08, desc: "Strike as One hits +2 enemies, +15% damage per enemy struck.", aoePriority: true },
