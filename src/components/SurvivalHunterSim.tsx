@@ -689,6 +689,11 @@ export default function SurvivalHunterSim() {
         return st;
       });
 
+      // Calculate stat weights for the primary target scenario (first target count)
+      const primaryBuild = targets[0] === 1 ? 'st' : 'aoe';
+      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild);
+      setStatWeights(sw);
+
       const optimal = getOptimalTalents(targets[targets.length - 1], heroTalent);
       setSimResults(results);
       setOptimalTalents(optimal);
