@@ -943,7 +943,7 @@ export default function SurvivalHunterSim() {
                   <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
                     SIMULATION MODE
                   </label>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div className="sim-mode-grid">
                     {[
                       { key: 'single', label: '🎯 Single Target', sub: '1 target' },
                       { key: 'cleave', label: '⚔ Cleave', sub: '2–3 targets' },
