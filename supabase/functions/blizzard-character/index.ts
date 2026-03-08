@@ -6,16 +6,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-let cachedToken: string | null = null;
-let tokenExpiry = 0;
+// Cache OAuth tokens per region
+const tokenCache: Record<string, { token: string; expiry: number }> = {};
 
-async function getAccessToken(): Promise<string> {
-  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+async function getAccessToken(region = "us"): Promise<string> {
+  const cached = tokenCache[region];
+  if (cached && Date.now() < cached.expiry) return cached.token;
 
-  const clientId = Deno.env.get("BLIZZARD_CLIENT_ID")!;
-  const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET")!;
+  const clientId = Deno.env.get("BLIZZARD_CLIENT_ID");
+  const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET");
 
-  const resp = await fetch("https://oauth.battle.net/token", {
+  if (!clientId || !clientSecret) {
+    throw new Error("BLIZZARD_CLIENT_ID or BLIZZARD_CLIENT_SECRET not configured");
+  }
+
+  // Use region-specific OAuth endpoint to get a region-appropriate token
+  const oauthUrl = region === "cn"
+    ? "https://oauth.battlenet.com.cn/token"
+    : `https://${region}.battle.net/oauth/token`;
+
+  const resp = await fetch(oauthUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -26,21 +36,25 @@ async function getAccessToken(): Promise<string> {
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`OAuth token request failed: ${resp.status} ${text}`);
+    throw new Error(`OAuth token request failed (${oauthHost}): ${resp.status} ${text}`);
   }
 
   const data = await resp.json();
-  cachedToken = data.access_token;
-  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-  return cachedToken!;
+  tokenCache[region] = {
+    token: data.access_token,
+    expiry: Date.now() + (data.expires_in - 60) * 1000,
+  };
+  return data.access_token;
 }
 
 async function blizzardGet(path: string, region: string, namespace: string, locale = "en_US") {
-  const token = await getAccessToken();
+  const token = await getAccessToken(region);
   const host = region === "cn" ? "gateway.battlenet.com.cn" : `${region}.api.blizzard.com`;
-  const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}&access_token=${token}`;
+  const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}`;
 
-  const resp = await fetch(url);
+  const resp = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(`Blizzard API ${resp.status}: ${text}`);
@@ -68,6 +82,55 @@ serve(async (req) => {
     let result: unknown;
 
     switch (action) {
+      // Debug action — returns diagnostic info
+      case "debug": {
+        const clientId = Deno.env.get("BLIZZARD_CLIENT_ID");
+        const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET");
+        let tokenDebug = "not attempted";
+        let profileTest = "not attempted";
+        let gameDataTest = "not attempted";
+        try {
+          // Get raw token response using region-specific endpoint
+          const oauthUrl = `https://${region}.battle.net/oauth/token`;
+          const tokenResp = await fetch(oauthUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: "Basic " + btoa(`${clientId}:${clientSecret}`),
+            },
+            body: "grant_type=client_credentials",
+          });
+          const tokenBody = await tokenResp.text();
+          tokenDebug = `status=${tokenResp.status} body=${tokenBody.substring(0, 300)}`;
+          
+          const tokenData = JSON.parse(tokenBody);
+          const token = tokenData.access_token;
+          
+          const host = `${region}.api.blizzard.com`;
+          
+          // Test profile API with Bearer header
+          const profileUrl = `https://${host}/profile/wow/character/turalyon/blezaa?namespace=profile-${region}&locale=en_US`;
+          const profileResp = await fetch(profileUrl, { headers: { Authorization: `Bearer ${token}` } });
+          profileTest = `status=${profileResp.status} body=${(await profileResp.text()).substring(0, 200)}`;
+          
+          // Test game data API with Bearer header
+          const itemUrl = `https://${host}/data/wow/item/19019?namespace=static-${region}&locale=en_US`;
+          const itemResp = await fetch(itemUrl, { headers: { Authorization: `Bearer ${token}` } });
+          gameDataTest = `status=${itemResp.status} body=${(await itemResp.text()).substring(0, 200)}`;
+        } catch (e) {
+          tokenDebug += ` error: ${e.message}`;
+        }
+        result = {
+          clientId: clientId ? `${clientId.substring(0, 8)}...` : "MISSING",
+          clientIdLength: clientId?.length,
+          secretLength: clientSecret?.length,
+          tokenDebug,
+          profileTest,
+          gameDataTest,
+        };
+        break;
+      }
+
       // Character profile summary
       case "profile": {
         result = await blizzardGet(charBase, region, "profile");
@@ -140,10 +203,10 @@ serve(async (req) => {
       case "realm-search": {
         const { name } = params;
         if (!name) throw new Error("name is required for realm search");
-        const token = await getAccessToken();
+        const token = await getAccessToken(region);
         const host = `${region}.api.blizzard.com`;
-        const url = `https://${host}/data/wow/search/realm?namespace=dynamic-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&access_token=${token}`;
-        const resp = await fetch(url);
+        const url = `https://${host}/data/wow/search/realm?namespace=dynamic-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id`;
+        const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!resp.ok) {
           const text = await resp.text();
           throw new Error(`Realm search failed: ${resp.status} ${text}`);

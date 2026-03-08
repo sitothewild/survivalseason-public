@@ -6,17 +6,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Cache OAuth token in memory (edge function lifetime)
-let cachedToken: string | null = null;
-let tokenExpiry = 0;
+// Cache OAuth tokens per region
+const tokenCache: Record<string, { token: string; expiry: number }> = {};
 
-async function getAccessToken(): Promise<string> {
-  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+async function getAccessToken(region = "us"): Promise<string> {
+  const cached = tokenCache[region];
+  if (cached && Date.now() < cached.expiry) return cached.token;
 
-  const clientId = Deno.env.get("BLIZZARD_CLIENT_ID")!;
-  const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET")!;
+  const clientId = Deno.env.get("BLIZZARD_CLIENT_ID");
+  const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET");
 
-  const resp = await fetch("https://oauth.battle.net/token", {
+  if (!clientId || !clientSecret) {
+    throw new Error("BLIZZARD_CLIENT_ID or BLIZZARD_CLIENT_SECRET not configured");
+  }
+
+  // Use region-specific OAuth endpoint to get a region-appropriate token
+  const oauthUrl = region === "cn"
+    ? "https://oauth.battlenet.com.cn/token"
+    : `https://${region}.battle.net/oauth/token`;
+
+  const resp = await fetch(oauthUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -27,22 +36,25 @@ async function getAccessToken(): Promise<string> {
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`OAuth token request failed: ${resp.status} ${text}`);
+    throw new Error(`OAuth token request failed (${oauthHost}): ${resp.status} ${text}`);
   }
 
   const data = await resp.json();
-  cachedToken = data.access_token;
-  // Expire 60s early for safety
-  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-  return cachedToken!;
+  tokenCache[region] = {
+    token: data.access_token,
+    expiry: Date.now() + (data.expires_in - 60) * 1000,
+  };
+  return data.access_token;
 }
 
 async function blizzardGet(path: string, region: string, namespace: string, locale = "en_US") {
-  const token = await getAccessToken();
+  const token = await getAccessToken(region);
   const host = region === "cn" ? "gateway.battlenet.com.cn" : `${region}.api.blizzard.com`;
-  const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}&access_token=${token}`;
+  const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}`;
 
-  const resp = await fetch(url);
+  const resp = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(`Blizzard API ${resp.status}: ${text}`);
@@ -81,10 +93,10 @@ serve(async (req) => {
       case "item-search": {
         const { name, page = 1 } = params;
         if (!name) throw new Error("name is required");
-        const token = await getAccessToken();
+        const token = await getAccessToken(region);
         const host = `${region}.api.blizzard.com`;
-        const url = `https://${host}/data/wow/search/item?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&_page=${page}&access_token=${token}`;
-        const resp = await fetch(url);
+        const url = `https://${host}/data/wow/search/item?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&_page=${page}`;
+        const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!resp.ok) {
           const text = await resp.text();
           throw new Error(`Search failed: ${resp.status} ${text}`);
@@ -142,13 +154,13 @@ serve(async (req) => {
         const { itemIds } = params;
         if (!itemIds || !Array.isArray(itemIds)) throw new Error("itemIds array is required");
         const ids = itemIds.slice(0, 20); // limit to 20
-        const token = await getAccessToken();
+        const token = await getAccessToken(region);
         const host = `${region}.api.blizzard.com`;
         const results = await Promise.all(
           ids.map(async (id: number) => {
             try {
-              const url = `https://${host}/data/wow/item/${id}?namespace=static-${region}&locale=en_US&access_token=${token}`;
-              const resp = await fetch(url);
+              const url = `https://${host}/data/wow/item/${id}?namespace=static-${region}&locale=en_US`;
+              const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
               if (!resp.ok) {
                 const text = await resp.text();
                 return { id, error: `${resp.status}: ${text}` };
