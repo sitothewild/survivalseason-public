@@ -221,17 +221,16 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
   const agi = stats.agility || 9500;
   const hasteBonus = 1 + (stats.haste || 8) / 100;
   const critBonus = 1 + ((stats.crit || 12) / 100) * 0.5;
-  // Mastery: Spirit Bond — top secondary in Midnight (Method.gg)
   const masteryBonus = 1 + (stats.mastery || 10) / 100 * 0.9;
   const versBonus = 1 + (stats.versatility || 6) / 100;
   const ap = stats.attackPower || agi * 2.1;
 
-  const baseScalar = (ap / 7200) * hasteBonus * critBonus * masteryBonus * versBonus;
+  // Stat multiplier (no AP here — applied per ability)
+  const statMult = hasteBonus * critBonus * masteryBonus * versBonus;
   const T = targetCount;
   const gcdBase = 1.5 / hasteBonus;
 
-  // Rotation model — Azortharion APL:
-  // WFB (Sentinel's Mark / Lethal Cal) > Pitch/Boomstick > Takedown > RS dump > KC rebuild
+  // Rotation time fractions — how much GCD budget each ability uses
   const rot = build === 'st' ? {
     raptorStrike: 0.32,
     killCommand: 0.22,
@@ -254,45 +253,49 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
   };
 
   let breakdown = {};
+
+  // Core calc: (apCoef * AP / 7200) * statMult * castsPerSec * targets
   const calcAbility = (key, uptimeFraction, targetMult) => {
     const spell = MIDNIGHT_DATA.spells[key];
     if (!spell) return 0;
-    const dmgPerCast = (spell.baseDmg * ap * spell.apCoef / 7200) * baseScalar;
+    const dmgPerCast = spell.apCoef * ap / 7200 * statMult;
     const castsPerSec = uptimeFraction / gcdBase;
     return dmgPerCast * castsPerSec * targetMult;
   };
 
-  // Raptor Strike — primary spender, Mongoose Fury overlap bonus ~35%
+  // Raptor Strike — primary spender, Mongoose Fury overlap ~35% bonus
   breakdown['Raptor Strike'] = calcAbility('raptorStrike', rot.raptorStrike || 0, 1) * 1.35;
 
   // Kill Command — no CD, spammable focus builder
   breakdown['Kill Command'] = calcAbility('killCommand', rot.killCommand || 0, 1);
 
-  // Wildfire Bomb — 254% AP primary, dot included
+  // Wildfire Bomb — 8 target AoE, DoT component adds ~25%
   breakdown['Wildfire Bomb'] = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8)) * 1.25;
 
   // Boomstick — Shellshock: +40% ST, -5% per extra target
   const shellshockMult = T === 1 ? 1.40 : Math.max(1, 1.40 - (T - 1) * 0.05);
   breakdown['Boomstick'] = calcAbility('boomstick', rot.boomstick || 0, Math.min(T, 5)) * shellshockMult;
 
-  // Raptor Swipe (Apex)
+  // Raptor Swipe (Apex talent)
   breakdown['Raptor Swipe'] = calcAbility('raptorSwipe', rot.raptorSwipe || 0, Math.min(T, 5));
 
-  // Flamefang Pitch (AoE)
+  // Flamefang Pitch (AoE build)
   if (build === 'aoe' && rot.flamefangPitch) {
     breakdown['Flamefang Pitch'] = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8)) * 1.35;
   }
 
-  // Strike as One — passive pet attacks from all abilities
+  // Strike as One — passive pet attacks from all abilities (~5-8% of total)
   const totalUptime = Object.values(rot).reduce((s, v) => s + v, 0);
-  breakdown['Strike as One'] = (0.86 * ap * 0.43 / 7200) * baseScalar * (totalUptime / gcdBase) * Math.min(T, 3);
+  breakdown['Strike as One'] = (0.43 * ap / 7200) * statMult * (totalUptime / gcdBase) * Math.min(T, 3);
 
-  // Pet baseline (Spirit Bond mastery scaling)
-  breakdown['Pet (Spirit Bond)'] = (ap * 0.42) * baseScalar * 0.80 * masteryBonus * 0.5 * (build === 'st' ? 1 : 0.80);
+  // Pet baseline damage (Spirit Bond mastery scaling, auto attacks + basic attacks)
+  // Pet does ~8-12% of total damage; mastery already in statMult, apply pet-specific scalar
+  breakdown['Pet (Spirit Bond)'] = (0.42 * ap / 7200) * statMult * 0.65 * (build === 'st' ? 1 : 0.80);
 
   // Lethal Calibration (+15% crit dmg uptime from WFB)
   const lcUptime = Math.min(1, 12 / (18 / hasteBonus));
-  breakdown['Lethal Calibration'] = (breakdown['Raptor Strike'] + breakdown['Kill Command'] + breakdown['Boomstick'] + breakdown['Raptor Swipe']) * 0.15 * lcUptime * (stats.crit || 12) / 100;
+  const lcBase = (breakdown['Raptor Strike'] + breakdown['Kill Command'] + breakdown['Boomstick'] + breakdown['Raptor Swipe']);
+  breakdown['Lethal Calibration'] = lcBase * 0.15 * lcUptime * (stats.crit || 12) / 100;
 
   // Moonlight Chakram (Sentinel)
   if (heroTalent === 'sentinel' && rot.moonlightChakram) {
@@ -304,7 +307,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
     breakdown['Hatchet Toss'] = calcAbility('hatchetToss', rot.hatchetToss, Math.min(T, 4));
   }
 
-  // Takedown (20% amp for 8-10s)
+  // Takedown (20% amp for 8-10s window)
   const tdDur = heroTalent === 'sentinel' ? 10 : 8;
   const tdCD = 90 - (build === 'st' ? 30 : 15);
   const tdUptime = tdDur / tdCD;
