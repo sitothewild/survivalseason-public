@@ -1,1 +1,7 @@
 project_id = "fohjashmaedmmwvjtxwv"
+
+[functions.blizzard-game-data]
+verify_jwt = false
+
+[functions.blizzard-character]
+verify_jwt = false

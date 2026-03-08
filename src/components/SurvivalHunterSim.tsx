@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect } from "react";
+import { getFullCharacter, equipmentToSimData, getItemsBatch } from "@/lib/blizzardApi";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -473,6 +474,14 @@ export default function SurvivalHunterSim() {
   const [targetCount, setTargetCount] = useState(1);
   const [copied, setCopied] = useState(false);
   const [particles, setParticles] = useState([]);
+  // Armory Lookup state
+  const [armoryRealm, setArmoryRealm] = useState('');
+  const [armoryName, setArmoryName] = useState('');
+  const [armoryRegion, setArmoryRegion] = useState('us');
+  const [armoryLoading, setArmoryLoading] = useState(false);
+  const [armoryError, setArmoryError] = useState('');
+  const [armoryAvatar, setArmoryAvatar] = useState('');
+  const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
 
   useEffect(() => {
     const ps = Array.from({ length: 18 }, (_, i) => ({
@@ -501,6 +510,76 @@ export default function SurvivalHunterSim() {
     setSimResults(null);
     setParseError('');
   };
+
+  const handleArmoryLookup = useCallback(async () => {
+    if (!armoryRealm.trim() || !armoryName.trim()) {
+      setArmoryError('Enter both realm and character name.');
+      return;
+    }
+    setArmoryLoading(true);
+    setArmoryError('');
+    setArmoryAvatar('');
+    try {
+      const fullData = await getFullCharacter(
+        armoryRealm.trim().toLowerCase().replace(/\s+/g, '-'),
+        armoryName.trim().toLowerCase(),
+        armoryRegion
+      );
+
+      if (fullData.profile?.error) {
+        throw new Error(fullData.profile.error);
+      }
+
+      const simData = equipmentToSimData(fullData);
+
+      // Check if character is a survival hunter
+      if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') {
+        setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival. Results may be inaccurate.`);
+      }
+
+      setParsedChar(simData);
+      setSimResults(null);
+
+      // Extract avatar
+      if (fullData.media?.assets) {
+        const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
+        if (avatar?.value) setArmoryAvatar(avatar.value);
+      }
+
+      // Enrich gear with Blizzard item data
+      const itemIds = simData.gear.filter((g: any) => g.itemId).map((g: any) => parseInt(g.itemId));
+      if (itemIds.length > 0) {
+        setItemEnrichLoading(true);
+        try {
+          const items = await getItemsBatch(itemIds, armoryRegion);
+          if (Array.isArray(items)) {
+            const itemMap = {};
+            items.forEach((item: any) => {
+              if (item.id) itemMap[item.id] = item;
+            });
+            // Update gear names from API data
+            const enrichedGear = simData.gear.map((g: any) => {
+              if (g.itemId && itemMap[g.itemId]) {
+                const apiItem = itemMap[g.itemId];
+                return { ...g, name: apiItem.name || g.name };
+              }
+              return g;
+            });
+            setParsedChar(prev => prev ? { ...prev, gear: enrichedGear } : prev);
+          }
+        } catch (e) {
+          console.warn('Item enrichment failed:', e);
+        } finally {
+          setItemEnrichLoading(false);
+        }
+      }
+    } catch (err) {
+      setArmoryError(err.message || 'Failed to look up character.');
+      setParsedChar(null);
+    } finally {
+      setArmoryLoading(false);
+    }
+  }, [armoryRealm, armoryName, armoryRegion]);
 
   const getTargets = () => {
     if (simMode === 'single') return [1];
@@ -924,6 +1003,55 @@ export default function SurvivalHunterSim() {
 
             {/* LEFT: Inputs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* Armory Lookup */}
+              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
+                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 12px' }}>
+                  🌐 ARMORY LOOKUP
+                </h3>
+                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#6a5030', marginBottom: 10 }}>
+                  Pull your character directly from the WoW Armory — no addon needed
+                </p>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  {['us', 'eu', 'kr', 'tw'].map(r => (
+                    <button key={r} className={`mode-btn ${armoryRegion === r ? 'active' : ''}`}
+                      onClick={() => setArmoryRegion(r)}
+                      style={{ flex: 1, padding: '6px 8px', fontSize: 11, textTransform: 'uppercase' }}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                  <input className="input-field" placeholder="Realm (e.g. tichondrius)"
+                    value={armoryRealm} onChange={e => setArmoryRealm(e.target.value)} />
+                  <input className="input-field" placeholder="Character name"
+                    value={armoryName} onChange={e => setArmoryName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()} />
+                </div>
+                {armoryError && (
+                  <div style={{ color: armoryError.startsWith('Warning') ? '#f59e0b' : '#ef4444', fontSize: 12, marginBottom: 8, fontFamily: "'EB Garamond', serif" }}>
+                    ⚠ {armoryError}
+                  </div>
+                )}
+                <button onClick={handleArmoryLookup} disabled={armoryLoading}
+                  style={{
+                    width: '100%', background: armoryLoading ? '#1a1208' : '#0e1a1e', border: '1px solid #1a3a4a',
+                    borderRadius: 6, padding: '10px', color: '#38bdf8', fontFamily: "'Cinzel', serif",
+                    fontSize: 11, letterSpacing: 2, cursor: armoryLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
+                  }}>
+                  {armoryLoading ? '⟳ LOOKING UP...' : '🔍 FETCH FROM ARMORY'}
+                </button>
+                {armoryAvatar && (
+                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <img src={armoryAvatar} alt="Character avatar" style={{ width: 40, height: 40, borderRadius: 4, border: '1px solid #3a2810' }} />
+                    <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#86efac' }}>
+                      ✓ Character loaded from Armory
+                      {itemEnrichLoading && <span style={{ color: '#f59e0b' }}> · Enriching item names...</span>}
+                    </span>
+                  </div>
+                )}
+                <div className="divider" style={{ margin: '16px 0 0' }} />
+              </div>
 
               {/* SimC Import */}
               <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>

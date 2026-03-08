@@ -1,0 +1,179 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+// Cache OAuth token in memory (edge function lifetime)
+let cachedToken: string | null = null;
+let tokenExpiry = 0;
+
+async function getAccessToken(): Promise<string> {
+  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+
+  const clientId = Deno.env.get("BLIZZARD_CLIENT_ID")!;
+  const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET")!;
+
+  const resp = await fetch("https://oauth.battle.net/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: "Basic " + btoa(`${clientId}:${clientSecret}`),
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`OAuth token request failed: ${resp.status} ${text}`);
+  }
+
+  const data = await resp.json();
+  cachedToken = data.access_token;
+  // Expire 60s early for safety
+  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+  return cachedToken!;
+}
+
+async function blizzardGet(path: string, region: string, namespace: string, locale = "en_US") {
+  const token = await getAccessToken();
+  const host = region === "cn" ? "gateway.battlenet.com.cn" : `${region}.api.blizzard.com`;
+  const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}&access_token=${token}`;
+
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Blizzard API ${resp.status}: ${text}`);
+  }
+  return resp.json();
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { action, region = "us", ...params } = await req.json();
+
+    let result: unknown;
+
+    switch (action) {
+      // Get a single item by ID
+      case "item": {
+        const { itemId } = params;
+        if (!itemId) throw new Error("itemId is required");
+        result = await blizzardGet(`/data/wow/item/${itemId}`, region, "static");
+        break;
+      }
+
+      // Get item media (icon)
+      case "item-media": {
+        const { itemId } = params;
+        if (!itemId) throw new Error("itemId is required");
+        result = await blizzardGet(`/data/wow/media/item/${itemId}`, region, "static");
+        break;
+      }
+
+      // Search items by name
+      case "item-search": {
+        const { name, page = 1 } = params;
+        if (!name) throw new Error("name is required");
+        const token = await getAccessToken();
+        const host = `${region}.api.blizzard.com`;
+        const url = `https://${host}/data/wow/search/item?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&_page=${page}&access_token=${token}`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`Search failed: ${resp.status} ${text}`);
+        }
+        result = await resp.json();
+        break;
+      }
+
+      // Get playable specialization (e.g., Survival Hunter = 255)
+      case "specialization": {
+        const { specId } = params;
+        if (!specId) throw new Error("specId is required");
+        result = await blizzardGet(`/data/wow/playable-specialization/${specId}`, region, "static");
+        break;
+      }
+
+      // Get playable class by ID (Hunter = 3)
+      case "class": {
+        const { classId } = params;
+        if (!classId) throw new Error("classId is required");
+        result = await blizzardGet(`/data/wow/playable-class/${classId}`, region, "static");
+        break;
+      }
+
+      // Get item classes index (weapon types, armor types, etc.)
+      case "item-classes": {
+        result = await blizzardGet("/data/wow/item-class/index", region, "static");
+        break;
+      }
+
+      // Get item subclass
+      case "item-subclass": {
+        const { itemClassId, itemSubclassId } = params;
+        if (!itemClassId || !itemSubclassId) throw new Error("itemClassId and itemSubclassId required");
+        result = await blizzardGet(`/data/wow/item-class/${itemClassId}/item-subclass/${itemSubclassId}`, region, "static");
+        break;
+      }
+
+      // Get item set by ID
+      case "item-set": {
+        const { itemSetId } = params;
+        if (!itemSetId) throw new Error("itemSetId is required");
+        result = await blizzardGet(`/data/wow/item-set/${itemSetId}`, region, "static");
+        break;
+      }
+
+      // Get playable races index (for character renders fallback)
+      case "races": {
+        result = await blizzardGet("/data/wow/playable-race/index", region, "static");
+        break;
+      }
+
+      // Batch: fetch multiple items at once (up to 20)
+      case "items-batch": {
+        const { itemIds } = params;
+        if (!itemIds || !Array.isArray(itemIds)) throw new Error("itemIds array is required");
+        const ids = itemIds.slice(0, 20); // limit to 20
+        const token = await getAccessToken();
+        const host = `${region}.api.blizzard.com`;
+        const results = await Promise.all(
+          ids.map(async (id: number) => {
+            try {
+              const url = `https://${host}/data/wow/item/${id}?namespace=static-${region}&locale=en_US&access_token=${token}`;
+              const resp = await fetch(url);
+              if (!resp.ok) {
+                const text = await resp.text();
+                return { id, error: `${resp.status}: ${text}` };
+              }
+              return await resp.json();
+            } catch (e) {
+              return { id, error: e.message };
+            }
+          })
+        );
+        result = results;
+        break;
+      }
+
+      default:
+        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
+    }
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
