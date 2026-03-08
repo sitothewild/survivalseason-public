@@ -214,51 +214,46 @@ function parseSimcString(simcText) {
 
 // ============================================================
 // CORE DPS SIMULATION ENGINE
+// Sources: SimC APL, Azortharion rotation priority, Method.gg coefficients
 // ============================================================
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
   const stats = charData.stats;
   const agi = stats.agility || 9500;
   const hasteBonus = 1 + (stats.haste || 8) / 100;
   const critBonus = 1 + ((stats.crit || 12) / 100) * 0.5;
-  const masteryBonus = 1 + (stats.mastery || 10) / 100 * 0.8;
+  // Mastery: Spirit Bond — top secondary in Midnight (Method.gg)
+  const masteryBonus = 1 + (stats.mastery || 10) / 100 * 0.9;
   const versBonus = 1 + (stats.versatility || 6) / 100;
   const ap = stats.attackPower || agi * 2.1;
 
-  // Base scalar
   const baseScalar = (ap / 7200) * hasteBonus * critBonus * masteryBonus * versBonus;
-
-  // Ability DPS contributions (per target capped at AoE limits, ST mode = 1 target)
-  const effTargets = (t) => Math.min(t, 8); // most SV abilities cap ~8
   const T = targetCount;
-
-  // Rotation model: approximate GCD-based uptime over fight duration
   const gcdBase = 1.5 / hasteBonus;
-  const totalGCDs = fightDuration / gcdBase;
 
-  // Uptime weights per ability (fraction of GCDs spent)
+  // Rotation model — Azortharion APL:
+  // WFB (Sentinel's Mark / Lethal Cal) > Pitch/Boomstick > Takedown > RS dump > KC rebuild
   const rot = build === 'st' ? {
-    killCommand: 0.18,
-    mongooseBite: 0.30,
-    tipOfSpear: 0.00, // passive
-    wildfireBomb: 0.08,
-    boomstick: 0.06,
-    serpentSting: 0.04,
-    takedown: 0.02,
-  } : {
-    killCommand: 0.14,
-    raptorSwipe: 0.20,
-    mongooseBite: 0.12,
+    raptorStrike: 0.32,
+    killCommand: 0.22,
     wildfireBomb: 0.10,
-    boomstick: 0.10,
-    flamefangPitch: 0.06,
-    serpentSting: 0.03,
-    takedown: 0.02,
+    boomstick: 0.06,
+    takedown: 0.03,
+    raptorSwipe: 0.04,
+    moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
+    hatchetToss: heroTalent === 'packLeader' ? 0.01 : 0,
+  } : {
+    raptorStrike: 0.18,
+    killCommand: 0.14,
+    wildfireBomb: 0.12,
+    boomstick: 0.08,
+    flamefangPitch: 0.08,
+    takedown: 0.03,
+    raptorSwipe: 0.10,
+    moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
+    hatchetToss: heroTalent === 'packLeader' ? 0.02 : 0,
   };
 
-  // DPS per ability
   let breakdown = {};
-  let totalDps = 0;
-
   const calcAbility = (key, uptimeFraction, targetMult) => {
     const spell = MIDNIGHT_DATA.spells[key];
     if (!spell) return 0;
@@ -267,94 +262,85 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
     return dmgPerCast * castsPerSec * targetMult;
   };
 
-  // Kill Command
-  const kcDps = calcAbility('killCommand', rot.killCommand || 0, 1);
-  breakdown['Kill Command'] = kcDps;
+  // Raptor Strike — primary spender, Mongoose Fury overlap bonus ~35%
+  breakdown['Raptor Strike'] = calcAbility('raptorStrike', rot.raptorStrike || 0, 1) * 1.35;
 
-  // Mongoose Bite / Raptor Swipe
-  const mbDps = calcAbility('mongooseBite', rot.mongooseBite || 0, 1) * 1.45; // fury stacks avg
-  breakdown['Mongoose Bite'] = mbDps;
+  // Kill Command — no CD, spammable focus builder
+  breakdown['Kill Command'] = calcAbility('killCommand', rot.killCommand || 0, 1);
 
-  if (build === 'aoe') {
-    const rsDps = calcAbility('raptorSwipe', rot.raptorSwipe || 0, Math.min(T, 5));
-    breakdown['Raptor Swipe'] = rsDps;
-  }
+  // Wildfire Bomb — 254% AP primary, dot included
+  breakdown['Wildfire Bomb'] = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8)) * 1.25;
 
-  // Wildfire Bomb
-  const wfbDps = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8)) * 1.3; // dot included
-  breakdown['Wildfire Bomb'] = wfbDps;
+  // Boomstick — Shellshock: +40% ST, -5% per extra target
+  const shellshockMult = T === 1 ? 1.40 : Math.max(1, 1.40 - (T - 1) * 0.05);
+  breakdown['Boomstick'] = calcAbility('boomstick', rot.boomstick || 0, Math.min(T, 5)) * shellshockMult;
 
-  // Boomstick
-  const bsDps = calcAbility('boomstick', rot.boomstick || 0, Math.min(T, 5));
-  breakdown['Boomstick'] = bsDps;
+  // Raptor Swipe (Apex)
+  breakdown['Raptor Swipe'] = calcAbility('raptorSwipe', rot.raptorSwipe || 0, Math.min(T, 5));
 
-  // Flamefang Pitch (AoE build)
+  // Flamefang Pitch (AoE)
   if (build === 'aoe' && rot.flamefangPitch) {
-    const ffDps = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8)) * 1.4;
-    breakdown['Flamefang Pitch'] = ffDps;
+    breakdown['Flamefang Pitch'] = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8)) * 1.35;
   }
 
-  // Serpent Sting
-  const ssDps = (ap * 0.38 * 0.35 / 7200) * baseScalar * (Math.min(T, 3)) * 0.6;
-  breakdown['Serpent Sting'] = ssDps;
+  // Strike as One — passive pet attacks from all abilities
+  const totalUptime = Object.values(rot).reduce((s, v) => s + v, 0);
+  breakdown['Strike as One'] = (0.86 * ap * 0.43 / 7200) * baseScalar * (totalUptime / gcdBase) * Math.min(T, 3);
 
-  // Pet DPS
-  const petDps = (ap * 0.42) * baseScalar * 0.85;
-  breakdown['Pet (Kill Command procs)'] = petDps * (build === 'st' ? 1 : 0.75);
+  // Pet baseline (Spirit Bond mastery scaling)
+  breakdown['Pet (Spirit Bond)'] = (ap * 0.42) * baseScalar * 0.80 * masteryBonus * 0.5 * (build === 'st' ? 1 : 0.80);
 
-  // Tip of Spear passive on top
-  const tipBonus = (mbDps + kcDps) * 0.10;
-  breakdown['Tip of the Spear (passive)'] = tipBonus;
+  // Lethal Calibration (+15% crit dmg uptime from WFB)
+  const lcUptime = Math.min(1, 12 / (18 / hasteBonus));
+  breakdown['Lethal Calibration'] = (breakdown['Raptor Strike'] + breakdown['Kill Command'] + breakdown['Boomstick'] + breakdown['Raptor Swipe']) * 0.15 * lcUptime * (stats.crit || 12) / 100;
 
-  // Takedown cooldown contribution
-  const takedownUptime = Math.min(20, fightDuration) / fightDuration;
-  const takedownBonus = Object.values(breakdown).reduce((s, v) => s + v, 0) * 0.20 * takedownUptime;
-  breakdown['Takedown (CD)'] = takedownBonus;
+  // Moonlight Chakram (Sentinel)
+  if (heroTalent === 'sentinel' && rot.moonlightChakram) {
+    breakdown['Moonlight Chakram'] = calcAbility('moonlightChakram', rot.moonlightChakram, Math.min(T, 8));
+  }
+
+  // Hatchet Toss (Pack Leader)
+  if (heroTalent === 'packLeader' && rot.hatchetToss) {
+    breakdown['Hatchet Toss'] = calcAbility('hatchetToss', rot.hatchetToss, Math.min(T, 4));
+  }
+
+  // Takedown (20% amp for 8-10s)
+  const tdDur = heroTalent === 'sentinel' ? 10 : 8;
+  const tdCD = 90 - (build === 'st' ? 30 : 15);
+  const tdUptime = tdDur / tdCD;
+  breakdown['Takedown (20% amp)'] = Object.values(breakdown).reduce((s, v) => s + v, 0) * 0.20 * tdUptime;
 
   // Hero talent bonus
   const heroData = MIDNIGHT_DATA.talents.hero[heroTalent];
-  const heroBonusPct = build === 'st' ? heroData.stBonus : heroData.aoeBonus;
+  const heroPct = build === 'st' ? heroData.stBonus : heroData.aoeBonus;
   const baseTotal = Object.values(breakdown).reduce((s, v) => s + v, 0);
-  const heroBonus = baseTotal * heroBonusPct;
-  breakdown[`${heroData.name} (hero)`] = heroBonus;
+  if (heroTalent === 'sentinel') {
+    breakdown['Sentinel Mark + Lunar Storm'] = baseTotal * heroPct;
+  } else {
+    breakdown['Pack Leader Beasts'] = baseTotal * heroPct;
+  }
 
-  // Coordinated Assault CD contribution
-  const caUptime = Math.min(20, fightDuration) / fightDuration;
-  const caBonus = (baseTotal + heroBonus) * 0.25 * caUptime * 0.6;
-  breakdown['Coordinated Assault (CD)'] = caBonus;
+  let totalDps = Object.values(breakdown).reduce((s, v) => s + v, 0);
 
-  // Sum all
-  totalDps = Object.values(breakdown).reduce((s, v) => s + v, 0);
-
-  // Apply multi-target diminishing returns (Survival has strong cleave but not unlimited)
+  // Multi-target diminishing returns
   if (T > 1) {
     const cleaveFactor = T <= 3 ? 1 + (T - 1) * 0.55
       : T <= 5 ? 2.1 + (T - 3) * 0.35
       : T <= 8 ? 2.8 + (T - 5) * 0.20
       : 3.4 + (T - 8) * 0.12;
-    // Re-normalize: single target baseline * cleave factor
-    const stDps = totalDps / (1 + heroBonusPct);
-    totalDps = stDps * cleaveFactor * (1 + heroBonusPct * 0.8);
+    const stDps = totalDps / (1 + heroPct);
+    totalDps = stDps * cleaveFactor * (1 + heroPct * 0.8);
   }
 
-  // Fight duration bonus (longer fights = more cooldown uses)
   const cdEfficiency = Math.min(1.12, 1 + (fightDuration - 180) / 900 * 0.12);
   totalDps *= cdEfficiency;
 
-  // Normalize breakdown to match total
   const rawSum = Object.values(breakdown).reduce((s, v) => s + v, 0);
   const normFactor = totalDps / rawSum;
   Object.keys(breakdown).forEach(k => { breakdown[k] = Math.round(breakdown[k] * normFactor); });
 
-  return {
-    totalDps: Math.round(totalDps),
-    breakdown,
-    targets: T,
-    duration: fightDuration,
-    hero: heroTalent,
-    build
-  };
-};
+  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build };
+}
 
 // ============================================================
 // OPTIMAL TALENT RECOMMENDER
