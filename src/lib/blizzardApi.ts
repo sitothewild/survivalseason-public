@@ -80,7 +80,7 @@ export function equipmentToSimData(fullData: any) {
   // Extract stats from Blizzard API character statistics
   // The API returns: agility.effective, attack_power (number), melee_crit.value (%), etc.
   const agility = charStats?.agility?.effective || charStats?.agility?.base || 0;
-  const attackPower = (typeof charStats?.attack_power === 'number' ? charStats.attack_power : charStats?.attack_power?.effective) || agility * 2.0;
+  const attackPower = (typeof charStats?.attack_power === 'number' ? charStats.attack_power : charStats?.attack_power?.effective) || Math.round(agility * 1.05);
 
   // Secondary stats — use effective percentage values from the API
   // The API provides .value as the actual % (e.g., 25.5 = 25.5%)
