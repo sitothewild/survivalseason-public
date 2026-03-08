@@ -1518,7 +1518,7 @@ export default function SurvivalHunterSim() {
                       <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030', lineHeight: 1.4 }}>
                         Owl procs on WFB · Resets WFB CD · Best overall
                       </div>
-                      <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#38bdf8' }}>
+              <div style={{ marginTop: 6, fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#f0a830' }}>
                         ★ Currently Recommended · 2H weapon
                       </div>
                     </button>
