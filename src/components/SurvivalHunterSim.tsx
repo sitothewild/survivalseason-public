@@ -474,7 +474,7 @@ export default function SurvivalHunterSim() {
   const sentinelSelected = heroTalent === 'sentinel';
 
   return (
-    <div style={{
+    <div className="sim-root" style={{
       minHeight: '100vh', background: '#0a0c10', color: '#e8dcc8',
       fontFamily: "'Cinzel Decorative', 'Palatino Linotype', serif",
       position: 'relative', overflow: 'hidden'
@@ -644,36 +644,147 @@ export default function SurvivalHunterSim() {
           margin: 0 auto;
         }
 
+        .sim-root {
+          width: 100%;
+          overflow-x: hidden;
+        }
+
+        .sim-shell {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 24px 20px;
+        }
+
+        .tabs-row {
+          display: flex;
+          border-bottom: 1px solid #1a1208;
+          margin-bottom: 28px;
+          gap: 4px;
+        }
+
+        .sim-mode-grid {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
         .responsive-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 24px;
         }
+
         .hero-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
         }
+
         .stats-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 6px;
         }
+
+        .result-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 14px;
+          gap: 10px;
+        }
+
+        .breakdown-head {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 3px;
+          gap: 8px;
+        }
+
+        .breakdown-label {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+
+        .breakdown-value {
+          white-space: nowrap;
+        }
+
         @media (max-width: 768px) {
+          .sim-shell {
+            padding: 16px 12px;
+          }
+
           .responsive-grid {
             grid-template-columns: 1fr;
+            gap: 16px;
           }
-          .hero-grid {
+
+          .hero-grid,
+          .stats-grid {
             grid-template-columns: 1fr;
           }
+
+          .tabs-row {
+            flex-wrap: wrap;
+            gap: 2px;
+          }
+
           .tab-btn {
-            padding: 10px 12px;
+            flex: 1 1 calc(50% - 2px);
+            min-width: 0;
+            text-align: center;
+            padding: 10px 8px;
             font-size: 10px;
             letter-spacing: 1px;
           }
+
           .mode-btn {
+            flex: 1 1 100% !important;
             padding: 8px 10px;
             font-size: 10px;
+          }
+
+          .hero-btn {
+            padding: 12px 14px;
+          }
+
+          .sim-btn {
+            padding: 14px 16px;
+            font-size: 12px;
+            letter-spacing: 1px;
+            width: 100%;
+          }
+
+          .title-row {
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+
+          .glow-text {
+            letter-spacing: 2px !important;
+          }
+
+          .subtitle-line {
+            letter-spacing: 2px !important;
+            font-size: 10px !important;
+          }
+
+          .result-card {
+            padding: 14px !important;
+          }
+
+          .result-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+          }
+
+          .breakdown-value {
+            font-size: 11px !important;
           }
         }
       `}</style>
@@ -697,11 +808,11 @@ export default function SurvivalHunterSim() {
         backgroundSize: '40px 40px'
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '24px 20px' }}>
+      <div className="sim-shell">
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+          <div className="title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
             <div style={{ fontSize: 28 }}>🦅</div>
             <h1 className="glow-text" style={{
               fontFamily: "'Cinzel Decorative', serif", fontSize: 'clamp(20px, 3vw, 32px)',
@@ -713,7 +824,7 @@ export default function SurvivalHunterSim() {
             </h1>
             <div style={{ fontSize: 28 }}>🔥</div>
           </div>
-          <p style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: '#7a6040', margin: 0 }}>
+          <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: '#7a6040', margin: 0 }}>
             MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
           </p>
           <div className="divider" style={{ margin: '16px auto', maxWidth: 400 }} />
@@ -723,7 +834,7 @@ export default function SurvivalHunterSim() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #1a1208', marginBottom: 28, gap: 4 }}>
+        <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #1a1208', marginBottom: 28, gap: 4 }}>
           <button className={`tab-btn ${activeTab === 'sim' ? 'active' : ''}`} onClick={() => setActiveTab('sim')}>⚔ Simulator</button>
           <button className={`tab-btn ${activeTab === 'talents' ? 'active' : ''}`} onClick={() => setActiveTab('talents')}>🌿 Talents</button>
           <button className={`tab-btn ${activeTab === 'guide' ? 'active' : ''}`} onClick={() => setActiveTab('guide')}>📖 Guide</button>
@@ -832,7 +943,7 @@ export default function SurvivalHunterSim() {
                   <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
                     SIMULATION MODE
                   </label>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div className="sim-mode-grid">
                     {[
                       { key: 'single', label: '🎯 Single Target', sub: '1 target' },
                       { key: 'cleave', label: '⚔ Cleave', sub: '2–3 targets' },
@@ -910,7 +1021,7 @@ export default function SurvivalHunterSim() {
                         background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20,
                         animationDelay: `${ri * 0.1}s`
                       }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                        <div className="result-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                           <div>
                             <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#7a6040', marginBottom: 4 }}>
                               {result.targets === 1 ? '🎯 SINGLE TARGET' : result.targets <= 3 ? `⚔ CLEAVE (${result.targets} targets)` : `💥 MULTI-TARGET (${result.targets} targets)`}
@@ -934,9 +1045,9 @@ export default function SurvivalHunterSim() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {sortedBreakdown.map(([key, val]) => (
                             <div key={key}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#8a7050' }}>{key}</span>
-                                <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870' }}>
+                              <div className="breakdown-head" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                <span className="breakdown-label" style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#8a7050' }}>{key}</span>
+                                <span className="breakdown-value" style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870' }}>
                                   {formatDps(val)} ({Math.round(val / result.totalDps * 100)}%)
                                 </span>
                               </div>
