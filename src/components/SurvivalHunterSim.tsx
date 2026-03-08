@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
+import WowModelViewer from "@/components/WowModelViewer";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
