@@ -486,12 +486,12 @@ export default function SurvivalHunterSim() {
 
   const getBarColor = (key) => {
     const colors = {
-      'Kill Command': '#f97316', 'Mongoose Bite': '#ef4444', 'Wildfire Bomb': '#f59e0b',
+      'Kill Command': '#f97316', 'Raptor Strike': '#ef4444', 'Wildfire Bomb': '#f59e0b',
       'Boomstick': '#eab308', 'Flamefang Pitch': '#ff6b35', 'Raptor Swipe': '#e74c3c',
-      'Serpent Sting': '#22c55e', 'Pet (Kill Command procs)': '#a78bfa',
-      'Tip of the Spear (passive)': '#fb923c', 'Takedown (CD)': '#60a5fa',
-      'Sentinel (hero)': '#38bdf8', 'Pack Leader (hero)': '#a78bfa',
-      'Coordinated Assault (CD)': '#c084fc',
+      'Strike as One': '#22c55e', 'Pet (Spirit Bond)': '#a78bfa',
+      'Lethal Calibration': '#fb923c', 'Takedown (20% amp)': '#60a5fa',
+      'Sentinel Mark + Lunar Storm': '#38bdf8', 'Pack Leader Beasts': '#a78bfa',
+      'Moonlight Chakram': '#818cf8', 'Hatchet Toss': '#9ca3af',
     };
     return colors[key] || '#6b7280';
   };
