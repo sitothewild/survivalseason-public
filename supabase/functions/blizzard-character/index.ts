@@ -79,6 +79,32 @@ serve(async (req) => {
     let result: unknown;
 
     switch (action) {
+      // Debug action — returns diagnostic info
+      case "debug": {
+        const clientId = Deno.env.get("BLIZZARD_CLIENT_ID");
+        const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET");
+        let tokenInfo = "not attempted";
+        let apiTest = "not attempted";
+        try {
+          const token = await getAccessToken();
+          tokenInfo = `success (token length: ${token.length})`;
+          const host = `${region}.api.blizzard.com`;
+          const testUrl = `https://${host}/profile/wow/character/turalyon/blezaa?namespace=profile-${region}&locale=en_US&access_token=${token}`;
+          const testResp = await fetch(testUrl);
+          const testBody = await testResp.text();
+          apiTest = `status=${testResp.status} body=${testBody.substring(0, 500)}`;
+        } catch (e) {
+          tokenInfo = `failed: ${e.message}`;
+        }
+        result = {
+          clientId: clientId ? `${clientId.substring(0, 8)}...` : "MISSING",
+          secretSet: !!clientSecret,
+          tokenInfo,
+          apiTest,
+        };
+        break;
+      }
+
       // Character profile summary
       case "profile": {
         result = await blizzardGet(charBase, region, "profile");
