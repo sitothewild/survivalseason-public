@@ -205,8 +205,8 @@ serve(async (req) => {
         if (!name) throw new Error("name is required for realm search");
         const token = await getAccessToken(region);
         const host = `${region}.api.blizzard.com`;
-        const url = `https://${host}/data/wow/search/realm?namespace=dynamic-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&access_token=${token}`;
-        const resp = await fetch(url);
+        const url = `https://${host}/data/wow/search/realm?namespace=dynamic-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id`;
+        const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!resp.ok) {
           const text = await resp.text();
           throw new Error(`Realm search failed: ${resp.status} ${text}`);

@@ -159,8 +159,8 @@ serve(async (req) => {
         const results = await Promise.all(
           ids.map(async (id: number) => {
             try {
-              const url = `https://${host}/data/wow/item/${id}?namespace=static-${region}&locale=en_US&access_token=${token}`;
-              const resp = await fetch(url);
+              const url = `https://${host}/data/wow/item/${id}?namespace=static-${region}&locale=en_US`;
+              const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
               if (!resp.ok) {
                 const text = await resp.text();
                 return { id, error: `${resp.status}: ${text}` };
