@@ -1226,12 +1226,13 @@ export default function SurvivalHunterSim() {
         }
       `}</style>
 
-      {/* Background particles */}
+      {/* Background particles — midnight + ember mix */}
       {particles.map(p => (
         <div key={p.id} style={{
           position: 'fixed', left: `${p.x}%`, top: `${p.y}%`,
           width: p.size, height: p.size, borderRadius: '50%',
-          background: '#e07030', opacity: p.opacity,
+          background: p.id % 3 === 0 ? '#4a6aaf' : p.id % 3 === 1 ? '#e07030' : '#8090c0',
+          opacity: p.opacity * (p.id % 3 === 0 ? 0.6 : 1),
           animation: `float ${p.speed}s ease-in-out infinite`,
           animationDelay: `${p.delay}s`,
           '--op': p.opacity, pointerEvents: 'none', zIndex: 0
