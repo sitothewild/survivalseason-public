@@ -943,11 +943,11 @@ export default function SurvivalHunterSim() {
         .tab-btn:hover { color: #c8a870; }
 
         .mode-btn {
-          background: #0f1118;
-          border: 1px solid #2a2018;
+          background: #0a0d18;
+          border: 1px solid #1e2a40;
           border-radius: 6px;
           padding: 10px 18px;
-          color: #7a6040;
+          color: #7a8aaa;
           font-family: 'Cinzel', serif;
           font-size: 11px;
           letter-spacing: 1px;
@@ -955,7 +955,7 @@ export default function SurvivalHunterSim() {
           transition: all 0.2s;
         }
         .mode-btn.active {
-          background: #1e1208;
+          background: #141020;
           border-color: #e07030;
           color: #e8c88a;
         }
