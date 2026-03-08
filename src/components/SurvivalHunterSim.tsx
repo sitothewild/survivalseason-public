@@ -1771,7 +1771,7 @@ export default function SurvivalHunterSim() {
                 const opt = getOptimalTalents(build.targets, build.hero);
                 return (
                   <div key={bi} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: bi < 3 ? '1px solid #1a1208' : 'none' }}>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: build.hero === 'sentinel' ? '#38bdf8' : '#a78bfa', marginBottom: 10 }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#f0a830', textShadow: '0 0 8px #e0703044', marginBottom: 10 }}>
                       {build.label}
                     </div>
                     <div style={{ marginBottom: 10 }}>
