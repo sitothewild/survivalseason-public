@@ -1301,8 +1301,52 @@ export default function SurvivalHunterSim() {
                   ))}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-                  <input className="input-field" placeholder="Realm (e.g. tichondrius)"
-                    value={armoryRealm} onChange={e => setArmoryRealm(e.target.value)} />
+                  {/* Realm searchable dropdown */}
+                  <div ref={realmDropdownRef} style={{ position: 'relative' }}>
+                    <input className="input-field" placeholder="Search realm..."
+                      value={armoryRealmSearch}
+                      onChange={e => {
+                        setArmoryRealmSearch(e.target.value);
+                        setShowRealmDropdown(true);
+                        if (!e.target.value) setArmoryRealm('');
+                      }}
+                      onFocus={() => setShowRealmDropdown(true)}
+                      style={{ width: '100%' }}
+                    />
+                    {showRealmDropdown && (() => {
+                      const realms = REALM_DATA[armoryRegion] || [];
+                      const q = armoryRealmSearch.toLowerCase();
+                      const filtered = q ? realms.filter(r => r.toLowerCase().includes(q)) : realms;
+                      if (filtered.length === 0) return null;
+                      return (
+                        <div style={{
+                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                          background: '#0d0f16', border: '1px solid #2a2018', borderRadius: '0 0 6px 6px',
+                          maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                        }}>
+                          {filtered.slice(0, 50).map(realm => (
+                            <div key={realm}
+                              onClick={() => {
+                                setArmoryRealm(realm.toLowerCase().replace(/[' ]/g, '-'));
+                                setArmoryRealmSearch(realm);
+                                setShowRealmDropdown(false);
+                              }}
+                              style={{
+                                padding: '6px 10px', cursor: 'pointer', fontSize: 12,
+                                fontFamily: "'EB Garamond', serif", color: '#c8a870',
+                                borderBottom: '1px solid #1a1208',
+                                background: armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent',
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = '#1a1a2a')}
+                              onMouseLeave={e => (e.currentTarget.style.background = armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent')}
+                            >
+                              {realm}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
                   <input className="input-field" placeholder="Character name"
                     value={armoryName} onChange={e => setArmoryName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()} />
