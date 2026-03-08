@@ -1329,12 +1329,12 @@ export default function SurvivalHunterSim() {
                   💥 AoE ROTATION (3+ targets)
                 </h3>
                 {[
-                  { n: 1, label: 'Wildfire Bomb', note: 'Priority 1. Sentinel owl spawns on every cast.' },
-                  { n: 2, label: 'Flamefang Pitch', note: '60s CD DoT. Maintain on as many targets as possible.' },
-                  { n: 3, label: 'Boomstick', note: 'Hits 5 targets. Critical for bomb/stick feedback loop.' },
-                  { n: 4, label: 'Raptor Swipe', note: 'Replaces Raptor Strike. 5-target cleave + Haste proc.' },
-                  { n: 5, label: 'Kill Command', note: 'Maintain for Tip of the Spear and pet procs.' },
-                  { n: 6, label: 'Serpent Sting', note: 'Multidot 2-3 targets for additional passive damage.' },
+                  { n: 1, label: 'Wildfire Bomb', note: 'Top priority. Sentinel: proc Sentinel\'s Mark → Lunar Storm AoE. Maintain Lethal Calibration.' },
+                  { n: 2, label: 'Flamefang Pitch', note: '30s CD ground AoE + fire puddle. Grenade Juggler: +1 charge. Wildfire Imbuement: fire buff.' },
+                  { n: 3, label: 'Boomstick', note: 'Frontal AoE, 5 targets. Wildfire Shells: -4s WFB CD per hit.' },
+                  { n: 4, label: 'Raptor Strike → Raptor Swipe', note: 'Apex talent: 25% chance to cleave 5 targets (100% during Takedown). Main AoE spender.' },
+                  { n: 5, label: 'Kill Command', note: 'Focus builder. [Pack Leader] spawns beasts for AoE damage.' },
+                  { n: 6, label: 'Takedown', note: '20% amp. Flanked: hits 4 extra targets + 100% attack speed. 100% Swipe proc.' },
                 ].map(r => (
                   <div key={r.n} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
                     <div style={{
