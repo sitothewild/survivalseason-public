@@ -135,22 +135,27 @@ function parseSimcString(simcText) {
 
   const lines = simcText.trim().split('\n').map(l => l.trim());
 
-  // Character header line (e.g. hunter="CharName" or hunter,name="CharName",...)
+  // Character info from individual lines (SimC addon format)
   const charLine = lines.find(l => /^(hunter|survival_hunter)/i.test(l));
   if (charLine) {
-    const nameMatch = charLine.match(/name="([^"]+)"/);
-    const levelMatch = charLine.match(/level=(\d+)/);
-    const raceMatch = charLine.match(/race=(\w+)/);
-    const realmMatch = charLine.match(/realm="?([^",\n]+)"?/);
+    // hunter="Blezaa" format
+    const nameMatch = charLine.match(/^(?:hunter|survival_hunter)="([^"]+)"/i) || charLine.match(/name="([^"]+)"/);
     if (nameMatch) result.character.name = nameMatch[1];
-    if (levelMatch) result.character.level = parseInt(levelMatch[1]);
-    if (raceMatch) result.character.race = raceMatch[1];
-    if (realmMatch) result.character.realm = realmMatch[1];
   }
-
-  // Parse stats from simc stat lines
+  // Individual key=value lines
   lines.forEach(line => {
-    const statMatch = line.match(/^(\w+)=([0-9.]+)/);
+    const kv = line.match(/^(\w+)=(.+)$/);
+    if (!kv) return;
+    const [, key, val] = kv;
+    if (key === 'level') result.character.level = parseInt(val);
+    if (key === 'race') result.character.race = val;
+    if (key === 'server' || key === 'realm') result.character.realm = val;
+    if (key === 'region') result.character.region = val;
+  });
+
+  // Parse stats from simc stat lines (if present)
+  lines.forEach(line => {
+    const statMatch = line.match(/^(\w+)=([0-9.]+)$/);
     if (!statMatch) return;
     const [, key, val] = statMatch;
     const v = parseFloat(val);
@@ -234,9 +239,25 @@ function parseSimcString(simcText) {
     result.errors.push("Could not parse character data. Make sure you paste the full SimulationCraft addon export.");
   }
 
-  // Fill in defaults/estimates if stats are missing
+  // Estimate stats from average ilvl when explicit stat lines are missing
+  const avgIlvl = result.character.avgIlvl || 0;
+  if (result.stats.agility === 0 && avgIlvl > 0) {
+    // Rough scaling: ilvl 200 ~ 6000 agi, ilvl 250 ~ 12000 agi
+    result.stats.agility = Math.round(6000 + (avgIlvl - 200) * 120);
+  }
   if (result.stats.agility === 0) result.stats.agility = 9500;
   if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.1;
+
+  // Estimate secondary stats from ilvl if not explicitly provided
+  if (result.stats.haste === 0 && avgIlvl > 0) {
+    // Estimate secondary ratings from ilvl. At ilvl 230, expect ~1800 rating per secondary stat.
+    // Total secondary budget scales roughly as (ilvl - 150) * 80
+    const totalSecondary = Math.max(0, (avgIlvl - 150) * 80);
+    result.stats.haste = +(totalSecondary * 0.28 / 180).toFixed(2);       // ~28% budget → ~10% haste
+    result.stats.crit = +(totalSecondary * 0.25 / 180).toFixed(2);        // ~25% → ~9% crit
+    result.stats.mastery = +(totalSecondary * 0.30 / 180).toFixed(2);      // ~30% → ~11% mastery
+    result.stats.versatility = +(totalSecondary * 0.17 / 205).toFixed(2);  // ~17% → ~5% vers
+  }
 
   return result;
 }
