@@ -1754,7 +1754,7 @@ export default function SurvivalHunterSim() {
           <div className="responsive-grid">
 
             {/* Optimal Builds */}
-            <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
+            <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 24 }}>
               <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 6px' }}>
                 🌿 OPTIMAL TALENT BUILDS
               </h3>
