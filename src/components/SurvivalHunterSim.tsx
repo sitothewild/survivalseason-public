@@ -1021,7 +1021,7 @@ export default function SurvivalHunterSim() {
                         background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20,
                         animationDelay: `${ri * 0.1}s`
                       }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                        <div className="result-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                           <div>
                             <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#7a6040', marginBottom: 4 }}>
                               {result.targets === 1 ? '🎯 SINGLE TARGET' : result.targets <= 3 ? `⚔ CLEAVE (${result.targets} targets)` : `💥 MULTI-TARGET (${result.targets} targets)`}
