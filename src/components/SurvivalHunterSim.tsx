@@ -135,22 +135,27 @@ function parseSimcString(simcText) {
 
   const lines = simcText.trim().split('\n').map(l => l.trim());
 
-  // Character header line (e.g. hunter="CharName" or hunter,name="CharName",...)
+  // Character info from individual lines (SimC addon format)
   const charLine = lines.find(l => /^(hunter|survival_hunter)/i.test(l));
   if (charLine) {
-    const nameMatch = charLine.match(/name="([^"]+)"/);
-    const levelMatch = charLine.match(/level=(\d+)/);
-    const raceMatch = charLine.match(/race=(\w+)/);
-    const realmMatch = charLine.match(/realm="?([^",\n]+)"?/);
+    // hunter="Blezaa" format
+    const nameMatch = charLine.match(/^(?:hunter|survival_hunter)="([^"]+)"/i) || charLine.match(/name="([^"]+)"/);
     if (nameMatch) result.character.name = nameMatch[1];
-    if (levelMatch) result.character.level = parseInt(levelMatch[1]);
-    if (raceMatch) result.character.race = raceMatch[1];
-    if (realmMatch) result.character.realm = realmMatch[1];
   }
-
-  // Parse stats from simc stat lines
+  // Individual key=value lines
   lines.forEach(line => {
-    const statMatch = line.match(/^(\w+)=([0-9.]+)/);
+    const kv = line.match(/^(\w+)=(.+)$/);
+    if (!kv) return;
+    const [, key, val] = kv;
+    if (key === 'level') result.character.level = parseInt(val);
+    if (key === 'race') result.character.race = val;
+    if (key === 'server' || key === 'realm') result.character.realm = val;
+    if (key === 'region') result.character.region = val;
+  });
+
+  // Parse stats from simc stat lines (if present)
+  lines.forEach(line => {
+    const statMatch = line.match(/^(\w+)=([0-9.]+)$/);
     if (!statMatch) return;
     const [, key, val] = statMatch;
     const v = parseFloat(val);
