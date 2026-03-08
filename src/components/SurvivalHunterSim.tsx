@@ -1301,12 +1301,13 @@ export default function SurvivalHunterSim() {
                   ⚔ SINGLE TARGET ROTATION
                 </h3>
                 {[
-                  { n: 1, label: 'Takedown', note: 'On cooldown. Enhanced by Savagery (-30s max reduction).' },
-                  { n: 2, label: 'Wildfire Bomb', note: 'Never cap charges. Owl spawns on cast (Sentinel).' },
-                  { n: 3, label: 'Boomstick', note: 'On cooldown. Reduces WFB CD by 2s per target hit.' },
-                  { n: 4, label: 'Kill Command', note: 'On cooldown. Builds Tip of the Spear stacks.' },
-                  { n: 5, label: 'Mongoose Bite ×6', note: 'Maximize Mongoose Fury stacks before consuming. 15% dmg per stack.' },
-                  { n: 6, label: 'Raptor Strike', note: 'Focus dump when not in Mongoose Fury window.' },
+                  { n: 1, label: 'Wildfire Bomb', note: 'If 2 charges, or Takedown ready, or Lethal Calibration down, or Sentinel\'s Mark on target. Never cap.' },
+                  { n: 2, label: 'Flamefang Pitch / Boomstick', note: 'Cast before Takedown to apply Wildfire Imbuement / Mongoose Fury stacks.' },
+                  { n: 3, label: 'Takedown', note: 'On CD. Savagery reduces to 1min. 20% amp for 8-10s. 100% Raptor Swipe proc.' },
+                  { n: 4, label: 'Raptor Strike (>72.5 Focus)', note: 'Dump focus for Mongoose Fury overlaps. Continue pressing to drain all focus.' },
+                  { n: 5, label: 'Moonlight Chakram', note: '[Sentinel] Available 15s after Takedown. Bounces between targets.' },
+                  { n: 6, label: 'Kill Command', note: 'No CD — spam to rebuild focus. Builds Tip of the Spear. [Pack Leader] Prioritize when beast available.' },
+                  { n: 7, label: 'Raptor Strike (maintenance)', note: 'Continue RS if 3+ Mongoose Fury stacks active to maintain overlap window.' },
                 ].map(r => (
                   <div key={r.n} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
                     <div style={{
