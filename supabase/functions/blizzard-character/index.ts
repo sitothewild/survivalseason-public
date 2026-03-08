@@ -50,9 +50,11 @@ async function getAccessToken(region = "us"): Promise<string> {
 async function blizzardGet(path: string, region: string, namespace: string, locale = "en_US") {
   const token = await getAccessToken(region);
   const host = region === "cn" ? "gateway.battlenet.com.cn" : `${region}.api.blizzard.com`;
-  const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}&access_token=${token}`;
+  const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}`;
 
-  const resp = await fetch(url);
+  const resp = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(`Blizzard API ${resp.status}: ${text}`);
