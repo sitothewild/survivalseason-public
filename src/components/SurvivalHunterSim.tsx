@@ -474,6 +474,14 @@ export default function SurvivalHunterSim() {
   const [targetCount, setTargetCount] = useState(1);
   const [copied, setCopied] = useState(false);
   const [particles, setParticles] = useState([]);
+  // Armory Lookup state
+  const [armoryRealm, setArmoryRealm] = useState('');
+  const [armoryName, setArmoryName] = useState('');
+  const [armoryRegion, setArmoryRegion] = useState('us');
+  const [armoryLoading, setArmoryLoading] = useState(false);
+  const [armoryError, setArmoryError] = useState('');
+  const [armoryAvatar, setArmoryAvatar] = useState('');
+  const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
 
   useEffect(() => {
     const ps = Array.from({ length: 18 }, (_, i) => ({
