@@ -482,6 +482,11 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+  // Item tooltip state
+  const [itemCache, setItemCache] = useState<Record<string, any>>({});
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [tooltipLoading, setTooltipLoading] = useState(false);
 
   useEffect(() => {
     const ps = Array.from({ length: 18 }, (_, i) => ({
