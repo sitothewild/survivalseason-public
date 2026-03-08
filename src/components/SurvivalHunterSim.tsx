@@ -586,6 +586,33 @@ export default function SurvivalHunterSim() {
     }
   }, [armoryRealm, armoryName, armoryRegion]);
 
+  const handleItemHover = useCallback(async (itemId: string, event: any) => {
+    if (!itemId) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPos({ x: rect.right + 8, y: rect.top });
+    setHoveredItem(itemId);
+
+    if (itemCache[itemId]) return; // already cached
+
+    setTooltipLoading(true);
+    try {
+      const [itemData, mediaData] = await Promise.all([
+        getItem(parseInt(itemId), armoryRegion || 'us'),
+        getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null),
+      ]);
+      const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
+      setItemCache(prev => ({ ...prev, [itemId]: { ...itemData, _icon: icon } }));
+    } catch (e) {
+      setItemCache(prev => ({ ...prev, [itemId]: { _error: e.message } }));
+    } finally {
+      setTooltipLoading(false);
+    }
+  }, [itemCache, armoryRegion]);
+
+  const handleItemLeave = useCallback(() => {
+    setHoveredItem(null);
+  }, []);
+
   const getTargets = () => {
     if (simMode === 'single') return [1];
     if (simMode === 'cleave') return [2, 3];
