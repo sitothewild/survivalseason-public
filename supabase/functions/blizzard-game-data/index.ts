@@ -90,7 +90,7 @@ serve(async (req) => {
       case "item-search": {
         const { name, page = 1 } = params;
         if (!name) throw new Error("name is required");
-        const token = await getAccessToken();
+        const token = await getAccessToken(region);
         const host = `${region}.api.blizzard.com`;
         const url = `https://${host}/data/wow/search/item?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id&_page=${page}&access_token=${token}`;
         const resp = await fetch(url);
