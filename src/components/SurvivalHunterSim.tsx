@@ -1185,15 +1185,20 @@ export default function SurvivalHunterSim() {
                         <span key={t.key} className={`talent-tag ${t.always ? 'core' : t.aoePriority ? 'aoe' : 'st'}`}>
                           {t.key === 'mongooseFury' ? 'Mongoose Fury' :
                            t.key === 'mongooseRounds' ? 'Mongoose Rounds' :
-                           t.key === 'tipOfSpear' ? 'Tip of the Spear' :
-                           t.key === 'strikeAsOne' ? 'Strike As One' :
+                           t.key === 'strikeAsOne' ? 'Strike as One' :
                            t.key === 'wildfireBomb' ? 'Wildfire Bomb' :
                            t.key === 'boomstick' ? 'Boomstick' :
                            t.key === 'savagery' ? 'Savagery' :
-                           t.key === 'mergingKillers' ? 'Merging Killers' :
+                           t.key === 'vulnerability' ? 'Vulnerability' :
                            t.key === 'raptorSwipe' ? 'Raptor Swipe' :
                            t.key === 'flamefangPitch' ? 'Flamefang Pitch' :
-                           t.key === 'flamefangPitchCharge' ? '+Flamefang Charge' :
+                           t.key === 'grenadeJuggler' ? 'Grenade Juggler' :
+                           t.key === 'wildfileShells' ? 'Wildfire Shells' :
+                           t.key === 'shrapnelBomb' ? 'Shrapnel Bomb' :
+                           t.key === 'flamebreak' ? 'Flamebreak' :
+                           t.key === 'lethalCalibration' ? 'Lethal Calibration' :
+                           t.key === 'wildfireImbuement' ? 'Wildfire Imbuement' :
+                           t.key === 'twoAgainstMany' ? 'Two Against Many' :
                            t.key === 'takedown' ? 'Takedown' : t.key}
                         </span>
                       ))}
