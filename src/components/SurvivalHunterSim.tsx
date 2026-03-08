@@ -533,12 +533,22 @@ export default function SurvivalHunterSim() {
   const [particles, setParticles] = useState([]);
   // Armory Lookup state
   const [armoryRealm, setArmoryRealm] = useState('');
+  const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
+  const [showRealmDropdown, setShowRealmDropdown] = useState(false);
   const [armoryName, setArmoryName] = useState('');
   const [armoryRegion, setArmoryRegion] = useState('us');
   const [armoryLoading, setArmoryLoading] = useState(false);
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+  const realmDropdownRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const handler = (e: MouseEvent) => {
+      if (!node.contains(e.target as Node)) setShowRealmDropdown(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
   // Item tooltip state
   const [itemCache, setItemCache] = useState<Record<string, any>>({});
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
