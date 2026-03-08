@@ -893,19 +893,19 @@ export default function SurvivalHunterSim() {
         }
 
         .hero-btn {
-          background: linear-gradient(135deg, #1a0e06, #2a1808);
-          border: 1px solid #4a2c14;
+          background: linear-gradient(135deg, #0c0e1a, #141828);
+          border: 1px solid #2a3050;
           border-radius: 6px;
           padding: 14px 18px;
           cursor: pointer;
           transition: all 0.2s;
           text-align: left;
         }
-        .hero-btn:hover { border-color: #8b5e3c; transform: translateY(-1px); }
+        .hero-btn:hover { border-color: #4a5a80; transform: translateY(-1px); }
         .hero-btn.selected {
           border-color: #e07030;
-          background: linear-gradient(135deg, #2a1200, #3a1a08);
-          box-shadow: 0 0 16px #e0703044;
+          background: linear-gradient(135deg, #1a1008, #201810);
+          box-shadow: 0 0 16px #e0703044, inset 0 0 30px rgba(224,112,48,0.05);
         }
         
         .sim-btn {
