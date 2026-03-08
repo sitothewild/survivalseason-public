@@ -976,6 +976,72 @@ export default function SurvivalHunterSim() {
             font-size: 11px !important;
           }
         }
+
+        .item-tooltip {
+          position: fixed;
+          z-index: 9999;
+          background: linear-gradient(180deg, #1a0e2e, #0c0816);
+          border: 1px solid #4a3080;
+          border-radius: 8px;
+          padding: 14px 16px;
+          min-width: 260px;
+          max-width: 320px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 20px rgba(100,60,180,0.2);
+          pointer-events: none;
+          animation: fadeIn 0.15s ease;
+          font-family: 'EB Garamond', serif;
+        }
+        .item-tooltip-name {
+          font-family: 'Cinzel', serif;
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+        .item-tooltip-ilvl {
+          font-size: 12px;
+          color: #f0c880;
+          margin-bottom: 6px;
+        }
+        .item-tooltip-stat {
+          font-size: 12px;
+          color: #c8b890;
+          padding: 1px 0;
+        }
+        .item-tooltip-stat b {
+          color: #e8dcc8;
+        }
+        .item-tooltip-binding {
+          font-size: 11px;
+          color: #7a6040;
+          margin-bottom: 2px;
+        }
+        .item-tooltip-type {
+          font-size: 11px;
+          color: #8a7050;
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 4px;
+        }
+        .item-tooltip-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 4px;
+          border: 1px solid #4a3080;
+          margin-right: 10px;
+          float: left;
+        }
+        .item-tooltip-loading {
+          color: #7a6040;
+          font-size: 11px;
+          font-style: italic;
+        }
+        .gear-row {
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .gear-row:hover {
+          background: #1a1a10 !important;
+        }
       `}</style>
 
       {/* Background particles */}
