@@ -855,7 +855,7 @@ export default function SurvivalHunterSim() {
     });
   };
 
-  const formatDps = (n) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toString();
+  const formatDps = (n) => n >= 1000000 ? `${(n / 1000000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toString();
 
   const getBarColor = (key) => {
     const colors = {
