@@ -162,10 +162,10 @@ function parseSimcString(simcText) {
     const [, key, val] = statMatch;
     const v = parseFloat(val);
     if (key === 'agility') result.stats.agility = v;
-    if (key === 'haste_rating') result.stats.haste = +(v / 180).toFixed(2);
-    if (key === 'crit_rating') result.stats.crit = +(v / 180).toFixed(2);
-    if (key === 'mastery_rating') result.stats.mastery = +(v / 180).toFixed(2);
-    if (key === 'versatility_rating') result.stats.versatility = +(v / 205).toFixed(2);
+    if (key === 'haste_rating') result.stats.haste = +(v / 170).toFixed(2);
+    if (key === 'crit_rating') result.stats.crit = +(v / 170).toFixed(2);
+    if (key === 'mastery_rating') result.stats.mastery = +(v / 170).toFixed(2);
+    if (key === 'versatility_rating') result.stats.versatility = +(v / 205 * 100).toFixed(2);
     if (key === 'attack_power') result.stats.attackPower = v;
   });
 
