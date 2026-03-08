@@ -487,6 +487,115 @@ function getOptimalTalents(targetCount, heroTalent) {
 // COMPONENTS
 // ============================================================
 
+// Realm lists by region — common US/EU/KR/TW realms
+const REALM_DATA: Record<string, string[]> = {
+  us: [
+    "Aegwynn", "Aerie Peak", "Agamaggan", "Aggramar", "Akama", "Alexstrasza", "Alleria",
+    "Altar of Storms", "Alterac Mountains", "Aman'Thul", "Andorhal", "Anetheron", "Antonidas",
+    "Anub'arak", "Anvilmar", "Arathor", "Archimonde", "Area 52", "Argent Dawn", "Arthas",
+    "Arygos", "Auchindoun", "Azgalor", "Azjol-Nerub", "Azralon", "Azshara", "Azuremyst",
+    "Baelgun", "Balnazzar", "Barthilas", "Black Dragonflight", "Blackhand", "Blackrock",
+    "Blackwater Raiders", "Blackwing Lair", "Blade's Edge", "Bladefist", "Bleeding Hollow",
+    "Blood Furnace", "Bloodhoof", "Bloodscalp", "Bonechewer", "Borean Tundra", "Boulderfist",
+    "Bronzebeard", "Burning Blade", "Burning Legion", "Caelestrasz", "Cairne", "Cenarion Circle",
+    "Cenarius", "Cho'gall", "Chromaggus", "Coilfang", "Crushridge", "Daggerspine", "Dalaran",
+    "Dalvengyr", "Dark Iron", "Darkspear", "Darrowmere", "Dath'Remar", "Dawnbringer",
+    "Deathwing", "Demon Soul", "Dentarg", "Destromath", "Dethecus", "Detheroc", "Doomhammer",
+    "Draenor", "Dragonblight", "Dragonmaw", "Drak'Tharon", "Drak'thul", "Draka",
+    "Drakkari", "Dreadmaul", "Drenden", "Dunemaul", "Durotan", "Duskwood", "Earthen Ring",
+    "Echo Isles", "Eitrigg", "Eldre'Thalas", "Elune", "Emerald Dream", "Eonar",
+    "Eredar", "Executus", "Exodar", "Farstriders", "Feathermoon", "Fenris", "Firetree",
+    "Fizzcrank", "Frostmane", "Frostmourne", "Frostwolf", "Galakrond", "Gallywix",
+    "Garithos", "Garona", "Garrosh", "Ghostlands", "Gilneas", "Gnomeregan", "Goldrinn",
+    "Gorefiend", "Gorgonnash", "Greymane", "Grizzly Hills", "Gul'dan", "Gundrak",
+    "Gurubashi", "Hakkar", "Haomarush", "Hellscream", "Hydraxis", "Hyjal",
+    "Icecrown", "Illidan", "Jaedenar", "Jubei'Thos", "Kael'thas", "Kalecgos",
+    "Kargath", "Kel'Thuzad", "Khadgar", "Khaz Modan", "Khaz'goroth", "Kil'jaeden",
+    "Kilrogg", "Kirin Tor", "Korgath", "Korialstrasz", "Kul Tiras", "Laughing Skull",
+    "Lethon", "Lightbringer", "Lightning's Blade", "Lightninghoof", "Llane", "Lothar",
+    "Madoran", "Maelstrom", "Magtheridon", "Maiev", "Mal'Ganis", "Malfurion",
+    "Malorne", "Malygos", "Mannoroth", "Medivh", "Misha", "Mok'Nathal",
+    "Moon Guard", "Moonrunner", "Mug'thol", "Muradin", "Nagrand", "Nathrezim",
+    "Nazgrel", "Nazjatar", "Nemesis", "Ner'zhul", "Nesingwary", "Nordrassil",
+    "Norgannon", "Onyxia", "Perenolde", "Proudmoore", "Quel'dorei", "Quel'Thalas",
+    "Ragnaros", "Ravencrest", "Ravenholdt", "Rexxar", "Rivendare", "Runetotem",
+    "Sargeras", "Saurfang", "Scarlet Crusade", "Scilla", "Sen'jin", "Sentinels",
+    "Shadow Council", "Shadowmoon", "Shadowsong", "Shandris", "Shattered Halls",
+    "Shattered Hand", "Shu'halo", "Silver Hand", "Silvermoon", "Sisters of Elune",
+    "Skullcrusher", "Skywall", "Smolderthorn", "Spinebreaker", "Spirestone",
+    "Staghelm", "Steamwheedle Cartel", "Stonemaul", "Stormrage", "Stormreaver",
+    "Stormscale", "Suramar", "Tanaris", "Terenas", "Terokkar", "Thaurissan",
+    "The Forgotten Coast", "The Scryers", "The Underbog", "The Venture Co",
+    "Thorium Brotherhood", "Thrall", "Thunderhorn", "Thunderlord", "Tichondrius",
+    "Tol Barad", "Tortheldrin", "Trollbane", "Turalyon", "Twisting Nether",
+    "Uldaman", "Uldum", "Undermine", "Ursin", "Uther", "Vashj", "Vek'nilash",
+    "Velen", "Warsong", "Whisperwind", "Wildhammer", "Windrunner", "Winterhoof",
+    "Wyrmrest Accord", "Ysera", "Ysondre", "Zangarmarsh", "Zul'jin", "Zuluhed",
+  ],
+  eu: [
+    "Aegwynn", "Aerie Peak", "Agamaggan", "Aggra", "Aggramar", "Ahn'Qiraj", "Al'Akir",
+    "Alexstrasza", "Alleria", "Alonsus", "Aman'Thul", "Ambossar", "Anachronos",
+    "Anetheron", "Antonidas", "Anub'arak", "Arak-arahm", "Arathi", "Archimonde",
+    "Area 52", "Argent Dawn", "Arthas", "Arygos", "Aszune", "Auchindoun",
+    "Azjol-Nerub", "Azshara", "Azuremyst", "Baelgun", "Balnazzar", "Blackhand",
+    "Blackmoore", "Blackrock", "Blackscar", "Blade's Edge", "Bladefist", "Bloodfeather",
+    "Bloodhoof", "Bloodscalp", "Blutkessel", "Boulderfist", "Bronze Dragonflight",
+    "Bronzebeard", "Burning Blade", "Burning Legion", "Burning Steppes", "C'Thun",
+    "Chamber of Aspects", "Chants éternels", "Cho'gall", "Chromaggus", "Colinas Pardas",
+    "Confrérie du Thorium", "Conseil des Ombres", "Crushridge", "Daggerspine",
+    "Dalaran", "Dalvengyr", "Darkmoon Faire", "Darksorrow", "Darkspear", "Das Konsortium",
+    "Das Syndikat", "Deathguard", "Deathwing", "Defias Brotherhood", "Dentarg",
+    "Der Mithrilorden", "Der Rat von Dalaran", "Destromath", "Dethecus",
+    "Die Aldor", "Die Arguswacht", "Die Nachtwache", "Die Silberne Hand",
+    "Die Todeskrallen", "Die ewige Wacht", "Doomhammer", "Draenor", "Dragonblight",
+    "Dragonmaw", "Drak'thul", "Drek'Thar", "Dun Modr", "Dun Morogh", "Dunemaul",
+    "Durotan", "Earthen Ring", "Echsenkessel", "Eitrigg", "Eldre'Thalas", "Elune",
+    "Emerald Dream", "Emeriss", "Eonar", "Eredar", "Executus", "Exodar",
+    "Festung der Stürme", "Fordragon", "Forscherliga", "Frostmane", "Frostmourne",
+    "Frostwhisper", "Frostwolf", "Galakrond", "Garona", "Garrosh", "Genjuros",
+    "Ghostlands", "Gilneas", "Gordunni", "Gorgonnash", "Greymane", "Grim Batol",
+    "Gul'dan", "Hakkar", "Haomarush", "Hellfire", "Hellscream", "Howling Fjord",
+    "Hyjal", "Illidan", "Jaedenar", "Kael'thas", "Karazhan", "Kargath",
+    "Kel'Thuzad", "Khadgar", "Khaz Modan", "Khaz'goroth", "Kil'jaeden",
+    "Kilrogg", "Kirin Tor", "Kor'gall", "Krag'jin", "Krasus", "Kul Tiras",
+    "Kult der Verdammten", "La Croisade écarlate", "Laughing Skull", "Les Clairvoyants",
+    "Les Sentinelles", "Lightbringer", "Lightning's Blade", "Lordaeron", "Los Errantes",
+    "Lothar", "Madmortem", "Magtheridon", "Mal'Ganis", "Malfurion", "Malorne",
+    "Malygos", "Mannoroth", "Maréchal Expeditionnaire", "Mazrigos", "Medivh",
+    "Minahonda", "Moonglade", "Mug'thol", "Nagrand", "Nathrezim", "Naxxramas",
+    "Nazjatar", "Nefarian", "Nemesis", "Neptulon", "Ner'zhul", "Nera'thor",
+    "Nethersturm", "Nordrassil", "Norgannon", "Nozdormu", "Onyxia", "Outland",
+    "Perenolde", "Proudmoore", "Quel'Thalas", "Ragnaros", "Rajaxx", "Rashgarroth",
+    "Ravencrest", "Ravenholdt", "Rexxar", "Runetotem", "Sanguino", "Sargeras",
+    "Saurfang", "Scarshield Legion", "Sen'jin", "Shadowsong", "Shattered Halls",
+    "Shattered Hand", "Shattrath", "Shen'dralar", "Silvermoon", "Sinstralis",
+    "Skullcrusher", "Spinebreaker", "Sporeggar", "Steamwheedle Cartel", "Stormrage",
+    "Stormreaver", "Stormscale", "Sunstrider", "Suramar", "Sylvanas", "Taerar",
+    "Talnivarr", "Tarren Mill", "Teldrassil", "Temple noir", "Terenas", "Terokkar",
+    "Terrordar", "The Maelstrom", "The Sha'tar", "The Venture Co", "Theradras",
+    "Thrall", "Throk'Feroth", "Thunderhorn", "Tichondrius", "Tirion", "Todeswache",
+    "Trollbane", "Turalyon", "Twilight's Hammer", "Twisting Nether", "Tyrande",
+    "Uldaman", "Ulduar", "Uldum", "Un'Goro", "Varimathras", "Vashj", "Vek'lor",
+    "Vek'nilash", "Vol'jin", "Wildhammer", "Winterhoof", "Wrathbringer",
+    "Xavius", "Ysera", "Ysondre", "Zenedar", "Zirkel des Cenarius",
+    "Zul'jin", "Zuluhed",
+  ],
+  kr: [
+    "Aegwynn", "Alexstrasza", "Azshara", "Burning Legion", "Cenarius", "Dalaran",
+    "Deathwing", "Durotan", "Garona", "Gul'dan", "Hellscream", "Hyjal",
+    "Malfurion", "Norgannon", "Rexxar", "Stormrage", "Wildhammer", "Windrunner",
+    "Zul'jin",
+  ],
+  tw: [
+    "Arthas", "Bleeding Hollow", "Chillwind Point", "Crystalpine Stinger",
+    "Demon Fall Canyon", "Dragonmaw", "Frostmane", "Hellscream", "Icecrown",
+    "Light's Hope", "Nightsong", "Onyxia", "Order of the Cloud Serpent",
+    "Quel'dorei", "Shadowmoon", "Silverwing Hold", "Skywall", "Spirestone",
+    "Stormscale", "Sundown Marsh", "Whisperwind", "World Tree", "Wrathbringer",
+    "Zealot Blade",
+  ],
+};
+
 const SAMPLE_SIMC = `hunter="Azurethane"
 level=80
 race=night_elf
@@ -533,12 +642,22 @@ export default function SurvivalHunterSim() {
   const [particles, setParticles] = useState([]);
   // Armory Lookup state
   const [armoryRealm, setArmoryRealm] = useState('');
+  const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
+  const [showRealmDropdown, setShowRealmDropdown] = useState(false);
   const [armoryName, setArmoryName] = useState('');
   const [armoryRegion, setArmoryRegion] = useState('us');
   const [armoryLoading, setArmoryLoading] = useState(false);
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+  const realmDropdownRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const handler = (e: MouseEvent) => {
+      if (!node.contains(e.target as Node)) setShowRealmDropdown(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
   // Item tooltip state
   const [itemCache, setItemCache] = useState<Record<string, any>>({});
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -1182,8 +1301,52 @@ export default function SurvivalHunterSim() {
                   ))}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-                  <input className="input-field" placeholder="Realm (e.g. tichondrius)"
-                    value={armoryRealm} onChange={e => setArmoryRealm(e.target.value)} />
+                  {/* Realm searchable dropdown */}
+                  <div ref={realmDropdownRef} style={{ position: 'relative' }}>
+                    <input className="input-field" placeholder="Search realm..."
+                      value={armoryRealmSearch}
+                      onChange={e => {
+                        setArmoryRealmSearch(e.target.value);
+                        setShowRealmDropdown(true);
+                        if (!e.target.value) setArmoryRealm('');
+                      }}
+                      onFocus={() => setShowRealmDropdown(true)}
+                      style={{ width: '100%' }}
+                    />
+                    {showRealmDropdown && (() => {
+                      const realms = REALM_DATA[armoryRegion] || [];
+                      const q = armoryRealmSearch.toLowerCase();
+                      const filtered = q ? realms.filter(r => r.toLowerCase().includes(q)) : realms;
+                      if (filtered.length === 0) return null;
+                      return (
+                        <div style={{
+                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                          background: '#0d0f16', border: '1px solid #2a2018', borderRadius: '0 0 6px 6px',
+                          maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                        }}>
+                          {filtered.slice(0, 50).map(realm => (
+                            <div key={realm}
+                              onClick={() => {
+                                setArmoryRealm(realm.toLowerCase().replace(/[' ]/g, '-'));
+                                setArmoryRealmSearch(realm);
+                                setShowRealmDropdown(false);
+                              }}
+                              style={{
+                                padding: '6px 10px', cursor: 'pointer', fontSize: 12,
+                                fontFamily: "'EB Garamond', serif", color: '#c8a870',
+                                borderBottom: '1px solid #1a1208',
+                                background: armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent',
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = '#1a1a2a')}
+                              onMouseLeave={e => (e.currentTarget.style.background = armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent')}
+                            >
+                              {realm}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
                   <input className="input-field" placeholder="Character name"
                     value={armoryName} onChange={e => setArmoryName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()} />
