@@ -1046,8 +1046,8 @@ export default function SurvivalHunterSim() {
                           {sortedBreakdown.map(([key, val]) => (
                             <div key={key}>
                               <div className="breakdown-head" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#8a7050' }}>{key}</span>
-                                <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870' }}>
+                                <span className="breakdown-label" style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#8a7050' }}>{key}</span>
+                                <span className="breakdown-value" style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870' }}>
                                   {formatDps(val)} ({Math.round(val / result.totalDps * 100)}%)
                                 </span>
                               </div>
