@@ -850,11 +850,11 @@ export default function SurvivalHunterSim() {
             <div style={{ fontSize: 28 }}>🔥</div>
           </div>
           <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: '#7a6040', margin: 0 }}>
-            MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
+            MIDNIGHT 12.0.1 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
           </p>
           <div className="divider" style={{ margin: '16px auto', maxWidth: 400 }} />
           <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#8a7050', margin: 0, fontStyle: 'italic' }}>
-            Internal simulation engine · No external dependencies · Based on Method.gg & Icy Veins Midnight data
+            Sources: Azortharion (Trueshot Lodge) · Method.gg (Symex) · Maxroll (heleni) · Wowhead · Raidbots/SimC APL
           </p>
         </div>
 
