@@ -846,7 +846,7 @@ export default function SurvivalHunterSim() {
 
   return (
     <div className="sim-root" style={{
-      minHeight: '100vh', background: '#0a0c10', color: '#e8dcc8',
+      minHeight: '100vh', background: 'linear-gradient(180deg, #06080f 0%, #0a0e1a 30%, #0d1020 60%, #080c18 100%)', color: '#e8dcc8',
       fontFamily: "'Cinzel Decorative', 'Palatino Linotype', serif",
       position: 'relative', overflow: 'hidden'
     }}>
