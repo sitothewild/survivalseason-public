@@ -2,8 +2,9 @@
 import { useState, useCallback, useEffect } from "react";
 
 // ============================================================
-// MIDNIGHT 12.0 SURVIVAL HUNTER SIMULATION ENGINE
-// Based on Method.gg + Icy Veins + Epiccarry Midnight Pre-Season data
+// MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
+// Sources: Azortharion (Trueshot Lodge), Method.gg (Symex), Maxroll (heleni),
+//          Wowhead, Icy Veins, Mythicstats, Raidbots/SimC APL
 // ============================================================
 
 const MIDNIGHT_DATA = {
@@ -12,75 +13,102 @@ const MIDNIGHT_DATA = {
     baseAgility: 3800,
     petDamageMultiplier: 0.42,
   },
+  // Updated ability data based on Azortharion's HackMD analysis & SimC APL
   spells: {
-    // Core rotational abilities
-    killCommand: { baseDmg: 1.8, apCoef: 0.82, cd: 7.5, focus: -30, aoeTargets: 1 },
-    mongooseBite: { baseDmg: 1.4, apCoef: 0.72, cd: 0, focus: 30, stacks: "fury" },
-    raptor: { baseDmg: 1.3, apCoef: 0.68, cd: 0, focus: 30, aoeTargets: 1 },
-    wildfireBomb: { baseDmg: 3.6, apCoef: 1.45, cd: 18, focus: 0, aoeTargets: 8, dotDmg: 0.45, dotDuration: 6 },
-    boomstick: { baseDmg: 2.2, apCoef: 0.95, cd: 10, focus: 0, aoeTargets: 5, reducesWFB: 2 },
-    flamefangPitch: { baseDmg: 2.8, apCoef: 1.1, cd: 60, focus: 0, aoeTargets: 8, dotDmg: 0.6, dotDuration: 8 },
-    takedown: { damageAmp: 0.20, cd: 90, duration: 15, targets: "all" },
-    raptorSwipe: { baseDmg: 1.1, apCoef: 0.55, cd: 0, focus: 25, aoeTargets: 5, hasteProc: 0.03 },
-    serpentSting: { dotDmg: 0.35, apCoef: 0.38, duration: 18, focus: 10 },
-    coordinatedAssault: { damageAmp: 0.25, cd: 120, duration: 20 },
+    // Kill Command — no longer has a CD, 20 focus generator (with talent), filler/builder
+    killCommand: { baseDmg: 2.7, apCoef: 1.23, cd: 0, focus: -20, aoeTargets: 1, note: 'No CD in Midnight. Spammable focus builder.' },
+    // Raptor Strike — primary melee spender, 35 focus (40 base - 5 from talent)
+    raptorStrike: { baseDmg: 1.86, apCoef: 0.96, cd: 0, focus: 35, aoeTargets: 1, note: 'Primary spender. Procs Mongoose Fury overlaps.' },
+    // Wildfire Bomb — no focus cost, 254% AP primary, 182% AP secondary, enhanced by Sentinel Mark (+130%)
+    wildfireBomb: { baseDmg: 3.81, apCoef: 1.54, cd: 18, focus: 0, aoeTargets: 8, dotDmg: 0.40, dotDuration: 6, note: 'No focus cost. Guerrilla Tactics +15%. Lethal Calibration: +15% crit dmg for 12s.' },
+    // Boomstick — replaces Fury of the Eagle, frontal AoE, 1min CD
+    boomstick: { baseDmg: 2.4, apCoef: 1.05, cd: 60, focus: 0, aoeTargets: 5, note: 'Replaces FotE. Shellshock: +40% ST (-5% per extra target). Mongoose Rounds: grants MF stacks.' },
+    // Flamefang Pitch — ground-targeted AoE, 30s CD, leaves fire puddle
+    flamefangPitch: { baseDmg: 3.2, apCoef: 1.25, cd: 30, focus: 0, aoeTargets: 8, dotDmg: 0.55, dotDuration: 8, note: 'Ground AoE + puddle. Grenade Juggler: +1 charge & grants WFB charge. Wildfire Imbuement: fire dmg buff 10s.' },
+    // Takedown — replaces Coordinated Assault, 1:30 base CD (reducible to 1min via Savagery)
+    takedown: { damageAmp: 0.20, cd: 90, duration: 8, focus: -50, note: 'Deals damage + 20% amp for 8s. Generates 50 focus. Flanked: hits 4 extra targets + 100% attack speed.' },
+    // Raptor Swipe — Apex talent, 25% proc from Raptor Strike (100% during Takedown at rank 3)
+    raptorSwipe: { baseDmg: 1.4, apCoef: 0.68, cd: 0, focus: -15, aoeTargets: 5, note: 'Apex talent. 25% from RS (100% during Takedown at rank 3). Pet attacks via Strike as One at 300%.' },
+    // Hatchet Toss — baseline ranged poke, no rotational value unless Pack Leader (Hogstrider)
+    hatchetToss: { baseDmg: 0.8, apCoef: 0.35, cd: 0, focus: 0, aoeTargets: 1, note: 'Ranged poke. Hogstrider: cleaves 4 targets +200% dmg. Currently not worth casting even talented.' },
+    // Strike as One — passive, pet attacks on every damaging ability
+    strikeAsOne: { baseDmg: 0.86, apCoef: 0.43, cd: 0, focus: 0, aoeTargets: 1, note: 'Passive. Two Against Many: +2 targets, +15% per target hit.' },
+    // Moonlight Chakram — Sentinel only, available 15s after Takedown
+    moonlightChakram: { baseDmg: 3.5, apCoef: 1.4, cd: 90, focus: 0, aoeTargets: 8, note: 'Sentinel only. Bounces between targets. Twilight Requiem: AoE explosion on expiry.' },
+  },
+  // Stat priority from Method.gg (Symex) — Midnight 12.0.1
+  statPriority: {
+    st: ['Agility', 'Mastery', 'Critical Strike = Haste', 'Versatility'],
+    aoe: ['Agility', 'Mastery', 'Haste', 'Critical Strike', 'Versatility'],
+    note: 'Mastery (Spirit Bond) increases you and pet damage. Mastery overtook Haste in Midnight due to Strike as One and pet-scaling changes.'
   },
   talents: {
     class: {
-      keenEyesight: { dps: 0.03, type: "passive", row: 1 },
-      unnaturalCauses: { dps: 0.04, type: "passive", row: 1 },
-      triggerFinger: { dps: 0.035, type: "passive", row: 2 },
-      roarOfSacrifice: { dps: 0, utility: true, row: 2 },
-      intimidation: { dps: 0, utility: true, row: 3 },
-      tarCoatedBindings: { dps: 0, utility: true, row: 3 },
+      keenEyesight: { dps: 0.03, type: "passive", desc: "2% Crit chance." },
+      unnaturalCauses: { dps: 0.04, type: "passive", desc: "Increases DoT damage by 10%." },
+      triggerFinger: { dps: 0.04, type: "passive", desc: "2-point node: 1/2% Haste." },
+      serratedTips: { dps: 0.03, type: "passive", desc: "2-point node: 4% more crit from all sources." },
+      agilityBonus: { dps: 0.03, type: "passive", desc: "3% Agility increase." },
+      autoAttackBonus: { dps: 0.025, type: "passive", desc: "25% increased auto attack damage." },
     },
     spec: {
-      // Core / always taken
-      mongooseFury: { dps: 0.12, stTarget: 0.18, aoe: 0.04, desc: "Mongoose Bite stacks to 6, each increasing damage 15%. Now baseline via tree position.", always: true },
-      mongooseRounds: { dps: 0.06, stTarget: 0.08, aoe: 0.04, desc: "Kill Command reduces Mongoose Fury CD by 1s.", always: true },
-      tipOfSpear: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "+15% direct damage per stack (up to 3). Consumed by Mongoose Bite.", always: true },
-      strikeAsOne: { dps: 0.05, stTarget: 0.06, aoe: 0.04, desc: "Tip of the Spear consumption causes pet to hit an additional time.", always: true },
-      wildfireBomb: { dps: 0.14, stTarget: 0.10, aoe: 0.22, desc: "Core AoE bomb. Boomstick reduces WFB CD by 2s.", always: true },
-      boomstick: { dps: 0.11, stTarget: 0.08, aoe: 0.16, desc: "AoE cooldown hitting 5 targets. Each WFB hit reduces Boomstick CD by 2s.", always: true },
+      // Core — always taken per Method/Maxroll builds
+      mongooseFury: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "Raptor Strike increases RS damage by 10% for 8s. Multiple overlaps stack. ~2-3% real DPS from proper management (Azortharion).", always: true },
+      strikeAsOne: { dps: 0.08, stTarget: 0.10, aoe: 0.06, desc: "All damaging abilities cause pet to attack. Two Against Many: +2 targets, +15% per enemy hit.", always: true },
+      wildfireBomb: { dps: 0.14, stTarget: 0.11, aoe: 0.22, desc: "No focus cost. 254% AP primary / 182% AP secondary. Lethal Calibration: +15% crit dmg for 12s.", always: true },
+      takedown: { dps: 0.08, stTarget: 0.12, aoe: 0.06, desc: "Replaces Coordinated Assault. 20% amp for 8s (10s Sentinel). Generates 50 focus. 1:30 base CD.", always: true },
+      boomstick: { dps: 0.10, stTarget: 0.09, aoe: 0.14, desc: "Replaces Fury of the Eagle. Frontal AoE, 1m CD. Shellshock: +40% ST. Mongoose Rounds or Wildfire Shells.", always: true },
+      raptorSwipe: { dps: 0.09, stTarget: 0.04, aoe: 0.16, desc: "Apex talent (4 points). 25% proc → 100% during Takedown. Rank 3: Strike as One at 300%. Focus refund.", always: true },
       // Situational ST
-      savagery: { dps: 0.07, stTarget: 0.10, aoe: 0.02, desc: "Takedown CD reduced by up to 30s, enabling tighter cooldown alignment.", stPriority: true },
-      mergingKillers: { dps: 0.05, stTarget: 0.08, aoe: 0.01, desc: "Kill Command damage increased by 20% after Mongoose Bite.", stPriority: true },
+      savagery: { dps: 0.06, stTarget: 0.09, aoe: 0.03, desc: "2-point node: reduces Takedown CD by 15/30s. Enables 1-minute Takedown windows in raids.", stPriority: true },
+      vulnerability: { dps: 0.05, stTarget: 0.07, aoe: 0.02, desc: "Raptor Strike and Boomstick deal 20% increased crit damage.", stPriority: true },
+      mongooseRounds: { dps: 0.05, stTarget: 0.07, aoe: 0.03, desc: "Each Boomstick hit grants 1 Mongoose Fury stack. Good for pre-Takedown setup.", stPriority: true },
       // AoE talents
-      raptorSwipe: { dps: 0.08, stTarget: 0.01, aoe: 0.14, desc: "Replaces Raptor Strike in AoE. Hits 5 targets and grants 3% Haste proc.", aoePriority: true },
-      flamefangPitch: { dps: 0.09, stTarget: 0.04, aoe: 0.16, desc: "60s CD AoE DoT. Second charge talent makes it strong in M+ and raid cleave.", aoePriority: true },
-      flamefangPitchCharge: { dps: 0.04, stTarget: 0.01, aoe: 0.08, desc: "Grants Flamefang Pitch a second charge.", aoePriority: true },
-      // Utility
-      takedown: { dps: 0.06, stTarget: 0.09, aoe: 0.04, desc: "Major CD +20% damage amp for you and pet. Enhanced by Savagery.", always: true },
+      flamefangPitch: { dps: 0.10, stTarget: 0.04, aoe: 0.18, desc: "30s CD ground AoE + fire puddle. 2nd charge via Grenade Juggler. Wildfire Imbuement: fire buff 10s.", aoePriority: true },
+      grenadeJuggler: { dps: 0.04, stTarget: 0.01, aoe: 0.08, desc: "Flamefang Pitch gains 1 extra charge + grants 1 Wildfire Bomb charge.", aoePriority: true },
+      wildfileShells: { dps: 0.04, stTarget: 0.02, aoe: 0.07, desc: "Each Boomstick hit reduces WFB CD by 4s. (Choice node vs Mongoose Rounds.)", aoePriority: true },
+      shrapnelBomb: { dps: 0.03, stTarget: 0.01, aoe: 0.06, desc: "WFB periodic is now a bleed. Synergizes with Shower of Blood (+16% bleed).", aoePriority: true },
+      flamebreak: { dps: 0.04, stTarget: 0.03, aoe: 0.07, desc: "All Fire damage +15%. Strong with Flamefang Pitch + Wildfire Imbuement.", aoePriority: true },
+      // Passive buffs
+      lethalCalibration: { dps: 0.06, stTarget: 0.07, aoe: 0.05, desc: "Throwing WFB increases crit damage by 15% for 12s. Maintain via CDR.", always: true },
+      wildfireImbuement: { dps: 0.05, stTarget: 0.04, aoe: 0.07, desc: "Flamefang Pitch imbues weapon with fire. You and pet deal extra fire dmg for 10s.", aoePriority: true },
+      twoAgainstMany: { dps: 0.04, stTarget: 0.02, aoe: 0.08, desc: "Strike as One hits +2 enemies, +15% damage per enemy struck.", aoePriority: true },
     },
     hero: {
       packLeader: {
         name: "Pack Leader",
-        desc: "Summons random beast companion on Kill Command (Bear/Wyvern/Boar). Dual wield synergy via Lethal Barbs focus regen. Currently underperforms vs Sentinel due to weak bleed talents.",
-        stBonus: 0.06,
-        aoeBonus: 0.08,
+        desc: "Focused on Kill Command and pet damage. Howl of the Pack Leader spawns Bear/Wyvern/Boar every 30s on Kill Command. Currently underperforms vs Sentinel in raids due to weak bleed talents and Hogstrider/Hatchet Toss not being worth casting. Dual wield synergy via Lethal Barbs focus regen from auto attacks.",
+        stBonus: 0.05,
+        aoeBonus: 0.07,
         mechanic: "killCommandProcs",
-        defensiveBenefit: "Heal over time on Aspect of Turtle / Survival of the Fittest",
-        weaponPref: "dual wield",
+        defensiveBenefit: "Shell Cover: +10% DR on Survival of the Fittest (30% base → 40%)",
+        weaponPref: "Dual Wield (1H Axes/Swords/Daggers)",
         recommended: false,
         subTalents: {
-          lethalBarbs: { dps: 0.03, stTarget: 0.04, aoe: 0.02, desc: "Auto attacks generate Focus. Strong for dual-wield build." },
-          hogstrider: { dps: 0.02, stTarget: 0.03, aoe: 0.01, desc: "Buffs Hatchet Toss. Currently not worth casting even with this talent." },
-          shellCover: { dps: 0, stTarget: 0, aoe: 0, desc: "+10% damage reduction on Survival of the Fittest. Defensive, stacks awkwardly." },
+          lethalBarbs: { dps: 0.03, stTarget: 0.04, aoe: 0.02, desc: "Auto attacks generate 2 Focus each to you and pet. Strong for dual-wield builds." },
+          hogstrider: { dps: 0.01, stTarget: 0.01, aoe: 0.01, desc: "Hatchet Toss cleaves 4 targets +200% damage. Currently not worth casting even with this talent (Method.gg)." },
+          direSummons: { dps: 0.02, stTarget: 0.03, aoe: 0.02, desc: "Reduces beast spawn cooldown. Also reduces WFB CD by 6s when beast spawns." },
+          shellCover: { dps: 0, stTarget: 0, aoe: 0, desc: "+10% DR on Survival of the Fittest. Defensive only." },
+          stampede: { dps: 0.03, stTarget: 0.02, aoe: 0.04, desc: "Capstone: Takedown grants extra beast spawn → Stampede dealing damage in a line for 7s." },
         }
       },
       sentinel: {
         name: "Sentinel",
-        desc: "Summons owl every 30s dealing AoE damage. Spawns with every Wildfire Bomb. Resets WFB CD when owl comes off CD. Best hero talent currently.",
+        desc: "Empowers Wildfire Bomb via Sentinel's Mark (20% proc from Raptor Strike, increased during Takedown). When consumed, triggers Lunar Storm (AoE capstone). Don't Look Back provides 10% max HP absorb shield. Currently preferred hero talent for both Raid and M+ (Method.gg/Maxroll).",
         stBonus: 0.07,
-        aoeBonus: 0.13,
-        mechanic: "owlProcs",
-        defensiveBenefit: "Don't Look Back — shields over time, excellent for rot and one-shots",
-        weaponPref: "2H weapon",
+        aoeBonus: 0.12,
+        mechanic: "sentinelMark",
+        defensiveBenefit: "Don't Look Back: 10% max HP absorb on Sentinel's Mark consumption. Great for rot and one-shots.",
+        weaponPref: "2H Weapon (Polearm/Staff)",
         recommended: true,
         subTalents: {
-          dontLookBack: { dps: 0, stTarget: 0, aoe: 0, desc: "Shield over time. Best defensive in the hero tree." },
-          moonlightChakram: { dps: 0.05, stTarget: 0.06, aoe: 0.09, desc: "Replaces Trueshot/Takedown for 15s window of enhanced damage." },
-          overwatch: { dps: 0.04, stTarget: 0.04, aoe: 0.07, desc: "Owl deals bonus damage when you Wildfire Bomb." },
+          dontLookBack: { dps: 0, stTarget: 0, aoe: 0, desc: "10% max HP absorb shield when Sentinel's Mark consumed. Best defensive in the tree." },
+          moonlightChakram: { dps: 0.05, stTarget: 0.06, aoe: 0.08, desc: "New ability available 15s after Takedown. Bounces between targets dealing heavy damage." },
+          lunarStorm: { dps: 0.04, stTarget: 0.04, aoe: 0.07, desc: "Capstone: AoE damage in 10yd radius when Sentinel's Mark consumed." },
+          moonsBlessing: { dps: 0.03, stTarget: 0.03, aoe: 0.04, desc: "+10% Sentinel's Mark proc chance. WFB CD reduced by 6s on proc. Key enabler." },
+          stargazer: { dps: 0.03, stTarget: 0.04, aoe: 0.02, desc: "Raptor Strike increases crit damage by 2% for 10s, stacking. (Choice vs Open Fire.)" },
+          cantMissWontMiss: { dps: 0.03, stTarget: 0.04, aoe: 0.02, desc: "Raptor Strike +10% damage. Takedown duration +2s (→10s). Sentinel ST." },
+          conditioning: { dps: 0, stTarget: 0, aoe: 0, desc: "+8% movement speed, -30s Cheetah CD. Mobility utility." },
         }
       }
     }
@@ -186,51 +214,46 @@ function parseSimcString(simcText) {
 
 // ============================================================
 // CORE DPS SIMULATION ENGINE
+// Sources: SimC APL, Azortharion rotation priority, Method.gg coefficients
 // ============================================================
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
   const stats = charData.stats;
   const agi = stats.agility || 9500;
   const hasteBonus = 1 + (stats.haste || 8) / 100;
   const critBonus = 1 + ((stats.crit || 12) / 100) * 0.5;
-  const masteryBonus = 1 + (stats.mastery || 10) / 100 * 0.8;
+  // Mastery: Spirit Bond — top secondary in Midnight (Method.gg)
+  const masteryBonus = 1 + (stats.mastery || 10) / 100 * 0.9;
   const versBonus = 1 + (stats.versatility || 6) / 100;
   const ap = stats.attackPower || agi * 2.1;
 
-  // Base scalar
   const baseScalar = (ap / 7200) * hasteBonus * critBonus * masteryBonus * versBonus;
-
-  // Ability DPS contributions (per target capped at AoE limits, ST mode = 1 target)
-  const effTargets = (t) => Math.min(t, 8); // most SV abilities cap ~8
   const T = targetCount;
-
-  // Rotation model: approximate GCD-based uptime over fight duration
   const gcdBase = 1.5 / hasteBonus;
-  const totalGCDs = fightDuration / gcdBase;
 
-  // Uptime weights per ability (fraction of GCDs spent)
+  // Rotation model — Azortharion APL:
+  // WFB (Sentinel's Mark / Lethal Cal) > Pitch/Boomstick > Takedown > RS dump > KC rebuild
   const rot = build === 'st' ? {
-    killCommand: 0.18,
-    mongooseBite: 0.30,
-    tipOfSpear: 0.00, // passive
-    wildfireBomb: 0.08,
-    boomstick: 0.06,
-    serpentSting: 0.04,
-    takedown: 0.02,
-  } : {
-    killCommand: 0.14,
-    raptorSwipe: 0.20,
-    mongooseBite: 0.12,
+    raptorStrike: 0.32,
+    killCommand: 0.22,
     wildfireBomb: 0.10,
-    boomstick: 0.10,
-    flamefangPitch: 0.06,
-    serpentSting: 0.03,
-    takedown: 0.02,
+    boomstick: 0.06,
+    takedown: 0.03,
+    raptorSwipe: 0.04,
+    moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
+    hatchetToss: heroTalent === 'packLeader' ? 0.01 : 0,
+  } : {
+    raptorStrike: 0.18,
+    killCommand: 0.14,
+    wildfireBomb: 0.12,
+    boomstick: 0.08,
+    flamefangPitch: 0.08,
+    takedown: 0.03,
+    raptorSwipe: 0.10,
+    moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
+    hatchetToss: heroTalent === 'packLeader' ? 0.02 : 0,
   };
 
-  // DPS per ability
   let breakdown = {};
-  let totalDps = 0;
-
   const calcAbility = (key, uptimeFraction, targetMult) => {
     const spell = MIDNIGHT_DATA.spells[key];
     if (!spell) return 0;
@@ -239,97 +262,88 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
     return dmgPerCast * castsPerSec * targetMult;
   };
 
-  // Kill Command
-  const kcDps = calcAbility('killCommand', rot.killCommand || 0, 1);
-  breakdown['Kill Command'] = kcDps;
+  // Raptor Strike — primary spender, Mongoose Fury overlap bonus ~35%
+  breakdown['Raptor Strike'] = calcAbility('raptorStrike', rot.raptorStrike || 0, 1) * 1.35;
 
-  // Mongoose Bite / Raptor Swipe
-  const mbDps = calcAbility('mongooseBite', rot.mongooseBite || 0, 1) * 1.45; // fury stacks avg
-  breakdown['Mongoose Bite'] = mbDps;
+  // Kill Command — no CD, spammable focus builder
+  breakdown['Kill Command'] = calcAbility('killCommand', rot.killCommand || 0, 1);
 
-  if (build === 'aoe') {
-    const rsDps = calcAbility('raptorSwipe', rot.raptorSwipe || 0, Math.min(T, 5));
-    breakdown['Raptor Swipe'] = rsDps;
-  }
+  // Wildfire Bomb — 254% AP primary, dot included
+  breakdown['Wildfire Bomb'] = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8)) * 1.25;
 
-  // Wildfire Bomb
-  const wfbDps = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8)) * 1.3; // dot included
-  breakdown['Wildfire Bomb'] = wfbDps;
+  // Boomstick — Shellshock: +40% ST, -5% per extra target
+  const shellshockMult = T === 1 ? 1.40 : Math.max(1, 1.40 - (T - 1) * 0.05);
+  breakdown['Boomstick'] = calcAbility('boomstick', rot.boomstick || 0, Math.min(T, 5)) * shellshockMult;
 
-  // Boomstick
-  const bsDps = calcAbility('boomstick', rot.boomstick || 0, Math.min(T, 5));
-  breakdown['Boomstick'] = bsDps;
+  // Raptor Swipe (Apex)
+  breakdown['Raptor Swipe'] = calcAbility('raptorSwipe', rot.raptorSwipe || 0, Math.min(T, 5));
 
-  // Flamefang Pitch (AoE build)
+  // Flamefang Pitch (AoE)
   if (build === 'aoe' && rot.flamefangPitch) {
-    const ffDps = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8)) * 1.4;
-    breakdown['Flamefang Pitch'] = ffDps;
+    breakdown['Flamefang Pitch'] = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8)) * 1.35;
   }
 
-  // Serpent Sting
-  const ssDps = (ap * 0.38 * 0.35 / 7200) * baseScalar * (Math.min(T, 3)) * 0.6;
-  breakdown['Serpent Sting'] = ssDps;
+  // Strike as One — passive pet attacks from all abilities
+  const totalUptime = Object.values(rot).reduce((s, v) => s + v, 0);
+  breakdown['Strike as One'] = (0.86 * ap * 0.43 / 7200) * baseScalar * (totalUptime / gcdBase) * Math.min(T, 3);
 
-  // Pet DPS
-  const petDps = (ap * 0.42) * baseScalar * 0.85;
-  breakdown['Pet (Kill Command procs)'] = petDps * (build === 'st' ? 1 : 0.75);
+  // Pet baseline (Spirit Bond mastery scaling)
+  breakdown['Pet (Spirit Bond)'] = (ap * 0.42) * baseScalar * 0.80 * masteryBonus * 0.5 * (build === 'st' ? 1 : 0.80);
 
-  // Tip of Spear passive on top
-  const tipBonus = (mbDps + kcDps) * 0.10;
-  breakdown['Tip of the Spear (passive)'] = tipBonus;
+  // Lethal Calibration (+15% crit dmg uptime from WFB)
+  const lcUptime = Math.min(1, 12 / (18 / hasteBonus));
+  breakdown['Lethal Calibration'] = (breakdown['Raptor Strike'] + breakdown['Kill Command'] + breakdown['Boomstick'] + breakdown['Raptor Swipe']) * 0.15 * lcUptime * (stats.crit || 12) / 100;
 
-  // Takedown cooldown contribution
-  const takedownUptime = Math.min(20, fightDuration) / fightDuration;
-  const takedownBonus = Object.values(breakdown).reduce((s, v) => s + v, 0) * 0.20 * takedownUptime;
-  breakdown['Takedown (CD)'] = takedownBonus;
+  // Moonlight Chakram (Sentinel)
+  if (heroTalent === 'sentinel' && rot.moonlightChakram) {
+    breakdown['Moonlight Chakram'] = calcAbility('moonlightChakram', rot.moonlightChakram, Math.min(T, 8));
+  }
+
+  // Hatchet Toss (Pack Leader)
+  if (heroTalent === 'packLeader' && rot.hatchetToss) {
+    breakdown['Hatchet Toss'] = calcAbility('hatchetToss', rot.hatchetToss, Math.min(T, 4));
+  }
+
+  // Takedown (20% amp for 8-10s)
+  const tdDur = heroTalent === 'sentinel' ? 10 : 8;
+  const tdCD = 90 - (build === 'st' ? 30 : 15);
+  const tdUptime = tdDur / tdCD;
+  breakdown['Takedown (20% amp)'] = Object.values(breakdown).reduce((s, v) => s + v, 0) * 0.20 * tdUptime;
 
   // Hero talent bonus
   const heroData = MIDNIGHT_DATA.talents.hero[heroTalent];
-  const heroBonusPct = build === 'st' ? heroData.stBonus : heroData.aoeBonus;
+  const heroPct = build === 'st' ? heroData.stBonus : heroData.aoeBonus;
   const baseTotal = Object.values(breakdown).reduce((s, v) => s + v, 0);
-  const heroBonus = baseTotal * heroBonusPct;
-  breakdown[`${heroData.name} (hero)`] = heroBonus;
+  if (heroTalent === 'sentinel') {
+    breakdown['Sentinel Mark + Lunar Storm'] = baseTotal * heroPct;
+  } else {
+    breakdown['Pack Leader Beasts'] = baseTotal * heroPct;
+  }
 
-  // Coordinated Assault CD contribution
-  const caUptime = Math.min(20, fightDuration) / fightDuration;
-  const caBonus = (baseTotal + heroBonus) * 0.25 * caUptime * 0.6;
-  breakdown['Coordinated Assault (CD)'] = caBonus;
+  let totalDps = Object.values(breakdown).reduce((s, v) => s + v, 0);
 
-  // Sum all
-  totalDps = Object.values(breakdown).reduce((s, v) => s + v, 0);
-
-  // Apply multi-target diminishing returns (Survival has strong cleave but not unlimited)
+  // Multi-target diminishing returns
   if (T > 1) {
     const cleaveFactor = T <= 3 ? 1 + (T - 1) * 0.55
       : T <= 5 ? 2.1 + (T - 3) * 0.35
       : T <= 8 ? 2.8 + (T - 5) * 0.20
       : 3.4 + (T - 8) * 0.12;
-    // Re-normalize: single target baseline * cleave factor
-    const stDps = totalDps / (1 + heroBonusPct);
-    totalDps = stDps * cleaveFactor * (1 + heroBonusPct * 0.8);
+    const stDps = totalDps / (1 + heroPct);
+    totalDps = stDps * cleaveFactor * (1 + heroPct * 0.8);
   }
 
-  // Fight duration bonus (longer fights = more cooldown uses)
   const cdEfficiency = Math.min(1.12, 1 + (fightDuration - 180) / 900 * 0.12);
   totalDps *= cdEfficiency;
 
-  // Normalize breakdown to match total
   const rawSum = Object.values(breakdown).reduce((s, v) => s + v, 0);
   const normFactor = totalDps / rawSum;
   Object.keys(breakdown).forEach(k => { breakdown[k] = Math.round(breakdown[k] * normFactor); });
 
-  return {
-    totalDps: Math.round(totalDps),
-    breakdown,
-    targets: T,
-    duration: fightDuration,
-    hero: heroTalent,
-    build
-  };
-};
+  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build };
+}
 
 // ============================================================
-// OPTIMAL TALENT RECOMMENDER
+// OPTIMAL TALENT RECOMMENDER — Export strings from Method.gg (Symex)
 // ============================================================
 function getOptimalTalents(targetCount, heroTalent) {
   const isAoe = targetCount > 2;
@@ -348,13 +362,14 @@ function getOptimalTalents(targetCount, heroTalent) {
     hero: MIDNIGHT_DATA.talents.hero[heroTalent],
     heroKey: heroTalent,
     mode: isAoe ? 'AoE' : 'Single Target',
+    // Export strings from Method.gg (Symex) — Midnight 12.0.1, updated Feb 26 2026
     exportString: isAoe
       ? (heroTalent === 'sentinel'
-        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxohBwMBbzMzMjZmtZAAAAAAYGzMzYbGPgZMDGTGAAAAwAAYZbmx2MmZMmZAADAjhZWA'
-        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMG2IgZYoBLmZmZmZeglBAAAAAAzYmZGbGjZMDGTGAAAAwAAYZZm5B2MzMDzYAwGAMGzMLA')
+        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNzMzMmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAALbzMziZmZmZGDAMDbMLGjZmNG'
+        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMG2ILwMM0gFzMzMz4BWGAAAAAAMzMzMDzYMjBGTGAAAAwAAYZZmZ2MzMjZGDgZ2AMLGjZmNG')
       : (heroTalent === 'sentinel'
-        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxohBwMBbGzMjZmlBAAAAAAzYmZGMeAzYGMmMAAAAAAgxy2MzsYmZGzMzAAGwwYMjN'
-        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxAQ2gZYoBLGzMzMjlBAAAAAAzYmZGMGzYGMmMAAAAAAgxy2MzsYmZmxMzAYmNADjxM2A')
+        ? 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNjZmxMPwy8AAAAAAAMzMzMDzYMjBGTGAAAAwAAYZbmZWMzMzMzYAgZYjZxYMjNG'
+        : 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMGWILwMM0gFjZmZmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAwYZbmZWMzMzMzYAMzGgZxYMjNG')
   };
 }
 
@@ -471,12 +486,12 @@ export default function SurvivalHunterSim() {
 
   const getBarColor = (key) => {
     const colors = {
-      'Kill Command': '#f97316', 'Mongoose Bite': '#ef4444', 'Wildfire Bomb': '#f59e0b',
+      'Kill Command': '#f97316', 'Raptor Strike': '#ef4444', 'Wildfire Bomb': '#f59e0b',
       'Boomstick': '#eab308', 'Flamefang Pitch': '#ff6b35', 'Raptor Swipe': '#e74c3c',
-      'Serpent Sting': '#22c55e', 'Pet (Kill Command procs)': '#a78bfa',
-      'Tip of the Spear (passive)': '#fb923c', 'Takedown (CD)': '#60a5fa',
-      'Sentinel (hero)': '#38bdf8', 'Pack Leader (hero)': '#a78bfa',
-      'Coordinated Assault (CD)': '#c084fc',
+      'Strike as One': '#22c55e', 'Pet (Spirit Bond)': '#a78bfa',
+      'Lethal Calibration': '#fb923c', 'Takedown (20% amp)': '#60a5fa',
+      'Sentinel Mark + Lunar Storm': '#38bdf8', 'Pack Leader Beasts': '#a78bfa',
+      'Moonlight Chakram': '#818cf8', 'Hatchet Toss': '#9ca3af',
     };
     return colors[key] || '#6b7280';
   };
@@ -835,11 +850,11 @@ export default function SurvivalHunterSim() {
             <div style={{ fontSize: 28 }}>🔥</div>
           </div>
           <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: '#7a6040', margin: 0 }}>
-            MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
+            MIDNIGHT 12.0.1 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
           </p>
           <div className="divider" style={{ margin: '16px auto', maxWidth: 400 }} />
           <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#8a7050', margin: 0, fontStyle: 'italic' }}>
-            Internal simulation engine · No external dependencies · Based on Method.gg & Icy Veins Midnight data
+            Sources: Azortharion (Trueshot Lodge) · Method.gg (Symex) · Maxroll (heleni) · Wowhead · Raidbots/SimC APL
           </p>
         </div>
 
@@ -1170,15 +1185,20 @@ export default function SurvivalHunterSim() {
                         <span key={t.key} className={`talent-tag ${t.always ? 'core' : t.aoePriority ? 'aoe' : 'st'}`}>
                           {t.key === 'mongooseFury' ? 'Mongoose Fury' :
                            t.key === 'mongooseRounds' ? 'Mongoose Rounds' :
-                           t.key === 'tipOfSpear' ? 'Tip of the Spear' :
-                           t.key === 'strikeAsOne' ? 'Strike As One' :
+                           t.key === 'strikeAsOne' ? 'Strike as One' :
                            t.key === 'wildfireBomb' ? 'Wildfire Bomb' :
                            t.key === 'boomstick' ? 'Boomstick' :
                            t.key === 'savagery' ? 'Savagery' :
-                           t.key === 'mergingKillers' ? 'Merging Killers' :
+                           t.key === 'vulnerability' ? 'Vulnerability' :
                            t.key === 'raptorSwipe' ? 'Raptor Swipe' :
                            t.key === 'flamefangPitch' ? 'Flamefang Pitch' :
-                           t.key === 'flamefangPitchCharge' ? '+Flamefang Charge' :
+                           t.key === 'grenadeJuggler' ? 'Grenade Juggler' :
+                           t.key === 'wildfileShells' ? 'Wildfire Shells' :
+                           t.key === 'shrapnelBomb' ? 'Shrapnel Bomb' :
+                           t.key === 'flamebreak' ? 'Flamebreak' :
+                           t.key === 'lethalCalibration' ? 'Lethal Calibration' :
+                           t.key === 'wildfireImbuement' ? 'Wildfire Imbuement' :
+                           t.key === 'twoAgainstMany' ? 'Two Against Many' :
                            t.key === 'takedown' ? 'Takedown' : t.key}
                         </span>
                       ))}
@@ -1256,11 +1276,15 @@ export default function SurvivalHunterSim() {
                   🔑 KEY MIDNIGHT CHANGES
                 </div>
                 {[
-                  { title: 'Explosive Shot REMOVED', desc: 'Button bloat reduction. No more essential active DPS choices in class tree — pick passive increases (Keen Eyesight, Unnatural Causes, Trigger Finger) then utility.' },
-                  { title: 'Boomstick ⟷ Wildfire Bomb Loop', desc: 'Each Boomstick shot reduces WFB CD by 2s. Each WFB hit reduces Boomstick CD by 2s. Core feedback loop of the spec.' },
-                  { title: 'Mongoose Fury now baseline', desc: 'Tree position makes it always available. Mongoose Rounds talent adds Kill Command → Mongoose Fury CD reduction synergy.' },
-                  { title: 'Flamefang Pitch (new AoE)', desc: '60s CD AoE DoT. Second charge talent very strong for M+ cleave situations.' },
-                  { title: 'Raptor Swipe (AoE)', desc: 'Replaces Raptor Strike in AoE builds. Hits 5 targets + grants 3% Haste proc.' },
+                  { title: 'Explosive Shot & Kill Shot REMOVED', desc: 'No more essential active DPS in class tree. Pick passive increases (Keen Eyesight, Unnatural Causes, Trigger Finger, Serrated Tips) then utility. (Azortharion/Method)' },
+                  { title: 'Kill Command — No Cooldown', desc: 'KC is now a spammable focus builder (20 focus w/ talent). Freedom to dump and rebuild focus at will enables Mongoose Fury overlap gameplay. (Azortharion)' },
+                  { title: 'Takedown replaces Coordinated Assault', desc: '1:30 CD (→1min w/ Savagery). 20% amp for 8s (10s Sentinel). Generates 50 focus. Flanked: +4 targets +100% attack speed. TLDR: WFB > Pitch/Boom > Takedown > RS spam. (Azortharion)' },
+                  { title: 'Mongoose Fury Rework', desc: 'No longer stacks to 6. Now an overlap mechanic: each RS adds 10% for 8s, multiple overlaps stack. ~2-3% real DPS from proper management vs yolo. (Azortharion analysis)' },
+                  { title: 'Boomstick replaces Fury of the Eagle', desc: 'Frontal AoE shotgun, 1min CD. Shellshock: +40% ST (-5% per target). Mongoose Rounds grants MF stacks for pre-Takedown setup. (Maxroll)' },
+                  { title: 'Flamefang Pitch (new AoE)', desc: '30s CD ground-targeted AoE + fire puddle. Grenade Juggler: +1 charge & grants WFB charge. Wildfire Imbuement: fire damage buff 10s. (Azortharion)' },
+                  { title: 'Raptor Swipe — Apex Talent', desc: '4-point Apex: RS has 25% chance → Raptor Swipe (5 targets). Rank 3: every 2nd RS → Swipe. During Takedown: 100% proc + Strike as One at 300%. (Maxroll/Method)' },
+                  { title: 'Dual Wield Support', desc: 'Survival can now dual wield 1H axes/swords/daggers. 2H still preferred with Sentinel. Pack Leader + Lethal Barbs favors DW. WDPS calculations matter — see Azortharion analysis. (Azortharion)' },
+                  { title: 'Stat Priority Changed', desc: 'Mastery (Spirit Bond) overtook Haste as top secondary due to Strike as One + pet scaling. ST: Agi > Mastery > Crit = Haste > Vers. AoE: Agi > Mastery > Haste > Crit > Vers. (Method.gg Symex)' },
                 ].map((note, i) => (
                   <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < 4 ? '1px solid #1a1208' : 'none' }}>
                     <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: '#e07030', marginBottom: 4 }}>▸ {note.title}</div>
@@ -1282,12 +1306,13 @@ export default function SurvivalHunterSim() {
                   ⚔ SINGLE TARGET ROTATION
                 </h3>
                 {[
-                  { n: 1, label: 'Takedown', note: 'On cooldown. Enhanced by Savagery (-30s max reduction).' },
-                  { n: 2, label: 'Wildfire Bomb', note: 'Never cap charges. Owl spawns on cast (Sentinel).' },
-                  { n: 3, label: 'Boomstick', note: 'On cooldown. Reduces WFB CD by 2s per target hit.' },
-                  { n: 4, label: 'Kill Command', note: 'On cooldown. Builds Tip of the Spear stacks.' },
-                  { n: 5, label: 'Mongoose Bite ×6', note: 'Maximize Mongoose Fury stacks before consuming. 15% dmg per stack.' },
-                  { n: 6, label: 'Raptor Strike', note: 'Focus dump when not in Mongoose Fury window.' },
+                  { n: 1, label: 'Wildfire Bomb', note: 'If 2 charges, or Takedown ready, or Lethal Calibration down, or Sentinel\'s Mark on target. Never cap.' },
+                  { n: 2, label: 'Flamefang Pitch / Boomstick', note: 'Cast before Takedown to apply Wildfire Imbuement / Mongoose Fury stacks.' },
+                  { n: 3, label: 'Takedown', note: 'On CD. Savagery reduces to 1min. 20% amp for 8-10s. 100% Raptor Swipe proc.' },
+                  { n: 4, label: 'Raptor Strike (>72.5 Focus)', note: 'Dump focus for Mongoose Fury overlaps. Continue pressing to drain all focus.' },
+                  { n: 5, label: 'Moonlight Chakram', note: '[Sentinel] Available 15s after Takedown. Bounces between targets.' },
+                  { n: 6, label: 'Kill Command', note: 'No CD — spam to rebuild focus. Builds Tip of the Spear. [Pack Leader] Prioritize when beast available.' },
+                  { n: 7, label: 'Raptor Strike (maintenance)', note: 'Continue RS if 3+ Mongoose Fury stacks active to maintain overlap window.' },
                 ].map(r => (
                   <div key={r.n} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
                     <div style={{
@@ -1309,12 +1334,12 @@ export default function SurvivalHunterSim() {
                   💥 AoE ROTATION (3+ targets)
                 </h3>
                 {[
-                  { n: 1, label: 'Wildfire Bomb', note: 'Priority 1. Sentinel owl spawns on every cast.' },
-                  { n: 2, label: 'Flamefang Pitch', note: '60s CD DoT. Maintain on as many targets as possible.' },
-                  { n: 3, label: 'Boomstick', note: 'Hits 5 targets. Critical for bomb/stick feedback loop.' },
-                  { n: 4, label: 'Raptor Swipe', note: 'Replaces Raptor Strike. 5-target cleave + Haste proc.' },
-                  { n: 5, label: 'Kill Command', note: 'Maintain for Tip of the Spear and pet procs.' },
-                  { n: 6, label: 'Serpent Sting', note: 'Multidot 2-3 targets for additional passive damage.' },
+                  { n: 1, label: 'Wildfire Bomb', note: 'Top priority. Sentinel: proc Sentinel\'s Mark → Lunar Storm AoE. Maintain Lethal Calibration.' },
+                  { n: 2, label: 'Flamefang Pitch', note: '30s CD ground AoE + fire puddle. Grenade Juggler: +1 charge. Wildfire Imbuement: fire buff.' },
+                  { n: 3, label: 'Boomstick', note: 'Frontal AoE, 5 targets. Wildfire Shells: -4s WFB CD per hit.' },
+                  { n: 4, label: 'Raptor Strike → Raptor Swipe', note: 'Apex talent: 25% chance to cleave 5 targets (100% during Takedown). Main AoE spender.' },
+                  { n: 5, label: 'Kill Command', note: 'Focus builder. [Pack Leader] spawns beasts for AoE damage.' },
+                  { n: 6, label: 'Takedown', note: '20% amp. Flanked: hits 4 extra targets + 100% attack speed. 100% Swipe proc.' },
                 ].map(r => (
                   <div key={r.n} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'flex-start' }}>
                     <div style={{
@@ -1339,10 +1364,10 @@ export default function SurvivalHunterSim() {
                 </h3>
                 {[
                   { stat: 'Agility', color: '#f0c880', note: 'Primary stat. Always highest value per point.' },
-                  { stat: 'Haste', color: '#60a5fa', note: 'Reduces GCD and ability CDs. Top secondary for both ST and AoE.' },
-                  { stat: 'Critical Strike', color: '#f59e0b', note: 'Strong scaling with Mongoose Fury stacks. Close 2nd to Haste.' },
-                  { stat: 'Mastery', color: '#a78bfa', note: 'Increases pet and Kill Command damage. Scales well in AoE.' },
-                  { stat: 'Versatility', color: '#34d399', note: 'Flat damage increase + survivability. Good floor stat.' },
+                  { stat: 'Mastery', color: '#a78bfa', note: 'Spirit Bond: increases you and pet damage. Top secondary in Midnight due to Strike as One + pet scaling. (Method.gg)' },
+                  { stat: 'Critical Strike', color: '#f59e0b', note: 'Strong scaling with Lethal Calibration (+15% crit dmg) and Stargazer (+2% stacking). Equal to Haste in ST.' },
+                  { stat: 'Haste', color: '#60a5fa', note: 'Reduces GCD, focus regen, Kill Command throughput. Equal to Crit in ST, better in AoE. (Method.gg)' },
+                  { stat: 'Versatility', color: '#34d399', note: 'Flat damage + survivability. Lowest priority but solid floor stat.' },
                 ].map((s, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
