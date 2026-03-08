@@ -991,7 +991,7 @@ export default function SurvivalHunterSim() {
 
         {/* ===== TALENTS TAB ===== */}
         {activeTab === 'talents' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="responsive-grid">
 
             {/* Optimal Builds */}
             <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 24 }}>
