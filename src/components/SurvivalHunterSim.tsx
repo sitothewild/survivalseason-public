@@ -474,7 +474,7 @@ export default function SurvivalHunterSim() {
   const sentinelSelected = heroTalent === 'sentinel';
 
   return (
-    <div style={{
+    <div className="sim-root" style={{
       minHeight: '100vh', background: '#0a0c10', color: '#e8dcc8',
       fontFamily: "'Cinzel Decorative', 'Palatino Linotype', serif",
       position: 'relative', overflow: 'hidden'
