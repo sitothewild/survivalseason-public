@@ -239,11 +239,24 @@ function parseSimcString(simcText) {
     result.errors.push("Could not parse character data. Make sure you paste the full SimulationCraft addon export.");
   }
 
-  // Fill in defaults/estimates if stats are missing
+  // Estimate stats from average ilvl when explicit stat lines are missing
+  const avgIlvl = result.character.avgIlvl || 0;
+  if (result.stats.agility === 0 && avgIlvl > 0) {
+    // Rough scaling: ilvl 200 ~ 6000 agi, ilvl 250 ~ 12000 agi
+    result.stats.agility = Math.round(6000 + (avgIlvl - 200) * 120);
+  }
   if (result.stats.agility === 0) result.stats.agility = 9500;
   if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.1;
 
-  return result;
+  // Estimate secondary stats from ilvl if not explicitly provided
+  if (result.stats.haste === 0 && avgIlvl > 0) {
+    // Rough estimate: higher ilvl = more secondary rating
+    const secondaryBudget = Math.max(0, (avgIlvl - 170) * 18); // rating per secondary
+    result.stats.haste = +(secondaryBudget * 0.28 / 180).toFixed(2);   // ~28% of budget
+    result.stats.crit = +(secondaryBudget * 0.25 / 180).toFixed(2);    // ~25%
+    result.stats.mastery = +(secondaryBudget * 0.30 / 180).toFixed(2);  // ~30% (SV priority)
+    result.stats.versatility = +(secondaryBudget * 0.17 / 205).toFixed(2); // ~17%
+  }
 }
 
 // ============================================================
