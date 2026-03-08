@@ -84,23 +84,33 @@ serve(async (req) => {
         const clientId = Deno.env.get("BLIZZARD_CLIENT_ID");
         const clientSecret = Deno.env.get("BLIZZARD_CLIENT_SECRET");
         let tokenInfo = "not attempted";
-        let apiTest = "not attempted";
+        let profileTest = "not attempted";
+        let gameDataTest = "not attempted";
         try {
           const token = await getAccessToken();
           tokenInfo = `success (token length: ${token.length})`;
           const host = `${region}.api.blizzard.com`;
-          const testUrl = `https://${host}/profile/wow/character/turalyon/blezaa?namespace=profile-${region}&locale=en_US&access_token=${token}`;
-          const testResp = await fetch(testUrl);
-          const testBody = await testResp.text();
-          apiTest = `status=${testResp.status} body=${testBody.substring(0, 500)}`;
+          
+          // Test profile API
+          const profileUrl = `https://${host}/profile/wow/character/turalyon/blezaa?namespace=profile-${region}&locale=en_US&access_token=${token}`;
+          const profileResp = await fetch(profileUrl);
+          const profileBody = await profileResp.text();
+          profileTest = `status=${profileResp.status} headers=${JSON.stringify(Object.fromEntries(profileResp.headers))} body=${profileBody.substring(0, 300)}`;
+          
+          // Test game data API (item #19019 = Thunderfury)
+          const itemUrl = `https://${host}/data/wow/item/19019?namespace=static-${region}&locale=en_US&access_token=${token}`;
+          const itemResp = await fetch(itemUrl);
+          const itemBody = await itemResp.text();
+          gameDataTest = `status=${itemResp.status} body=${itemBody.substring(0, 300)}`;
         } catch (e) {
-          tokenInfo = `failed: ${e.message}`;
+          tokenInfo += ` error: ${e.message}`;
         }
         result = {
           clientId: clientId ? `${clientId.substring(0, 8)}...` : "MISSING",
           secretSet: !!clientSecret,
           tokenInfo,
-          apiTest,
+          profileTest,
+          gameDataTest,
         };
         break;
       }
