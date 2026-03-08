@@ -803,7 +803,7 @@ export default function SurvivalHunterSim() {
                   <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
                     HERO TALENT
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className="hero-grid">
                     <button className={`hero-btn ${heroTalent === 'sentinel' ? 'selected' : ''}`}
                       onClick={() => setHeroTalent('sentinel')}>
                       <div className="sentinel-badge" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>🦉 SENTINEL</div>
