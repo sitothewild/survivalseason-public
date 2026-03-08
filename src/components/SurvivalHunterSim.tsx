@@ -1031,7 +1031,7 @@ export default function SurvivalHunterSim() {
 
         .tabs-row {
           display: flex;
-          border-bottom: 1px solid #1a1208;
+          border-bottom: 1px solid #141e30;
           margin-bottom: 28px;
           gap: 4px;
         }
