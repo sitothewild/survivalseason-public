@@ -731,7 +731,7 @@ export default function SurvivalHunterSim() {
 
         {/* ===== SIM TAB ===== */}
         {activeTab === 'sim' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="responsive-grid">
 
             {/* LEFT: Inputs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
