@@ -1439,12 +1439,11 @@ export default function SurvivalHunterSim() {
                       <span style={{ color: '#34d399' }}>Vers: <b>{parsedChar.stats.versatility}%</b></span>
                     </div>
                       </div>
-                      {/* 3D Character Model */}
+                      {/* Character Render Viewer */}
                       <div style={{ flexShrink: 0 }}>
                         <WowModelViewer
-                          raceName={parsedChar.character.race}
-                          raceId={parsedChar.character.raceId}
-                          gender={parsedChar.character.gender || "MALE"}
+                          renderUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'main-raw')?.value || parsedChar.media?.assets?.find((a: any) => a.key === 'main')?.value}
+                          fallbackUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'avatar')?.value}
                           width={200}
                           height={240}
                         />
