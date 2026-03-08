@@ -36,7 +36,7 @@ async function getAccessToken(region = "us"): Promise<string> {
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`OAuth token request failed (${oauthHost}): ${resp.status} ${text}`);
+    throw new Error(`OAuth token request failed (${oauthUrl}): ${resp.status} ${text}`);
   }
 
   const data = await resp.json();
@@ -56,6 +56,9 @@ async function blizzardGet(path: string, region: string, namespace: string, loca
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!resp.ok) {
+    if (resp.status === 404) {
+      return null; // Item not found — return null instead of throwing
+    }
     const text = await resp.text();
     throw new Error(`Blizzard API ${resp.status}: ${text}`);
   }
