@@ -78,27 +78,47 @@ export function equipmentToSimData(fullData: any) {
   }));
 
   // Extract stats from Blizzard API character statistics
-  const agility = charStats?.agility?.effective || 0;
-  const attackPower = charStats?.attack_power || agility * 2.1;
-  const hasteRating = charStats?.melee_haste?.rating || 0;
-  const critRating = charStats?.melee_crit?.rating || 0;
-  const masteryRating = charStats?.mastery?.rating || 0;
-  const versRating = charStats?.versatility || 0;
+  // The API returns: agility.effective, attack_power (number), melee_crit.value (%), etc.
+  const agility = charStats?.agility?.effective || charStats?.agility?.base || 0;
+  const attackPower = (typeof charStats?.attack_power === 'number' ? charStats.attack_power : charStats?.attack_power?.effective) || agility * 2.0;
+
+  // Secondary stats — use effective percentage values from the API
+  // The API provides .value as the actual % (e.g., 25.5 = 25.5%)
+  let haste = 0, crit = 0, mastery = 0, versatility = 0;
+
+  // Prefer effective percentage values
+  if (charStats?.melee_haste?.value != null) {
+    haste = +charStats.melee_haste.value;
+  } else if (charStats?.melee_haste?.rating) {
+    haste = +(charStats.melee_haste.rating / 170).toFixed(2);
+  }
+
+  if (charStats?.melee_crit?.value != null) {
+    crit = +charStats.melee_crit.value;
+  } else if (charStats?.melee_crit?.rating) {
+    crit = +(charStats.melee_crit.rating / 170).toFixed(2);
+  }
+
+  if (charStats?.mastery?.value != null) {
+    mastery = +charStats.mastery.value;
+  } else if (charStats?.mastery?.rating) {
+    mastery = +(charStats.mastery.rating / 170).toFixed(2);
+  }
+
+  if (charStats?.versatility_damage_done_bonus != null) {
+    versatility = +charStats.versatility_damage_done_bonus;
+  } else if (charStats?.versatility != null) {
+    versatility = +((typeof charStats.versatility === 'number' ? charStats.versatility : 0) / 205 * 100).toFixed(2);
+  }
 
   const simStats = {
     agility,
     attackPower,
-    haste: +(hasteRating / 180).toFixed(2),
-    crit: +(critRating / 180).toFixed(2),
-    mastery: +(masteryRating / 180).toFixed(2),
-    versatility: +(versRating / 205).toFixed(2),
+    haste: +haste.toFixed(2),
+    crit: +crit.toFixed(2),
+    mastery: +mastery.toFixed(2),
+    versatility: +versatility.toFixed(2),
   };
-
-  // Use effective percentages if available
-  if (charStats?.melee_haste?.value) simStats.haste = +(charStats.melee_haste.value).toFixed(2);
-  if (charStats?.melee_crit?.value) simStats.crit = +(charStats.melee_crit.value).toFixed(2);
-  if (charStats?.mastery?.value) simStats.mastery = +(charStats.mastery.value).toFixed(2);
-  if (charStats?.versatility_damage_done_bonus) simStats.versatility = +(charStats.versatility_damage_done_bonus).toFixed(2);
 
   const avgIlvl = gear.length > 0
     ? Math.round(gear.filter((g: any) => g.ilvl > 0).reduce((s: number, g: any) => s + g.ilvl, 0) / gear.filter((g: any) => g.ilvl > 0).length)

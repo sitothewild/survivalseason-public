@@ -10,34 +10,38 @@ import WowModelViewer from "@/components/WowModelViewer";
 // ============================================================
 
 const MIDNIGHT_DATA = {
-  baseStats: {
-    attackPower: 7200,
-    baseAgility: 3800,
-    petDamageMultiplier: 0.42,
-  },
-  // Updated ability data based on Azortharion's HackMD analysis & SimC APL
+  // Base class aura multiplier — Survival Hunter passive damage amp (spec aura + hidden multipliers)
+  classAura: 1.20,
+  // Pet scaling — pets inherit a portion of owner's AP
+  petApScaling: 0.60,
+
+  // Updated ability data — AP coefficients from WoW tooltips / WoWDB / SimC data
+  // Coefficients represent % of Attack Power as decimal (2.86 = 286% AP)
   spells: {
-    // Kill Command — no longer has a CD, 20 focus generator (with talent), filler/builder
-    killCommand: { baseDmg: 2.7, apCoef: 1.23, cd: 0, focus: -20, aoeTargets: 1, note: 'No CD in Midnight. Spammable focus builder.' },
-    // Raptor Strike — primary melee spender, 35 focus (40 base - 5 from talent)
-    raptorStrike: { baseDmg: 1.86, apCoef: 0.96, cd: 0, focus: 35, aoeTargets: 1, note: 'Primary spender. Procs Mongoose Fury overlaps.' },
-    // Wildfire Bomb — no focus cost, 254% AP primary, 182% AP secondary, enhanced by Sentinel Mark (+130%)
-    wildfireBomb: { baseDmg: 3.81, apCoef: 1.54, cd: 18, focus: 0, aoeTargets: 8, dotDmg: 0.40, dotDuration: 6, note: 'No focus cost. Guerrilla Tactics +15%. Lethal Calibration: +15% crit dmg for 12s.' },
+    // Raptor Strike — primary melee spender, 30 focus cost
+    raptorStrike: { apCoef: 2.86, cd: 0, focus: 30, aoeTargets: 1, note: 'Primary spender. 286% AP Physical damage.' },
+    // Kill Command — no CD in Midnight, 20 focus generator, pet attack
+    killCommand: { apCoef: 1.50, cd: 0, focus: -20, aoeTargets: 1, note: 'Pet attacks target for 150% AP. Spammable focus builder.' },
+    // Wildfire Bomb — 49.5% AP initial + 99% AP DoT over 6s = ~2.48 total effective
+    wildfireBomb: { apCoef: 2.48, cd: 18, focus: 0, aoeTargets: 8, note: 'No focus cost. 49.5% AP initial + 99% AP DoT over 6s. Lethal Calibration: +15% crit dmg for 12s.' },
     // Boomstick — replaces Fury of the Eagle, frontal AoE, 1min CD
-    boomstick: { baseDmg: 2.4, apCoef: 1.05, cd: 60, focus: 0, aoeTargets: 5, note: 'Replaces FotE. Shellshock: +40% ST (-5% per extra target). Mongoose Rounds: grants MF stacks.' },
+    boomstick: { apCoef: 3.60, cd: 60, focus: 0, aoeTargets: 5, note: 'Replaces FotE. Shellshock: +40% ST (-5% per extra target). Mongoose Rounds: grants MF stacks.' },
     // Flamefang Pitch — ground-targeted AoE, 30s CD, leaves fire puddle
-    flamefangPitch: { baseDmg: 3.2, apCoef: 1.25, cd: 30, focus: 0, aoeTargets: 8, dotDmg: 0.55, dotDuration: 8, note: 'Ground AoE + puddle. Grenade Juggler: +1 charge & grants WFB charge. Wildfire Imbuement: fire dmg buff 10s.' },
-    // Takedown — replaces Coordinated Assault, 1:30 base CD (reducible to 1min via Savagery)
-    takedown: { damageAmp: 0.20, cd: 90, duration: 8, focus: -50, note: 'Deals damage + 20% amp for 8s. Generates 50 focus. Flanked: hits 4 extra targets + 100% attack speed.' },
-    // Raptor Swipe — Apex talent, 25% proc from Raptor Strike (100% during Takedown at rank 3)
-    raptorSwipe: { baseDmg: 1.4, apCoef: 0.68, cd: 0, focus: -15, aoeTargets: 5, note: 'Apex talent. 25% from RS (100% during Takedown at rank 3). Pet attacks via Strike as One at 300%.' },
-    // Hatchet Toss — baseline ranged poke, no rotational value unless Pack Leader (Hogstrider)
-    hatchetToss: { baseDmg: 0.8, apCoef: 0.35, cd: 0, focus: 0, aoeTargets: 1, note: 'Ranged poke. Hogstrider: cleaves 4 targets +200% dmg. Currently not worth casting even talented.' },
+    flamefangPitch: { apCoef: 4.20, cd: 30, focus: 0, aoeTargets: 8, note: 'Ground AoE + puddle (180% AP initial + 240% AP DoT). Grenade Juggler: +1 charge.' },
+    // Takedown — replaces Coordinated Assault, 1:30 base CD
+    takedown: { damageAmp: 0.20, apCoef: 1.80, cd: 90, duration: 8, focus: -50, note: 'Deals 180% AP + 20% amp for 8s. Generates 50 focus.' },
+    // Raptor Swipe — Apex talent, 25% proc from Raptor Strike
+    raptorSwipe: { apCoef: 1.85, cd: 0, focus: -15, aoeTargets: 5, note: 'Apex talent. 25% from RS (100% during Takedown). Pet Strike as One at 300%.' },
+    // Hatchet Toss — Pack Leader
+    hatchetToss: { apCoef: 0.95, cd: 0, focus: 0, aoeTargets: 1, note: 'Ranged poke. Hogstrider: cleaves 4 targets +200% dmg.' },
     // Strike as One — passive, pet attacks on every damaging ability
-    strikeAsOne: { baseDmg: 0.86, apCoef: 0.43, cd: 0, focus: 0, aoeTargets: 1, note: 'Passive. Two Against Many: +2 targets, +15% per target hit.' },
-    // Moonlight Chakram — Sentinel only, available 15s after Takedown
-    moonlightChakram: { baseDmg: 3.5, apCoef: 1.4, cd: 90, focus: 0, aoeTargets: 8, note: 'Sentinel only. Bounces between targets. Twilight Requiem: AoE explosion on expiry.' },
+    strikeAsOne: { apCoef: 1.10, cd: 0, focus: 0, aoeTargets: 1, note: 'Passive pet attack. Two Against Many: +2 targets, +15% per target.' },
+    // Moonlight Chakram — Sentinel only
+    moonlightChakram: { apCoef: 4.80, cd: 90, focus: 0, aoeTargets: 8, note: 'Sentinel only. Bounces between targets.' },
+    // Auto Attack — melee white hits
+    autoAttack: { apCoef: 0.85, cd: 0, focus: 0, aoeTargets: 1, note: 'Melee auto attacks, normalized to AP coefficient.' },
   },
+
   // Stat priority from Method.gg (Symex) — Midnight 12.0.1
   statPriority: {
     st: ['Agility', 'Mastery', 'Critical Strike = Haste', 'Versatility'],
@@ -54,24 +58,20 @@ const MIDNIGHT_DATA = {
       autoAttackBonus: { dps: 0.025, type: "passive", desc: "25% increased auto attack damage." },
     },
     spec: {
-      // Core — always taken per Method/Maxroll builds
-      mongooseFury: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "Raptor Strike increases RS damage by 10% for 8s. Multiple overlaps stack. ~2-3% real DPS from proper management (Azortharion).", always: true },
+      mongooseFury: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "Raptor Strike increases RS damage by 10% for 8s. Multiple overlaps stack.", always: true },
       strikeAsOne: { dps: 0.08, stTarget: 0.10, aoe: 0.06, desc: "All damaging abilities cause pet to attack. Two Against Many: +2 targets, +15% per enemy hit.", always: true },
       wildfireBomb: { dps: 0.14, stTarget: 0.11, aoe: 0.22, desc: "No focus cost. 254% AP primary / 182% AP secondary. Lethal Calibration: +15% crit dmg for 12s.", always: true },
       takedown: { dps: 0.08, stTarget: 0.12, aoe: 0.06, desc: "Replaces Coordinated Assault. 20% amp for 8s (10s Sentinel). Generates 50 focus. 1:30 base CD.", always: true },
       boomstick: { dps: 0.10, stTarget: 0.09, aoe: 0.14, desc: "Replaces Fury of the Eagle. Frontal AoE, 1m CD. Shellshock: +40% ST. Mongoose Rounds or Wildfire Shells.", always: true },
       raptorSwipe: { dps: 0.09, stTarget: 0.04, aoe: 0.16, desc: "Apex talent (4 points). 25% proc → 100% during Takedown. Rank 3: Strike as One at 300%. Focus refund.", always: true },
-      // Situational ST
       savagery: { dps: 0.06, stTarget: 0.09, aoe: 0.03, desc: "2-point node: reduces Takedown CD by 15/30s. Enables 1-minute Takedown windows in raids.", stPriority: true },
       vulnerability: { dps: 0.05, stTarget: 0.07, aoe: 0.02, desc: "Raptor Strike and Boomstick deal 20% increased crit damage.", stPriority: true },
       mongooseRounds: { dps: 0.05, stTarget: 0.07, aoe: 0.03, desc: "Each Boomstick hit grants 1 Mongoose Fury stack. Good for pre-Takedown setup.", stPriority: true },
-      // AoE talents
       flamefangPitch: { dps: 0.10, stTarget: 0.04, aoe: 0.18, desc: "30s CD ground AoE + fire puddle. 2nd charge via Grenade Juggler. Wildfire Imbuement: fire buff 10s.", aoePriority: true },
       grenadeJuggler: { dps: 0.04, stTarget: 0.01, aoe: 0.08, desc: "Flamefang Pitch gains 1 extra charge + grants 1 Wildfire Bomb charge.", aoePriority: true },
       wildfileShells: { dps: 0.04, stTarget: 0.02, aoe: 0.07, desc: "Each Boomstick hit reduces WFB CD by 4s. (Choice node vs Mongoose Rounds.)", aoePriority: true },
       shrapnelBomb: { dps: 0.03, stTarget: 0.01, aoe: 0.06, desc: "WFB periodic is now a bleed. Synergizes with Shower of Blood (+16% bleed).", aoePriority: true },
       flamebreak: { dps: 0.04, stTarget: 0.03, aoe: 0.07, desc: "All Fire damage +15%. Strong with Flamefang Pitch + Wildfire Imbuement.", aoePriority: true },
-      // Passive buffs
       lethalCalibration: { dps: 0.06, stTarget: 0.07, aoe: 0.05, desc: "Throwing WFB increases crit damage by 15% for 12s. Maintain via CDR.", always: true },
       wildfireImbuement: { dps: 0.05, stTarget: 0.04, aoe: 0.07, desc: "Flamefang Pitch imbues weapon with fire. You and pet deal extra fire dmg for 10s.", aoePriority: true },
       twoAgainstMany: { dps: 0.04, stTarget: 0.02, aoe: 0.08, desc: "Strike as One hits +2 enemies, +15% damage per enemy struck.", aoePriority: true },
@@ -162,10 +162,10 @@ function parseSimcString(simcText) {
     const [, key, val] = statMatch;
     const v = parseFloat(val);
     if (key === 'agility') result.stats.agility = v;
-    if (key === 'haste_rating') result.stats.haste = +(v / 180).toFixed(2);
-    if (key === 'crit_rating') result.stats.crit = +(v / 180).toFixed(2);
-    if (key === 'mastery_rating') result.stats.mastery = +(v / 180).toFixed(2);
-    if (key === 'versatility_rating') result.stats.versatility = +(v / 205).toFixed(2);
+    if (key === 'haste_rating') result.stats.haste = +(v / 170).toFixed(2);
+    if (key === 'crit_rating') result.stats.crit = +(v / 170).toFixed(2);
+    if (key === 'mastery_rating') result.stats.mastery = +(v / 170).toFixed(2);
+    if (key === 'versatility_rating') result.stats.versatility = +(v / 205 * 100).toFixed(2);
     if (key === 'attack_power') result.stats.attackPower = v;
   });
 
@@ -242,115 +242,140 @@ function parseSimcString(simcText) {
   }
 
   // Estimate stats from average ilvl when explicit stat lines are missing
+  // Calibrated to TWW/Midnight stat scaling: ilvl 600 ~ 35K agi, ilvl 639 ~ 48K agi
   const avgIlvl = result.character.avgIlvl || 0;
   if (result.stats.agility === 0 && avgIlvl > 0) {
-    // Rough scaling: ilvl 200 ~ 6000 agi, ilvl 250 ~ 12000 agi
-    result.stats.agility = Math.round(6000 + (avgIlvl - 200) * 120);
+    // Exponential-ish scaling: base at ilvl 500 = 15K, scales ~600 agi per ilvl above 500
+    result.stats.agility = Math.round(15000 + Math.max(0, avgIlvl - 500) * 240);
   }
-  if (result.stats.agility === 0) result.stats.agility = 9500;
-  if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.1;
+  if (result.stats.agility === 0) result.stats.agility = 45000;
+  if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.0;
 
   // Estimate secondary stats from ilvl if not explicitly provided
   if (result.stats.haste === 0 && avgIlvl > 0) {
-    // Estimate secondary ratings from ilvl. At ilvl 230, expect ~1800 rating per secondary stat.
-    // Total secondary budget scales roughly as (ilvl - 150) * 80
-    const totalSecondary = Math.max(0, (avgIlvl - 150) * 80);
-    result.stats.haste = +(totalSecondary * 0.28 / 180).toFixed(2);       // ~28% budget → ~10% haste
-    result.stats.crit = +(totalSecondary * 0.25 / 180).toFixed(2);        // ~25% → ~9% crit
-    result.stats.mastery = +(totalSecondary * 0.30 / 180).toFixed(2);      // ~30% → ~11% mastery
-    result.stats.versatility = +(totalSecondary * 0.17 / 205).toFixed(2);  // ~17% → ~5% vers
+    // At ilvl 639, expect roughly: 18% haste, 25% crit, 35% mastery, 5% vers
+    const ilvlScale = Math.max(0, (avgIlvl - 500)) / 139; // 0 at ilvl 500, 1 at ilvl 639
+    result.stats.haste = +(8 + ilvlScale * 10).toFixed(2);
+    result.stats.crit = +(12 + ilvlScale * 13).toFixed(2);
+    result.stats.mastery = +(15 + ilvlScale * 20).toFixed(2);
+    result.stats.versatility = +(2 + ilvlScale * 3).toFixed(2);
   }
 
   return result;
 }
 
 // ============================================================
-// CORE DPS SIMULATION ENGINE
-// Sources: SimC APL, Azortharion rotation priority, Method.gg coefficients
+// CORE DPS SIMULATION ENGINE — Calibrated to SimC TWW1 data
+// Sources: SimC APL, Azortharion rotation priority, WoW tooltips, Method.gg
+// Calibration target: ilvl 639 = ~1.6-2.0M ST DPS (SimC Patchwerk 5min)
 // ============================================================
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
   const stats = charData.stats;
-  const agi = stats.agility || 9500;
-  const hasteBonus = 1 + (stats.haste || 8) / 100;
-  const critBonus = 1 + ((stats.crit || 12) / 100) * 0.5;
-  const masteryBonus = 1 + (stats.mastery || 10) / 100 * 0.9;
-  const versBonus = 1 + (stats.versatility || 6) / 100;
-  const ap = stats.attackPower || agi * 2.1;
+  const agi = stats.agility || 45000;
+  const ap = stats.attackPower || agi * 2.0;
 
-  // Stat multiplier — haste excluded here (already affects cast speed via GCD)
-  const statMult = critBonus * masteryBonus * versBonus;
+  // Secondary stat percentages (already in % form, e.g. 25 = 25%)
+  const hastePct = stats.haste || 18;
+  const critPct = stats.crit || 25;
+  const masteryPct = stats.mastery || 35;
+  const versPct = stats.versatility || 5;
+
+  // Derived multipliers
+  const hasteBonus = 1 + hastePct / 100;
+  // Crit: average damage increase = critChance * (critDamageMultiplier - 1). WoW crit = 2x damage.
+  const critMult = 1 + (critPct / 100) * 1.0; // 25% crit → 1.25x avg
+  // Mastery: Spirit Bond — increases you and your pet damage. Survival mastery is ~2x the rating value.
+  const masteryMult = 1 + (masteryPct / 100) * 1.8; // 35% mastery → 1.63x
+  // Versatility: flat damage bonus
+  const versMult = 1 + versPct / 100;
+
+  // Class aura + talent amp (passive multipliers from spec aura, always-on talents, enchants, consumables)
+  const classAura = MIDNIGHT_DATA.classAura;
+  // Talent amplifier — accounts for passive talent damage increases not individually modeled
+  const talentAmp = 1.25;
+  // Gear amp — tier sets, trinket average procs, enchants, consumables
+  const gearAmp = 1.15;
+
+  // Combined stat multiplier
+  const statMult = critMult * masteryMult * versMult * classAura * talentAmp * gearAmp;
+
   const T = targetCount;
   const gcdBase = 1.5 / hasteBonus;
+  const gcdsPerSec = 1 / gcdBase;
 
-  // Weapon normalization constant — calibrated so ilvl 230 (~20K AP) produces ~20K ST DPS
-  const WEAPON_NORM = 1.5;
-
-  // Rotation time fractions — how much GCD budget each ability uses
+  // Rotation time fractions — what % of GCD budget each ability uses
   const rot = build === 'st' ? {
-    raptorStrike: 0.32,
-    killCommand: 0.22,
+    raptorStrike: 0.30,
+    killCommand: 0.20,
     wildfireBomb: 0.10,
-    boomstick: 0.06,
+    boomstick: 0.05,
     takedown: 0.03,
-    raptorSwipe: 0.04,
+    raptorSwipe: 0.06,
+    strikeAsOne: 0.08,
+    autoAttack: 0.12,
     moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
     hatchetToss: heroTalent === 'packLeader' ? 0.01 : 0,
   } : {
-    raptorStrike: 0.18,
-    killCommand: 0.14,
+    raptorStrike: 0.16,
+    killCommand: 0.12,
     wildfireBomb: 0.12,
-    boomstick: 0.08,
+    boomstick: 0.07,
     flamefangPitch: 0.08,
     takedown: 0.03,
-    raptorSwipe: 0.10,
+    raptorSwipe: 0.12,
+    strikeAsOne: 0.06,
+    autoAttack: 0.10,
     moonlightChakram: heroTalent === 'sentinel' ? 0.02 : 0,
     hatchetToss: heroTalent === 'packLeader' ? 0.02 : 0,
   };
 
   let breakdown = {};
 
-  // Core calc: (apCoef * AP / WEAPON_NORM) * statMult * castsPerSec * targets
+  // Core damage formula: apCoef * AP * statMult * (uptimeFraction * gcdsPerSec) * targetMult
   const calcAbility = (key, uptimeFraction, targetMult) => {
     const spell = MIDNIGHT_DATA.spells[key];
     if (!spell) return 0;
-    const dmgPerCast = spell.apCoef * (ap / WEAPON_NORM) * statMult;
-    const castsPerSec = uptimeFraction / gcdBase;
-    return dmgPerCast * castsPerSec * targetMult;
+    const dmgPerCast = spell.apCoef * ap * statMult;
+    const effectiveCastsPerSec = uptimeFraction * gcdsPerSec;
+    return dmgPerCast * effectiveCastsPerSec * targetMult;
   };
 
-  // Raptor Strike — primary spender, Mongoose Fury overlap ~35% bonus
-  breakdown['Raptor Strike'] = calcAbility('raptorStrike', rot.raptorStrike || 0, 1) * 1.35;
+  // Raptor Strike — Mongoose Fury overlap: avg ~3 stacks = 30% bonus
+  breakdown['Raptor Strike'] = calcAbility('raptorStrike', rot.raptorStrike || 0, 1) * 1.30;
 
-  // Kill Command — no CD, spammable focus builder
+  // Kill Command — spammable focus builder
   breakdown['Kill Command'] = calcAbility('killCommand', rot.killCommand || 0, 1);
 
-  // Wildfire Bomb — 8 target AoE, DoT component adds ~25%
-  breakdown['Wildfire Bomb'] = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8)) * 1.25;
+  // Wildfire Bomb — AoE with DoT component
+  breakdown['Wildfire Bomb'] = calcAbility('wildfireBomb', rot.wildfireBomb || 0, Math.min(T, 8));
 
-  // Boomstick — Shellshock: +40% ST, -5% per extra target
-  const shellshockMult = T === 1 ? 1.40 : Math.max(1, 1.40 - (T - 1) * 0.05);
+  // Boomstick — Shellshock: +40% ST, diminishing per extra target
+  const shellshockMult = T === 1 ? 1.40 : Math.max(1.05, 1.40 - (T - 1) * 0.05);
   breakdown['Boomstick'] = calcAbility('boomstick', rot.boomstick || 0, Math.min(T, 5)) * shellshockMult;
 
-  // Raptor Swipe (Apex talent)
+  // Raptor Swipe (Apex talent) — procs from RS
   breakdown['Raptor Swipe'] = calcAbility('raptorSwipe', rot.raptorSwipe || 0, Math.min(T, 5));
 
   // Flamefang Pitch (AoE build)
   if (build === 'aoe' && rot.flamefangPitch) {
-    breakdown['Flamefang Pitch'] = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8)) * 1.35;
+    breakdown['Flamefang Pitch'] = calcAbility('flamefangPitch', rot.flamefangPitch, Math.min(T, 8));
   }
 
-  // Strike as One — passive pet attacks from all abilities (~5-8% of total)
-  const totalUptime = Object.values(rot).reduce((s, v) => s + v, 0);
-  breakdown['Strike as One'] = (0.12 * (ap / WEAPON_NORM)) * statMult * (totalUptime / gcdBase) * Math.min(T, 3);
+  // Strike as One — passive pet attacks from all abilities
+  breakdown['Strike as One'] = calcAbility('strikeAsOne', rot.strikeAsOne || 0, Math.min(T, 3));
 
-  // Pet baseline damage (Spirit Bond mastery scaling, auto attacks + basic attacks)
-  // Pet does ~10-12% of total damage
-  breakdown['Pet (Spirit Bond)'] = (0.10 * (ap / WEAPON_NORM)) * statMult * 1.5 * (build === 'st' ? 1 : 0.80);
+  // Auto Attacks — melee white hits (significant portion of melee DPS)
+  breakdown['Auto Attacks'] = calcAbility('autoAttack', rot.autoAttack || 0, 1) * hasteBonus;
 
-  // Lethal Calibration (+15% crit dmg uptime from WFB)
+  // Pet baseline damage (Spirit Bond mastery scaling + basic attacks)
+  // Pet inherits AP and does ~8-12% of total independently
+  const petBaseDps = MIDNIGHT_DATA.petApScaling * ap * masteryMult * versMult * classAura * gcdsPerSec * 0.15;
+  breakdown['Pet (Spirit Bond)'] = petBaseDps;
+
+  // Lethal Calibration — +15% crit damage when WFB is active
   const lcUptime = Math.min(1, 12 / (18 / hasteBonus));
-  const lcBase = (breakdown['Raptor Strike'] + breakdown['Kill Command'] + breakdown['Boomstick'] + breakdown['Raptor Swipe']);
-  breakdown['Lethal Calibration'] = lcBase * 0.15 * lcUptime * (stats.crit || 12) / 100;
+  const lcAffected = (breakdown['Raptor Strike'] + breakdown['Kill Command'] + breakdown['Boomstick'] + breakdown['Raptor Swipe']);
+  breakdown['Lethal Calibration'] = lcAffected * 0.15 * lcUptime * (critPct / 100);
 
   // Moonlight Chakram (Sentinel)
   if (heroTalent === 'sentinel' && rot.moonlightChakram) {
@@ -380,19 +405,21 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 
   let totalDps = Object.values(breakdown).reduce((s, v) => s + v, 0);
 
-  // Multi-target diminishing returns
+  // Multi-target scaling (diminishing returns per target)
   if (T > 1) {
-    const cleaveFactor = T <= 3 ? 1 + (T - 1) * 0.55
-      : T <= 5 ? 2.1 + (T - 3) * 0.35
-      : T <= 8 ? 2.8 + (T - 5) * 0.20
-      : 3.4 + (T - 8) * 0.12;
+    const cleaveFactor = T <= 3 ? 1 + (T - 1) * 0.60
+      : T <= 5 ? 2.2 + (T - 3) * 0.40
+      : T <= 8 ? 3.0 + (T - 5) * 0.25
+      : 3.75 + (T - 8) * 0.15;
     const stDps = totalDps / (1 + heroPct);
-    totalDps = stDps * cleaveFactor * (1 + heroPct * 0.8);
+    totalDps = stDps * cleaveFactor * (1 + heroPct * 0.85);
   }
 
-  const cdEfficiency = Math.min(1.12, 1 + (fightDuration - 180) / 900 * 0.12);
+  // Cooldown alignment efficiency (longer fights allow better CD stacking)
+  const cdEfficiency = Math.min(1.10, 1 + (fightDuration - 180) / 900 * 0.10);
   totalDps *= cdEfficiency;
 
+  // Normalize breakdown to sum to totalDps
   const rawSum = Object.values(breakdown).reduce((s, v) => s + v, 0);
   const normFactor = totalDps / rawSum;
   Object.keys(breakdown).forEach(k => { breakdown[k] = Math.round(breakdown[k] * normFactor); });
@@ -416,9 +443,9 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   };
 
   const RATING_PER_PERCENT = {
-    haste: 180,
-    crit: 180,
-    mastery: 180,
+    haste: 170,
+    crit: 170,
+    mastery: 170,
     versatility: 205,
   };
 
@@ -427,7 +454,7 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   // Agility: bump agi and AP together
   const agiChar = JSON.parse(JSON.stringify(charData));
   agiChar.stats.agility += DELTA.agility;
-  agiChar.stats.attackPower = agiChar.stats.agility * 2.1;
+  agiChar.stats.attackPower = agiChar.stats.agility * 2.0;
   const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build).totalDps;
   const agiDelta = (agiDps - baseDps) / DELTA.agility; // DPS per 1 agility
   weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
@@ -604,12 +631,12 @@ region=us
 server=stormrage
 spec=survival
 talents=C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxohBwMBbGzMjZmlBAAAAAAzYmZGMeAzYGMmMAAAAAAgxy2MzsYmZGzMzAAGwwYMjN
-agility=12450
-attack_power=26145
-haste_rating=1820
-crit_rating=2340
-mastery_rating=1620
-versatility_rating=980
+agility=48200
+attack_power=96400
+haste_rating=3240
+crit_rating=4500
+mastery_rating=6300
+versatility_rating=1850
 head=,id=232011,item_level=639
 neck=,id=231814,item_level=636
 shoulders=,id=232013,item_level=639
@@ -828,7 +855,7 @@ export default function SurvivalHunterSim() {
     });
   };
 
-  const formatDps = (n) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toString();
+  const formatDps = (n) => n >= 1000000 ? `${(n / 1000000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toString();
 
   const getBarColor = (key) => {
     const colors = {
