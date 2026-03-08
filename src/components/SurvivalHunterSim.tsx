@@ -511,6 +511,76 @@ export default function SurvivalHunterSim() {
     setParseError('');
   };
 
+  const handleArmoryLookup = useCallback(async () => {
+    if (!armoryRealm.trim() || !armoryName.trim()) {
+      setArmoryError('Enter both realm and character name.');
+      return;
+    }
+    setArmoryLoading(true);
+    setArmoryError('');
+    setArmoryAvatar('');
+    try {
+      const fullData = await getFullCharacter(
+        armoryRealm.trim().toLowerCase().replace(/\s+/g, '-'),
+        armoryName.trim().toLowerCase(),
+        armoryRegion
+      );
+
+      if (fullData.profile?.error) {
+        throw new Error(fullData.profile.error);
+      }
+
+      const simData = equipmentToSimData(fullData);
+
+      // Check if character is a survival hunter
+      if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') {
+        setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival. Results may be inaccurate.`);
+      }
+
+      setParsedChar(simData);
+      setSimResults(null);
+
+      // Extract avatar
+      if (fullData.media?.assets) {
+        const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
+        if (avatar?.value) setArmoryAvatar(avatar.value);
+      }
+
+      // Enrich gear with Blizzard item data
+      const itemIds = simData.gear.filter((g: any) => g.itemId).map((g: any) => parseInt(g.itemId));
+      if (itemIds.length > 0) {
+        setItemEnrichLoading(true);
+        try {
+          const items = await getItemsBatch(itemIds, armoryRegion);
+          if (Array.isArray(items)) {
+            const itemMap = {};
+            items.forEach((item: any) => {
+              if (item.id) itemMap[item.id] = item;
+            });
+            // Update gear names from API data
+            const enrichedGear = simData.gear.map((g: any) => {
+              if (g.itemId && itemMap[g.itemId]) {
+                const apiItem = itemMap[g.itemId];
+                return { ...g, name: apiItem.name || g.name };
+              }
+              return g;
+            });
+            setParsedChar(prev => prev ? { ...prev, gear: enrichedGear } : prev);
+          }
+        } catch (e) {
+          console.warn('Item enrichment failed:', e);
+        } finally {
+          setItemEnrichLoading(false);
+        }
+      }
+    } catch (err) {
+      setArmoryError(err.message || 'Failed to look up character.');
+      setParsedChar(null);
+    } finally {
+      setArmoryLoading(false);
+    }
+  }, [armoryRealm, armoryName, armoryRegion]);
+
   const getTargets = () => {
     if (simMode === 'single') return [1];
     if (simMode === 'cleave') return [2, 3];
