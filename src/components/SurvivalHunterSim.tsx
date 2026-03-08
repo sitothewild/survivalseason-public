@@ -242,23 +242,22 @@ function parseSimcString(simcText) {
   }
 
   // Estimate stats from average ilvl when explicit stat lines are missing
-  // Calibrated to TWW/Midnight stat scaling: ilvl 600 ~ 35K agi, ilvl 639 ~ 48K agi
+  // Calibrated to Midnight 12.0.1 stat scaling: level 90, ilvl 636 ~ 1558 agi
   const avgIlvl = result.character.avgIlvl || 0;
   if (result.stats.agility === 0 && avgIlvl > 0) {
-    // Exponential-ish scaling: base at ilvl 500 = 15K, scales ~600 agi per ilvl above 500
-    result.stats.agility = Math.round(15000 + Math.max(0, avgIlvl - 500) * 240);
+    // Midnight stat scaling: ilvl 600 ~ 1000 agi, ilvl 636 ~ 1558
+    result.stats.agility = Math.round(400 + Math.max(0, avgIlvl - 550) * 13.5);
   }
-  if (result.stats.agility === 0) result.stats.agility = 45000;
-  if (result.stats.attackPower === 0) result.stats.attackPower = result.stats.agility * 2.0;
+  if (result.stats.agility === 0) result.stats.agility = 1500;
+  if (result.stats.attackPower === 0) result.stats.attackPower = Math.round(result.stats.agility * 1.05);
 
   // Estimate secondary stats from ilvl if not explicitly provided
   if (result.stats.haste === 0 && avgIlvl > 0) {
-    // At ilvl 639, expect roughly: 18% haste, 25% crit, 35% mastery, 5% vers
-    const ilvlScale = Math.max(0, (avgIlvl - 500)) / 139; // 0 at ilvl 500, 1 at ilvl 639
-    result.stats.haste = +(8 + ilvlScale * 10).toFixed(2);
-    result.stats.crit = +(12 + ilvlScale * 13).toFixed(2);
-    result.stats.mastery = +(15 + ilvlScale * 20).toFixed(2);
-    result.stats.versatility = +(2 + ilvlScale * 3).toFixed(2);
+    const ilvlScale = Math.max(0, (avgIlvl - 550)) / 86; // 0 at ilvl 550, 1 at ilvl 636
+    result.stats.haste = +(5 + ilvlScale * 5.6).toFixed(2);
+    result.stats.crit = +(8 + ilvlScale * 12.1).toFixed(2);
+    result.stats.mastery = +(10 + ilvlScale * 20.2).toFixed(2);
+    result.stats.versatility = +(2 + ilvlScale * 6.3).toFixed(2);
   }
 
   return result;
