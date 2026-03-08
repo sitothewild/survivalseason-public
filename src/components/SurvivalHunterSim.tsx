@@ -1829,7 +1829,7 @@ export default function SurvivalHunterSim() {
                     <div>
                       <div style={{
                         fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 700, marginBottom: 4,
-                        color: key === 'sentinel' ? '#38bdf8' : '#a78bfa'
+                        color: '#f0a830', textShadow: '0 0 12px #e0703044'
                       }}>
                         {key === 'sentinel' ? '🦉' : '🐾'} {hero.name}
                         {hero.recommended && <span style={{ marginLeft: 8, fontSize: 10, color: '#86efac', fontWeight: 400 }}>★ RECOMMENDED</span>}
