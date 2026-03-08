@@ -961,8 +961,8 @@ export default function SurvivalHunterSim() {
         }
 
         .input-field {
-          background: #0f1118;
-          border: 1px solid #2a2018;
+          background: #0a0d18;
+          border: 1px solid #1e2a40;
           border-radius: 6px;
           color: #c8b890;
           font-family: 'EB Garamond', serif;
@@ -972,7 +972,7 @@ export default function SurvivalHunterSim() {
           outline: none;
           width: 100%;
         }
-        .input-field:focus { border-color: #8b5e3c; }
+        .input-field:focus { border-color: #4a5a80; }
 
         .result-card { animation: fadeIn 0.4s ease forwards; }
         .bar-fill { animation: barGrow 0.8s ease forwards; }
