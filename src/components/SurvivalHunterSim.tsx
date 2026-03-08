@@ -169,14 +169,16 @@ function parseSimcString(simcText) {
     finger1: 'Ring 1', finger2: 'Ring 2', trinket1: 'Trinket 1', trinket2: 'Trinket 2',
     main_hand: 'Main Hand', off_hand: 'Off Hand'
   };
-  const gearLines = lines.filter(l => /^(head|neck|shoulders|back|chest|wrist|hands|waist|legs|feet|finger1|finger2|trinket1|trinket2|main_hand|off_hand)=/.test(l));
+  const gearSlotPattern = /^(head|neck|shoulders|shoulder|back|chest|wrist|wrists|hands|waist|legs|feet|finger1|finger2|trinket1|trinket2|main_hand|off_hand)=/;
+  const gearLines = lines.filter(l => gearSlotPattern.test(l));
+  console.log('[SV-SIM] Gear lines found:', gearLines.length, gearLines.slice(0, 3));
   gearLines.forEach(gl => {
     const slotMatch = gl.match(/^(\w+)=/);
     const iLvlMatch = gl.match(/item_level=(\d+)/);
-    const idMatch = gl.match(/id=(\d+)/);
+    const idMatch = gl.match(/,id=(\d+)/);
     const nameMatch = gl.match(/,([^,=]+),/) || gl.match(/="([^"]+)"/);
     if (slotMatch) {
-      const slotKey = slotMatch[1];
+      const slotKey = slotMatch[1].replace('shoulder', 'shoulders').replace('wrists', 'wrist');
       result.gear.push({
         slot: slotKey,
         slotLabel: slotLabels[slotKey] || slotKey,
@@ -186,6 +188,7 @@ function parseSimcString(simcText) {
       });
     }
   });
+  console.log('[SV-SIM] Parsed gear items:', result.gear.length);
 
   // Average ilvl
   if (result.gear.length > 0) {
