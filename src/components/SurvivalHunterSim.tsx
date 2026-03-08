@@ -276,10 +276,13 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
   const versBonus = 1 + (stats.versatility || 6) / 100;
   const ap = stats.attackPower || agi * 2.1;
 
-  // Stat multiplier (no AP here — applied per ability)
-  const statMult = hasteBonus * critBonus * masteryBonus * versBonus;
+  // Stat multiplier — haste excluded here (already affects cast speed via GCD)
+  const statMult = critBonus * masteryBonus * versBonus;
   const T = targetCount;
   const gcdBase = 1.5 / hasteBonus;
+
+  // Weapon normalization constant — calibrated so ilvl 230 (~20K AP) produces ~20K ST DPS
+  const WEAPON_NORM = 1.5;
 
   // Rotation time fractions — how much GCD budget each ability uses
   const rot = build === 'st' ? {
@@ -305,11 +308,11 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 
   let breakdown = {};
 
-  // Core calc: (apCoef * AP / 7200) * statMult * castsPerSec * targets
+  // Core calc: (apCoef * AP / WEAPON_NORM) * statMult * castsPerSec * targets
   const calcAbility = (key, uptimeFraction, targetMult) => {
     const spell = MIDNIGHT_DATA.spells[key];
     if (!spell) return 0;
-    const dmgPerCast = spell.apCoef * ap / 7200 * statMult;
+    const dmgPerCast = spell.apCoef * (ap / WEAPON_NORM) * statMult;
     const castsPerSec = uptimeFraction / gcdBase;
     return dmgPerCast * castsPerSec * targetMult;
   };
@@ -337,11 +340,11 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 
   // Strike as One — passive pet attacks from all abilities (~5-8% of total)
   const totalUptime = Object.values(rot).reduce((s, v) => s + v, 0);
-  breakdown['Strike as One'] = (0.43 * ap / 7200) * statMult * (totalUptime / gcdBase) * Math.min(T, 3);
+  breakdown['Strike as One'] = (0.12 * (ap / WEAPON_NORM)) * statMult * (totalUptime / gcdBase) * Math.min(T, 3);
 
   // Pet baseline damage (Spirit Bond mastery scaling, auto attacks + basic attacks)
-  // Pet does ~8-12% of total damage; mastery already in statMult, apply pet-specific scalar
-  breakdown['Pet (Spirit Bond)'] = (0.42 * ap / 7200) * statMult * 0.65 * (build === 'st' ? 1 : 0.80);
+  // Pet does ~10-12% of total damage
+  breakdown['Pet (Spirit Bond)'] = (0.10 * (ap / WEAPON_NORM)) * statMult * 1.5 * (build === 'st' ? 1 : 0.80);
 
   // Lethal Calibration (+15% crit dmg uptime from WFB)
   const lcUptime = Math.min(1, 12 / (18 / hasteBonus));
