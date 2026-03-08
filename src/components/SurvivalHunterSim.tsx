@@ -1615,7 +1615,7 @@ export default function SurvivalHunterSim() {
                     const sortedBreakdown = Object.entries(result.breakdown).sort((a, b) => b[1] - a[1]);
                     return (
                       <div key={ri} className="result-card" style={{
-                        background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20,
+                        background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20,
                         animationDelay: `${ri * 0.1}s`
                       }}>
                         <div className="result-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
