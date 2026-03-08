@@ -40,9 +40,12 @@ async function blizzardGet(path: string, region: string, namespace: string, loca
   const host = region === "cn" ? "gateway.battlenet.com.cn" : `${region}.api.blizzard.com`;
   const url = `https://${host}${path}?namespace=${namespace}-${region}&locale=${locale}&access_token=${token}`;
 
+  console.log(`[blizzard-character] Fetching: ${url.replace(token, 'TOKEN_REDACTED')}`);
+
   const resp = await fetch(url);
   if (!resp.ok) {
     const text = await resp.text();
+    console.log(`[blizzard-character] Error ${resp.status}: ${text}`);
     throw new Error(`Blizzard API ${resp.status}: ${text}`);
   }
   return resp.json();
