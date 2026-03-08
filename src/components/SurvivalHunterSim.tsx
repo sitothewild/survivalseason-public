@@ -340,11 +340,11 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 
   // Strike as One — passive pet attacks from all abilities (~5-8% of total)
   const totalUptime = Object.values(rot).reduce((s, v) => s + v, 0);
-  breakdown['Strike as One'] = (0.43 * ap / 7200) * statMult * (totalUptime / gcdBase) * Math.min(T, 3);
+  breakdown['Strike as One'] = (0.12 * (ap / WEAPON_NORM)) * statMult * (totalUptime / gcdBase) * Math.min(T, 3);
 
   // Pet baseline damage (Spirit Bond mastery scaling, auto attacks + basic attacks)
-  // Pet does ~8-12% of total damage; mastery already in statMult, apply pet-specific scalar
-  breakdown['Pet (Spirit Bond)'] = (0.42 * ap / 7200) * statMult * 0.65 * (build === 'st' ? 1 : 0.80);
+  // Pet does ~10-12% of total damage
+  breakdown['Pet (Spirit Bond)'] = (0.10 * (ap / WEAPON_NORM)) * statMult * 1.5 * (build === 'st' ? 1 : 0.80);
 
   // Lethal Calibration (+15% crit dmg uptime from WFB)
   const lcUptime = Math.min(1, 12 / (18 / hasteBonus));
