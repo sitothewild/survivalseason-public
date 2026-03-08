@@ -443,9 +443,9 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   };
 
   const RATING_PER_PERCENT = {
-    haste: 180,
-    crit: 180,
-    mastery: 180,
+    haste: 170,
+    crit: 170,
+    mastery: 170,
     versatility: 205,
   };
 
