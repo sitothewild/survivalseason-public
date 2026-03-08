@@ -1004,6 +1004,55 @@ export default function SurvivalHunterSim() {
             {/* LEFT: Inputs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+              {/* Armory Lookup */}
+              <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
+                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 12px' }}>
+                  🌐 ARMORY LOOKUP
+                </h3>
+                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#6a5030', marginBottom: 10 }}>
+                  Pull your character directly from the WoW Armory — no addon needed
+                </p>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  {['us', 'eu', 'kr', 'tw'].map(r => (
+                    <button key={r} className={`mode-btn ${armoryRegion === r ? 'active' : ''}`}
+                      onClick={() => setArmoryRegion(r)}
+                      style={{ flex: 1, padding: '6px 8px', fontSize: 11, textTransform: 'uppercase' }}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                  <input className="input-field" placeholder="Realm (e.g. tichondrius)"
+                    value={armoryRealm} onChange={e => setArmoryRealm(e.target.value)} />
+                  <input className="input-field" placeholder="Character name"
+                    value={armoryName} onChange={e => setArmoryName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()} />
+                </div>
+                {armoryError && (
+                  <div style={{ color: armoryError.startsWith('Warning') ? '#f59e0b' : '#ef4444', fontSize: 12, marginBottom: 8, fontFamily: "'EB Garamond', serif" }}>
+                    ⚠ {armoryError}
+                  </div>
+                )}
+                <button onClick={handleArmoryLookup} disabled={armoryLoading}
+                  style={{
+                    width: '100%', background: armoryLoading ? '#1a1208' : '#0e1a1e', border: '1px solid #1a3a4a',
+                    borderRadius: 6, padding: '10px', color: '#38bdf8', fontFamily: "'Cinzel', serif",
+                    fontSize: 11, letterSpacing: 2, cursor: armoryLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
+                  }}>
+                  {armoryLoading ? '⟳ LOOKING UP...' : '🔍 FETCH FROM ARMORY'}
+                </button>
+                {armoryAvatar && (
+                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <img src={armoryAvatar} alt="Character avatar" style={{ width: 40, height: 40, borderRadius: 4, border: '1px solid #3a2810' }} />
+                    <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#86efac' }}>
+                      ✓ Character loaded from Armory
+                      {itemEnrichLoading && <span style={{ color: '#f59e0b' }}> · Enriching item names...</span>}
+                    </span>
+                  </div>
+                )}
+                <div className="divider" style={{ margin: '16px 0 0' }} />
+              </div>
+
               {/* SimC Import */}
               <div style={{ background: '#0d0f16', border: '1px solid #2a2018', borderRadius: 10, padding: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
