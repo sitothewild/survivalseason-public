@@ -1616,18 +1616,19 @@ export default function SurvivalHunterSim() {
                   </div>
                   <input className="input-field" placeholder="Character name"
                     value={armoryName} onChange={e => setArmoryName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()} />
+                    onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()}
+                    style={{ fontSize: 14 }} />
                 </div>
                 {armoryError && (
-                  <div style={{ color: armoryError.startsWith('Warning') ? '#f59e0b' : '#ef4444', fontSize: 12, marginBottom: 8, fontFamily: "'EB Garamond', serif" }}>
+                  <div style={{ color: armoryError.startsWith('Warning') ? '#f59e0b' : '#ef4444', fontSize: 14, marginBottom: 12, fontFamily: "'EB Garamond', serif", padding: '8px 12px', background: 'hsl(var(--destructive) / 0.1)', borderRadius: 6 }}>
                     ⚠ {armoryError}
                   </div>
                 )}
                 <button onClick={handleArmoryLookup} disabled={armoryLoading}
                   style={{
-                    width: '100%', background: armoryLoading ? '#1a1208' : '#0e1a1e', border: '1px solid #1a3a4a',
-                    borderRadius: 6, padding: '10px', color: '#38bdf8', fontFamily: "'Cinzel', serif",
-                    fontSize: 11, letterSpacing: 2, cursor: armoryLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
+                    width: '100%', background: armoryLoading ? 'hsl(var(--muted))' : 'hsl(var(--primary))', border: '1px solid hsl(var(--border))',
+                    borderRadius: 8, padding: '14px', color: armoryLoading ? 'hsl(var(--muted-foreground))' : 'hsl(var(--primary-foreground))', fontFamily: "'Cinzel', serif",
+                    fontSize: 13, letterSpacing: 1.5, fontWeight: 600, cursor: armoryLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
                   }}>
                   {armoryLoading ? '⟳ LOOKING UP...' : '🔍 FETCH FROM ARMORY'}
                 </button>
