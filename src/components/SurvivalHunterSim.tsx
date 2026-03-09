@@ -317,7 +317,22 @@ function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCou
   return { actionCounts, buffUptimes, strikeAsOneDetails: strikeAsOneExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
 }
 
-function getAbilityCoefficient(ability) {
+/** WoW item quality color based on ilvl relative to the character's average.
+ *  Uses relative thresholds so it works at any level range. */
+function getItemQualityColor(ilvl: number, avgIlvl?: number): string {
+  if (!ilvl || ilvl <= 0) return '#9d9d9d'; // Poor/grey
+  const avg = avgIlvl && avgIlvl > 0 ? avgIlvl : ilvl;
+  const diff = ilvl - avg;
+  // Legendary: 15%+ above avg, Epic: 5%+ above, Rare: within 5%, Uncommon: up to 10% below, Common: lower
+  const pct = avg > 0 ? diff / avg : 0;
+  if (pct >= 0.15) return '#ff8000';  // Legendary orange
+  if (pct >= 0.03) return '#a335ee';  // Epic purple
+  if (pct >= -0.05) return '#0070dd'; // Rare blue
+  if (pct >= -0.12) return '#1eff00'; // Uncommon green
+  return '#ffffff';                    // Common white
+}
+
+
   const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Mongoose Bite':1.60,'Hatchet Toss':0.95 };
   return c[ability] || 1.0;
 }
