@@ -235,7 +235,6 @@ export default function Guide() {
             {[
               { icon:"🎯", tip:"Pull around Takedown", desc:"Your burst cycle is ~60–90s. Chain pulls so Takedown is off cooldown when the pack lands." },
               { icon:"💣", tip:"Pool WFB charges for packs", desc:"Never let Wildfire Bomb sit at 2 charges — WFB is your highest AoE priority. Throw it immediately as the pack lands." },
-              { icon:"💣", tip:"Never cap WFB charges",  desc:"Wildfire Bomb is the highest AoE-priority spell. Keep charges cycling — two-charge builds waste DPS if held." },
               { icon:"⚡", tip:"Lunar Storm positioning",  desc:"Position so your Sentinel Mark Lunar Storm AoE hits the full pack. It bounces — one missed target is real loss." },
               { icon:"🐾", tip:"Misdirect on every CD", desc:"MD your tank every 30s. Automate this with a macro: /cast [@focus] Misdirection." },
               { icon:"🌀", tip:"Hold Boomstick for packs", desc:"If a new pack is incoming in <10s, delay Boomstick so it fires into grouped targets." },
@@ -258,7 +257,7 @@ export default function Guide() {
             {[
               { icon:"🧪", label:"Flask",         item:"Flask of the Magisters",        note:"Best Agility flask. 60-min duration, persists through death." },
               { icon:"⚗️", label:"Combat Potion", item:"Draught of Rampant Abandon",    note:"Use on pull. Second pot during Takedown burst window at ~3–4 min." },
-              { icon:"🗡️", label:"Weapon Oil",    item:"Thalassian Phoenix Oil",         note:"Fire damage proc — synergises with Flamefang Pitch's fire window." },
+              { icon:"🗡️", label:"Weapon Oil",    item:"Thalassian Phoenix Oil",         note:"Fire damage proc — synergises with Flamebreak's all-fire-damage +15% bonus." },
               { icon:"🍖", label:"Food",          item:"Silvermoon Parade (Agility)",    note:"Always use Agility food. Vers food is a meaningful step down." },
               { icon:"💎", label:"Meta Gem",      item:"Eversong Diamond",              note:"Agility proc. Socket in helm — highest priority socket." },
               { icon:"🔮", label:"Augment Rune",  item:"Crystalline Augment Rune",      note:"Use on pull for every prog attempt or parse attempt." },
@@ -436,7 +435,7 @@ export default function Guide() {
           );
           const stPts  = SURVIVAL_SPEC_TREE.filter(n => n.inSTBuild).reduce((s,n) => s+n.pointCost, 0);
           const aoePts = SURVIVAL_SPEC_TREE.filter(n => n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
-          const heroPts = heroTree.length; // all 10 hero nodes, 1pt each
+          const heroPts = heroTree.length; // all 13 hero nodes, 1pt each
           const gatewayPts = SURVIVAL_SPEC_TREE.filter(n => n.isGateway && n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
 
           return (
@@ -457,7 +456,7 @@ export default function Guide() {
                   { label:"AoE Build Total", val:`${aoePts} pts`, clr:'#f97316',
                     sub:`incl. ${gatewayPts} gateway pts` },
                   { label:"Hero Talent Tree", val:`${heroPts} pts`, clr: heroClrL,
-                    sub:"separate budget · all 10 nodes" },
+                    sub:"separate budget · all 13 nodes" },
                   { label:"Full 30-pt Tree", val:"~30 pts", clr:C.textMid,
                     sub:"rem. ~11 pts = utility + class tree" },
                 ].map(s => (
@@ -557,7 +556,7 @@ export default function Guide() {
               {/* ── Hero talent tree path ────────────────────── */}
               <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
                 color: heroClrL, marginBottom:10 }}>
-                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT TREE (10 pts · WoWHead-verified)
+                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT TREE (13 pts · WoWHead-verified)
               </div>
               {/* 4-row × 4-col grid matching actual WoWHead tree layout */}
               <div style={{
