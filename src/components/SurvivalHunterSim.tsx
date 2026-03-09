@@ -1492,7 +1492,7 @@ export default function SurvivalHunterSim() {
                 <h3 style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: 3, color: '#64748b', margin: '0 0 14px', textTransform: 'uppercase' }}>
                   🌐 ARMORY LOOKUP
                 </h3>
-                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', marginBottom: 14, lineHeight: 1.5 }}>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: '#94a3b8', marginBottom: 14, lineHeight: 1.5 }}>
                   Pull your character directly from the WoW Armory — no addon needed
                 </p>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
