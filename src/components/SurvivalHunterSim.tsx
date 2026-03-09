@@ -1594,7 +1594,7 @@ export default function SurvivalHunterSim() {
 
                 {/* ═══ STRIKE AS ONE ANALYZER ═══ */}
                 {(() => {
-                  const ap = simResult?.attackPower || charData?.stats?.attackPower || 45000;
+                  const ap = primary?.attackPower || parsedChar?.stats?.attackPower || 45000;
                   const saoBase = Math.round(ap * 1.10);
                   const isPL = heroTalent === "packLeader";
                   const triggerAbils = ["Raptor Strike", "Kill Command", "Wildfire Bomb", "Boomstick", "Raptor Swipe"];
