@@ -230,26 +230,24 @@ function parseSimcString(simcText) {
 const SIMC_BREAKDOWN_PL_ST_DEFAULT = { 'Strike as One':0.1883,'Raptor Swipe':0.1471,'Raptor Strike':0.1271,'Boomstick':0.0772,'Auto Attack (MH)':0.0711,'Kill Command':0.0499,'Wildfire Bomb':0.0821,'Auto Attack (OH)':0.0339,'Takedown':0.0331,'Pack Leader Beasts':0.0716,'Pet (Claw)':0.0246,"Kroluk's Warbanner":0.0220,'Pet Melee':0.0200,'Bear (Rend + Melee)':0.0261 };
 const SIMC_BREAKDOWN_SENT_ST_DEFAULT = { 'Raptor Strike':0.1400,'Raptor Swipe':0.1350,'Strike as One':0.1200,'Wildfire Bomb':0.1050,'Boomstick':0.0800,'Auto Attack (MH)':0.0650,'Kill Command':0.0500,'Moonlight Chakram':0.0450,'Sentinel Mark + Lunar Storm':0.0700,'Takedown':0.0380,'Auto Attack (OH)':0.0300,'Pet (Claw)':0.0250,'Pet Melee':0.0220,"Kroluk's Warbanner":0.0200 };
 
-// Map SimC APL action names → display names used in breakdowns
+// Map SimC APL action names → display names used in breakdowns (Midnight 12.0)
 const APL_TO_DISPLAY: Record<string, string> = {
-  'raptor_strike': 'Raptor Strike', 'raptor_strike_melee': 'Raptor Strike',
-  'mongoose_bite': 'Raptor Strike', // mongoose_bite replaced by raptor_strike in TWW
-  'kill_command': 'Kill Command', 'kill_command_sv': 'Kill Command',
-  'wildfire_bomb': 'Wildfire Bomb', 'volatile_bomb': 'Wildfire Bomb',
-  'fury_of_the_eagle': 'Boomstick', 'boomstick': 'Boomstick',
-  'flanking_strike': 'Raptor Strike',
-  'coordinated_assault': 'Takedown', 'takedown': 'Takedown',
-  'harpoon': 'Takedown',
-  'butchery': 'Raptor Swipe', 'carve': 'Raptor Swipe', 'raptor_swipe': 'Raptor Swipe',
-  'wildfire_infusion': 'Wildfire Bomb',
+  // Core Midnight 12.0 abilities
+  'kill_command': 'Kill Command',
+  'wildfire_bomb': 'Wildfire Bomb',
+  'raptor_strike': 'Raptor Strike',
+  'raptor_swipe': 'Raptor Swipe',
+  'takedown': 'Takedown',
   'flamefang_pitch': 'Flamefang Pitch',
-  'moonfire': 'Sentinel Mark + Lunar Storm',
+  'boomstick': 'Boomstick',
   'moonlight_chakram': 'Moonlight Chakram',
-  'steel_trap': 'Wildfire Bomb',
+  'hatchet_toss': 'Hatchet Toss',
+  // Legacy aliases (for cached data compatibility)
+  'kill_command_sv': 'Kill Command',
+  'raptor_strike_melee': 'Raptor Strike',
+  'harpoon': 'Takedown',
+  'moonfire': 'Sentinel Mark + Lunar Storm',
   'stampede': 'Pack Leader Beasts',
-  'spearhead': 'Takedown',
-  'call_of_the_wild': 'Pack Leader Beasts',
-  'aspect_of_the_eagle': 'Takedown',
 };
 
 // Passive/auto sources not in APL but always present

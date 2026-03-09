@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const GITHUB_API = "https://api.github.com";
 const SIMC_REPO = "simulationcraft/simc";
-const BRANCH = "thewarwithin";
+const BRANCH = "midnight";
 
 const FILES_TO_FETCH = {
   apl: `engine/class_modules/apl/apl_hunter.cpp`,
