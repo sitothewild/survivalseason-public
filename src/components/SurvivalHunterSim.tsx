@@ -1633,30 +1633,30 @@ export default function SurvivalHunterSim() {
                   {armoryLoading ? '⟳ LOOKING UP...' : '🔍 FETCH FROM ARMORY'}
                 </button>
                 {armoryAvatar && (
-                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <img src={armoryAvatar} alt="Character avatar" style={{ width: 40, height: 40, borderRadius: 4, border: '1px solid #3a2810' }} />
-                    <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#86efac' }}>
+                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <img src={armoryAvatar} alt="Character avatar" style={{ width: 44, height: 44, borderRadius: 6, border: '2px solid hsl(var(--border))' }} />
+                    <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--accent))', fontWeight: 500 }}>
                       ✓ Character loaded from Armory
                       {itemEnrichLoading && <span style={{ color: '#f59e0b' }}> · Enriching item names...</span>}
                     </span>
                   </div>
                 )}
-                <div className="divider" style={{ margin: '16px 0 0' }} />
+                <div className="divider" style={{ margin: '20px 0 0' }} />
               </div>
 
               {/* SimC Import */}
-              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: 0 }}>
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 600, letterSpacing: 1.5, color: 'hsl(var(--foreground))', margin: 0 }}>
                     📋 SIMULATIONCRAFT IMPORT
                   </h3>
                   <button onClick={handleLoadSample} style={{
-                    background: '#1a1208', border: '1px solid #3a2810', borderRadius: 4,
-                    color: '#8a7050', fontSize: 11, padding: '4px 10px', cursor: 'pointer',
-                    fontFamily: "'EB Garamond', serif"
+                    background: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', borderRadius: 6,
+                    color: 'hsl(var(--secondary-foreground))', fontSize: 12, padding: '6px 12px', cursor: 'pointer',
+                    fontFamily: "'EB Garamond', serif", fontWeight: 500
                   }}>Load Sample</button>
                 </div>
-                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#6a5030', marginBottom: 10 }}>
+                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', marginBottom: 14, lineHeight: 1.5 }}>
                   In-game: /simc → copy all output and paste below
                 </p>
                 <textarea
