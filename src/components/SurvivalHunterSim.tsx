@@ -458,14 +458,21 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
   const breakdown = {}; const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
   if (build === 'aoe' || T > 2) {
     const aoeTemplate = {}; Object.entries(breakdownTemplate).forEach(([key, pct]) => {
-      if (key.includes('Wildfire') || key.includes('Boomstick') || key.includes('Swipe') || key.includes('Flamefang') || key.includes('Beasts') || key.includes('Lunar')) aoeTemplate[key] = pct * 1.4;
-      else if (key.includes('Strike as One')) aoeTemplate[key] = pct * 1.3; else aoeTemplate[key] = pct * 0.7;
+      if (key.includes('Wildfire') || key.includes('Boomstick') || key.includes('Swipe') || key.includes('Flamefang') || key.includes('Beasts') || key.includes('Lunar') || key.includes('Pet')) aoeTemplate[key] = pct * 1.4;
+      else aoeTemplate[key] = pct * 0.7;
     });
     if (!aoeTemplate['Flamefang Pitch']) aoeTemplate['Flamefang Pitch'] = 0.08;
     const aoeSum = Object.values(aoeTemplate).reduce((s, v) => s + v, 0);
     Object.keys(aoeTemplate).forEach(k => { aoeTemplate[k] /= aoeSum; });
     Object.entries(aoeTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); });
-  } else { Object.entries(breakdownTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); }); }
+  } else {
+    Object.entries(breakdownTemplate).forEach(([key, pct]) => {
+      let adjusted = pct;
+      // Sentinel hero bonus: +7% ST to Wildfire Bomb
+      if (!isPL && key === 'Wildfire Bomb') adjusted *= 1.07;
+      breakdown[key] = Math.round(totalDps * adjusted);
+    });
+  }
   const detailed = generateDetailedSimData(breakdown, fightDuration, heroTalent, T, ap);
   return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists, aplDataUsed: !!aplData };
 }
