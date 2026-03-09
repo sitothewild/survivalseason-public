@@ -1600,7 +1600,15 @@ export default function SurvivalHunterSim() {
 
                           {/* OPTIMAL BUILD */}
                           <div style={{ background: C.goldBg, border: `1px solid ${C.gold}`, borderRadius: "0 10px 10px 0", padding: 16 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10 }}>★ OPTIMAL BUILD</div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                              ★ OPTIMAL BUILD
+                              <span 
+                                title="Optimal build is based on Symex (Method.gg) and SimC APL data for Midnight 12.0 Pre-Season 1. Updated as the meta evolves."
+                                style={{ cursor: "help", fontFamily: "sans-serif", fontSize: 11, color: C.textMid, opacity: 0.7 }}
+                              >
+                                ℹ
+                              </span>
+                            </div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                               <span className="badge" style={{ background: C.sentBg, color: C.sentClr, border: `1px solid ${C.sentBdr}` }}>
                                 🦉 Sentinel
@@ -1613,8 +1621,20 @@ export default function SurvivalHunterSim() {
                             {(() => {
                               const optStr = optimalBuildInfo?.exportString || '';
                               return optStr ? (
-                                <div title={optStr} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: "rgba(0,0,0,0.3)", borderRadius: 5, padding: "4px 8px", marginBottom: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {optStr.length > 20 ? `${optStr.slice(0, 20)}...` : optStr}
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                                  <div title={optStr} style={{ flex: 1, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: "rgba(0,0,0,0.3)", borderRadius: 5, padding: "4px 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {optStr.length > 20 ? `${optStr.slice(0, 20)}...` : optStr}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(optStr);
+                                      setCopied('optimal');
+                                      setTimeout(() => setCopied(''), 2000);
+                                    }}
+                                    style={{ background: C.gold, color: "#000", border: "none", borderRadius: 4, padding: "4px 8px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}
+                                  >
+                                    {copied === 'optimal' ? '✓ Copied' : 'Copy'}
+                                  </button>
                                 </div>
                               ) : null;
                             })()}
