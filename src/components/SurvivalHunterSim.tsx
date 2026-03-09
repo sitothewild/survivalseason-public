@@ -782,6 +782,68 @@ main_hand=,id=231800,item_level=639
 # Midnight Suneater Dirk (636)
 off_hand=,id=231802,item_level=636`;
 
+// Fight style definitions with DPS multipliers
+const FIGHT_STYLES = {
+  patchwerk: { label: '🎯 Patchwerk', desc: 'Pure single-target, stand-still fight', mult: 1.0 },
+  hecticAddCleave: { label: '⚔ Hectic Add Cleave', desc: 'Primary target + sporadic adds', mult: 1.08 },
+  lightMovement: { label: '🏃 Light Movement', desc: 'Occasional repositioning', mult: 0.96 },
+  heavyMovement: { label: '🌀 Heavy Movement', desc: 'Constant movement, low uptime', mult: 0.88 },
+};
+
+const RAID_BUFFS = {
+  arcaneIntellect: { label: 'Arcane Intellect', icon: '🔮', stat: '+5% Intellect', mult: 1.0 }, // No effect on agi
+  battleShout: { label: 'Battle Shout', icon: '⚔', stat: '+5% AP', mult: 1.05 },
+  markOfTheWild: { label: 'Mark of the Wild', icon: '🍃', stat: '+3% Versatility', mult: 1.025 },
+  mysticTouch: { label: 'Mystic Touch', icon: '👊', stat: '+5% Physical dmg taken', mult: 1.04 },
+  chaosBrand: { label: 'Chaos Brand', icon: '😈', stat: '+5% Magic dmg taken', mult: 1.015 },
+  windfuryTotem: { label: 'Windfury Totem', icon: '🌬', stat: '+20% melee auto atk speed', mult: 1.02 },
+  powerInfusion: { label: 'Power Infusion', icon: '⚡', stat: '+25% Haste (12s)', mult: 1.015 },
+  huntersMark: { label: "Hunter's Mark", icon: '🏹', stat: '+5% dmg to target', mult: 1.035 },
+};
+
+const CONSUMABLES = {
+  flask: {
+    label: 'Flask',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'flaskOfAlchemicalChaos', label: 'Flask of Alchemical Chaos', mult: 1.035, desc: '+Random secondary stat' },
+      { key: 'flaskOfTemperingSanity', label: 'Flask of Tempering Sanity', mult: 1.03, desc: '+Primary stat' },
+    ]
+  },
+  food: {
+    label: 'Food',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'mastery', label: 'Mastery Food (+90)', mult: 1.025, desc: 'Feast of the Midnight Masquerade' },
+      { key: 'crit', label: 'Crit Food (+90)', mult: 1.02, desc: 'Feast of the Divine Day' },
+      { key: 'haste', label: 'Haste Food (+90)', mult: 1.018, desc: 'Hearty Stew Surprise' },
+    ]
+  },
+  potion: {
+    label: 'Potion',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'tempered', label: 'Tempered Potion', mult: 1.02, desc: '+Primary stat for 30s' },
+      { key: 'frontLoaded', label: 'Potion of Unwavering Focus', mult: 1.025, desc: '+Primary stat, decaying' },
+    ]
+  },
+  weapon: {
+    label: 'Weapon Enhancement',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'ironcladWhetstone', label: 'Ironclaw Whetstone', mult: 1.015, desc: '+Crit on weapon' },
+      { key: 'oilOfDeepToxins', label: 'Oil of Deep Toxins', mult: 1.012, desc: '+Nature dmg proc' },
+    ]
+  },
+  augmentRune: {
+    label: 'Augment Rune',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'crystallizedAugment', label: 'Crystallized Augment Rune', mult: 1.01, desc: '+Primary stat' },
+    ]
+  }
+};
+
 export default function SurvivalHunterSim() {
   const [simcInput, setSimcInput] = useState('');
   const [parsedChar, setParsedChar] = useState(null);
@@ -792,9 +854,19 @@ export default function SurvivalHunterSim() {
   const [statWeights, setStatWeights] = useState(null);
   const [optimalTalents, setOptimalTalents] = useState(null);
   const [isSimming, setIsSimming] = useState(false);
-  const [activeTab, setActiveTab] = useState('sim'); // 'sim' | 'talents'
-  const [simMode, setSimMode] = useState('single'); // 'single' | 'cleave' | 'multi'
+  const [activeTab, setActiveTab] = useState('sim');
+  const [simMode, setSimMode] = useState('single');
   const [targetCount, setTargetCount] = useState(1);
+  // Advanced sim options
+  const [fightStyle, setFightStyle] = useState('patchwerk');
+  const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({
+    battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true,
+  });
+  const [consumables, setConsumables] = useState<Record<string, string>>({
+    flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered',
+    weapon: 'ironcladWhetstone', augmentRune: 'crystallizedAugment',
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [copied, setCopied] = useState(false);
   const [particles, setParticles] = useState([]);
   // Armory Lookup state
