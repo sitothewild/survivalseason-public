@@ -1081,7 +1081,7 @@ export default function SurvivalHunterSim() {
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
         @keyframes waitPulse{0%,100%{border-color:#2e3a50;}50%{border-color:#3a4a60;}}
         @keyframes staggerFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-        @media(max-width:1024px){.sim-3col{grid-template-columns:280px 1fr !important;}.sim-right-col{grid-column:1 / -1 !important;}}
+        @media(max-width:1024px){.sim-3col{grid-template-columns:260px 1fr !important;}.sim-right-col{grid-column:1 / -1 !important;}}
         @media(max-width:768px){.sim-3col{grid-template-columns:1fr !important;}.sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}}
         @media(max-width:900px){.responsive-grid{grid-template-columns:1fr !important;}.tab-btn{flex:1 1 calc(50% - 2px);min-width:0;text-align:center;padding:10px 8px;font-size:13px;}}
       `}</style>
@@ -1138,7 +1138,7 @@ export default function SurvivalHunterSim() {
         {activeTab === "sim" && (
           <>
             {/* 3-COLUMN GRID */}
-            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "280px 1fr 320px", gap: 16, alignItems: "stretch" }}>
+            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "260px 1fr 420px", gap: 16, alignItems: "stretch" }}>
 
               {/* ═══ LEFT COLUMN — Inputs Only (280px) ═══ */}
               <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", width: 280 }}>
@@ -1444,48 +1444,61 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* ═══ RIGHT COLUMN — Simulation Config (320px, sticky) ═══ */}
-              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", width: 320, height: "100%" }}>
+              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", width: 420, height: "100%" }}>
                 <CARD style={{ height: "100%", display: "flex", flexDirection: "column" }}>
                   <LBL>⚙ Simulation Config</LBL>
 
-                  {/* Current Talents — visible after character loaded */}
-                  {parsedChar && (
-                    <div style={{ marginBottom: 16, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
-                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                        <span className="badge" style={{ background: C.surface, color: C.goldLight, border: `1px solid ${C.gold}` }}>
-                          {importedTalentSource === 'simc' ? 'IMPORTED FROM SIMC' : 'IMPORTED FROM ARMORY'}
+                  {/* Current Talents — always visible */}
+                  <div style={{ marginBottom: 16, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      {parsedChar ? (
+                        <>
+                          <span className="badge" style={{ background: C.surface, color: C.goldLight, border: `1px solid ${C.gold}` }}>
+                            {importedTalentSource === 'simc' ? 'IMPORTED FROM SIMC' : 'IMPORTED FROM ARMORY'}
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              background: C.surface,
+                              color: detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.textDim,
+                              border: `1px solid ${detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.border}`,
+                            }}
+                          >
+                            Hero talent: {detectedHeroTalent}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="badge" style={{ background: C.surface, color: '#5a6a82', border: `1px solid ${C.border}` }}>
+                          AWAITING IMPORT
                         </span>
-                        <span
-                          className="badge"
-                          style={{
-                            background: C.surface,
-                            color: detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.textDim,
-                            border: `1px solid ${detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.border}`,
-                          }}
-                        >
-                          Hero talent: {detectedHeroTalent}
-                        </span>
-                      </div>
-                      <div
-                        title={importedTalentString || 'No talent string found'}
-                        style={{
-                          fontFamily: "'IBM Plex Mono',monospace",
-                          fontSize: 12,
-                          color: importedTalentString ? C.textSec : C.textDim,
-                          background: C.surface,
-                          border: `1px solid ${C.borderSub}`,
-                          borderRadius: 8,
-                          padding: '8px 10px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {displayedTalentString || 'Talent string unavailable'}
-                      </div>
+                      )}
                     </div>
-                  )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: parsedChar ? 8 : 0 }}>
+                      {!parsedChar && (
+                        <span className="badge" style={{ background: C.surface, color: '#5a6a82', border: `1px solid ${C.borderSub}` }}>
+                          Hero talent: —
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      title={importedTalentString || 'No talent string found'}
+                      style={{
+                        fontFamily: "'IBM Plex Mono',monospace",
+                        fontSize: 12,
+                        color: parsedChar && importedTalentString ? C.textSec : '#5a6a82',
+                        background: C.surface,
+                        border: `1px solid ${C.borderSub}`,
+                        borderRadius: 8,
+                        padding: '8px 10px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {parsedChar ? (displayedTalentString || 'Talent string unavailable') : '—'}
+                    </div>
+                  </div>
 
                   {/* Hero Talent selector */}
                   <div style={{ marginBottom: 16 }}>
