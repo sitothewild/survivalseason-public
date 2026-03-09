@@ -1427,7 +1427,7 @@ export default function SurvivalHunterSim() {
 
                 {/* ═══ MONGOOSE FURY WINDOW ANALYZER ═══ */}
                 {(() => {
-                  const ap = simResult?.attackPower || charData?.stats?.attackPower || 45000;
+                  const ap = primary?.attackPower || parsedChar?.stats?.attackPower || 45000;
                   const mbBase = Math.round(ap * 1.60);
                   const STACKS = [0,1,2,3,4,5,6];
                   const STACK_MULT = [1.0, 1.15, 1.30, 1.45, 1.60, 1.75, 1.90];
@@ -1547,7 +1547,7 @@ export default function SurvivalHunterSim() {
                         </div>
                         <div style={{ marginTop: 10, padding: "8px 12px", background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", borderRadius: 6 }}>
                           <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.red }}>
-                            ⚠ Missed stack = ~{fmt(missedStackDps)} DPS lost per window ({Math.round(missedStackDps / (simResult?.totalDps || 1) * 100 * 10) / 10}% of total)
+                            ⚠ Missed stack = ~{fmt(missedStackDps)} DPS lost per window ({Math.round(missedStackDps / (primary?.totalDps || 1) * 100 * 10) / 10}% of total)
                           </span>
                         </div>
                       </div>
@@ -1594,7 +1594,7 @@ export default function SurvivalHunterSim() {
 
                 {/* ═══ STRIKE AS ONE ANALYZER ═══ */}
                 {(() => {
-                  const ap = simResult?.attackPower || charData?.stats?.attackPower || 45000;
+                  const ap = primary?.attackPower || parsedChar?.stats?.attackPower || 45000;
                   const saoBase = Math.round(ap * 1.10);
                   const isPL = heroTalent === "packLeader";
                   const triggerAbils = ["Raptor Strike", "Kill Command", "Wildfire Bomb", "Boomstick", "Raptor Swipe"];
