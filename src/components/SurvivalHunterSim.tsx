@@ -1444,8 +1444,8 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* ═══ RIGHT COLUMN — Simulation Config (320px, sticky) ═══ */}
-              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", alignSelf: "flex-start", width: 320 }}>
-                <CARD>
+              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", width: 320, height: "100%" }}>
+                <CARD style={{ height: "100%", display: "flex", flexDirection: "column" }}>
                   <LBL>⚙ Simulation Config</LBL>
 
                   {/* Current Talents — visible after character loaded */}
