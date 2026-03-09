@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.blizzard-character]
 verify_jwt = false
+
+[functions.simc-data-sync]
+verify_jwt = false
