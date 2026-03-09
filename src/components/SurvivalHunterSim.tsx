@@ -427,7 +427,7 @@ function formatEnchantLabel(enchant: any): string {
 }
 
 function getAbilityCoefficient(ability) {
-  const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Mongoose Bite':1.60,'Hatchet Toss':0.95 };
+  const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Hatchet Toss':0.95,'Moonlight Chakram':2.40,'Takedown':1.80 };
   return c[ability] || 1.0;
 }
 
@@ -557,15 +557,14 @@ const C = {
 };
 
 const BAR_COLORS = {
-  "Kill Command":"#60a5fa","Mongoose Bite":"#818cf8","Wildfire Bomb":"#f59e0b",
+  "Kill Command":"#60a5fa","Wildfire Bomb":"#f59e0b",
   "Boomstick":"#fb923c","Raptor Swipe":"#34d399","Flamefang Pitch":"#22d3ee",
-  "Raptor Strike":"#ef4444","Strike as One":"#22c55e","Serpent Sting":"#a78bfa",
-  "Pet (KC procs)":"#94a3b8","Tip of the Spear":"#7dd3fc","Takedown":"#93c5fd",
-  "Takedown (CD)":"#93c5fd","Sentinel (hero)":"#38bdf8","Pack Leader (hero)":"#c084fc",
+  "Raptor Strike":"#ef4444","Strike as One":"#22c55e","Hatchet Toss":"#a78bfa",
+  "Takedown":"#93c5fd","Takedown (CD)":"#93c5fd",
   "Sentinel Mark + Lunar Storm":"#38bdf8","Moonlight Chakram":"#818cf8",
   "Pack Leader Beasts":"#a78bfa","Auto Attack (MH)":"#94a3b8","Auto Attack (OH)":"#64748b",
   "Pet (Claw)":"#a3e635","Pet Melee":"#86efac","Bear (Rend + Melee)":"#fb923c",
-  "Coord. Assault":"#e879f9","Kroluk's Warbanner":"#fbbf24",
+  "Kroluk's Warbanner":"#fbbf24",
 };
 const bClr = k => BAR_COLORS[k] || "#64748b";
 const fmt = n => n >= 1000000 ? `${(n / 1000000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
@@ -860,7 +859,7 @@ export default function SurvivalHunterSim() {
       } catch (e) { console.warn('APL build from sync failed:', e); }
     } catch (e) {
       setSimcSyncStatus('error');
-      setSimcSyncInfo(`Sync failed: ${e.message}`);
+      setSimcSyncInfo(`Sync failed: ${e?.message || String(e)}`);
     }
   }, []);
 
@@ -909,7 +908,7 @@ export default function SurvivalHunterSim() {
         armoryRegion,
       );
       if (fullData.profile?.error) throw new Error(fullData.profile.error);
-      const simData = equipmentToSimData(fullData);
+      const simData = equipmentToSimData(fullData, armoryRegion);
       if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') {
         setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
       }
@@ -1190,13 +1189,36 @@ export default function SurvivalHunterSim() {
         @keyframes waitPulse{0%,100%{border-color:#2e3a50;}50%{border-color:#3a4a60;}}
         @keyframes staggerFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
         @media(max-width:1024px){.sim-3col{grid-template-columns:260px 1fr !important;}.sim-right-col{grid-column:1 / -1 !important;}}
-        @media(max-width:768px){.sim-3col{grid-template-columns:1fr !important;}.sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}}
         @media(max-width:900px){.responsive-grid{grid-template-columns:1fr !important;}.tab-btn{flex:1 1 calc(50% - 2px);min-width:0;text-align:center;padding:10px 8px;font-size:13px;}}
+        @media(max-width:768px){
+          .sim-3col{grid-template-columns:1fr !important;}
+          .sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}
+          /* Fix right column: remove sticky, reset to block flow, override inline width:420 */
+          .sim-right-col{position:static !important;max-height:none !important;overflow-y:visible !important;width:100% !important;height:auto !important;}
+          /* Tighten header and page padding */
+          .site-header{padding:12px 16px !important;}
+          .site-main{padding:14px 12px 32px !important;}
+          /* Hide hover tooltips — touch devices don't hover */
+          .item-tooltip{display:none !important;}
+          /* Prevent iOS auto-zoom on inputs (requires font-size >= 16px) */
+          .ifield{font-size:16px !important;}
+          /* Hide decorative header badges to free up header space; keep sync button */
+          .header-badges .badge{display:none !important;}
+          /* Reduce gap in sim grid on mobile */
+          .sim-3col{gap:12px !important;}
+        }
+        @media(max-width:480px){
+          /* Very small screens: compact tab bar */
+          .tab-btn{padding:8px 4px !important;font-size:11px !important;letter-spacing:0 !important;}
+          .site-main{padding:10px 8px 24px !important;}
+          /* Stack header title area vertically */
+          .site-header-inner{flex-direction:column !important;align-items:flex-start !important;gap:8px !important;}
+        }
       `}</style>
 
       {/* HEADER */}
-      <div style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", padding: "18px 28px", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: 1300, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div className="site-header" style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", padding: "18px 28px", borderBottom: `1px solid ${C.border}` }}>
+        <div className="site-header-inner" style={{ maxWidth: 1300, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ width: 54, height: 54, borderRadius: 12, overflow: "hidden", border: "2px solid #2a4a2a", animation: "iconGlow 3s ease-in-out infinite", flexShrink: 0 }}>
               <img src={SURVIVAL_ICON} alt="Survival Hunter" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -1206,7 +1228,7 @@ export default function SurvivalHunterSim() {
               <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, marginTop: 5 }}>MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <div className="header-badges" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
             <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
             <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
@@ -1234,7 +1256,7 @@ export default function SurvivalHunterSim() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
+      <div className="site-main" style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: 22, gap: 2 }}>
           {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"], ["guide", "📖 Guide"]].map(([k, l]) => (
@@ -1968,13 +1990,6 @@ export default function SurvivalHunterSim() {
               </div>
             )}
 
-            {/* Mobile responsive styles */}
-            <style>{`
-              @media (max-width: 768px) {
-                .sim-top-row { grid-template-columns: 1fr !important; }
-                .sim-top-row > div:last-child { position: static !important; max-height: none !important; overflow: visible !important; }
-              }
-            `}</style>
           </>
         )}
 
