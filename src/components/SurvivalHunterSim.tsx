@@ -716,6 +716,34 @@ export default function SurvivalHunterSim() {
   const [importedTalentString, setImportedTalentString] = useState<string>('');
   const [userSimResult, setUserSimResult] = useState<any>(null);
   const [optimalSimResult, setOptimalSimResult] = useState<any>(null);
+  // Patch notes state
+  const [patchNotes, setPatchNotes] = useState<any[]>([]);
+  const [patchLoading, setPatchLoading] = useState(false);
+  const [patchError, setPatchError] = useState('');
+  const [patchLastUpdated, setPatchLastUpdated] = useState('');
+  const [patchSourceFilter, setPatchSourceFilter] = useState('All');
+
+  const fetchPatchNotes = useCallback(async (force = false) => {
+    setPatchLoading(true);
+    setPatchError('');
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-patch-notes', { body: { force } });
+      if (error) throw error;
+      if (data?.notes) {
+        setPatchNotes(data.notes);
+        setPatchLastUpdated(data.lastUpdated || new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }));
+      } else {
+        setPatchNotes([]);
+      }
+    } catch (e) {
+      console.warn('Patch notes fetch failed:', e);
+      setPatchError('Could not load patch notes.');
+    } finally {
+      setPatchLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchPatchNotes(); }, []);
 
   // Auto-load SimC data on mount
   useEffect(() => {
@@ -1859,58 +1887,521 @@ export default function SurvivalHunterSim() {
         )}
 
         {/* ═══ TALENTS TAB ═══ */}
-        {activeTab === "talents" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {/* Optimal Builds */}
-            <CARD>
-              <LBL>🌿 Optimal Talent Builds</LBL>
-              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 20 }}>Method.gg & Icy Veins verified · Midnight 12.0.1 Pre-Season</p>
-              {[{ label: 'Single Target (Sentinel)', hero: 'sentinel', targets: 1 }, { label: 'Single Target (Pack Leader)', hero: 'packLeader', targets: 1 }, { label: 'AoE / M+ (Sentinel)', hero: 'sentinel', targets: 5 }, { label: 'AoE / M+ (Pack Leader)', hero: 'packLeader', targets: 5 }].map((build, bi) => {
-                const opt = getOptimalTalents(build.targets, build.hero);
-                return (
-                  <div key={bi} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: bi < 3 ? `1px solid ${C.borderSub}` : "none" }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: C.goldLight, letterSpacing: 1, marginBottom: 10 }}>{build.label}</div>
-                    <div style={{ marginBottom: 10, display: "flex", flexWrap: "wrap", gap: 4 }}>
-                      {opt.selected.map(t => (
-                        <span key={t.key} className={`tag ${t.always ? 'tag-core' : t.aoePriority ? 'tag-aoe' : 'tag-st'}`}>
-                          {t.key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
-                        </span>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ flex: 1, fontFamily: "monospace", fontSize: 10, color: C.textDim, background: "#141c2a", borderRadius: 4, padding: "6px 10px", wordBreak: "break-all", lineHeight: 1.4 }}>{opt.exportString}</div>
-                      <button className={`copy-btn ${copied === `talent-${bi}` ? "done" : ""}`} onClick={() => copy(opt.exportString, `talent-${bi}`)}>{copied === `talent-${bi}` ? "✓ Copied" : "Copy"}</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </CARD>
+        {activeTab === "talents" && (() => {
 
-            {/* Hero talent details */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {Object.entries(MIDNIGHT_DATA.talents.hero).map(([key, hero]) => (
-                <CARD key={key}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontSize: 20 }}>{hero.icon}</span>
-                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 12, fontWeight: 700, color: key === "sentinel" ? C.sentClr : C.packClr }}>{hero.name}</span>
-                    {hero.recommended && <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 7 }}>★ RECOMMENDED</span>}
+          const highlightKeywords = (text: string) => {
+            if (!text) return text;
+            const keywords: [RegExp, string][] = [
+              [/\b(survival)\b/gi, '#38bdf8'],
+              [/\b(kill command)\b/gi, '#60a5fa'],
+              [/\b(mongoose)\b/gi, '#a78bfa'],
+              [/\b(wildfire bomb)\b/gi, '#f59e0b'],
+              [/\b(sentinel)\b/gi, '#38bdf8'],
+              [/\b(pack leader)\b/gi, '#c084fc'],
+              [/\b(coordinated assault)\b/gi, '#e879f9'],
+            ];
+            let result = text;
+            keywords.forEach(([rx, color]) => {
+              result = result.replace(rx, `<span style="color:${color};font-weight:700">$1</span>`);
+            });
+            return result;
+          };
+
+          const filteredNotes = patchSourceFilter === 'All' ? patchNotes : patchNotes.filter(n => n.source === patchSourceFilter);
+
+          const SUB_TALENT_META: Record<string, Record<string, string>> = {
+            packLeader: {
+              lethalBarbs: 'STRONG', hogstrider: 'WEAK', direSummons: 'SITUATIONAL',
+              shellCover: 'SITUATIONAL', stampede: 'STRONG',
+            },
+            sentinel: {
+              dontLookBack: 'STRONG', moonlightChakram: 'STRONG', lunarStorm: 'STRONG',
+              moonsBlessing: 'SITUATIONAL', stargazer: 'STRONG', cantMissWontMiss: 'STRONG',
+              conditioning: 'SITUATIONAL',
+            },
+          };
+
+          const metaBadgeStyle = (meta: string) => {
+            if (meta === 'STRONG') return { background: '#0f2a1a', color: '#4ade80', border: '1px solid rgba(74,222,128,.3)' };
+            if (meta === 'WEAK') return { background: 'rgba(248,113,113,.08)', color: '#f87171', border: '1px solid rgba(248,113,113,.3)' };
+            return { background: C.goldBg, color: C.goldLight, border: `1px solid ${C.gold}60` };
+          };
+
+          const MIDNIGHT_CHANGES = [
+            { title: 'Explosive Shot Removed', badge: 'REWORK', badgeColor: C.goldLight, badgeBg: C.goldBg, desc: 'No longer in the class tree. Take Keen Eyesight, Unnatural Causes, Trigger Finger for class tree filler.' },
+            { title: 'Boomstick ↔ WFB Loop', badge: 'BUFF', badgeColor: '#4ade80', badgeBg: '#0f2a1a', desc: 'Each Boomstick hit reduces Wildfire Bomb CD by 2s. Each WFB hit reduces Boomstick CD by 2s. Core feedback loop.' },
+            { title: 'Mongoose Fury Baseline', badge: 'BUFF', badgeColor: '#4ade80', badgeBg: '#0f2a1a', desc: 'Now accessible via tree position without extra talent investment. Mongoose Rounds adds KC→Fury CD reduction.' },
+            { title: 'Flamefang Pitch Added', badge: 'BUFF', badgeColor: '#4ade80', badgeBg: '#0f2a1a', desc: 'New 60s CD AoE DoT. Second charge talent is strong for M+. Core AoE build talent.' },
+            { title: 'Raptor Swipe AoE', badge: 'REWORK', badgeColor: C.goldLight, badgeBg: C.goldBg, desc: 'Replaces Raptor Strike in AoE builds. Hits 5 targets and procs +3% Haste on hit.' },
+            { title: 'Sentinel Owl Rework', badge: 'BUFF', badgeColor: '#4ade80', badgeBg: '#0f2a1a', desc: 'Owl now spawns on every Wildfire Bomb cast and resets WFB cooldown when the owl itself is off cooldown.' },
+          ];
+
+          const SOURCE_BADGE_STYLES: Record<string, { bg: string; border: string; color: string }> = {
+            'MMO-Champion': { bg: 'rgba(251,146,60,.15)', border: '#fb923c', color: '#fb923c' },
+            'Wowhead': { bg: 'rgba(96,165,250,.15)', border: '#60a5fa', color: '#60a5fa' },
+            'Blizzard': { bg: 'rgba(217,119,6,.15)', border: '#d97706', color: '#d97706' },
+          };
+
+          const isNew48h = (dateStr: string) => {
+            try { return (Date.now() - new Date(dateStr).getTime()) < 48 * 60 * 60 * 1000; } catch { return false; }
+          };
+
+          const buildRows = [
+            { label: '🎯 SINGLE TARGET', hero: 'sentinel', heroLabel: 'Sentinel', targets: 1, heroColor: '#38bdf8', recommended: true },
+            { label: '🎯 SINGLE TARGET', hero: 'packLeader', heroLabel: 'Pack Leader', targets: 1, heroColor: '#c084fc', recommended: false },
+            { label: '💥 AOE / M+', hero: 'sentinel', heroLabel: 'Sentinel', targets: 5, heroColor: '#38bdf8', recommended: true },
+            { label: '💥 AOE / M+', hero: 'packLeader', heroLabel: 'Pack Leader', targets: 5, heroColor: '#c084fc', recommended: false },
+          ];
+
+          // Estimate DPS for each build card using a default character
+          const defaultChar = parsedChar || { stats: { agility: 1635, attackPower: 1717, haste: 10.58, crit: 20.13, mastery: 30.16, versatility: 8.28 }, character: {} };
+
+          return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+
+            {/* ═══ SECTION 1: OPTIMAL BUILDS ═══ */}
+            <div>
+              <LBL>🌿 Optimal Talent Builds</LBL>
+              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Method.gg & Icy Veins verified · Midnight 12.0.1 Pre-Season</p>
+
+              {/* Legend */}
+              <div style={{ display: "flex", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
+                {[
+                  { label: 'Core', dot: '#93c5fd', bg: '#1e2d45' },
+                  { label: 'Single Target', dot: '#d8b4fe', bg: '#1e1040', sup: 'ST' },
+                  { label: 'Multi-Target', dot: '#6ee7b7', bg: '#0f2a1a', sup: 'AoE' },
+                ].map(l => (
+                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
+                    {l.sup ? (
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: l.dot, background: l.bg, padding: '2px 5px', borderRadius: 3, fontWeight: 700 }}>{l.sup}</span>
+                    ) : (
+                      <span style={{ color: l.dot, fontSize: 14 }}>●</span>
+                    )}
+                    {l.label}
                   </div>
-                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.6, marginBottom: 10 }}>{hero.desc}</p>
-                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginBottom: 10 }}>Weapon: {hero.weaponPref} · ST +{Math.round(hero.stBonus * 100)}% · AoE +{Math.round(hero.aoeBonus * 100)}%</div>
-                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, fontStyle: "italic", marginBottom: 10 }}>Defensive: {hero.defensiveBenefit}</div>
-                  <div className="divider" />
-                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>KEY SUB-TALENTS</div>
-                  {Object.entries(hero.subTalents).map(([sk, st]) => (
-                    <div key={sk} style={{ marginBottom: 6 }}>
-                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: key === "sentinel" ? C.sentClr : C.packClr, fontWeight: 600 }}>{sk.replace(/([A-Z])/g, ' $1').trim()}: </span>
-                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>{st.desc}</span>
+                ))}
+              </div>
+
+              {/* ST Divider */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                <div style={{ flex: 1, height: 1, background: C.borderSub }} />
+                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim }}>SINGLE TARGET</span>
+                <div style={{ flex: 1, height: 1, background: C.borderSub }} />
+              </div>
+
+              {/* ST builds */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                {buildRows.filter(b => b.targets === 1).map((build, bi) => {
+                  const opt = getOptimalTalents(build.targets, build.hero);
+                  const estDps = runSimulation(defaultChar, build.targets, 300, build.hero, build.targets > 2 ? 'aoe' : 'st', 1.0, simcLiveData).totalDps;
+                  return (
+                    <div key={`st-${bi}`} style={{
+                      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden',
+                      borderTop: `3px solid ${build.heroColor}`, transition: 'border-color .2s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#3d4f6a')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
+                    >
+                      {/* Card Header */}
+                      <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, borderBottom: `1px solid ${C.borderSub}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 700, color: C.textSec }}>{build.label}</span>
+                          <span className="badge" style={{ background: build.hero === 'sentinel' ? C.sentBg : C.packBg, color: build.heroColor, border: `1px solid ${build.hero === 'sentinel' ? C.sentBdr : C.packBdr}`, fontSize: 8 }}>
+                            {build.hero === 'sentinel' ? '🦉' : '🐾'} {build.heroLabel}
+                          </span>
+                          {build.recommended && (
+                            <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`, fontSize: 7 }}>★ RECOMMENDED</span>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 16, color: C.goldLight, fontWeight: 700 }}>{fmt(Math.round(estDps))}</div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>est. DPS</div>
+                        </div>
+                      </div>
+
+                      {/* Talent Tags */}
+                      <div style={{ padding: '14px 20px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
+                          {opt.selected.map(t => (
+                            <span key={t.key} className={`tag ${t.always ? 'tag-core' : t.aoePriority ? 'tag-aoe' : 'tag-st'}`}>
+                              {t.always && <span style={{ marginRight: 4 }}>•</span>}
+                              {!t.always && t.aoePriority && <sup style={{ fontSize: 8, marginRight: 2 }}>AoE</sup>}
+                              {!t.always && t.stPriority && <sup style={{ fontSize: 8, marginRight: 2 }}>ST</sup>}
+                              {t.key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Talent String */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ flex: 1, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: '#141c2a', borderRadius: 6, padding: '7px 12px', wordBreak: 'break-all', lineHeight: 1.5 }}>{opt.exportString}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <button className={`copy-btn ${copied === `talent-st-${bi}` ? 'done' : ''}`} onClick={() => copy(opt.exportString, `talent-st-${bi}`)}>{copied === `talent-st-${bi}` ? '✓ Copied' : 'Copy'}</button>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: C.textDim, whiteSpace: 'nowrap' }}>Esc → Talents → Import</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* AoE Divider */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                <div style={{ flex: 1, height: 1, background: C.borderSub }} />
+                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim }}>AOE / M+</span>
+                <div style={{ flex: 1, height: 1, background: C.borderSub }} />
+              </div>
+
+              {/* AoE builds */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {buildRows.filter(b => b.targets === 5).map((build, bi) => {
+                  const opt = getOptimalTalents(build.targets, build.hero);
+                  const estDps = runSimulation(defaultChar, build.targets, 300, build.hero, 'aoe', 1.0, simcLiveData).totalDps;
+                  return (
+                    <div key={`aoe-${bi}`} style={{
+                      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden',
+                      borderTop: `3px solid ${build.heroColor}`, transition: 'border-color .2s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#3d4f6a')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
+                    >
+                      <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, borderBottom: `1px solid ${C.borderSub}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 700, color: C.textSec }}>{build.label}</span>
+                          <span className="badge" style={{ background: build.hero === 'sentinel' ? C.sentBg : C.packBg, color: build.heroColor, border: `1px solid ${build.hero === 'sentinel' ? C.sentBdr : C.packBdr}`, fontSize: 8 }}>
+                            {build.hero === 'sentinel' ? '🦉' : '🐾'} {build.heroLabel}
+                          </span>
+                          {build.recommended && (
+                            <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`, fontSize: 7 }}>★ RECOMMENDED</span>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 16, color: C.goldLight, fontWeight: 700 }}>{fmt(Math.round(estDps))}</div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>est. DPS</div>
+                        </div>
+                      </div>
+                      <div style={{ padding: '14px 20px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
+                          {opt.selected.map(t => (
+                            <span key={t.key} className={`tag ${t.always ? 'tag-core' : t.aoePriority ? 'tag-aoe' : 'tag-st'}`}>
+                              {t.always && <span style={{ marginRight: 4 }}>•</span>}
+                              {!t.always && t.aoePriority && <sup style={{ fontSize: 8, marginRight: 2 }}>AoE</sup>}
+                              {!t.always && t.stPriority && <sup style={{ fontSize: 8, marginRight: 2 }}>ST</sup>}
+                              {t.key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ flex: 1, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: '#141c2a', borderRadius: 6, padding: '7px 12px', wordBreak: 'break-all', lineHeight: 1.5 }}>{opt.exportString}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <button className={`copy-btn ${copied === `talent-aoe-${bi}` ? 'done' : ''}`} onClick={() => copy(opt.exportString, `talent-aoe-${bi}`)}>{copied === `talent-aoe-${bi}` ? '✓ Copied' : 'Copy'}</button>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: C.textDim, whiteSpace: 'nowrap' }}>Esc → Talents → Import</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ═══ SECTION 2: HERO TALENT COMPARISON ═══ */}
+            <div>
+              <LBL>⚔ Hero Talent Comparison</LBL>
+
+              {/* Performance Bars */}
+              <CARD style={{ marginBottom: 16 }}>
+                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 14 }}>RELATIVE PERFORMANCE — MIDNIGHT 12.0 PRE-SEASON 1</div>
+                {[
+                  { label: 'Single Target', sentPct: 82, plPct: 75 },
+                  { label: 'AoE / M+', sentPct: 95, plPct: 68 },
+                ].map(row => (
+                  <div key={row.label} style={{ marginBottom: 14 }}>
+                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 6, fontWeight: 600 }}>{row.label}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      {/* Sentinel bar */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: '#38bdf8', fontWeight: 600 }}>🦉 Sentinel</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#38bdf8' }}>{row.sentPct}%</span>
+                        </div>
+                        <div style={{ height: 8, background: '#141c2a', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${row.sentPct}%`, height: '100%', background: 'linear-gradient(90deg, #0c4a6e, #38bdf8)', borderRadius: 4, animation: 'barGrow .6s ease forwards' }} />
+                        </div>
+                      </div>
+                      {/* Pack Leader bar */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: '#c084fc', fontWeight: 600 }}>🐾 Pack Leader</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#c084fc' }}>{row.plPct}%</span>
+                        </div>
+                        <div style={{ height: 8, background: '#141c2a', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${row.plPct}%`, height: '100%', background: 'linear-gradient(90deg, #3b0764, #c084fc)', borderRadius: 4, animation: 'barGrow .6s ease forwards' }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CARD>
+
+              {/* Side-by-side hero cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="responsive-grid">
+                {Object.entries(MIDNIGHT_DATA.talents.hero).map(([key, hero]) => {
+                  const heroColor = key === 'sentinel' ? '#38bdf8' : '#c084fc';
+                  const heroBg = key === 'sentinel' ? C.sentBg : C.packBg;
+                  const heroBdr = key === 'sentinel' ? C.sentBdr : C.packBdr;
+                  const verdicts: Record<string, string> = {
+                    packLeader: 'Pick this if your guild requires dual wield or you prefer a beast-proc playstyle.',
+                    sentinel: 'Pick this for maximum performance in both raid and M+ — currently the stronger hero talent.',
+                  };
+                  const switchConditions: Record<string, string[]> = {
+                    packLeader: [
+                      'Raid requires dual wield weapon type',
+                      'You have significantly better 1H weapons available',
+                      'Guild composition already has Sentinel covered',
+                    ],
+                    sentinel: [
+                      'You have access to a strong 2H polearm/staff',
+                      'Running M+ where AoE performance is prioritized',
+                      'Default choice for most content',
+                    ],
+                  };
+
+                  return (
+                    <div key={key} style={{
+                      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12,
+                      borderTop: `3px solid ${heroColor}`, overflow: 'hidden', transition: 'border-color .2s',
+                      display: 'flex', flexDirection: 'column',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#3d4f6a')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
+                    >
+                      {/* Card Header */}
+                      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.borderSub}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 24 }}>{hero.icon}</span>
+                          <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 14, fontWeight: 700, color: heroColor }}>{hero.name}</span>
+                          {hero.recommended && (
+                            <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`, fontSize: 7 }}>★ RECOMMENDED</span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                          <span className="badge" style={{ background: heroBg, color: heroColor, border: `1px solid ${heroBdr}`, fontSize: 8 }}>
+                            {key === 'packLeader' ? '⚔ Dual Wield' : '🗡 2H Weapon'}
+                          </span>
+                          <span className="badge" style={{ background: '#141c2a', color: C.textSec, border: `1px solid ${C.border}`, fontSize: 8 }}>
+                            ST +{Math.round(hero.stBonus * 100)}%
+                          </span>
+                          <span className="badge" style={{ background: '#141c2a', color: C.textSec, border: `1px solid ${C.border}`, fontSize: 8 }}>
+                            AoE +{Math.round(hero.aoeBonus * 100)}%
+                          </span>
+                        </div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, fontStyle: 'italic' }}>Defensive: {hero.defensiveBenefit}</div>
+                      </div>
+
+                      {/* Quick Verdict */}
+                      <div style={{ padding: '12px 20px', background: heroBg, borderBottom: `1px solid ${C.borderSub}` }}>
+                        <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, fontWeight: 700, margin: 0, lineHeight: 1.5 }}>
+                          {verdicts[key]}
+                        </p>
+                      </div>
+
+                      {/* Description */}
+                      <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.borderSub}` }}>
+                        <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.6, margin: 0 }}>{hero.desc}</p>
+                      </div>
+
+                      {/* Key Sub-Talents */}
+                      <div style={{ padding: '14px 20px', flex: 1 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>KEY SUB-TALENTS</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {Object.entries(hero.subTalents).map(([sk, st]) => {
+                            const meta = SUB_TALENT_META[key]?.[sk] || 'SITUATIONAL';
+                            const mStyle = metaBadgeStyle(meta);
+                            return (
+                              <div key={sk} style={{
+                                background: '#141c2a', border: `1px solid ${C.borderSub}`, borderRadius: 8, padding: '10px 12px',
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: heroColor, fontWeight: 700 }}>
+                                    {sk.replace(/([A-Z])/g, ' $1').trim().replace(/^./, s => s.toUpperCase())}
+                                  </span>
+                                  <span style={{
+                                    fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, fontWeight: 600,
+                                    padding: '2px 8px', borderRadius: 10, ...mStyle,
+                                  }}>{meta}</span>
+                                </div>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textSec, lineHeight: 1.5 }}>{st.desc}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* When to Switch */}
+                      <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.borderSub}` }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>WHEN TO SWITCH</div>
+                        <div style={{ background: heroBg, border: `1px solid ${heroBdr}`, borderRadius: 8, padding: '10px 14px' }}>
+                          {switchConditions[key]?.map((cond, i) => (
+                            <div key={i} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, lineHeight: 1.8 }}>• {cond}</div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ═══ SECTION 3: KEY MIDNIGHT 12.0 CHANGES ═══ */}
+            <div>
+              <LBL>⚡ Key Midnight 12.0 Changes</LBL>
+              <div style={{ overflowX: 'auto', display: 'flex', gap: 12, paddingBottom: 8 }}>
+                {MIDNIGHT_CHANGES.map((change, i) => (
+                  <div key={i} style={{
+                    minWidth: 240, flexShrink: 0, background: C.surface, border: `1px solid ${C.border}`,
+                    borderRadius: 12, padding: '16px 18px', transition: 'border-color .2s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#3d4f6a')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 15, fontWeight: 700, color: C.goldLight }}>{change.title}</span>
+                      <span style={{
+                        fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, fontWeight: 600,
+                        padding: '2px 8px', borderRadius: 10, background: change.badgeBg, color: change.badgeColor,
+                        border: `1px solid ${change.badgeColor}40`,
+                      }}>{change.badge}</span>
+                    </div>
+                    <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, lineHeight: 1.6, margin: 0 }}>{change.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ═══ SECTION 4: LIVE PATCH NOTES ═══ */}
+            <div>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+                <LBL>📡 Live Patch Notes — Survival Hunter</LBL>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {patchLastUpdated && (
+                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim }}>Last updated: {patchLastUpdated}</span>
+                  )}
+                  <button onClick={() => fetchPatchNotes(true)} disabled={patchLoading} style={{
+                    background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '5px 8px', cursor: patchLoading ? 'not-allowed' : 'pointer',
+                    color: C.textDim, fontSize: 14, transition: 'all .2s', display: 'flex', alignItems: 'center',
+                  }}>
+                    <span style={{ display: 'inline-block', animation: patchLoading ? 'spin .8s linear infinite' : 'none' }}>↻</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Source filter pills */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+                {['All', 'MMO-Champion', 'Wowhead', 'Blizzard'].map(src => (
+                  <button key={src} onClick={() => setPatchSourceFilter(src)} style={{
+                    background: patchSourceFilter === src ? C.gold : C.surface2,
+                    border: `1px solid ${patchSourceFilter === src ? C.gold : C.border}`,
+                    borderRadius: 20, padding: '5px 14px', cursor: 'pointer',
+                    fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 600, transition: 'all .2s',
+                    color: patchSourceFilter === src ? '#fffbeb' : C.textDim,
+                  }}>{src}</button>
+                ))}
+              </div>
+
+              {/* Loading state */}
+              {patchLoading && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="responsive-grid">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} style={{
+                      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, minHeight: 120,
+                      animation: 'waitPulse 1.5s ease-in-out infinite',
+                    }}>
+                      <div style={{ height: 12, width: '40%', background: C.surface2, borderRadius: 4, marginBottom: 10 }} />
+                      <div style={{ height: 10, width: '80%', background: C.surface2, borderRadius: 4, marginBottom: 6 }} />
+                      <div style={{ height: 10, width: '60%', background: C.surface2, borderRadius: 4 }} />
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Error state */}
+              {!patchLoading && patchError && (
+                <CARD>
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textMid, marginBottom: 10 }}>
+                      {patchError}
+                    </p>
+                    <a href="https://www.mmo-champion.com/content/?2437491" target="_blank" rel="noopener noreferrer" style={{
+                      fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: '#38bdf8', textDecoration: 'none',
+                    }}>View manually at mmo-champion.com →</a>
+                    <div style={{ marginTop: 10 }}>
+                      <button onClick={() => fetchPatchNotes(true)} style={{
+                        background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 14px',
+                        cursor: 'pointer', fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, fontWeight: 600,
+                      }}>Retry</button>
+                    </div>
+                  </div>
                 </CARD>
-              ))}
+              )}
+
+              {/* Empty state */}
+              {!patchLoading && !patchError && filteredNotes.length === 0 && (
+                <CARD>
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textMid, marginBottom: 8 }}>
+                      No recent Survival Hunter patch notes found. Check back after the next hotfix.
+                    </p>
+                    <a href="https://www.mmo-champion.com/content/" target="_blank" rel="noopener noreferrer" style={{
+                      fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: '#38bdf8', textDecoration: 'none',
+                    }}>MMO-Champion Hotfix Tracker →</a>
+                  </div>
+                </CARD>
+              )}
+
+              {/* Patch note cards */}
+              {!patchLoading && !patchError && filteredNotes.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'stretch' }} className="responsive-grid">
+                  {filteredNotes.map((note, i) => {
+                    const srcStyle = SOURCE_BADGE_STYLES[note.source] || SOURCE_BADGE_STYLES['Blizzard'];
+                    return (
+                      <div key={i} style={{
+                        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 18px',
+                        display: 'flex', flexDirection: 'column', transition: 'border-color .2s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = '#3d4f6a')}
+                      onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                          <span className="badge" style={{ background: srcStyle.bg, color: srcStyle.color, border: `1px solid ${srcStyle.border}`, fontSize: 7 }}>{note.source}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim }}>{note.date}</span>
+                          {isNew48h(note.pubDate) && (
+                            <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`, fontSize: 7 }}>NEW</span>
+                          )}
+                        </div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700, color: C.textPri, marginBottom: 8, lineHeight: 1.3 }}>{note.title}</div>
+                        <p style={{
+                          fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, lineHeight: 1.6, flex: 1,
+                          display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0,
+                        }} dangerouslySetInnerHTML={{ __html: highlightKeywords(note.description || '') }} />
+                        <a href={note.link} target="_blank" rel="noopener noreferrer" style={{
+                          fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: '#38bdf8', textDecoration: 'none', marginTop: 10, display: 'inline-block',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                        onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                        >Read Full Post →</a>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+
           </div>
-        )}
+          );
+        })()}
 
         {/* ═══ REPORT TAB ═══ */}
         {activeTab === "report" && (
