@@ -695,12 +695,13 @@ export default function SurvivalHunterSim() {
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                           {parsedChar.gear.map((g, i) => {
-                            const ilvlColor = g.ilvl >= 645 ? "#fbbf24" : g.ilvl >= 635 ? "#a78bfa" : g.ilvl >= 620 ? "#34d399" : "#94a3b8";
+                            const ilvlColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#94a3b8";
+                            const nameColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#ffffff";
                             return (
-                              <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, transition: "background .15s", cursor: g.itemId ? "pointer" : "default" }}
+                              <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
                                 onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)} onMouseLeave={handleItemLeave}>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: "#a78bfa", fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
                                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: ilvlColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
                               </div>
                             );
