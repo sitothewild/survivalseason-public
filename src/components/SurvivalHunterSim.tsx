@@ -1770,6 +1770,95 @@ export default function SurvivalHunterSim() {
                   );
                 })()}
 
+                {/* ═══ COOLDOWN ALIGNMENT ═══ */}
+                {(() => {
+                  const FIGHT_DUR = 300;
+                  const isSent = heroTalent === "sentinel";
+                  const COOLDOWNS = [
+                    { name: "Coordinated Assault", cd: 120, color: BAR_COLORS["Coord. Assault"] || "#e879f9", abbr: "CA" },
+                    { name: "Takedown", cd: 90, color: BAR_COLORS["Takedown"] || "#93c5fd", abbr: "TD" },
+                    { name: "Flamefang Pitch", cd: 60, color: BAR_COLORS["Flamefang Pitch"] || "#22d3ee", abbr: "FP" },
+                    { name: "Wildfire Bomb", cd: 18, color: BAR_COLORS["Wildfire Bomb"] || "#f59e0b", abbr: "WFB", chargeReset: true },
+                    ...(isSent ? [{ name: "Sentinel Owl", cd: 30, color: BAR_COLORS["Sentinel Mark + Lunar Storm"] || "#38bdf8", abbr: "OWL" }] : []),
+                  ];
+                  const castMap: Record<string, number[]> = {};
+                  COOLDOWNS.forEach(cd => { const casts: number[] = []; for (let t = 0; t <= FIGHT_DUR; t += cd.cd) casts.push(t); castMap[cd.name] = casts; });
+                  const allTimes = new Set<number>(); Object.values(castMap).forEach(arr => arr.forEach(t => allTimes.add(t)));
+                  const burstWindows: { t: number; cds: string[]; label: string }[] = [];
+                  Array.from(allTimes).sort((a, b) => a - b).forEach(t => {
+                    const aligned = COOLDOWNS.filter(cd => castMap[cd.name].some(ct => Math.abs(ct - t) <= 3));
+                    if (aligned.length >= 3 && !burstWindows.some(bw => Math.abs(bw.t - t) < 5))
+                      burstWindows.push({ t, cds: aligned.map(c => c.abbr), label: "" });
+                  });
+                  burstWindows.forEach((bw, i) => {
+                    const mins = Math.floor(bw.t / 60); const secs = Math.round(bw.t % 60);
+                    const ts = `${mins}:${String(secs).padStart(2, "0")}`;
+                    const hasCA = bw.cds.includes("CA");
+                    bw.label = i === 0 ? `${ts} — OPENER: ${bw.cds.join(" + ")} all align. Full send.`
+                      : hasCA ? `${ts} — MAJOR BURST: ${bw.cds.join(" + ")} align. Pop everything.`
+                      : `${ts} — MINI BURST: ${bw.cds.join(" + ")} align. No CA yet.`;
+                  });
+                  const CHART_W = 1200; const ROW_H = 36;
+                  return (
+                    <CARD style={{ marginTop: 20 }}>
+                      <LBL>🔄 Cooldown Alignment — 5-Minute Fight</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                        Lining up major cooldowns for simultaneous burst windows is the difference between good and great Survival play.
+                      </p>
+                      <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 16 }}>
+                        <div style={{ position: "relative", width: CHART_W, minHeight: COOLDOWNS.length * ROW_H + 30, background: "#0d1117", padding: "0 0 24px 0" }}>
+                          {burstWindows.map((bw, i) => (
+                            <div key={`bw-${i}`} style={{ position: "absolute", left: `${(bw.t / FIGHT_DUR) * 100}%`, top: 0, bottom: 0, width: 20, background: "rgba(217,119,6,0.15)", borderTop: `3px solid ${C.gold}`, zIndex: 1 }} />
+                          ))}
+                          {Array.from({ length: 11 }, (_, i) => i * 30).map(t => (
+                            <div key={t} style={{ position: "absolute", left: `${(t / FIGHT_DUR) * 100}%`, top: 0, bottom: 0, borderLeft: `1px solid ${t % 60 === 0 ? '#2e3a50' : '#1a2236'}`, zIndex: 0 }}>
+                              <span style={{ position: "absolute", bottom: 4, left: 4, fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>{Math.floor(t / 60)}:{String(t % 60).padStart(2, "0")}</span>
+                            </div>
+                          ))}
+                          {COOLDOWNS.map((cd) => {
+                            const casts = castMap[cd.name];
+                            return (
+                              <div key={cd.name} style={{ position: "relative", height: ROW_H, display: "flex", alignItems: "center" }}>
+                                <div style={{ position: "absolute", left: 6, top: "50%", transform: "translateY(-50%)", fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: cd.color, zIndex: 5, background: "#0d1117", padding: "2px 6px", borderRadius: 3, whiteSpace: "nowrap", opacity: 0.9 }}>{cd.abbr}</div>
+                                {casts.length > 1 && <div style={{ position: "absolute", left: `${(casts[0] / FIGHT_DUR) * 100}%`, width: `${((casts[casts.length - 1] - casts[0]) / FIGHT_DUR) * 100}%`, top: "50%", height: 2, transform: "translateY(-50%)", background: `${cd.color}25`, zIndex: 2 }} />}
+                                {casts.slice(0, -1).map((t, ci) => (
+                                  <div key={ci} style={{ position: "absolute", left: `${(t / FIGHT_DUR) * 100}%`, width: `${(cd.cd / FIGHT_DUR) * 100}%`, top: "50%", height: 4, transform: "translateY(-50%)", background: `${cd.color}15`, borderRadius: 2, zIndex: 2 }} />
+                                ))}
+                                {casts.map((t, ci) => (
+                                  <div key={ci} style={{ position: "absolute", left: `${(t / FIGHT_DUR) * 100}%`, top: "50%", transform: "translate(-50%, -50%)", width: 10, height: 10, borderRadius: "50%", background: cd.color, boxShadow: `0 0 8px ${cd.color}60`, zIndex: 3, border: burstWindows.some(bw => Math.abs(bw.t - t) <= 3) ? `2px solid ${C.goldLight}` : "none" }} />
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div style={{ background: C.borderSub, borderRadius: 8, padding: 14, marginBottom: 16 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>BURST WINDOWS</div>
+                        {burstWindows.map((bw, i) => {
+                          const hasCA = bw.cds.includes("CA");
+                          return (
+                            <div key={i} style={{ display: "flex", gap: 12, padding: "8px 10px", borderRadius: 6, background: hasCA ? "rgba(217,119,6,0.06)" : "transparent", borderLeft: `3px solid ${hasCA ? C.gold : C.border}`, marginBottom: 4, alignItems: "flex-start" }}>
+                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", minWidth: 120 }}>
+                                {bw.cds.map(abbr => { const cdi = COOLDOWNS.find(c => c.abbr === abbr); return <span key={abbr} style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: cdi?.color || C.textSec, background: `${cdi?.color || C.textSec}15`, padding: "2px 6px", borderRadius: 4 }}>{abbr}</span>; })}
+                              </div>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.5 }}>{bw.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ background: C.goldBg, borderRadius: 8, border: `1px solid ${C.gold}40`, borderTop: `3px solid ${C.gold}`, padding: 16 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <span style={{ fontSize: 16 }}>🔑</span>
+                          <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1.5, color: C.goldLight, fontWeight: 700 }}>KEY PRINCIPLE</span>
+                        </div>
+                        <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>
+                          <strong style={{ color: C.goldLight }}>Coordinated Assault is your anchor.</strong> Plan every other cooldown to be available when CA comes off cooldown at 2:00 and 4:00. If Takedown is not available during a CA window, you lost a burst window — avoid using Takedown outside of CA when possible in longer fights.
+                        </p>
+                      </div>
+                    </CARD>
+                  );
+                })()}
+
                 </>
               );
             })()}
