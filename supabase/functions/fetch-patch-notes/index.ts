@@ -237,7 +237,7 @@ const CURATED_NOTES: PatchNote[] = [
   },
   {
     title: 'Class Tuning Incoming — March 11, 2026',
-    link: 'https://www.wowhead.com/news/category=class-tuning',
+    link: 'https://www.wowhead.com/news/hunter',
     pubDate: '2026-03-09T00:00:00Z',
     date: 'Mar 9, 2026',
     description: 'Upcoming Hunter changes: Survival — Spearhead bleed damage increased by 10%. Kill Command focus cost reduced to 15 (was 20). Sentinel — Lunar Storm damage increased by 12%. These changes will go live with weekly maintenance.',
