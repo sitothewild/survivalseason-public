@@ -185,3 +185,41 @@ export function getRotationWeights(
 ): Record<string, number> {
   return parsedAPL?.[hero]?.[mode]?.weights ?? FALLBACK_WEIGHTS[hero][mode].weights;
 }
+
+// ─── Build ParsedAPL from pre-parsed actionLists ───────────
+// The edge function already parses the APL into actionLists (plst, sentst, etc.)
+// This converts those into the ParsedAPL format the engine expects.
+
+function extractAbilityName(actionLine: string): string {
+  // "kill_command,if=buff..." → "kill_command"
+  return actionLine.split(",")[0].split("#")[0].trim().toLowerCase();
+}
+
+export function buildAPLFromActionLists(actionLists: Record<string, string[]>): ParsedAPL {
+  const extract = (key: string): string[] => {
+    const actions = actionLists[key];
+    if (!actions || actions.length === 0) return [];
+    return actions.map(extractAbilityName).filter(a => a && !['auto_attack', 'call_action_list', 'variable', 'summon_pet', 'snapshot_stats'].includes(a));
+  };
+
+  const plst = extract('plst');
+  const plcleave = extract('plcleave');
+  const sentst = extract('sentst');
+  const sentcleave = extract('sentcleave');
+
+  // Deduplicate abilities (keep first occurrence order)
+  const dedup = (arr: string[]): string[] => [...new Set(arr)];
+
+  const result: ParsedAPL = {
+    sentinel: {
+      st: sentst.length > 0 ? buildRotationData(dedup(sentst)) : FALLBACK_WEIGHTS.sentinel.st,
+      aoe: sentcleave.length > 0 ? buildRotationData(dedup(sentcleave)) : FALLBACK_WEIGHTS.sentinel.aoe,
+    },
+    packLeader: {
+      st: plst.length > 0 ? buildRotationData(dedup(plst)) : FALLBACK_WEIGHTS.packLeader.st,
+      aoe: plcleave.length > 0 ? buildRotationData(dedup(plcleave)) : FALLBACK_WEIGHTS.packLeader.aoe,
+    },
+  };
+
+  return result;
+}

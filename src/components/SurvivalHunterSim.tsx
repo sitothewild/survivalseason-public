@@ -4,7 +4,7 @@ import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMe
 import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
-import { parseSimcAPL, getRotationWeights, type ParsedAPL } from "@/utils/aplParser";
+import { parseSimcAPL, getRotationWeights, buildAPLFromActionLists, type ParsedAPL } from "@/utils/aplParser";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -816,13 +816,13 @@ export default function SurvivalHunterSim() {
           const sha = (cached.data as any)?.sha || cached.github_sha || '';
           setSimcSyncInfo(`SimC data loaded (${sha.slice(0, 7)}) · ${new Date(cached.updated_at).toLocaleDateString()}`);
           setSimcSyncStatus('synced');
-          // Parse APL from cached data
+          // Build APL weights from pre-parsed actionLists
           try {
-            const rawApl = (cached.data as any)?.apl?.rawText;
-            if (rawApl) {
-              setAplData(parseSimcAPL(rawApl));
+            const actionLists = (cached.data as any)?.apl?.actionLists;
+            if (actionLists) {
+              setAplData(buildAPLFromActionLists(actionLists));
             }
-          } catch (e) { console.warn('APL parse from cache failed:', e); }
+          } catch (e) { console.warn('APL build from cache failed:', e); }
         } else {
           // Stale or no cached data, trigger a sync
           if (cached?.data) console.warn('Cached SimC data contains deprecated War Within abilities — forcing re-sync');
@@ -851,13 +851,13 @@ export default function SurvivalHunterSim() {
       const status = data.status === 'cached' ? 'Up to date' : 'Updated';
       setSimcSyncInfo(`${status} (${data.sha?.slice(0, 7)}) · ${new Date().toLocaleDateString()}`);
       setSimcSyncStatus('synced');
-      // Parse APL from synced data
+      // Build APL weights from pre-parsed actionLists
       try {
-        const rawApl = data.data?.apl?.rawText;
-        if (rawApl) {
-          setAplData(parseSimcAPL(rawApl));
+        const actionLists = data.data?.apl?.actionLists;
+        if (actionLists) {
+          setAplData(buildAPLFromActionLists(actionLists));
         }
-      } catch (e) { console.warn('APL parse from sync failed:', e); }
+      } catch (e) { console.warn('APL build from sync failed:', e); }
     } catch (e) {
       setSimcSyncStatus('error');
       setSimcSyncInfo(`Sync failed: ${e.message}`);
