@@ -1831,9 +1831,33 @@ export default function SurvivalHunterSim() {
                     )}
 
                     {/* DPS Results */}
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 4 }}>
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, alignSelf: 'center', marginRight: 4 }}>SORT BY:</span>
+                      {(['dps', 'apl'] as const).map(mode => (
+                        <button key={mode} onClick={() => setAplSortMode(mode)}
+                          style={{
+                            background: aplSortMode === mode ? C.surface3 : C.surface2,
+                            border: `1px solid ${aplSortMode === mode ? C.gold : C.border}`,
+                            borderRadius: 6, padding: '4px 10px', cursor: 'pointer',
+                            fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1,
+                            color: aplSortMode === mode ? C.goldLight : C.textMid,
+                            transition: 'all .2s', textTransform: 'uppercase',
+                          }}>{mode === 'dps' ? 'DPS' : 'APL Order'}</button>
+                      ))}
+                    </div>
                     <div style={{ display: "grid", gridTemplateColumns: simResults.length > 1 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: 16 }}>
                       {simResults.map((res, ri) => {
-                        const sorted = Object.entries(res.breakdown).sort((a, b) => b[1] - a[1]); const maxVal = sorted[0][1];
+                        const aplOrderedNames = aplData ? (getRotationWeights(aplData, res.hero === 'packLeader' ? 'packLeader' : 'sentinel', res.build === 'aoe' ? 'aoe' : 'st') ? aplData[res.hero === 'packLeader' ? 'packLeader' : 'sentinel'][res.build === 'aoe' ? 'aoe' : 'st']?.ordered : null) : null;
+                        const entries = Object.entries(res.breakdown);
+                        const sorted = aplSortMode === 'apl' && aplOrderedNames
+                          ? entries.sort((a, b) => {
+                              const aIdx = aplOrderedNames.indexOf(a[0]) >= 0 ? aplOrderedNames.indexOf(a[0]) : 9999;
+                              const bIdx = aplOrderedNames.indexOf(b[0]) >= 0 ? aplOrderedNames.indexOf(b[0]) : 9999;
+                              return aIdx - bIdx || (b[1] as number) - (a[1] as number);
+                            })
+                          : entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+                        const maxVal = Math.max(...entries.map(e => e[1] as number));
+                        const h = MIDNIGHT_DATA.talents.hero[res.hero];
                         const h = MIDNIGHT_DATA.talents.hero[res.hero];
                         return (
                           <div key={ri} className="result-anim" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animationDelay: `${ri * .1}s` }}>
