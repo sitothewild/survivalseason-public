@@ -4,7 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getFullOptimalAnalysis,
-  HEROIC_MIDNIGHT_639,
+  HEROIC_MIDNIGHT_276,
 } from "@/lib/theorycrafting";
 import survivalIconImg from "@/assets/survival-icon.png";
 
@@ -52,7 +52,7 @@ export default function Guide() {
   // Theory analysis — re-runs when hero or target count changes
   const theory = useMemo(() => {
     const tier = { has2pc: true, has4pc: true };
-    return getFullOptimalAnalysis(hero, targets, HEROIC_MIDNIGHT_639, tier);
+    return getFullOptimalAnalysis(hero, targets, HEROIC_MIDNIGHT_276, tier);
   }, [hero, targets]);
 
   // ── Sub-components ──────────────────────────────────────────
@@ -301,12 +301,12 @@ export default function Guide() {
             SECTION — Ability DPS Breakdown
         ═══════════════════════════════════════════════════ */}
         <Card span style={{ marginBottom:20 }}>
-          <Lbl>⚗️ First-Principles Ability DPS Breakdown — 639 Heroic / 4pc Tier</Lbl>
+          <Lbl>⚗️ First-Principles Ability DPS Breakdown — 276 Hero-track / 4pc Tier</Lbl>
           <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
             marginTop:0, marginBottom:16, lineHeight:1.6 }}>
             Calculated from raw AP coefficients × Attack Power × stat multipliers × CPM model.
             Built from scratch — not anchored to a fixed number.
-            <strong style={{ color:C.goldLight }}> 639 ilvl Heroic Midnight</strong>, 4pc tier,
+            <strong style={{ color:C.goldLight }}> 276 ilvl Heroic Midnight</strong>, 4pc tier,
             {" "}{isSent ? "Sentinel" : "Pack Leader"} hero, {targets} target{targets>1?"s":""}.
           </p>
           <div style={{ overflowX:"auto" }}>
@@ -369,7 +369,7 @@ export default function Guide() {
             <span style={{ background:C.surface2, color:C.textMid,
               border:`1px solid ${C.border}`, borderRadius:6,
               padding:"4px 10px", fontFamily:"'Rajdhani',sans-serif" }}>
-              639 ilvl · 2pc + 4pc tier
+              276 ilvl · 2pc + 4pc tier
             </span>
           </div>
         </Card>

@@ -118,31 +118,86 @@ export interface VsMethodGg {
   differences: { topic: string; methodGg: string; ourView: string; delta: string }[];
 }
 
-// ── Heroic Midnight Gear Profiles ──────────────────────────
+// ── Midnight Season 1 Gear Profiles ─────────────────────────
+//
+// Track & Rank system — each track has 6 ranks, +3 ilvl per rank:
+//
+//  Track        Rank 1   Rank 6   Currency          Source
+//  ──────────── ──────   ──────   ────────────────  ─────────────────────────────────
+//  Adventurer     224     237     Weathered         World Quests / Normal Dungeons
+//  Veteran        237     250     Carved            Heroic Dungeons / Delves T1-3
+//  Champion       250     263     Runed             M0 / Normal Raid / Delves T4-7
+//  Hero           263     276     Runed             M+ +2–+6 / Heroic Raid / Bountiful Delves
+//  Myth           276     289     Gilded            M+ +7+ / Mythic Raid / Vault
+//
+// Cost: 120 Dawncrests per piece (Rank 1→6). Weekly cap: 100 crests.
+// Slot discount: if a slot already has a max-rank item, upgrading any
+// other item in that slot costs 0 crests (Gold only).
+
+/** Myth-track Rank 6 (289 ilvl) — Mythic Raid / M+ +7+ vault. True BiS ceiling. */
+export const MYTH_MIDNIGHT_289: GearProfile = {
+  ilvl: 289,
+  agility: 3_520,
+  attackPower: 3_790,    // 2H polearm at 289 Myth Rank 6
+  critPct: 26.2,
+  hastePct: 15.4,
+  masteryPct: 39.6,
+  versPct: 9.5,
+};
 
 /**
- * Max heroic Midnight (639 ilvl) with 2H weapon and optimal stat distribution.
- * Represents a well-geared raider with Sentinel + 4pc tier + best-in-slot enchants.
+ * Hero-track Rank 6 / Myth-track Rank 1 (276 ilvl).
+ * Primary theorycrafting baseline: Heroic Raid hero-track max + 4pc tier.
  */
-export const HEROIC_MIDNIGHT_639: GearProfile = {
-  ilvl: 639,
-  agility: 3_420,
-  attackPower: 3_680,    // 2H polearm/staff at 639 ilvl
+export const HERO_MIDNIGHT_276: GearProfile = {
+  ilvl: 276,
+  agility: 3_240,
+  attackPower: 3_490,    // 2H polearm/staff at 276
   critPct: 25.4,
   hastePct: 14.8,
   masteryPct: 38.2,      // Spirit Bond — BiS stat for Survival
   versPct: 9.1,
 };
+/** Heroic raid = Hero-track max = 276 ilvl. Alias for HERO_MIDNIGHT_276. */
+export const HEROIC_MIDNIGHT_276 = HERO_MIDNIGHT_276;
+/** @deprecated renamed to HEROIC_MIDNIGHT_276 */
+export const HEROIC_MIDNIGHT_639 = HERO_MIDNIGHT_276;
 
-export const NORMAL_MIDNIGHT_626: GearProfile = {
-  ilvl: 626,
-  agility: 2_780,
-  attackPower: 2_960,
-  critPct: 21.0,
-  hastePct: 12.5,
-  masteryPct: 31.5,
-  versPct: 7.8,
+/** Champion-track Rank 6 (263 ilvl) — M0 / Normal Raid / Delves T7. */
+export const CHAMPION_MIDNIGHT_263: GearProfile = {
+  ilvl: 263,
+  agility: 2_980,
+  attackPower: 3_200,
+  critPct: 22.8,
+  hastePct: 13.5,
+  masteryPct: 34.4,
+  versPct: 8.4,
 };
+
+/** Veteran-track Rank 6 (250 ilvl) — Heroic Dungeons / Delves T3. */
+export const VETERAN_MIDNIGHT_250: GearProfile = {
+  ilvl: 250,
+  agility: 2_720,
+  attackPower: 2_920,
+  critPct: 20.4,
+  hastePct: 12.0,
+  masteryPct: 29.8,
+  versPct: 7.2,
+};
+
+/** Adventurer-track Rank 6 (237 ilvl) — World Quests / Normal Dungeons. */
+export const ADVENTURER_MIDNIGHT_237: GearProfile = {
+  ilvl: 237,
+  agility: 2_490,
+  attackPower: 2_660,
+  critPct: 18.0,
+  hastePct: 10.5,
+  masteryPct: 25.6,
+  versPct: 6.1,
+};
+
+/** @deprecated use CHAMPION_MIDNIGHT_263 */
+export const NORMAL_MIDNIGHT_626 = CHAMPION_MIDNIGHT_263;
 
 // ── Physical constants ───────────────────────────────────────
 
@@ -963,7 +1018,7 @@ export {
 export function getFullOptimalAnalysis(
   heroTalent: 'sentinel' | 'packLeader',
   targetCount: number,
-  gear: GearProfile = HEROIC_MIDNIGHT_639,
+  gear: GearProfile = HEROIC_MIDNIGHT_276,
   tierSet: TierSetConfig = { has2pc: true, has4pc: true },
 ) {
   const talents = getOptimalTalentConfig(heroTalent, targetCount);

@@ -4,11 +4,12 @@ import { NavLink } from "@/components/NavLink";
 import {
   computeStatWeights,
   getOptimalTalentConfig,
-  HEROIC_MIDNIGHT_639,
+  HEROIC_MIDNIGHT_276,
 } from "@/lib/theorycrafting";
 import {
   MIDNIGHT_TRINKETS, MIDNIGHT_ENCHANTS, MIDNIGHT_GEMS, MIDNIGHT_RINGS,
   TIER_SET_HERO_ANALYSIS, STAT_PRIORITY, ENCHANT_SLOTS,
+  GEAR_TRACKS, DAWNCREST_TIERS, UPGRADE_COSTS,
   getBiSList, rankTrinkets, rankEnchantsForSlot,
 } from "@/lib/gearOptimizer";
 import survivalIconImg from "@/assets/survival-icon.png";
@@ -53,11 +54,11 @@ export default function Gear() {
   const heroName = isSent ? "Sentinel" : "Pack Leader";
   const heroIcon = isSent ? "🦉" : "🐾";
 
-  // Compute stat weights from the theorycrafting engine using 639 heroic baseline
+  // Compute stat weights from the theorycrafting engine using 276 Hero-track baseline
   const { sentWeights, plWeights } = useMemo(() => {
     const tier  = { has2pc: true, has4pc: true };
-    const sent  = computeStatWeights(HEROIC_MIDNIGHT_639, getOptimalTalentConfig("sentinel",   "st"), tier, "sentinel",   1);
-    const pl    = computeStatWeights(HEROIC_MIDNIGHT_639, getOptimalTalentConfig("packLeader", "st"), tier, "packLeader", 1);
+    const sent  = computeStatWeights(HEROIC_MIDNIGHT_276, getOptimalTalentConfig("sentinel",   "st"), tier, "sentinel",   1);
+    const pl    = computeStatWeights(HEROIC_MIDNIGHT_276, getOptimalTalentConfig("packLeader", "st"), tier, "packLeader", 1);
     return { sentWeights: sent, plWeights: pl };
   }, []);
 
@@ -200,7 +201,9 @@ export default function Gear() {
             <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:15, color:C.textMid,
               marginTop:8, maxWidth:640 }}>
               BiS gear list, trinket rankings, enchants, gems, rings and tier set analysis
-              for <strong style={{ color:heroClr }}>Midnight 12.0 Heroic (639 ilvl)</strong>.
+              for <strong style={{ color:heroClr }}>Midnight Season 1</strong>
+              {" "}· Hero track{" "}<strong style={{ color:"#a855f7" }}>276</strong>
+              {" "}→ Myth track{" "}<strong style={{ color:C.goldLight }}>289</strong>.
               All DPS values computed from first-principles stat weights — no guessing.
             </p>
           </div>
@@ -221,6 +224,83 @@ export default function Gear() {
         </div>
 
         {/* ═══════════════════════════════════════════════════
+            SECTION 0 — Track & Rank System
+        ═══════════════════════════════════════════════════ */}
+        <Card span style={{ marginBottom:20 }}>
+          <SecTitle icon="📊">Midnight Season 1 — Track &amp; Rank System</SecTitle>
+          <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textMid,
+            marginTop:0, marginBottom:20, maxWidth:820 }}>
+            Every piece of gear belongs to a <strong style={{ color:C.textSec }}>Track</strong> (its potential ceiling) and a{' '}
+            <strong style={{ color:C.textSec }}>Rank 1–6</strong> (its current power).
+            Each rank upgrade costs <strong style={{ color:C.goldLight }}>20 Dawncrests</strong> and{' '}
+            <strong style={{ color:C.goldLight }}>Gold</strong>, totalling 120 Dawncrests per piece.
+            Weekly cap: ~100 crests per tier. <em style={{ color:C.textDim }}>Slot discount: if you own a max-rank item in a slot,
+            upgrading any alternate item for that slot to max rank costs 0 crests (Gold only).</em>
+          </p>
+
+          {/* Track table */}
+          <div style={{ overflowX:"auto", marginBottom:24 }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"'Rajdhani',sans-serif", fontSize:13 }}>
+              <thead>
+                <tr>
+                  {["Track","Rank 1 ilvl","Rank 6 ilvl","ilvl/Rank","Currency","Source"].map(h => (
+                    <th key={h} style={{ textAlign:"left", padding:"8px 12px",
+                      borderBottom:`1px solid ${C.border}`, color:C.textMid,
+                      fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:1.5,
+                      textTransform:"uppercase" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {GEAR_TRACKS.map((t, i) => (
+                  <tr key={t.name} style={{ background: i%2===0 ? "transparent" : C.surface2 }}>
+                    <td style={{ padding:"10px 12px", fontWeight:800, color:t.color }}>{t.name}</td>
+                    <td style={{ padding:"10px 12px", color:C.textSec,
+                      fontFamily:"'IBM Plex Mono',monospace" }}>{t.rankMin}</td>
+                    <td style={{ padding:"10px 12px", fontWeight:700, color:t.color,
+                      fontFamily:"'IBM Plex Mono',monospace" }}>{t.rankMax}</td>
+                    <td style={{ padding:"10px 12px", color:C.textMid,
+                      fontFamily:"'IBM Plex Mono',monospace" }}>+{t.ilvlPerRank}</td>
+                    <td style={{ padding:"10px 12px", color:C.goldLight }}>{t.currency}</td>
+                    <td style={{ padding:"10px 12px", color:C.textSec, maxWidth:280 }}>{t.source}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Upgrade cost summary */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px,1fr))",
+            gap:12, marginBottom:20 }}>
+            {[
+              { label:"Crests per piece",   val:String(UPGRADE_COSTS.crestsPerPiece), sub:"Rank 1 → Rank 6" },
+              { label:"Weekly crest cap",   val:"~100", sub:"per Dawncrest tier" },
+              { label:"Gear slots",         val:String(UPGRADE_COSTS.totalPieces), sub:"full character" },
+              { label:"Weeks to full BiS",  val:`~${UPGRADE_COSTS.weeksToFullyUpgrade}`, sub:"without slot discounts" },
+            ].map(s => (
+              <div key={s.label} style={{ background:C.surface2, border:`1px solid ${C.border}`,
+                borderRadius:10, padding:"14px 16px" }}>
+                <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:22,
+                  color:C.goldLight, fontWeight:700 }}>{s.val}</div>
+                <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
+                  color:C.textSec, marginTop:2, fontWeight:700 }}>{s.label}</div>
+                <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
+                  color:C.textMid, marginTop:2 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Slot discount callout */}
+          <div style={{ background:C.goldBg, border:`1px solid #78350f`,
+            borderRadius:10, padding:"12px 16px",
+            fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.goldLight }}>
+            <strong>Slot Discount:</strong>{" "}
+            {UPGRADE_COSTS.slotDiscountNote}
+            {" "}This makes swapping secondary stat combos between Heroic and Mythic gear free — ideal for optimising Sentinel vs Pack Leader builds.
+          </div>
+        </Card>
+
+        {/* ═══════════════════════════════════════════════════
             SECTION 1 — Stat Weights + Stat Priority
         ═══════════════════════════════════════════════════ */}
         <div className="gear-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr",
@@ -230,7 +310,7 @@ export default function Gear() {
           <Card>
             <SecTitle icon="⚖">Scale Factors (Stat Weights)</SecTitle>
             <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim, marginTop:0, marginBottom:16 }}>
-              DPS per 1 stat rating · Agility = 1.00 reference · 4pc tier active · 639 ilvl baseline
+              DPS per 1 stat rating · Agility = 1.00 reference · 4pc tier active · 276 ilvl baseline
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
               {([["🦉 Sentinel", sentWeights, C.sentClr], ["🐾 Pack Leader", plWeights, C.packClr]] as const).map(([label, w, clr]: any) => (
@@ -305,7 +385,7 @@ export default function Gear() {
             SECTION 2 — Trinket Rankings
         ═══════════════════════════════════════════════════ */}
         <Card style={{ marginBottom:20 }}>
-          <SecTitle icon="💎">Trinket Rankings — {heroName} (639 ilvl Heroic)</SecTitle>
+          <SecTitle icon="💎">Trinket Rankings — {heroName} (Hero 276 / Myth 289)</SecTitle>
           <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
             marginTop:0, marginBottom:20 }}>
             DPS contribution = stat budget × uptime × scale factor. Burst-alignable on-use trinkets
@@ -591,7 +671,7 @@ export default function Gear() {
               <span style={{ fontSize:20 }}>⚔</span>
               <h2 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:13, letterSpacing:3,
                 color:heroClr, textTransform:"uppercase", margin:0, fontWeight:700 }}>
-                BiS Gear List — {isSent ? "Sentinel (2H Polearm)" : "Pack Leader (Dual Wield)"} · 639 ilvl Heroic
+                BiS Gear List — {isSent ? "Sentinel (2H Polearm)" : "Pack Leader (Dual Wield)"} · Hero 276 → Myth 289
               </h2>
             </div>
             <button onClick={() => setBisOpen(o => !o)} style={{
@@ -625,7 +705,7 @@ export default function Gear() {
                 fontFamily:"'Rajdhani',sans-serif", fontSize:13 }}>
                 <thead>
                   <tr style={{ borderBottom:`1px solid ${C.border}` }}>
-                    {["Slot","Item","Source","Key Stats","Notes / Enchant"].map(h => (
+                    {["Slot","Item","Hero ilvl","Myth ilvl","Key Stats","Notes / Enchant"].map(h => (
                       <th key={h} style={{ textAlign:"left", padding:"8px 12px",
                         fontFamily:"'Orbitron',sans-serif", fontSize:8, color:C.textDim,
                         letterSpacing:2, whiteSpace:"nowrap", fontWeight:700 }}>{h}</th>
@@ -646,8 +726,12 @@ export default function Gear() {
                           {isTier && <span style={{ color:C.goldLight, marginRight:6 }}>🏆</span>}
                           {row.itemName}
                         </td>
-                        <td style={{ padding:"8px 12px", color:C.textMid,
-                          fontSize:11, whiteSpace:"nowrap" }}>{row.source}</td>
+                        <td style={{ padding:"8px 12px", color:"#a855f7",
+                          fontFamily:"'IBM Plex Mono',monospace", fontWeight:700,
+                          whiteSpace:"nowrap" }}>{row.ilvl}</td>
+                        <td style={{ padding:"8px 12px", color:C.goldLight,
+                          fontFamily:"'IBM Plex Mono',monospace", fontWeight:700,
+                          whiteSpace:"nowrap" }}>{row.mythIlvl ?? "—"}</td>
                         <td style={{ padding:"8px 12px", color:C.goldLight,
                           whiteSpace:"nowrap" }}>{row.keyStats}</td>
                         <td style={{ padding:"8px 12px", color:C.textDim, fontSize:11 }}>
