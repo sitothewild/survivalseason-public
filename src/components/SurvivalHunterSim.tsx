@@ -1695,7 +1695,7 @@ export default function SurvivalHunterSim() {
                                     background: "rgba(34,197,94,.4)",
                                     zIndex: 1,
                                   }} />
-                                </React.Fragment>
+                                </Fragment>
                               );
                             })}
                           </div>
