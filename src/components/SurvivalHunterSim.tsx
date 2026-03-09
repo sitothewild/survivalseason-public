@@ -633,6 +633,7 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+
   const realmDropdownRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -643,6 +644,54 @@ export default function SurvivalHunterSim() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const normalizeRealmSlug = useCallback((name: string) => {
+    return name.trim().toLowerCase().replace(/[' ]/g, "-");
+  }, []);
+
+  const realmSuggestions = useMemo(() => {
+    const realms = REALM_DATA[armoryRegion] || [];
+    const q = armoryRealmSearch.trim().toLowerCase();
+    if (!q) return realms.slice(0, 8);
+    return realms.filter((r) => r.toLowerCase().includes(q)).slice(0, 8);
+  }, [armoryRegion, armoryRealmSearch]);
+
+  const resolvedRealmSlug = useMemo(() => {
+    const qRaw = armoryRealmSearch.trim();
+    if (!qRaw) return "";
+
+    const realms = REALM_DATA[armoryRegion] || [];
+
+    // Exact match by display name
+    const exactByName = realms.find((r) => r.toLowerCase() === qRaw.toLowerCase());
+    if (exactByName) return normalizeRealmSlug(exactByName);
+
+    // Exact match by slug (lets users paste a realm slug too)
+    const qSlug = normalizeRealmSlug(qRaw);
+    const exactBySlug = realms.find((r) => normalizeRealmSlug(r) === qSlug);
+    return exactBySlug ? normalizeRealmSlug(exactBySlug) : "";
+  }, [armoryRegion, armoryRealmSearch, normalizeRealmSlug]);
+
+  // Keep armoryRealm in sync once the user fully types a valid realm name/slug (debounced)
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const hasText = armoryRealmSearch.trim().length > 0;
+
+      if (!hasText) {
+        if (armoryRealm) setArmoryRealm("");
+        return;
+      }
+
+      if (resolvedRealmSlug) {
+        if (armoryRealm !== resolvedRealmSlug) setArmoryRealm(resolvedRealmSlug);
+      } else {
+        if (armoryRealm) setArmoryRealm("");
+      }
+    }, 150);
+
+    return () => window.clearTimeout(t);
+  }, [armoryRealmSearch, armoryRegion, resolvedRealmSlug, armoryRealm]);
+
   // Item tooltips
   const [itemCache, setItemCache] = useState<Record<string, any>>({});
   const itemCacheRef = useRef<Record<string, any>>({});
@@ -720,28 +769,67 @@ export default function SurvivalHunterSim() {
   const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); };
 
   const handleArmoryLookup = useCallback(async () => {
-    if (!armoryRealm.trim() || !armoryName.trim()) { setArmoryError('Enter both realm and character name.'); return; }
-    setArmoryLoading(true); setArmoryError(''); setArmoryAvatar('');
+    const realmSlug = armoryRealm || resolvedRealmSlug;
+
+    if (!realmSlug) {
+      setArmoryError("Select a realm from the dropdown (or type the full realm name). ");
+      return;
+    }
+
+    if (!armoryName.trim()) {
+      setArmoryError('Enter a character name.');
+      return;
+    }
+
+    setArmoryLoading(true);
+    setArmoryError('');
+    setArmoryAvatar('');
+
     try {
-      const fullData = await getFullCharacter(armoryRealm.trim().toLowerCase().replace(/\s+/g, '-'), armoryName.trim().toLowerCase(), armoryRegion);
+      const fullData = await getFullCharacter(
+        realmSlug,
+        armoryName.trim().toLowerCase(),
+        armoryRegion,
+      );
       if (fullData.profile?.error) throw new Error(fullData.profile.error);
       const simData = equipmentToSimData(fullData);
-      if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
-      setParsedChar(simData); setSimResults(null);
-      if (fullData.media?.assets) { const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar'); if (avatar?.value) setArmoryAvatar(avatar.value); }
+      if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') {
+        setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
+      }
+      setParsedChar(simData);
+      setSimResults(null);
+      if (fullData.media?.assets) {
+        const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
+        if (avatar?.value) setArmoryAvatar(avatar.value);
+      }
       const itemIds = simData.gear.filter((g: any) => g.itemId).map((g: any) => parseInt(g.itemId));
       if (itemIds.length > 0) {
         setItemEnrichLoading(true);
         try {
           const items = await getItemsBatch(itemIds, armoryRegion);
-          if (Array.isArray(items)) { const itemMap = {}; items.forEach((item: any) => { if (item.id) itemMap[item.id] = item; });
-            const enrichedGear = simData.gear.map((g: any) => g.itemId && itemMap[g.itemId] ? { ...g, name: itemMap[g.itemId].name || g.name } : g);
-            setParsedChar(prev => prev ? { ...prev, gear: enrichedGear } : prev);
+          if (Array.isArray(items)) {
+            const itemMap = {};
+            items.forEach((item: any) => {
+              if (item.id) itemMap[item.id] = item;
+            });
+            const enrichedGear = simData.gear.map((g: any) =>
+              g.itemId && itemMap[g.itemId] ? { ...g, name: itemMap[g.itemId].name || g.name } : g,
+            );
+            setParsedChar((prev) => (prev ? { ...prev, gear: enrichedGear } : prev));
           }
-        } catch (e) { console.warn('Item enrichment failed:', e); } finally { setItemEnrichLoading(false); }
+        } catch (e) {
+          console.warn('Item enrichment failed:', e);
+        } finally {
+          setItemEnrichLoading(false);
+        }
       }
-    } catch (err) { setArmoryError(err.message || 'Failed to look up character.'); setParsedChar(null); } finally { setArmoryLoading(false); }
-  }, [armoryRealm, armoryName, armoryRegion]);
+    } catch (err) {
+      setArmoryError(err.message || 'Failed to look up character.');
+      setParsedChar(null);
+    } finally {
+      setArmoryLoading(false);
+    }
+  }, [armoryRealm, resolvedRealmSlug, armoryName, armoryRegion]);
 
   const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
@@ -967,21 +1055,58 @@ export default function SurvivalHunterSim() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, position: "relative" }}>
                   <div ref={realmDropdownRef} style={{ position: "relative" }}>
-                    <input className="ifield" value={armoryRealm ? armoryRealmSearch : armoryRealmSearch}
-                      onChange={e => { setArmoryRealmSearch(e.target.value); setArmoryRealm(""); setShowRealmDropdown(true); }}
-                      onFocus={() => setShowRealmDropdown(true)} placeholder="Search realm..."
-                      style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }} />
+                    <input
+                      className="ifield"
+                      value={armoryRealmSearch}
+                      onChange={(e) => {
+                        setArmoryRealmSearch(e.target.value);
+                        setShowRealmDropdown(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setShowRealmDropdown(false);
+                        }
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+
+                          // If the user already typed an exact realm, just close the dropdown.
+                          if (resolvedRealmSlug) {
+                            setShowRealmDropdown(false);
+                            return;
+                          }
+
+                          // Otherwise pick the top suggestion (if any)
+                          const first = realmSuggestions[0];
+                          if (first) {
+                            setArmoryRealmSearch(first);
+                            setArmoryRealm(normalizeRealmSlug(first));
+                            setShowRealmDropdown(false);
+                          }
+                        }
+                      }}
+                      onFocus={() => setShowRealmDropdown(true)}
+                      placeholder="Search realm..."
+                      style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }}
+                    />
                     {showRealmDropdown && (() => {
-                      const realms = REALM_DATA[armoryRegion] || []; const q = armoryRealmSearch.toLowerCase();
-                      const filtered = q ? realms.filter(r => r.toLowerCase().includes(q)).slice(0, 8) : realms.slice(0, 8);
+                      const filtered = realmSuggestions;
                       if (filtered.length === 0) return null;
                       return (
                         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
                           {filtered.map(rv => (
-                            <div key={rv} onMouseDown={() => { setArmoryRealm(rv.toLowerCase().replace(/[' ]/g, '-')); setArmoryRealmSearch(rv); setShowRealmDropdown(false); }}
+                            <div
+                              key={rv}
+                              onMouseDown={() => {
+                                setArmoryRealm(normalizeRealmSlug(rv));
+                                setArmoryRealmSearch(rv);
+                                setShowRealmDropdown(false);
+                              }}
                               style={{ padding: "9px 14px", fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, cursor: "pointer", transition: "background .1s", borderBottom: `1px solid ${C.borderSub}` }}
-                              onMouseEnter={e => e.currentTarget.style.background = C.surface3} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                            >{rv}</div>
+                              onMouseEnter={e => e.currentTarget.style.background = C.surface3}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                              {rv}
+                            </div>
                           ))}
                         </div>
                       );
