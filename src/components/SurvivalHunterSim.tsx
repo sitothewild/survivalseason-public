@@ -651,7 +651,7 @@ export default function SurvivalHunterSim() {
       const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData);
       setStatWeights(sw); setSimResults(results); setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent)); setIsSimming(false);
     }, 1200);
-  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables]);
+  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables, simcLiveData]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
 
