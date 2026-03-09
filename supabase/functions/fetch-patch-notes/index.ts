@@ -145,7 +145,7 @@ async function fetchMmoChampionRss(): Promise<PatchNote[]> {
       const plainTitle = stripHtml(title);
       const plainDesc = stripHtml(desc);
 
-      if (/hotfix|class.?tuning|hunter|survival|patch.*note/i.test(plainTitle)) {
+      if (/hunter|survival/i.test(`${plainTitle} ${plainDesc}`)) {
         let hunterContent = extractHunterSection(plainDesc);
         if (!hunterContent) hunterContent = plainDesc;
 
