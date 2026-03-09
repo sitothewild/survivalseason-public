@@ -716,6 +716,12 @@ export default function SurvivalHunterSim() {
   const [importedTalentString, setImportedTalentString] = useState<string>('');
   const [userSimResult, setUserSimResult] = useState<any>(null);
   const [optimalSimResult, setOptimalSimResult] = useState<any>(null);
+  // Patch notes state
+  const [patchNotes, setPatchNotes] = useState<any[]>([]);
+  const [patchLoading, setPatchLoading] = useState(false);
+  const [patchError, setPatchError] = useState('');
+  const [patchLastUpdated, setPatchLastUpdated] = useState('');
+  const [patchSourceFilter, setPatchSourceFilter] = useState('All');
 
   // Auto-load SimC data on mount
   useEffect(() => {
