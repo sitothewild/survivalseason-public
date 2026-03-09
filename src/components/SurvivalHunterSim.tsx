@@ -1189,13 +1189,36 @@ export default function SurvivalHunterSim() {
         @keyframes waitPulse{0%,100%{border-color:#2e3a50;}50%{border-color:#3a4a60;}}
         @keyframes staggerFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
         @media(max-width:1024px){.sim-3col{grid-template-columns:260px 1fr !important;}.sim-right-col{grid-column:1 / -1 !important;}}
-        @media(max-width:768px){.sim-3col{grid-template-columns:1fr !important;}.sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}}
         @media(max-width:900px){.responsive-grid{grid-template-columns:1fr !important;}.tab-btn{flex:1 1 calc(50% - 2px);min-width:0;text-align:center;padding:10px 8px;font-size:13px;}}
+        @media(max-width:768px){
+          .sim-3col{grid-template-columns:1fr !important;}
+          .sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}
+          /* Fix right column: remove sticky, reset to block flow, override inline width:420 */
+          .sim-right-col{position:static !important;max-height:none !important;overflow-y:visible !important;width:100% !important;height:auto !important;}
+          /* Tighten header and page padding */
+          .site-header{padding:12px 16px !important;}
+          .site-main{padding:14px 12px 32px !important;}
+          /* Hide hover tooltips — touch devices don't hover */
+          .item-tooltip{display:none !important;}
+          /* Prevent iOS auto-zoom on inputs (requires font-size >= 16px) */
+          .ifield{font-size:16px !important;}
+          /* Hide decorative header badges to free up header space; keep sync button */
+          .header-badges .badge{display:none !important;}
+          /* Reduce gap in sim grid on mobile */
+          .sim-3col{gap:12px !important;}
+        }
+        @media(max-width:480px){
+          /* Very small screens: compact tab bar */
+          .tab-btn{padding:8px 4px !important;font-size:11px !important;letter-spacing:0 !important;}
+          .site-main{padding:10px 8px 24px !important;}
+          /* Stack header title area vertically */
+          .site-header-inner{flex-direction:column !important;align-items:flex-start !important;gap:8px !important;}
+        }
       `}</style>
 
       {/* HEADER */}
-      <div style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", padding: "18px 28px", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: 1300, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div className="site-header" style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", padding: "18px 28px", borderBottom: `1px solid ${C.border}` }}>
+        <div className="site-header-inner" style={{ maxWidth: 1300, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ width: 54, height: 54, borderRadius: 12, overflow: "hidden", border: "2px solid #2a4a2a", animation: "iconGlow 3s ease-in-out infinite", flexShrink: 0 }}>
               <img src={SURVIVAL_ICON} alt="Survival Hunter" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -1205,7 +1228,7 @@ export default function SurvivalHunterSim() {
               <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, marginTop: 5 }}>MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <div className="header-badges" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
             <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
             <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
@@ -1233,7 +1256,7 @@ export default function SurvivalHunterSim() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
+      <div className="site-main" style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: 22, gap: 2 }}>
           {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"], ["guide", "📖 Guide"]].map(([k, l]) => (
@@ -1967,13 +1990,6 @@ export default function SurvivalHunterSim() {
               </div>
             )}
 
-            {/* Mobile responsive styles */}
-            <style>{`
-              @media (max-width: 768px) {
-                .sim-top-row { grid-template-columns: 1fr !important; }
-                .sim-top-row > div:last-child { position: static !important; max-height: none !important; overflow: visible !important; }
-              }
-            `}</style>
           </>
         )}
 
