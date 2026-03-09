@@ -351,7 +351,17 @@ function getBreakdowns(simcLiveData: any, targetCount: number = 1): { pl: Record
   const plBreakdown = plActions.length > 2 ? aplToBreakdown(plActions, true, targetCount) : SIMC_BREAKDOWN_PL_ST_DEFAULT;
   const sentBreakdown = sentActions.length > 2 ? aplToBreakdown(sentActions, false, targetCount) : SIMC_BREAKDOWN_SENT_ST_DEFAULT;
 
-  return { pl: plBreakdown, sent: sentBreakdown };
+  // Quality check: if any single active ability dominates >35%, the APL data is likely stale/incompatible — fall back
+  const isValidBreakdown = (bd: Record<string, number>) => {
+    const passiveKeys = ['Strike as One','Auto Attack (MH)','Auto Attack (OH)','Pet (Claw)','Pet Melee',"Kroluk's Warbanner",'Pack Leader Beasts','Bear (Rend + Melee)','Sentinel Mark + Lunar Storm'];
+    const activeEntries = Object.entries(bd).filter(([k]) => !passiveKeys.includes(k));
+    return activeEntries.length >= 3 && !activeEntries.some(([, v]) => v > 0.35);
+  };
+
+  return {
+    pl: isValidBreakdown(plBreakdown) ? plBreakdown : SIMC_BREAKDOWN_PL_ST_DEFAULT,
+    sent: isValidBreakdown(sentBreakdown) ? sentBreakdown : SIMC_BREAKDOWN_SENT_ST_DEFAULT,
+  };
 }
 
 function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCount, ap) {
