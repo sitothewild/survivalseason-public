@@ -203,7 +203,7 @@ serve(async (req) => {
       }
 
       default:
-        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
+        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, spell, spell-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
     }
 
     return new Response(JSON.stringify(result), {
