@@ -435,7 +435,7 @@ function generateSampleExecutionLog(duration, heroTalent) {
   return sequence.slice(0, Math.min(10, sequence.length));
 }
 
-function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
+function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
   const stats = charData.stats;
   const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
 
@@ -493,6 +493,9 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
     totalDps *= cleaveFactor;
   }
 
+  // Apply external multiplier (fight style + raid buffs + consumables)
+  totalDps *= externalMult;
+
   // Build breakdown using real SimC percentages
   const breakdown = {};
   const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
@@ -543,8 +546,8 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
 // STAT WEIGHT CALCULATOR — Delta method (SimC-style)
 // Bumps each stat by a small amount and measures DPS delta
 // ============================================================
-function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build) {
-  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build).totalDps;
+function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
+  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
 
   const DELTA = {
     agility: 200,       // +200 agility
@@ -567,7 +570,7 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   const agiChar = JSON.parse(JSON.stringify(charData));
   agiChar.stats.agility += DELTA.agility;
   agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
-  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build).totalDps;
+  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
   const agiDelta = (agiDps - baseDps) / DELTA.agility; // DPS per 1 agility
   weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
 
@@ -575,7 +578,7 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   ['haste', 'crit', 'mastery', 'versatility'].forEach(stat => {
     const bumpChar = JSON.parse(JSON.stringify(charData));
     bumpChar.stats[stat] = (bumpChar.stats[stat] || 0) + DELTA[stat];
-    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build).totalDps;
+    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
     const dpsDelta = bumpDps - baseDps;
     const ratingBump = DELTA[stat] * RATING_PER_PERCENT[stat]; // equivalent rating
     const perRating = dpsDelta / ratingBump;
@@ -782,6 +785,68 @@ main_hand=,id=231800,item_level=639
 # Midnight Suneater Dirk (636)
 off_hand=,id=231802,item_level=636`;
 
+// Fight style definitions with DPS multipliers
+const FIGHT_STYLES = {
+  patchwerk: { label: '🎯 Patchwerk', desc: 'Pure single-target, stand-still fight', mult: 1.0 },
+  hecticAddCleave: { label: '⚔ Hectic Add Cleave', desc: 'Primary target + sporadic adds', mult: 1.08 },
+  lightMovement: { label: '🏃 Light Movement', desc: 'Occasional repositioning', mult: 0.96 },
+  heavyMovement: { label: '🌀 Heavy Movement', desc: 'Constant movement, low uptime', mult: 0.88 },
+};
+
+const RAID_BUFFS = {
+  arcaneIntellect: { label: 'Arcane Intellect', icon: '🔮', stat: '+5% Intellect', mult: 1.0 }, // No effect on agi
+  battleShout: { label: 'Battle Shout', icon: '⚔', stat: '+5% AP', mult: 1.05 },
+  markOfTheWild: { label: 'Mark of the Wild', icon: '🍃', stat: '+3% Versatility', mult: 1.025 },
+  mysticTouch: { label: 'Mystic Touch', icon: '👊', stat: '+5% Physical dmg taken', mult: 1.04 },
+  chaosBrand: { label: 'Chaos Brand', icon: '😈', stat: '+5% Magic dmg taken', mult: 1.015 },
+  windfuryTotem: { label: 'Windfury Totem', icon: '🌬', stat: '+20% melee auto atk speed', mult: 1.02 },
+  powerInfusion: { label: 'Power Infusion', icon: '⚡', stat: '+25% Haste (12s)', mult: 1.015 },
+  huntersMark: { label: "Hunter's Mark", icon: '🏹', stat: '+5% dmg to target', mult: 1.035 },
+};
+
+const CONSUMABLES = {
+  flask: {
+    label: 'Flask',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'flaskOfAlchemicalChaos', label: 'Flask of Alchemical Chaos', mult: 1.035, desc: '+Random secondary stat' },
+      { key: 'flaskOfTemperingSanity', label: 'Flask of Tempering Sanity', mult: 1.03, desc: '+Primary stat' },
+    ]
+  },
+  food: {
+    label: 'Food',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'mastery', label: 'Mastery Food (+90)', mult: 1.025, desc: 'Feast of the Midnight Masquerade' },
+      { key: 'crit', label: 'Crit Food (+90)', mult: 1.02, desc: 'Feast of the Divine Day' },
+      { key: 'haste', label: 'Haste Food (+90)', mult: 1.018, desc: 'Hearty Stew Surprise' },
+    ]
+  },
+  potion: {
+    label: 'Potion',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'tempered', label: 'Tempered Potion', mult: 1.02, desc: '+Primary stat for 30s' },
+      { key: 'frontLoaded', label: 'Potion of Unwavering Focus', mult: 1.025, desc: '+Primary stat, decaying' },
+    ]
+  },
+  weapon: {
+    label: 'Weapon Enhancement',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'ironcladWhetstone', label: 'Ironclaw Whetstone', mult: 1.015, desc: '+Crit on weapon' },
+      { key: 'oilOfDeepToxins', label: 'Oil of Deep Toxins', mult: 1.012, desc: '+Nature dmg proc' },
+    ]
+  },
+  augmentRune: {
+    label: 'Augment Rune',
+    options: [
+      { key: 'none', label: 'None', mult: 1.0 },
+      { key: 'crystallizedAugment', label: 'Crystallized Augment Rune', mult: 1.01, desc: '+Primary stat' },
+    ]
+  }
+};
+
 export default function SurvivalHunterSim() {
   const [simcInput, setSimcInput] = useState('');
   const [parsedChar, setParsedChar] = useState(null);
@@ -792,9 +857,19 @@ export default function SurvivalHunterSim() {
   const [statWeights, setStatWeights] = useState(null);
   const [optimalTalents, setOptimalTalents] = useState(null);
   const [isSimming, setIsSimming] = useState(false);
-  const [activeTab, setActiveTab] = useState('sim'); // 'sim' | 'talents'
-  const [simMode, setSimMode] = useState('single'); // 'single' | 'cleave' | 'multi'
+  const [activeTab, setActiveTab] = useState('sim');
+  const [simMode, setSimMode] = useState('single');
   const [targetCount, setTargetCount] = useState(1);
+  // Advanced sim options
+  const [fightStyle, setFightStyle] = useState('patchwerk');
+  const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({
+    battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true,
+  });
+  const [consumables, setConsumables] = useState<Record<string, string>>({
+    flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered',
+    weapon: 'ironcladWhetstone', augmentRune: 'crystallizedAugment',
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [copied, setCopied] = useState(false);
   const [particles, setParticles] = useState([]);
   // Armory Lookup state
@@ -957,17 +1032,39 @@ export default function SurvivalHunterSim() {
     setIsSimming(true);
     setSimResults(null);
 
+    // Calculate external multiplier from fight style, raid buffs, and consumables
+    let externalMult = 1.0;
+    
+    // Fight style multiplier
+    externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
+    
+    // Raid buffs multipliers
+    Object.entries(raidBuffs).forEach(([buff, enabled]) => {
+      if (enabled && RAID_BUFFS[buff]) {
+        externalMult *= RAID_BUFFS[buff].mult;
+      }
+    });
+    
+    // Consumables multipliers
+    Object.entries(consumables).forEach(([category, selection]) => {
+      const categoryData = CONSUMABLES[category];
+      const selectedOption = categoryData?.options?.find(opt => opt.key === selection);
+      if (selectedOption) {
+        externalMult *= selectedOption.mult;
+      }
+    });
+
     setTimeout(() => {
       const targets = getTargets();
       const results = targets.map(t => {
         const build = t === 1 ? 'st' : 'aoe';
-        const st = runSimulation(parsedChar, t, fightDuration, heroTalent, build);
+        const st = runSimulation(parsedChar, t, fightDuration, heroTalent, build, externalMult);
         return st;
       });
 
       // Calculate stat weights for the primary target scenario (first target count)
       const primaryBuild = targets[0] === 1 ? 'st' : 'aoe';
-      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild);
+      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult);
       setStatWeights(sw);
 
       const optimal = getOptimalTalents(targets[targets.length - 1], heroTalent);
@@ -975,7 +1072,7 @@ export default function SurvivalHunterSim() {
       setOptimalTalents(optimal);
       setIsSimming(false);
     }, 1400);
-  }, [parsedChar, heroTalent, fightDuration, simMode]);
+  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables]);
 
   const copyExportString = (str) => {
     navigator.clipboard.writeText(str).then(() => {
@@ -1655,7 +1752,108 @@ export default function SurvivalHunterSim() {
                     )}
                   </div>
                 )}
-              </div>
+                </div>
+
+                {/* Advanced Options */}
+                <div style={{ marginBottom: 20, border: '1px solid #1a2540', borderRadius: 8, padding: 16, background: '#050810' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}
+                    onClick={() => setShowAdvanced(!showAdvanced)}>
+                    <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 1, color: '#e8c88a', margin: 0, flex: 1 }}>
+                      ⚙ ADVANCED OPTIONS
+                    </h4>
+                    <span style={{ color: '#6a5030', fontSize: 14 }}>{showAdvanced ? '−' : '+'}</span>
+                  </div>
+
+                  {showAdvanced && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 14 }}>
+                      
+                      {/* Fight Style */}
+                      <div>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                          FIGHT STYLE
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          {Object.entries(FIGHT_STYLES).map(([key, style]) => (
+                            <button key={key} className={`mode-btn ${fightStyle === key ? 'active' : ''}`}
+                              onClick={() => setFightStyle(key)} 
+                              style={{ padding: '8px 10px', fontSize: 10, textAlign: 'left', position: 'relative' }}>
+                              <div style={{ fontWeight: 600, marginBottom: 2 }}>{style.label}</div>
+                              <div style={{ fontSize: 9, opacity: 0.7, lineHeight: 1.2 }}>{style.desc}</div>
+                              <span style={{ 
+                                position: 'absolute', right: 6, top: 6, fontSize: 8, 
+                                color: style.mult >= 1 ? '#86efac' : '#fca5a5' 
+                              }}>
+                                {style.mult === 1.0 ? '100%' : `${Math.round(style.mult * 100)}%`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Raid Buffs */}
+                      <div>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                          RAID BUFFS
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                          {Object.entries(RAID_BUFFS).map(([key, buff]) => (
+                            <div key={key} style={{ 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                              background: raidBuffs[key] ? '#0a1a0a' : '#1a0a0a',
+                              border: `1px solid ${raidBuffs[key] ? '#2a3a2a' : '#2a1a1a'}`,
+                              borderRadius: 4, cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onClick={() => setRaidBuffs(prev => ({ ...prev, [key]: !prev[key] }))}>
+                              <input type="checkbox" checked={raidBuffs[key] || false} readOnly 
+                                style={{ accentColor: '#e07030', cursor: 'pointer' }} />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#c8a870', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span>{buff.icon}</span>
+                                  <span>{buff.label}</span>
+                                </div>
+                                <div style={{ fontSize: 9, color: '#6a5030', lineHeight: 1.2 }}>{buff.stat}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Consumables */}
+                      <div>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                          CONSUMABLES
+                        </label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {Object.entries(CONSUMABLES).map(([category, data]) => (
+                            <div key={category} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ 
+                                fontFamily: "'EB Garamond', serif", fontSize: 10, color: '#8a7050',
+                                minWidth: 80, textAlign: 'right' 
+                              }}>
+                                {data.label}:
+                              </span>
+                              <select 
+                                value={consumables[category] || 'none'}
+                                onChange={e => setConsumables(prev => ({ ...prev, [category]: e.target.value }))}
+                                style={{
+                                  flex: 1, background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 4,
+                                  color: '#c8a870', fontSize: 10, padding: '4px 8px',
+                                  fontFamily: "'EB Garamond', serif"
+                                }}>
+                                {data.options.map(opt => (
+                                  <option key={opt.key} value={opt.key}>
+                                    {opt.label} {opt.mult !== 1.0 && `(+${Math.round((opt.mult - 1) * 100)}%)`}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
               {/* Sim Config */}
               <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
