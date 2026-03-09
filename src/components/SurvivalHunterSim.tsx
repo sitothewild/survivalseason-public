@@ -561,6 +561,13 @@ interface TalentLoadout {
   exportString: string;
   talents: TalentPill[];
 }
+interface CustomLoadout {
+  name: string;
+  heroKey: 'sentinel' | 'packLeader';
+  simMode: 'single' | 'cleave' | 'multi';
+  enabledTalents: string[];     // names of toggled-on optional spec talents
+  enabledHeroTalents: string[]; // names of toggled-on hero sub-talents
+}
 
 const CORE_TALENTS: TalentPill[] = [
   { name: 'Mongoose Fury',    type: 'core', desc: 'RS stacking damage buff up to 5×. Always talented — backbone of the rotation.' },
@@ -795,6 +802,11 @@ export default function SurvivalHunterSim() {
   const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered' });
   const [showAdv, setShowAdv] = useState(true);
   const [copied, setCopied] = useState('');
+  const [copiedLoadoutId, setCopiedLoadoutId] = useState<string|null>(null);
+  // Custom talent loadout slots
+  const [customSlots, setCustomSlots] = useState<(CustomLoadout | null)[]>([null, null]);
+  const [editingSlot, setEditingSlot] = useState<0 | 1 | null>(null);
+  const [editDraft, setEditDraft] = useState<CustomLoadout | null>(null);
   // Armory
   const [armoryRealm, setArmoryRealm] = useState('');
   const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
@@ -1805,6 +1817,264 @@ export default function SurvivalHunterSim() {
                       ))}
                     </div>
 
+                    {/* ── Custom Talent Slots ── */}
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>CUSTOM LOADOUTS</div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                      {([0, 1] as const).map(slotIdx => {
+                        const slot = customSlots[slotIdx];
+                        const isEditing = editingSlot === slotIdx;
+                        const slotHeroClr = slot ? (slot.heroKey === 'sentinel' ? C.sentClr : C.packClr) : C.textDim;
+                        const slotHeroBg  = slot ? (slot.heroKey === 'sentinel' ? C.sentBg  : C.packBg)  : C.surface2;
+                        const slotHeroBdr = slot ? (slot.heroKey === 'sentinel' ? C.sentBdr : C.packBdr) : C.border;
+                        return (
+                          <div key={slotIdx} style={{ flex: 1 }}>
+                            {slot ? (
+                              <div
+                                onClick={() => {
+                                  setEditingSlot(slotIdx);
+                                  setEditDraft({ ...slot });
+                                  setSelectedLoadoutId(`custom-${slotIdx}`);
+                                  setHeroTalent(slot.heroKey);
+                                  setSimMode(slot.simMode);
+                                }}
+                                style={{
+                                  borderRadius: 8, padding: "8px 10px", cursor: "pointer",
+                                  background: selectedLoadoutId === `custom-${slotIdx}` ? slotHeroBg : C.surface2,
+                                  border: `1px solid ${selectedLoadoutId === `custom-${slotIdx}` ? slotHeroBdr : C.border}`,
+                                  display: "flex", alignItems: "center", gap: 6,
+                                }}>
+                                <span style={{ fontSize: 14 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700, color: slotHeroClr, letterSpacing: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{slot.name}</div>
+                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, marginTop: 1 }}>{slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}</div>
+                                </div>
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
+                                    title="Edit loadout"
+                                    style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>
+                                    ✏
+                                  </button>
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
+                                      if (selectedLoadoutId === `custom-${slotIdx}`) setSelectedLoadoutId('sentinel-st');
+                                      if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
+                                    }}
+                                    title="Remove loadout"
+                                    style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setEditingSlot(slotIdx);
+                                  setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [] });
+                                }}
+                                style={{
+                                  width: "100%", borderRadius: 8, padding: "10px 8px", cursor: "pointer",
+                                  background: isEditing ? C.surface3 : C.surface2,
+                                  border: `1px dashed ${isEditing ? C.textMid : C.border}`,
+                                  color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
+                                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                                }}>
+                                <span style={{ fontSize: 16, opacity: .6 }}>➕</span>
+                                <span>Custom Slot {slotIdx + 1}</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom Slot Inline Editor */}
+                    {editingSlot !== null && editDraft && (() => {
+                      const heroClrE  = editDraft.heroKey === 'sentinel' ? C.sentClr : C.packClr;
+                      const heroBgE   = editDraft.heroKey === 'sentinel' ? C.sentBg  : C.packBg;
+                      const heroBdrE  = editDraft.heroKey === 'sentinel' ? C.sentBdr : C.packBdr;
+                      const heroTals  = editDraft.heroKey === 'sentinel' ? SENTINEL_HERO : PACK_LEADER_HERO;
+                      const allOptional = [...ST_TALENTS, ...AOE_TALENTS].filter((t, i, arr) => arr.findIndex(x => x.name === t.name) === i);
+                      const PILL_CLR_E: Record<string,string> = { core:'#60a5fa', st:'#4ade80', aoe:'#f97316', hero: heroClrE, hybrid:'#c084fc' };
+                      return (
+                        <div style={{
+                          marginBottom: 12, borderRadius: 10, padding: "14px 16px",
+                          background: C.surface2, border: `1px solid ${heroBdrE}`,
+                        }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: heroClrE, marginBottom: 10 }}>
+                            {customSlots[editingSlot] ? 'EDIT LOADOUT' : 'NEW LOADOUT'} — SLOT {editingSlot + 1}
+                          </div>
+
+                          {/* Name */}
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 5 }}>NAME</div>
+                            <input
+                              value={editDraft.name}
+                              onChange={e => setEditDraft(d => d ? { ...d, name: e.target.value } : d)}
+                              placeholder="e.g. AoE Pack Leader"
+                              maxLength={32}
+                              style={{
+                                width: "100%", background: C.surface3, border: `1px solid ${C.border}`,
+                                borderRadius: 6, padding: "6px 10px", color: C.textPri,
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 13, outline: "none",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+
+                          {/* Hero Talent */}
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 5 }}>HERO TALENT</div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              {([['sentinel','🌙','Sentinel',C.sentClr,C.sentBg,C.sentBdr],['packLeader','🐺','Pack Leader',C.packClr,C.packBg,C.packBdr]] as const).map(([k,icon,label,clr,bg,bdr]) => (
+                                <button key={k}
+                                  onClick={() => setEditDraft(d => d ? { ...d, heroKey: k as 'sentinel'|'packLeader', enabledHeroTalents: [] } : d)}
+                                  style={{
+                                    flex: 1, padding: "6px 8px", borderRadius: 7, cursor: "pointer",
+                                    background: editDraft.heroKey === k ? bg : C.surface3,
+                                    border: `1px solid ${editDraft.heroKey === k ? bdr : C.border}`,
+                                    color: editDraft.heroKey === k ? clr : C.textMid,
+                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 600,
+                                    display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                                  }}>
+                                  <span>{icon}</span><span>{label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Sim Mode */}
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 5 }}>SCENARIO</div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              {([['single','🎯','Raid ST'],['cleave','⚔','Cleave'],['multi','💥','M+ AoE']] as const).map(([m,icon,label]) => (
+                                <button key={m}
+                                  onClick={() => setEditDraft(d => d ? { ...d, simMode: m } : d)}
+                                  style={{
+                                    flex: 1, padding: "5px 4px", borderRadius: 6, cursor: "pointer",
+                                    background: editDraft.simMode === m ? C.surface3 : "transparent",
+                                    border: `1px solid ${editDraft.simMode === m ? C.textMid : C.border}`,
+                                    color: editDraft.simMode === m ? C.textPri : C.textDim,
+                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 11,
+                                  }}>
+                                  {icon} {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Core talents (locked) */}
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: '#60a5fa', marginBottom: 5, opacity: .7 }}>ALWAYS ACTIVE (CORE)</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {CORE_TALENTS.map(t => (
+                                <span key={t.name} title={t.desc} style={{
+                                  fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                  color: '#60a5fa', background: '#0c1a2e',
+                                  border: '1px solid #60a5fa44', borderRadius: 5, padding: "2px 8px",
+                                  cursor: "help",
+                                }}>🔒 {t.name}</span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Optional spec talents */}
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 5 }}>OPTIONAL SPEC TALENTS <span style={{ color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span></div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {allOptional.map(t => {
+                                const isOn = editDraft.enabledTalents.includes(t.name);
+                                const tClr = PILL_CLR_E[t.type] || '#94a3b8';
+                                return (
+                                  <button key={t.name} title={t.desc}
+                                    onClick={() => setEditDraft(d => {
+                                      if (!d) return d;
+                                      const next = isOn ? d.enabledTalents.filter(n => n !== t.name) : [...d.enabledTalents, t.name];
+                                      return { ...d, enabledTalents: next };
+                                    })}
+                                    style={{
+                                      fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                      color: isOn ? tClr : C.textDim,
+                                      background: isOn ? (t.type === 'st' ? '#0f2a1a' : t.type === 'aoe' ? '#1f1000' : C.surface3) : C.surface3,
+                                      border: `1px solid ${isOn ? tClr + '66' : C.border}`,
+                                      borderRadius: 5, padding: "2px 8px", cursor: "pointer",
+                                      opacity: isOn ? 1 : 0.55,
+                                      transition: "all .15s",
+                                    }}>
+                                    {t.name}
+                                    <span style={{ marginLeft: 4, fontSize: 9, opacity: .6 }}>
+                                      {t.type === 'st' ? 'ST' : t.type === 'aoe' ? 'AoE' : ''}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Hero sub-talents */}
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: heroClrE, marginBottom: 5, opacity: .7 }}>HERO TALENTS <span style={{ color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span></div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {heroTals.map(t => {
+                                const isOn = editDraft.enabledHeroTalents.includes(t.name);
+                                return (
+                                  <button key={t.name} title={t.desc}
+                                    onClick={() => setEditDraft(d => {
+                                      if (!d) return d;
+                                      const next = isOn ? d.enabledHeroTalents.filter(n => n !== t.name) : [...d.enabledHeroTalents, t.name];
+                                      return { ...d, enabledHeroTalents: next };
+                                    })}
+                                    style={{
+                                      fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                      color: isOn ? heroClrE : C.textDim,
+                                      background: isOn ? heroBgE : C.surface3,
+                                      border: `1px solid ${isOn ? heroBdrE : C.border}`,
+                                      borderRadius: 5, padding: "2px 8px", cursor: "pointer",
+                                      opacity: isOn ? 1 : 0.55,
+                                      transition: "all .15s",
+                                    }}>
+                                    {t.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Save / Cancel */}
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              onClick={() => {
+                                if (!editDraft.name.trim()) return;
+                                setCustomSlots(prev => { const c = [...prev]; c[editingSlot] = { ...editDraft }; return c; });
+                                setSelectedLoadoutId(`custom-${editingSlot}`);
+                                setHeroTalent(editDraft.heroKey);
+                                setSimMode(editDraft.simMode);
+                                setEditingSlot(null);
+                                setEditDraft(null);
+                              }}
+                              style={{
+                                flex: 1, padding: "8px 0", borderRadius: 7, cursor: "pointer",
+                                background: heroBgE, border: `1px solid ${heroBdrE}`,
+                                color: heroClrE, fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5,
+                              }}>
+                              ✓ SAVE LOADOUT
+                            </button>
+                            <button
+                              onClick={() => { setEditingSlot(null); setEditDraft(null); }}
+                              style={{
+                                padding: "8px 14px", borderRadius: 7, cursor: "pointer",
+                                background: "transparent", border: `1px solid ${C.border}`,
+                                color: C.textMid, fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5,
+                              }}>
+                              CANCEL
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Talent Loadout cards — 3 builds for the active hero */}
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>TALENT LOADOUT</div>
                     {(() => {
@@ -1820,7 +2090,6 @@ export default function SurvivalHunterSim() {
                       };
                       return loadouts.map(loadout => {
                         const isSel = selectedLoadoutId === loadout.id;
-                        const [copiedId, setCopiedId] = useState<string|null>(null);
                         const groupOrder: Array<'core'|'st'|'aoe'|'hybrid'|'hero'> = ['core','st','aoe','hybrid','hero'];
                         const talentGroups = groupOrder.map(g => ({
                           type: g,
@@ -1895,25 +2164,113 @@ export default function SurvivalHunterSim() {
                                 onClick={e => {
                                   e.stopPropagation();
                                   navigator.clipboard.writeText(loadout.exportString);
-                                  setCopiedId(loadout.id);
-                                  setTimeout(() => setCopiedId(null), 2000);
+                                  setCopiedLoadoutId(loadout.id);
+                                  setTimeout(() => setCopiedLoadoutId(null), 2000);
                                 }}
                                 style={{
                                   marginTop: 4, width: "100%",
                                   fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5,
                                   padding: "8px 0", borderRadius: 7, cursor: "pointer",
-                                  background: copiedId === loadout.id ? C.greenBg : C.surface3,
-                                  border: `1px solid ${copiedId === loadout.id ? C.green : C.border}`,
-                                  color: copiedId === loadout.id ? C.green : C.textMid,
+                                  background: copiedLoadoutId === loadout.id ? C.greenBg : C.surface3,
+                                  border: `1px solid ${copiedLoadoutId === loadout.id ? C.green : C.border}`,
+                                  color: copiedLoadoutId === loadout.id ? C.green : C.textMid,
                                   transition: "all .2s",
                                 }}>
-                                {copiedId === loadout.id ? '✓ COPIED TO CLIPBOARD' : '⎘ COPY TALENT STRING'}
+                                {copiedLoadoutId === loadout.id ? '✓ COPIED TO CLIPBOARD' : '⎘ COPY TALENT STRING'}
                               </button>
                             )}
                           </div>
                         );
                       });
                     })()}
+
+                    {/* Custom loadout cards (saved slots that match current hero) */}
+                    {customSlots.map((slot, idx) => {
+                      if (!slot) return null;
+                      const customId = `custom-${idx}`;
+                      const isSel = selectedLoadoutId === customId;
+                      const heroClrC  = slot.heroKey === 'sentinel' ? C.sentClr : C.packClr;
+                      const heroBgC   = slot.heroKey === 'sentinel' ? C.sentBg  : C.packBg;
+                      const heroBdrC  = slot.heroKey === 'sentinel' ? C.sentBdr : C.packBdr;
+                      const PILL_CLR_C: Record<string,string> = { core:'#60a5fa', st:'#4ade80', aoe:'#f97316', hero: heroClrC, hybrid:'#c084fc' };
+                      const PILL_BG_C: Record<string,string>  = { core:'#0c1a2e', st:'#0f2a1a', aoe:'#1f1000', hero: heroBgC, hybrid:'#1a1033' };
+                      const corePills = CORE_TALENTS;
+                      const specPills = [...ST_TALENTS, ...AOE_TALENTS].filter((t, i, arr) => arr.findIndex(x => x.name === t.name) === i).filter(t => slot.enabledTalents.includes(t.name));
+                      const heroPills = (slot.heroKey === 'sentinel' ? SENTINEL_HERO : PACK_LEADER_HERO).filter(t => slot.enabledHeroTalents.includes(t.name));
+                      return (
+                        <div key={customId}
+                          onClick={() => { setSelectedLoadoutId(customId); setHeroTalent(slot.heroKey); setSimMode(slot.simMode); }}
+                          style={{
+                            marginBottom: 8, borderRadius: 10, padding: "12px 14px", cursor: "pointer",
+                            background: isSel ? heroBgC : C.surface2,
+                            border: `1px solid ${isSel ? heroBdrC : C.border}`,
+                            transition: "all .15s",
+                          }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isSel ? 12 : 0 }}>
+                            <span style={{ fontSize: 15 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, fontWeight: 700,
+                                  color: isSel ? heroClrC : C.textSec, letterSpacing: 1.5 }}>
+                                  {slot.name}
+                                </span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9,
+                                  background: '#1a1a2e', color: '#818cf8', border: '1px solid #818cf844',
+                                  borderRadius: 4, padding: "0 6px" }}>CUSTOM</span>
+                                {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10,
+                                  background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
+                                  borderRadius: 4, padding: "0 6px" }}>ACTIVE</span>}
+                              </div>
+                              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 1 }}>
+                                {slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'Raid ST' : slot.simMode === 'multi' ? 'M+ AoE' : 'Cleave'}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <button onClick={e => { e.stopPropagation(); setEditingSlot(idx as 0|1); setEditDraft({ ...slot }); }}
+                                style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>✏</button>
+                              <button onClick={e => {
+                                e.stopPropagation();
+                                setCustomSlots(prev => { const c = [...prev]; c[idx] = null; return c; });
+                                if (isSel) setSelectedLoadoutId('sentinel-st');
+                              }}
+                                style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>✕</button>
+                            </div>
+                          </div>
+
+                          {/* Expanded talent pills */}
+                          {isSel && (
+                            <>
+                              {[{ label: 'ALWAYS', pills: corePills, type: 'core' }, { label: 'SELECTED SPEC', pills: specPills, type: specPills[0]?.type || 'st' }, { label: 'HERO TALENTS', pills: heroPills, type: 'hero' }]
+                                .filter(g => g.pills.length > 0)
+                                .map(g => (
+                                  <div key={g.label} style={{ marginBottom: 8 }}>
+                                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2,
+                                      color: PILL_CLR_C[g.type] || heroClrC, marginBottom: 5, opacity: .7 }}>
+                                      {g.label}
+                                    </div>
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                      {g.pills.map(t => (
+                                        <span key={t.name} title={t.desc} style={{
+                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                          color: PILL_CLR_C[t.type] || heroClrC,
+                                          background: PILL_BG_C[t.type] || heroBgC,
+                                          border: `1px solid ${(PILL_CLR_C[t.type] || heroClrC)}44`,
+                                          borderRadius: 5, padding: "2px 8px", cursor: "help",
+                                        }}>{t.name}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              {specPills.length === 0 && heroPills.length === 0 && (
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontStyle: "italic" }}>
+                                  No optional talents selected — only core talents active.
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Fight Duration */}
