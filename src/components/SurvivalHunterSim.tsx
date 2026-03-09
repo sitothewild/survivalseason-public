@@ -1080,6 +1080,10 @@ export default function SurvivalHunterSim() {
                                   })}
                                   {/* Fallback for SimC-parsed enchants */}
                                   {!g.enchantments?.length && g.enchant && (
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      ✦ {g.enchant}
+                                    </span>
+                                  )}
                                   {/* Sockets/gems from API */}
                                   {g.sockets?.length > 0 && g.sockets.map((s: any, si: number) => (
                                     <span key={si} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
