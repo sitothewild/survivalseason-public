@@ -773,6 +773,10 @@ export default function SurvivalHunterSim() {
       setParsedChar(result);
       setImportedTalentSource('simc');
       setImportedTalentString(result.talents || '');
+      // Auto-scroll to sim config after successful parse
+      setTimeout(() => {
+        document.getElementById("sim-config")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     } else {
       setParseError(result.errors.join(' '));
       setParsedChar(null);
