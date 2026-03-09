@@ -1664,17 +1664,17 @@ export default function SurvivalHunterSim() {
                   value={simcInput}
                   onChange={e => setSimcInput(e.target.value)}
                   placeholder="Paste your SimulationCraft addon export here..."
-                  style={{ height: 160, resize: 'vertical', lineHeight: 1.6 }}
+                  style={{ height: 180, resize: 'vertical', lineHeight: 1.6, fontSize: 14 }}
                 />
                 {parseError && (
-                  <div style={{ color: '#ef4444', fontSize: 12, marginTop: 8, fontFamily: "'EB Garamond', serif" }}>
+                  <div style={{ color: 'hsl(var(--destructive))', fontSize: 14, marginTop: 12, fontFamily: "'EB Garamond', serif", padding: '10px 14px', background: 'hsl(var(--destructive) / 0.1)', borderRadius: 6 }}>
                     ⚠ {parseError}
                   </div>
                 )}
                 <button onClick={handleParse} style={{
-                  marginTop: 12, width: '100%', background: '#151e14', border: '1px solid #2a3a1a',
-                  borderRadius: 6, padding: '10px', color: '#86efac', fontFamily: "'Cinzel', serif",
-                  fontSize: 11, letterSpacing: 2, cursor: 'pointer', transition: 'all 0.2s'
+                  marginTop: 16, width: '100%', background: 'hsl(var(--accent))', border: '1px solid hsl(var(--border))',
+                  borderRadius: 8, padding: '14px', color: 'hsl(var(--accent-foreground))', fontFamily: "'Cinzel', serif",
+                  fontSize: 13, letterSpacing: 1.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
                 }}>
                   ✦ PARSE CHARACTER
                 </button>
