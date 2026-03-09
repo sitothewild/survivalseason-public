@@ -712,6 +712,8 @@ export default function SurvivalHunterSim() {
   const [simcLiveData, setSimcLiveData] = useState<any>(null);
   const [simcSyncStatus, setSimcSyncStatus] = useState<'idle' | 'loading' | 'synced' | 'error'>('idle');
   const [simcSyncInfo, setSimcSyncInfo] = useState<string>('');
+  const [importedTalentSource, setImportedTalentSource] = useState<'simc' | 'armory' | null>(null);
+  const [importedTalentString, setImportedTalentString] = useState<string>('');
 
   // Auto-load SimC data on mount
   useEffect(() => {
