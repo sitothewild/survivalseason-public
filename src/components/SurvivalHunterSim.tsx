@@ -273,21 +273,18 @@ const SPELL_WEIGHT: Record<string, number> = {
 /**
  * Convert SimC APL action list into DPS breakdown percentages.
  * Higher-priority actions (earlier in APL) are cast more often.
- * We combine priority-based frequency with spell coefficients to estimate DPS share.
+ * Raptor Swipe: ~50% of Raptor Strike casts become Swipe (buff-based).
+ * Boomstick: channeled AoE (~4 ticks over 2.5s), own tip_of_the_spear_boomstick buff.
  */
-function aplToBreakdown(actionList: string[], isPL: boolean): Record<string, number> {
-  // Count and weight each ability by APL position (earlier = higher cast frequency)
+function aplToBreakdown(actionList: string[], isPL: boolean, targetCount: number = 1): Record<string, number> {
   const abilityWeight: Record<string, number> = {};
   const totalActions = actionList.length || 1;
 
   actionList.forEach((action, idx) => {
-    // Extract the base action name (before any condition like ,if=...)
     const baseName = action.split(',')[0].split('#')[0].trim().toLowerCase().replace(/\s+/g, '_');
     const displayName = APL_TO_DISPLAY[baseName];
     if (!displayName) return;
 
-    // Priority weight: actions earlier in the list are cast more frequently
-    // Use inverse-square decay to model priority queuing
     const priorityWeight = 1.0 / (1 + idx * 0.15);
     const spellCoef = SPELL_WEIGHT[displayName] || 1.0;
     const dpsWeight = priorityWeight * spellCoef;
@@ -295,12 +292,29 @@ function aplToBreakdown(actionList: string[], isPL: boolean): Record<string, num
     abilityWeight[displayName] = (abilityWeight[displayName] || 0) + dpsWeight;
   });
 
+  // Model Raptor Swipe: ~50% of Raptor Strike casts become Swipe
+  const RAPTOR_SWIPE_UPTIME = 0.50;
+  if (abilityWeight['Raptor Strike']) {
+    const totalRsWeight = abilityWeight['Raptor Strike'];
+    abilityWeight['Raptor Strike'] = totalRsWeight * (1 - RAPTOR_SWIPE_UPTIME);
+    // Raptor Swipe does 1.25x RS damage and hits all targets in AoE
+    const swipeTargetMult = Math.min(targetCount, 5);
+    abilityWeight['Raptor Swipe'] = (abilityWeight['Raptor Swipe'] || 0) + totalRsWeight * RAPTOR_SWIPE_UPTIME * 1.25 * swipeTargetMult;
+  }
+
+  // Model Boomstick: channeled AoE (~4 ticks, hits all nearby targets)
+  if (abilityWeight['Boomstick'] && targetCount > 1) {
+    // Shellshock: +40% ST, -5% per extra target
+    const shellshockMult = 1.40 - (targetCount - 1) * 0.05;
+    const boomstickTargetMult = Math.min(targetCount, 5) * Math.max(shellshockMult, 0.80);
+    abilityWeight['Boomstick'] *= boomstickTargetMult;
+  }
+
   // Merge with passive sources
   const passives = isPL ? PASSIVE_SOURCES_PL : PASSIVE_SOURCES_SENT;
   const passiveTotal = Object.values(passives).reduce((s, v) => s + v, 0);
   const activeBudget = 1.0 - passiveTotal;
 
-  // Normalize active abilities to fill the remaining budget
   const activeSum = Object.values(abilityWeight).reduce((s, v) => s + v, 0) || 1;
   const breakdown: Record<string, number> = {};
 
@@ -308,12 +322,10 @@ function aplToBreakdown(actionList: string[], isPL: boolean): Record<string, num
     breakdown[name] = (w / activeSum) * activeBudget;
   });
 
-  // Add passive sources
   Object.entries(passives).forEach(([name, pct]) => {
     breakdown[name] = (breakdown[name] || 0) + pct;
   });
 
-  // Normalize to exactly 1.0
   const total = Object.values(breakdown).reduce((s, v) => s + v, 0) || 1;
   Object.keys(breakdown).forEach(k => { breakdown[k] /= total; });
 
