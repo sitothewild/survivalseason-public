@@ -152,6 +152,30 @@ serve(async (req) => {
         break;
       }
 
+      // Get a single spell by ID
+      case "spell": {
+        const { spellId } = params;
+        if (!spellId) throw new Error("spellId is required");
+        result = await blizzardGet(`/data/wow/spell/${spellId}`, region, "static");
+        break;
+      }
+
+      // Search spells by name
+      case "spell-search": {
+        const { name, page = 1 } = params;
+        if (!name) throw new Error("name is required");
+        const token = await getAccessToken(region);
+        const host = `${region}.api.blizzard.com`;
+        const url = `https://${host}/data/wow/search/spell?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id:desc&_page=${page}`;
+        const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`Spell search failed: ${resp.status} ${text}`);
+        }
+        result = await resp.json();
+        break;
+      }
+
       // Batch: fetch multiple items at once (up to 20)
       case "items-batch": {
         const { itemIds } = params;
@@ -179,7 +203,7 @@ serve(async (req) => {
       }
 
       default:
-        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
+        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, spell, spell-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
     }
 
     return new Response(JSON.stringify(result), {
