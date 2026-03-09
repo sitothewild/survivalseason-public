@@ -4,16 +4,20 @@ const corsHeaders = {
 };
 
 function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&amp;/g, '&')
+  let text = html;
+  // Decode HTML entities first so encoded tags become real tags
+  text = text.replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/&nbsp;/g, ' ');
+  // Strip all HTML tags (run twice to catch nested/decoded tags)
+  text = text.replace(/<[^>]*>/g, ' ');
+  text = text.replace(/<[^>]*>/g, ' ');
+  // Remove "Continue reading »" leftover
+  text = text.replace(/Continue reading\s*»?/gi, '');
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 interface PatchNote {
