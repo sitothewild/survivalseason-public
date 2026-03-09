@@ -1126,7 +1126,7 @@ export default function SurvivalHunterSim() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1300, margin: "0 auto", padding: "20px 20px 48px" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: 22, gap: 2 }}>
           {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"], ["guide", "📖 Guide"]].map(([k, l]) => (
