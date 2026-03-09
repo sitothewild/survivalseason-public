@@ -1055,21 +1055,58 @@ export default function SurvivalHunterSim() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, position: "relative" }}>
                   <div ref={realmDropdownRef} style={{ position: "relative" }}>
-                    <input className="ifield" value={armoryRealm ? armoryRealmSearch : armoryRealmSearch}
-                      onChange={e => { setArmoryRealmSearch(e.target.value); setArmoryRealm(""); setShowRealmDropdown(true); }}
-                      onFocus={() => setShowRealmDropdown(true)} placeholder="Search realm..."
-                      style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }} />
+                    <input
+                      className="ifield"
+                      value={armoryRealmSearch}
+                      onChange={(e) => {
+                        setArmoryRealmSearch(e.target.value);
+                        setShowRealmDropdown(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setShowRealmDropdown(false);
+                        }
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+
+                          // If the user already typed an exact realm, just close the dropdown.
+                          if (resolvedRealmSlug) {
+                            setShowRealmDropdown(false);
+                            return;
+                          }
+
+                          // Otherwise pick the top suggestion (if any)
+                          const first = realmSuggestions[0];
+                          if (first) {
+                            setArmoryRealmSearch(first);
+                            setArmoryRealm(normalizeRealmSlug(first));
+                            setShowRealmDropdown(false);
+                          }
+                        }
+                      }}
+                      onFocus={() => setShowRealmDropdown(true)}
+                      placeholder="Search realm..."
+                      style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }}
+                    />
                     {showRealmDropdown && (() => {
-                      const realms = REALM_DATA[armoryRegion] || []; const q = armoryRealmSearch.toLowerCase();
-                      const filtered = q ? realms.filter(r => r.toLowerCase().includes(q)).slice(0, 8) : realms.slice(0, 8);
+                      const filtered = realmSuggestions;
                       if (filtered.length === 0) return null;
                       return (
                         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
                           {filtered.map(rv => (
-                            <div key={rv} onMouseDown={() => { setArmoryRealm(rv.toLowerCase().replace(/[' ]/g, '-')); setArmoryRealmSearch(rv); setShowRealmDropdown(false); }}
+                            <div
+                              key={rv}
+                              onMouseDown={() => {
+                                setArmoryRealm(normalizeRealmSlug(rv));
+                                setArmoryRealmSearch(rv);
+                                setShowRealmDropdown(false);
+                              }}
                               style={{ padding: "9px 14px", fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, cursor: "pointer", transition: "background .1s", borderBottom: `1px solid ${C.borderSub}` }}
-                              onMouseEnter={e => e.currentTarget.style.background = C.surface3} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                            >{rv}</div>
+                              onMouseEnter={e => e.currentTarget.style.background = C.surface3}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                              {rv}
+                            </div>
                           ))}
                         </div>
                       );
