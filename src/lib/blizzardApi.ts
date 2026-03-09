@@ -176,7 +176,7 @@ export function equipmentToSimData(fullData: any) {
     },
     stats: simStats,
     gear,
-    talents: null,
+    talents: fullData?.specializations?.active_specialization?.loadouts?.[0]?.talent_loadout_code || null,
     valid: true,
     errors: [],
     media: fullData.media,

@@ -712,6 +712,8 @@ export default function SurvivalHunterSim() {
   const [simcLiveData, setSimcLiveData] = useState<any>(null);
   const [simcSyncStatus, setSimcSyncStatus] = useState<'idle' | 'loading' | 'synced' | 'error'>('idle');
   const [simcSyncInfo, setSimcSyncInfo] = useState<string>('');
+  const [importedTalentSource, setImportedTalentSource] = useState<'simc' | 'armory' | null>(null);
+  const [importedTalentString, setImportedTalentString] = useState<string>('');
 
   // Auto-load SimC data on mount
   useEffect(() => {
@@ -765,11 +767,20 @@ export default function SurvivalHunterSim() {
 
   const handleParse = useCallback(() => {
     setParseError(''); const result = parseSimcString(simcInput);
-    if (result.valid) { setParsedChar(result); } else { setParseError(result.errors.join(' ')); setParsedChar(null); }
+    if (result.valid) {
+      setParsedChar(result);
+      setImportedTalentSource('simc');
+      setImportedTalentString(result.talents || '');
+    } else {
+      setParseError(result.errors.join(' '));
+      setParsedChar(null);
+      setImportedTalentSource(null);
+      setImportedTalentString('');
+    }
     setSimResults(null);
   }, [simcInput]);
 
-  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); };
+  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); };
 
   const handleArmoryLookup = useCallback(async () => {
     const realmSlug = armoryRealm || resolvedRealmSlug;
@@ -800,6 +811,8 @@ export default function SurvivalHunterSim() {
         setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
       }
       setParsedChar(simData);
+      setImportedTalentSource('armory');
+      setImportedTalentString(simData?.talents || '');
       setSimResults(null);
       if (fullData.media?.assets) {
         const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
@@ -829,10 +842,29 @@ export default function SurvivalHunterSim() {
     } catch (err) {
       setArmoryError(err.message || 'Failed to look up character.');
       setParsedChar(null);
+      setImportedTalentSource(null);
+      setImportedTalentString('');
     } finally {
       setArmoryLoading(false);
     }
   }, [armoryRealm, resolvedRealmSlug, armoryName, armoryRegion]);
+
+  const displayedTalentString = useMemo(() => {
+    const raw = (importedTalentString || '').trim();
+    if (!raw) return '';
+    return raw.length > 24 ? `${raw.slice(0, 24)}...` : raw;
+  }, [importedTalentString]);
+
+  const detectedHeroTalent = useMemo(() => {
+    const raw = (importedTalentString || '').trim();
+    if (!raw) return 'Unknown';
+
+    // Requested pattern detection
+    if (raw.startsWith('C8PAAA') && raw.includes('MWg')) return 'Sentinel';
+    if (raw.startsWith('C8PAAA') && raw.includes('Mgx')) return 'Pack Leader';
+
+    return 'Unknown';
+  }, [importedTalentString]);
 
   const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
@@ -1314,6 +1346,47 @@ export default function SurvivalHunterSim() {
                       ))}
                     </div>
                   </div>
+
+                  {parsedChar && (
+                    <div style={{ marginBottom: 16, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                        <span className="badge" style={{ background: C.surface, color: C.goldLight, border: `1px solid ${C.gold}` }}>
+                          {importedTalentSource === 'simc' ? 'IMPORTED FROM SIMC' : 'IMPORTED FROM ARMORY'}
+                        </span>
+                        <span
+                          className="badge"
+                          style={{
+                            background: C.surface,
+                            color: detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.textDim,
+                            border: `1px solid ${detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.border}`,
+                          }}
+                        >
+                          Hero talent: {detectedHeroTalent}
+                        </span>
+                      </div>
+
+                      <div
+                        title={importedTalentString || 'No talent string found'}
+                        style={{
+                          fontFamily: "'IBM Plex Mono',monospace",
+                          fontSize: 12,
+                          color: importedTalentString ? C.textSec : C.textDim,
+                          background: C.surface,
+                          border: `1px solid ${C.borderSub}`,
+                          borderRadius: 8,
+                          padding: '8px 10px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {displayedTalentString || 'Talent string unavailable'}
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>SIMULATION MODE</div>
                     <div style={{ display: "flex", gap: 8 }}>
