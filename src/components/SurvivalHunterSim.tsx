@@ -1032,17 +1032,39 @@ export default function SurvivalHunterSim() {
     setIsSimming(true);
     setSimResults(null);
 
+    // Calculate external multiplier from fight style, raid buffs, and consumables
+    let externalMult = 1.0;
+    
+    // Fight style multiplier
+    externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
+    
+    // Raid buffs multipliers
+    Object.entries(raidBuffs).forEach(([buff, enabled]) => {
+      if (enabled && RAID_BUFFS[buff]) {
+        externalMult *= RAID_BUFFS[buff].mult;
+      }
+    });
+    
+    // Consumables multipliers
+    Object.entries(consumables).forEach(([category, selection]) => {
+      const categoryData = CONSUMABLES[category];
+      const selectedOption = categoryData?.options?.find(opt => opt.key === selection);
+      if (selectedOption) {
+        externalMult *= selectedOption.mult;
+      }
+    });
+
     setTimeout(() => {
       const targets = getTargets();
       const results = targets.map(t => {
         const build = t === 1 ? 'st' : 'aoe';
-        const st = runSimulation(parsedChar, t, fightDuration, heroTalent, build);
+        const st = runSimulation(parsedChar, t, fightDuration, heroTalent, build, externalMult);
         return st;
       });
 
       // Calculate stat weights for the primary target scenario (first target count)
       const primaryBuild = targets[0] === 1 ? 'st' : 'aoe';
-      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild);
+      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult);
       setStatWeights(sw);
 
       const optimal = getOptimalTalents(targets[targets.length - 1], heroTalent);
@@ -1050,7 +1072,7 @@ export default function SurvivalHunterSim() {
       setOptimalTalents(optimal);
       setIsSimming(false);
     }, 1400);
-  }, [parsedChar, heroTalent, fightDuration, simMode]);
+  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables]);
 
   const copyExportString = (str) => {
     navigator.clipboard.writeText(str).then(() => {
