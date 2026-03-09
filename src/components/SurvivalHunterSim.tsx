@@ -533,6 +533,130 @@ function getOptimalTalents(targetCount, heroTalent) {
   };
 }
 
+// ── Talent Loadout Definitions ────────────────────────────────
+// 3 named builds per hero talent. Each loadout drives heroTalent + simMode
+// and makes visible exactly which spec/hero talents are active.
+//
+// Talent pill types:
+//   core  — always talented (no choice)
+//   st    — single-target / raid-only picks
+//   aoe   — AoE / Mythic+ picks
+//   hero  — hero-talent-specific nodes
+//   hybrid— included in the cleave build but not pure ST or pure AoE
+
+interface TalentPill {
+  name: string;
+  type: 'core' | 'st' | 'aoe' | 'hero' | 'hybrid';
+  desc: string;
+}
+interface TalentLoadout {
+  id: string;
+  heroKey: 'sentinel' | 'packLeader';
+  name: string;
+  scenario: string;
+  icon: string;
+  simMode: 'single' | 'cleave' | 'multi';
+  stDelta: number;    // relative DPS vs no talents
+  aoeDelta: number;
+  exportString: string;
+  talents: TalentPill[];
+}
+
+const CORE_TALENTS: TalentPill[] = [
+  { name: 'Mongoose Fury',    type: 'core', desc: 'RS stacking damage buff up to 5×. Always talented — backbone of the rotation.' },
+  { name: 'Strike as One',    type: 'core', desc: 'All damaging abilities trigger a pet attack. Core pet scaling node.' },
+  { name: 'Wildfire Bomb',    type: 'core', desc: 'No-focus nuke + Lethal Calibration (+15% WFB crit dmg buff). Highest single ability value.' },
+  { name: 'Takedown',         type: 'core', desc: '20% damage amp for 8s. 90s base CD (reduced by Savagery). Replaces Coordinated Assault.' },
+  { name: 'Boomstick',        type: 'core', desc: 'Frontal AoE with Shellshock (+40% ST). 60s CD. Replaces Focus Fire.' },
+  { name: 'Raptor Swipe',     type: 'core', desc: 'Apex talent (4pts). 25% proc → 100% proc during Takedown windows.' },
+  { name: 'Lethal Calibration', type: 'core', desc: 'WFB applies +15% crit damage buff for 12s. Multiplicative with Vulnerability.' },
+];
+
+const ST_TALENTS: TalentPill[] = [
+  { name: 'Savagery',          type: 'st', desc: 'Takedown CD −30s (90s → 60s). Dramatically increases Takedown usage in a 5min fight.' },
+  { name: 'Vulnerability',     type: 'st', desc: 'RS and Boomstick deal +20% crit damage. Synergises with Stargazer stacks and Lethal Calibration.' },
+  { name: 'Mongoose Rounds',   type: 'st', desc: 'Each Boomstick hit grants 1 Mongoose Fury stack. Burst-window Boomstick → max MF stacks instantly.' },
+  { name: "Can't Miss Won't Miss", type: 'st', desc: 'RS +10% damage; Takedown duration +2s. More RS hits inside the amp window.' },
+  { name: 'Stargazer',         type: 'st', desc: 'RS increases crit damage by 2% for 10s, stacking up to ×10 (+20%). Sentinel: stacks multiply with LC+Vulnerability.' },
+];
+
+const AOE_TALENTS: TalentPill[] = [
+  { name: 'Flamefang Pitch',    type: 'aoe', desc: '30s CD ground AoE + fire puddle. Highest AoE ability per cast.' },
+  { name: 'Grenade Juggler',    type: 'aoe', desc: 'Flamefang Pitch gains 1 extra charge — doubles Flamefang usage.' },
+  { name: 'Wildfire Shells',    type: 'aoe', desc: 'Each Boomstick hit reduces WFB CD by 4s. In AoE: Boomstick hits 5+ targets → WFB every ~18s.' },
+  { name: 'Shrapnel Bomb',      type: 'aoe', desc: 'WFB periodic becomes a bleed (bypasses armor). +~8% total AoE DPS on armored targets.' },
+  { name: 'Flamebreak',         type: 'aoe', desc: 'All Fire damage +15%. Amplifies WFB, Flamefang Pitch, and all fire dots.' },
+  { name: 'Wildfire Imbuement', type: 'aoe', desc: 'Flamefang imbues weapon — RS gains fire damage component, scaling with Flamebreak.' },
+  { name: 'Two Against Many',   type: 'aoe', desc: 'Strike as One hits 2 additional enemies. Scales pet damage across entire pack.' },
+];
+
+const HYBRID_TALENTS: TalentPill[] = [
+  { name: 'Vulnerability',     type: 'hybrid', desc: 'Kept for ST damage on priority target. Still strong even in cleave.' },
+  { name: "Can't Miss Won't Miss", type: 'hybrid', desc: 'RS boost helps maintain priority-target pressure in multi-target.' },
+  { name: 'Flamefang Pitch',    type: 'hybrid', desc: 'Core AoE cooldown. Even 2-target cleave benefits significantly.' },
+  { name: 'Wildfire Shells',    type: 'hybrid', desc: 'Boomstick WFB reduction works on any target — valuable at 2+.' },
+  { name: 'Flamebreak',         type: 'hybrid', desc: '+15% Fire damage, amplifies WFB and Flamefang on all targets.' },
+];
+
+const SENTINEL_HERO: TalentPill[] = [
+  { name: 'Moonlight Chakram', type: 'hero', desc: 'Bouncing shadow attack proc. Hits up to 5 targets. Sentinel\'s top AoE dealer.' },
+  { name: 'Lunar Storm',       type: 'hero', desc: 'AoE burst when Sentinel\'s Mark is consumed. Scales massively in packs.' },
+  { name: "Moon's Blessing",   type: 'hero', desc: '+10% Sentinel\'s Mark proc chance (20% → 30%). More Lunar Storm procs per minute.' },
+];
+
+const PACK_LEADER_HERO: TalentPill[] = [
+  { name: 'Lethal Barbs',   type: 'hero', desc: 'Auto-attacks generate 2 Focus each. Enables more Kill Commands → more beast procs.' },
+  { name: 'Dire Summons',   type: 'hero', desc: 'Reduces beast spawn cooldown. More frequent Howl of the Pack Leader procs.' },
+  { name: 'Stampede',       type: 'hero', desc: 'Capstone: Takedown triggers a beast rush — maximum beast overlap during burst window.' },
+];
+
+export const TALENT_LOADOUTS: TalentLoadout[] = [
+  // ── Sentinel ──────────────────────────────────────────────
+  {
+    id: 'sentinel-st', heroKey: 'sentinel', simMode: 'single',
+    name: 'Raid Single Target', scenario: 'Boss Progress / ST Patchwerk', icon: '🎯',
+    stDelta: 0.07, aoeDelta: 0.03,
+    exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNjZmxMPwy8AAAAAAAMzMzMDzYMjBGTGAAAAwAAYZbmZWMzMzMzYAgZYjZxYMjNG',
+    talents: [...CORE_TALENTS, ...ST_TALENTS, ...SENTINEL_HERO],
+  },
+  {
+    id: 'sentinel-aoe', heroKey: 'sentinel', simMode: 'multi',
+    name: 'Mythic+ AoE', scenario: 'M+ Packs / 4+ Targets', icon: '💥',
+    stDelta: 0.02, aoeDelta: 0.12,
+    exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNzMzMmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAALbzMziZmZmZGDAMDbMLGjZmNG',
+    talents: [...CORE_TALENTS, ...AOE_TALENTS, ...SENTINEL_HERO],
+  },
+  {
+    id: 'sentinel-cleave', heroKey: 'sentinel', simMode: 'cleave',
+    name: 'Cleave / Hybrid', scenario: 'Raid with Priority Adds / 2–3 Targets', icon: '⚔',
+    stDelta: 0.05, aoeDelta: 0.07,
+    exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNjZmxMPwy8AAAAAAAMzMzMDzYMjBGTGAAAAwAAYZbmZWMzMzMzYAgZYjZxYMjNG',
+    talents: [...CORE_TALENTS, ...HYBRID_TALENTS, ...SENTINEL_HERO],
+  },
+  // ── Pack Leader ───────────────────────────────────────────
+  {
+    id: 'packLeader-st', heroKey: 'packLeader', simMode: 'single',
+    name: 'Raid Single Target', scenario: 'Boss Progress / ST Patchwerk', icon: '🎯',
+    stDelta: 0.05, aoeDelta: 0.02,
+    exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMGWILwMM0gFjZmZmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAwYZbmZWMzMzMzYAMzGgZxYMjNG',
+    talents: [...CORE_TALENTS, ...ST_TALENTS, ...PACK_LEADER_HERO],
+  },
+  {
+    id: 'packLeader-aoe', heroKey: 'packLeader', simMode: 'multi',
+    name: 'Mythic+ AoE', scenario: 'M+ Packs / 4+ Targets', icon: '💥',
+    stDelta: 0.01, aoeDelta: 0.07,
+    exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMG2ILwMM0gFzMzMz4BWGAAAAAAMzMzMDzYMjBGTGAAAAwAAYZZmZ2MzMjZGDgZ2AgxYmZhB',
+    talents: [...CORE_TALENTS, ...AOE_TALENTS, ...PACK_LEADER_HERO],
+  },
+  {
+    id: 'packLeader-cleave', heroKey: 'packLeader', simMode: 'cleave',
+    name: 'Cleave / Hybrid', scenario: 'Raid with Priority Adds / 2–3 Targets', icon: '⚔',
+    stDelta: 0.04, aoeDelta: 0.05,
+    exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMGWILwMM0gFjZmZmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAwYZbmZWMzMzMzYAMzGgZxYMjNG',
+    talents: [...CORE_TALENTS, ...HYBRID_TALENTS, ...PACK_LEADER_HERO],
+  },
+];
+
 // ============================================================
 // V8 COLOUR SYSTEM — Off-White Page + Charcoal Navy Cards
 // ============================================================
@@ -658,6 +782,7 @@ export default function SurvivalHunterSim() {
   const [parsedChar, setParsedChar] = useState(null);
   const [parseError, setParseError] = useState('');
   const [heroTalent, setHeroTalent] = useState('sentinel');
+  const [selectedLoadoutId, setSelectedLoadoutId] = useState('sentinel-st');
   const [fightDuration, setFightDuration] = useState(300);
   const [simResults, setSimResults] = useState(null);
   const [statWeights, setStatWeights] = useState(null);
@@ -1655,12 +1780,20 @@ export default function SurvivalHunterSim() {
                     </div>
                   </div>
 
-                  {/* Hero Talent selector */}
+                  {/* ── Hero Talent + Talent Loadout ───────────── */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>HERO TALENT</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                       {Object.entries(MIDNIGHT_DATA.talents.hero).map(([k, h]) => (
-                        <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`} onClick={() => setHeroTalent(k)}>
+                        <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`}
+                          onClick={() => {
+                            setHeroTalent(k);
+                            // pick the currently-selected build type for the new hero
+                            const curType = selectedLoadoutId.split('-').slice(1).join('-') || 'st';
+                            const next = TALENT_LOADOUTS.find(l => l.heroKey === k && l.id === `${k}-${curType}`)
+                              || TALENT_LOADOUTS.find(l => l.heroKey === k);
+                            if (next) { setSelectedLoadoutId(next.id); setSimMode(next.simMode); }
+                          }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
                             <span style={{ fontSize: 17 }}>{h.icon}</span>
                             <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: k === "sentinel" ? C.sentClr : C.packClr }}>{h.name}</span>
@@ -1671,19 +1804,116 @@ export default function SurvivalHunterSim() {
                         </button>
                       ))}
                     </div>
-                  </div>
 
-                  {/* Simulation Mode */}
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>SIMULATION MODE</div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {[["single", "🎯 Single", "1 target"], ["cleave", "⚔ Cleave", "2–3 targets"], ["multi", "💥 Multi", "5/8/10"]].map(([k, l, s]) => (
-                        <button key={k} className={`mode-btn ${simMode === k ? "sel" : ""}`} onClick={() => setSimMode(k)} style={{ flex: 1, textAlign: "center" }}>
-                          <div style={{ fontSize: 13, marginBottom: 2 }}>{l}</div>
-                          <div style={{ fontSize: 8, color: C.textDim }}>{s}</div>
-                        </button>
-                      ))}
-                    </div>
+                    {/* Talent Loadout cards — 3 builds for the active hero */}
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>TALENT LOADOUT</div>
+                    {(() => {
+                      const loadouts = TALENT_LOADOUTS.filter(l => l.heroKey === heroTalent);
+                      const heroClr  = heroTalent === 'sentinel' ? C.sentClr : C.packClr;
+                      const heroBg   = heroTalent === 'sentinel' ? C.sentBg  : C.packBg;
+                      const heroBdr  = heroTalent === 'sentinel' ? C.sentBdr : C.packBdr;
+                      const PILL_CLR: Record<string,string> = {
+                        core:'#60a5fa', st:'#4ade80', aoe:'#f97316', hero: heroClr, hybrid:'#c084fc',
+                      };
+                      const PILL_BG: Record<string,string> = {
+                        core:'#0c1a2e', st:'#0f2a1a', aoe:'#1f1000', hero: heroBg, hybrid:'#1a1033',
+                      };
+                      return loadouts.map(loadout => {
+                        const isSel = selectedLoadoutId === loadout.id;
+                        const [copiedId, setCopiedId] = useState<string|null>(null);
+                        const groupOrder: Array<'core'|'st'|'aoe'|'hybrid'|'hero'> = ['core','st','aoe','hybrid','hero'];
+                        const talentGroups = groupOrder.map(g => ({
+                          type: g,
+                          pills: loadout.talents.filter(t => t.type === g),
+                        })).filter(g => g.pills.length > 0);
+                        const GROUP_LABEL: Record<string,string> = {
+                          core: 'ALWAYS', st: 'ST / RAID', aoe: 'AoE / M+', hybrid: 'HYBRID', hero: 'HERO TALENTS',
+                        };
+                        return (
+                          <div key={loadout.id}
+                            onClick={() => { setSelectedLoadoutId(loadout.id); setHeroTalent(loadout.heroKey); setSimMode(loadout.simMode); }}
+                            style={{
+                              marginBottom: 8, borderRadius: 10, padding: "12px 14px", cursor: "pointer",
+                              background: isSel ? heroBg : C.surface2,
+                              border: `1px solid ${isSel ? heroBdr : C.border}`,
+                              transition: "all .15s",
+                            }}>
+                            {/* Row 1: loadout name + scenario + DPS est + copy btn */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isSel ? 12 : 0 }}>
+                              <span style={{ fontSize: 15 }}>{loadout.icon}</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, fontWeight: 700,
+                                    color: isSel ? heroClr : C.textSec, letterSpacing: 1.5 }}>
+                                    {loadout.name}
+                                  </span>
+                                  {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10,
+                                    background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
+                                    borderRadius: 4, padding: "0 6px" }}>ACTIVE</span>}
+                                </div>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 1 }}>
+                                  {loadout.scenario}
+                                </div>
+                              </div>
+                              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11,
+                                  color: '#4ade80', fontWeight: 700 }}>ST +{Math.round(loadout.stDelta*100)}%</div>
+                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11,
+                                  color: '#f97316', fontWeight: 700 }}>AoE +{Math.round(loadout.aoeDelta*100)}%</div>
+                              </div>
+                            </div>
+
+                            {/* Expanded talent pills — only when this loadout is selected */}
+                            {isSel && talentGroups.map(({ type, pills }) => (
+                              <div key={type} style={{ marginBottom: 8 }}>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2,
+                                  color: PILL_CLR[type], marginBottom: 5, opacity: .7 }}>
+                                  {GROUP_LABEL[type]}
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  {pills.map(t => (
+                                    <span key={t.name}
+                                      title={t.desc}
+                                      style={{
+                                        fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                        color: PILL_CLR[type],
+                                        background: PILL_BG[type],
+                                        border: `1px solid ${PILL_CLR[type]}44`,
+                                        borderRadius: 5, padding: "2px 8px",
+                                        cursor: "help",
+                                      }}>
+                                      {t.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Copy talent string button */}
+                            {isSel && (
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(loadout.exportString);
+                                  setCopiedId(loadout.id);
+                                  setTimeout(() => setCopiedId(null), 2000);
+                                }}
+                                style={{
+                                  marginTop: 4, width: "100%",
+                                  fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5,
+                                  padding: "8px 0", borderRadius: 7, cursor: "pointer",
+                                  background: copiedId === loadout.id ? C.greenBg : C.surface3,
+                                  border: `1px solid ${copiedId === loadout.id ? C.green : C.border}`,
+                                  color: copiedId === loadout.id ? C.green : C.textMid,
+                                  transition: "all .2s",
+                                }}>
+                                {copiedId === loadout.id ? '✓ COPIED TO CLIPBOARD' : '⎘ COPY TALENT STRING'}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
 
                   {/* Fight Duration */}
