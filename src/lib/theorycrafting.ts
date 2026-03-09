@@ -6,11 +6,12 @@
 // from sc_hunter.cpp, and verified against Raidbots/Warcraft Logs parses.
 //
 // Key differences vs community guides (Wowhead, Icy Veins, class discords):
-//  1. Takedown window modeled per-second (8s amp on ~13–20% uptime)
+//  1. Takedown window modeled per-second (8s amp on 13% uptime; Savagery is core in all builds)
 //  2. Tier set interaction: 2pc KC crit → WFB CD reduction → Lethal Calibration uptime
-//  3. Sentinel Mark proc math modeled per ability cast, not assumed flat
-//  4. Savagery vs Vulnerability delta computed from actual Takedown frequency
+//  3. Sentinel Mark proc math modeled per RS cast, not assumed flat
+//  4. Two Against Many: shown BiS at 3+ targets (cleave), not just 5+ as most guides claim
 //  5. Mongoose Fury stack distribution modeled (not flat average)
+//  6. Flanker's Advantage / Bloodseeker modeled as KC damage multipliers (estimated coefficients)
 // ============================================================
 
 // ── Interfaces ──────────────────────────────────────────────
@@ -34,46 +35,62 @@ export interface TierSetConfig {
 }
 
 export interface TalentConfig {
-  // ─ Always talented core ─
-  mongooseFury: boolean;
-  strikeAsOne: boolean;
+  // ─ Always-taken spec core (WoWHead verified, all 4 builds) ─
+  killCommand: boolean;
   wildfireBomb: boolean;
-  takedown: boolean;
+  raptorStrike: boolean;
+  guerrillaTactics: boolean;
+  tipOfTheSpear: boolean;
+  lunge: boolean;
   boomstick: boolean;
-  raptorSwipe: boolean;
-  lethalCalibration: boolean;
-  // ─ ST priority ─
-  /** Reduces Takedown CD by 15s/pt (2pts = 30s reduction: 90s → 60s) */
+  strikeAsOne: boolean;
+  flamebreak: boolean;       // T3 choice: Flamebreak over Shrapnel Bomb (all 4 builds)
+  quickReload: boolean;
+  mongooseFury: boolean;
+  wildfireShells: boolean;   // T3 choice: Wildfire Shells over Mongoose Rounds (all 4 builds)
+  shellshock: boolean;
+  wallop: boolean;           // T3 choice: Wallop over Bloody Claws (all 4 builds)
+  bonding: boolean;
+  sweepingSpear: boolean;
+  blackrockMunitions: boolean; // T3 choice: Blackrock Munitions over Vulnerability (all 4 builds)
+  takedown: boolean;
+  killerCompanion: boolean;
+  twinFangs: boolean;
   savagery: boolean;
-  /** RS and Boomstick deal +20% crit damage */
-  vulnerability: boolean;
-  /** Each Boomstick hit grants 1 Mongoose Fury stack */
-  mongooseRounds: boolean;
-  /** Raptor Strike +10% damage; Takedown duration +2s */
-  cantMissWontMiss: boolean;
-  /** RS increases crit damage by 2% for 10s, stacks up to 10x */
-  stargazer: boolean;
-  // ─ AoE priority ─
-  flamefangPitch: boolean;
-  /** Flamefang gains +1 charge */
-  grenadeJuggler: boolean;
-  /** Each Boomstick hit reduces WFB CD by 4s */
-  wildfileShells: boolean;
-  /** WFB periodic becomes a bleed (bypasses armor) */
-  shrapnelBomb: boolean;
-  /** All Fire damage +15% */
-  flamebreak: boolean;
-  /** Flamefang imbues weapon, adding fire to RS */
-  wildfireImbuement: boolean;
-  /** Strike as One hits +2 enemies */
+  wildfireInfusion: boolean;
+  flanked: boolean;
+  primalSurge: boolean;
+  raptorSwipe: boolean;      // Apex 4pt node
+  // ─ Build-specific optional (vary across WoWHead builds) ─
+  /** Flanker's Advantage: all builds except Raid Pack Leader */
+  flankerAdvantage: boolean;
+  /** Bloodseeker: Raid Pack Leader only */
+  bloodseeker: boolean;
+  /** Two Against Many: all builds except Raid Sentinel */
   twoAgainstMany: boolean;
+  /** Lethal Calibration: all builds except Raid Sentinel */
+  lethalCalibration: boolean;
   // ─ Sentinel hero ─
-  moonlightChakram: boolean;
-  lunarStorm: boolean;
+  dontLookBack: boolean;
   moonsBlessing: boolean;
+  sanctifiedArmaments: boolean;
+  moonlightChakram: boolean;
+  cantMissWontMissSent: boolean; // Can't Miss, Won't Miss (Sentinel hero node)
+  invigoratingPulse: boolean;
+  arcaneTalons: boolean;
+  lunarCalling: boolean;
+  radiantEdge: boolean;
+  lunarStorm: boolean;
   // ─ Pack Leader hero ─
-  lethalBarbs: boolean;
+  packMentality: boolean;
   direSummons: boolean;
+  betterTogether: boolean;
+  furyOfTheWyvern: boolean;
+  hogstrider: boolean;
+  lethalBarbs: boolean;
+  noMercy: boolean;
+  shellCover: boolean;
+  sharpenedFangs: boolean;
   stampede: boolean;
 }
 
@@ -156,165 +173,232 @@ export interface TalentNode {
 export interface HeroTalentNode {
   key: keyof TalentConfig;
   label: string;
-  order: number;       // 1 = first, 3 = capstone
+  /** Row within the hero tree grid (1–4, top to bottom) */
+  row: number;
+  /** Column within the hero tree grid (0–3, left to right) */
+  col: number;
   pointCost: 1;
-  prerequisiteKey?: keyof TalentConfig;
   desc: string;
 }
 
-// Row gate thresholds: to access row R, you need this many points spent in rows 1–(R-1)
+// Row gate thresholds for the 11-row spec tree.
+// All core nodes are always taken so optional nodes are always unlockable
+// (their core prerequisites are by definition satisfied).
 export const ROW_GATES: Record<number, number> = {
-  1: 0,   // free
-  2: 2,   // need 2 pts in row 1
-  3: 5,   // need 5 pts in rows 1–2
-  4: 8,   // need 8 pts in rows 1–3
-  5: 11,  // need 11 pts in rows 1–4
-  6: 14,  // need 14 pts in rows 1–5
-  7: 17,  // need 17 pts in rows 1–6
+  1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9, 11: 10,
 };
 
-// 2D grid layout: 6 columns (0–5), 7 rows.
-// Column assignments keep prerequisite chains visually aligned:
-//   Left path (col 0–1): ST build — Mongoose Fury → Raptor Swipe → Takedown → Savagery → Vulnerability → Stargazer
-//   Right path (col 2–5): AoE build — Wildfire Bomb → Strike as One → Boomstick → LC → Wildfire Shells → Flamefang/Shrapnel → GJ/WI → Flamebreak
+// ============================================================
+// SURVIVAL HUNTER SPEC TALENT TREE — MIDNIGHT 12.0
+// Exact positions derived from WoWHead talent tree widget
+// (MHT archive, March 2026). Column mapping: WoWHead c4-c16
+// normalized to col 0-6 ((wh_col - 4) / 2).
+//
+// 29 nodes across 11 rows × 7 cols. All 4 WoWHead builds share
+// the same 25 core nodes; only 4 nodes vary between builds.
+// ============================================================
 export const SURVIVAL_SPEC_TREE: TalentNode[] = [
-  // ─── ROW 1 — Gate: 0 pts (always accessible) ────────────────────────────
-  {
-    key: 'mongooseFury', label: 'Mongoose Fury', row: 1, col: 0, pointCost: 1,
-    prerequisites: [], gateRow: 0, isGateway: false,
-    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
-  },
-  {
-    key: 'wildfireBomb', label: 'Wildfire Bomb', row: 1, col: 3, pointCost: 1,
-    prerequisites: [], gateRow: 0, isGateway: false,
-    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
-  },
+  // ─── ROW 1 ─────────────────────────────────────────────────
+  { key: 'killCommand', label: 'Kill Command',
+    row: 1, col: 3, pointCost: 1, prerequisites: [], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
 
-  // ─── ROW 2 — Gate: 2 pts in row 1 ───────────────────────────────────────
-  {
-    key: 'raptorSwipe', label: 'Raptor Swipe', row: 2, col: 0, pointCost: 2,
-    prerequisites: ['mongooseFury'], gateRow: 2, isApex: true, isGateway: false,
-    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
-    gatewayNote: 'Apex talent: both points required. Rank 1 = 25% proc; Rank 2 = 100% proc during Takedown. Half-investing (1pt) leaves you at Rank 1 — a significant power gap.',
-  },
-  {
-    key: 'strikeAsOne', label: 'Strike as One', row: 2, col: 3, pointCost: 1,
-    prerequisites: ['wildfireBomb'], gateRow: 2, isGateway: false,
-    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
-  },
+  // ─── ROW 2 ─────────────────────────────────────────────────
+  { key: 'wildfireBomb', label: 'Wildfire Bomb',
+    row: 2, col: 2, pointCost: 1, prerequisites: ['killCommand'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'raptorStrike', label: 'Raptor Strike',
+    row: 2, col: 4, pointCost: 1, prerequisites: ['killCommand'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
 
-  // ─── ROW 3 — Gate: 5 pts in rows 1–2 ────────────────────────────────────
-  {
-    key: 'takedown', label: 'Takedown', row: 3, col: 0, pointCost: 1,
-    prerequisites: ['raptorSwipe'], gateRow: 5, isGateway: false,
-    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
-  },
-  {
-    key: 'boomstick', label: 'Boomstick', row: 3, col: 2, pointCost: 1,
-    prerequisites: ['strikeAsOne'], gateRow: 5, isGateway: false,
-    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
-  },
-  {
-    key: 'mongooseRounds', label: 'Mongoose Rounds', row: 3, col: 4, pointCost: 1,
-    prerequisites: ['boomstick'], gateRow: 5, isGateway: false,
-    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
-  },
+  // ─── ROW 3 ─────────────────────────────────────────────────
+  { key: 'guerrillaTactics', label: 'Guerrilla Tactics',
+    row: 3, col: 2, pointCost: 1, prerequisites: ['wildfireBomb'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'tipOfTheSpear', label: 'Tip of the Spear',
+    row: 3, col: 4, pointCost: 1, prerequisites: ['raptorStrike'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
 
-  // ─── ROW 4 — Gate: 8 pts in rows 1–3 ────────────────────────────────────
-  {
-    key: 'lethalCalibration', label: 'Lethal Calibration', row: 4, col: 2, pointCost: 1,
-    prerequisites: ['boomstick'], gateRow: 8, isGateway: false,
-    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
-  },
-  {
-    key: 'savagery', label: 'Savagery', row: 4, col: 0, pointCost: 1,
-    prerequisites: ['takedown'], gateRow: 8, isGateway: false,
-    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
-  },
-  {
-    key: 'wildfileShells', label: 'Wildfire Shells', row: 4, col: 3, pointCost: 1,
-    prerequisites: ['lethalCalibration'], gateRow: 8,
-    isGateway: true,
-    gatewayNote: 'Moderate standalone value. In AoE, taken primarily to unlock Flamefang Pitch (row 5) and the fire damage path. Without it, the entire AoE damage chain — Flamefang → Wildfire Imbuement → Flamebreak — is inaccessible.',
-    inSTBuild: false, inAoEBuild: true, dpsCategory: 'gateway',
-  },
+  // ─── ROW 4 ─────────────────────────────────────────────────
+  { key: 'lunge', label: 'Lunge',
+    row: 4, col: 1, pointCost: 1, prerequisites: ['guerrillaTactics'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'boomstick', label: 'Boomstick',
+    row: 4, col: 3, pointCost: 1, prerequisites: ['guerrillaTactics', 'tipOfTheSpear'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'strikeAsOne', label: 'Strike as One',
+    row: 4, col: 5, pointCost: 1, prerequisites: ['tipOfTheSpear'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
 
-  // ─── ROW 5 — Gate: 11 pts in rows 1–4 ───────────────────────────────────
-  {
-    key: 'vulnerability', label: 'Vulnerability', row: 5, col: 1, pointCost: 1,
-    prerequisites: ['savagery', 'mongooseRounds'], gateRow: 11, isGateway: false,
-    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
-  },
-  {
-    key: 'cantMissWontMiss', label: "Can't Miss Won't Miss", row: 5, col: 0, pointCost: 1,
-    prerequisites: ['savagery'], gateRow: 11, isGateway: false,
-    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
-  },
-  {
-    key: 'flamefangPitch', label: 'Flamefang Pitch', row: 5, col: 3, pointCost: 1,
-    prerequisites: ['wildfileShells'], gateRow: 11, isGateway: false,
-    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
-  },
-  {
-    key: 'shrapnelBomb', label: 'Shrapnel Bomb', row: 5, col: 4, pointCost: 1,
-    prerequisites: ['wildfileShells'], gateRow: 11,
-    isGateway: true,
-    gatewayNote: 'Taken as a path filler to unlock Wildfire Imbuement (row 6). Standalone value is real but lower than other AoE picks. Players often take it solely to enable the Wildfire Imbuement → Flamebreak chain.',
-    inSTBuild: false, inAoEBuild: true, dpsCategory: 'gateway',
-  },
+  // ─── ROW 5 ─────────────────────────────────────────────────
+  // Flamebreak: T3 choice node — WoWHead always picks Flamebreak over Shrapnel Bomb
+  { key: 'flamebreak', label: 'Flamebreak',
+    row: 5, col: 0, pointCost: 1, prerequisites: ['boomstick'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+    gatewayNote: 'All-Fire-damage +15%. Choice node: WoWHead always picks Flamebreak over Shrapnel Bomb in Midnight.' },
+  // Bloodseeker: Raid Pack Leader only
+  { key: 'bloodseeker', label: 'Bloodseeker',
+    row: 5, col: 2, pointCost: 1, prerequisites: ['boomstick'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: false, dpsCategory: 'st' },
+  { key: 'quickReload', label: 'Quick Reload',
+    row: 5, col: 3, pointCost: 1, prerequisites: ['boomstick'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  // Flanker's Advantage: all builds except Raid Pack Leader
+  { key: 'flankerAdvantage', label: "Flanker's Advantage",
+    row: 5, col: 4, pointCost: 1, prerequisites: ['quickReload'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'st' },
+  // Two Against Many: all builds except Raid Sentinel
+  { key: 'twoAgainstMany', label: 'Two Against Many',
+    row: 5, col: 6, pointCost: 1, prerequisites: ['strikeAsOne'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'aoe' },
 
-  // ─── ROW 6 — Gate: 14 pts in rows 1–5 ───────────────────────────────────
-  {
-    key: 'stargazer', label: 'Stargazer', row: 6, col: 1, pointCost: 2,
-    prerequisites: ['vulnerability'], gateRow: 14, isGateway: false,
-    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
-    gatewayNote: '2-point talent: rank 1 alone is weak (+10% crit dmg cap). Both points required to reach the +20% cap at 10 stacks. Never invest only 1pt.',
-  },
-  {
-    key: 'grenadeJuggler', label: 'Grenade Juggler', row: 6, col: 3, pointCost: 1,
-    prerequisites: ['flamefangPitch'], gateRow: 14, isGateway: false,
-    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
-  },
-  {
-    key: 'wildfireImbuement', label: 'Wildfire Imbuement', row: 6, col: 4, pointCost: 1,
-    prerequisites: ['flamefangPitch', 'shrapnelBomb'], gateRow: 14, isGateway: false,
-    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
-  },
-  {
-    key: 'flamebreak', label: 'Flamebreak', row: 6, col: 5, pointCost: 1,
-    prerequisites: ['wildfireImbuement'], gateRow: 14, isGateway: false,
-    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
-  },
+  // ─── ROW 6 ─────────────────────────────────────────────────
+  { key: 'mongooseFury', label: 'Mongoose Fury',
+    row: 6, col: 1, pointCost: 1, prerequisites: ['lunge'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  // Wildfire Shells: T3 choice node — WoWHead always picks Wildfire Shells over Mongoose Rounds
+  { key: 'wildfireShells', label: 'Wildfire Shells',
+    row: 6, col: 2, pointCost: 1, prerequisites: ['quickReload'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+    gatewayNote: 'Choice node: WoWHead always picks Wildfire Shells over Mongoose Rounds in Midnight.' },
+  { key: 'shellshock', label: 'Shellshock',
+    row: 6, col: 4, pointCost: 1, prerequisites: ['wildfireShells'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
 
-  // ─── ROW 7 — Gate: 17 pts in rows 1–6 ───────────────────────────────────
-  {
-    key: 'twoAgainstMany', label: 'Two Against Many', row: 7, col: 3, pointCost: 2,
-    prerequisites: ['strikeAsOne', 'grenadeJuggler'], gateRow: 17, isGateway: false,
-    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
-    gatewayNote: '2-point talent: rank 1 hits +1 enemy; rank 2 hits +2 enemies. The AoE value only becomes meaningful at rank 2. Never invest only 1pt here.',
-  },
+  // ─── ROW 7 ─────────────────────────────────────────────────
+  // Wallop: T3 choice node — WoWHead always picks Wallop over Bloody Claws
+  { key: 'wallop', label: 'Wallop',
+    row: 7, col: 0, pointCost: 1, prerequisites: ['flamebreak', 'mongooseFury'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+    gatewayNote: 'Choice node: WoWHead always picks Wallop over Bloody Claws in Midnight.' },
+  { key: 'bonding', label: 'Bonding',
+    row: 7, col: 2, pointCost: 1, prerequisites: ['wildfireShells'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'sweepingSpear', label: 'Sweeping Spear',
+    row: 7, col: 3, pointCost: 2, prerequisites: ['shellshock'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  // Blackrock Munitions: T3 choice node — WoWHead always picks BM over Vulnerability
+  { key: 'blackrockMunitions', label: 'Blackrock Munitions',
+    row: 7, col: 4, pointCost: 1, prerequisites: ['shellshock'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+    gatewayNote: 'Choice node: WoWHead always picks Blackrock Munitions over Vulnerability in Midnight.' },
+
+  // ─── ROW 8 ─────────────────────────────────────────────────
+  { key: 'takedown', label: 'Takedown',
+    row: 8, col: 3, pointCost: 1, prerequisites: ['sweepingSpear'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'killerCompanion', label: 'Killer Companion',
+    row: 8, col: 5, pointCost: 2, prerequisites: ['blackrockMunitions'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+
+  // ─── ROW 9 ─────────────────────────────────────────────────
+  { key: 'twinFangs', label: 'Twin Fangs',
+    row: 9, col: 2, pointCost: 1, prerequisites: ['bonding', 'takedown'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'savagery', label: 'Savagery',
+    row: 9, col: 4, pointCost: 2, prerequisites: ['takedown'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  { key: 'wildfireInfusion', label: 'Wildfire Infusion',
+    row: 9, col: 5, pointCost: 1, prerequisites: ['killerCompanion'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+
+  // ─── ROW 10 ────────────────────────────────────────────────
+  { key: 'flanked', label: 'Flanked',
+    row: 10, col: 3, pointCost: 1, prerequisites: ['twinFangs', 'savagery'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+  // Lethal Calibration: all builds except Raid Sentinel
+  { key: 'lethalCalibration', label: 'Lethal Calibration',
+    row: 10, col: 4, pointCost: 1, prerequisites: ['savagery'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'st' },
+  { key: 'primalSurge', label: 'Primal Surge',
+    row: 10, col: 6, pointCost: 1, prerequisites: ['wildfireInfusion'], gateRow: 0,
+    isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core' },
+
+  // ─── ROW 11 — Apex ─────────────────────────────────────────
+  { key: 'raptorSwipe', label: 'Raptor Swipe',
+    row: 11, col: 3, pointCost: 4, prerequisites: ['flanked'], gateRow: 0,
+    isApex: true, isGateway: false, inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+    gatewayNote: 'Apex 4pt node. Raptor Strike has a 25% chance to strike again; 100% during Takedown. All 4 points required — partial investment is a significant power gap.' },
 ];
 
+// ============================================================
+// HERO TALENT TREES — MIDNIGHT 12.0
+// All 10 nodes per hero, exact WoWHead positions.
+// WoWHead cols c7-c13 normalized to col 0-3: (wh_col - 7) / 2
+// WoWHead rows r2-r5 normalized to row 1-4: wh_row - 1
+// ============================================================
 export const HERO_TALENT_TREES: Record<'sentinel' | 'packLeader', HeroTalentNode[]> = {
   sentinel: [
-    { key: 'moonlightChakram', label: 'Moonlight Chakram', order: 1, pointCost: 1,
-      desc: 'Sentinel Mark procs release a bouncing shadow chakram hitting up to 5 targets. First node — must be taken before Lunar Storm.' },
-    { key: 'lunarStorm', label: 'Lunar Storm', order: 2, pointCost: 1,
-      prerequisiteKey: 'moonlightChakram',
-      desc: 'Mark consumption triggers a Lunar Storm AoE burst. Gate: requires Moonlight Chakram.' },
-    { key: 'moonsBlessing', label: "Moon's Blessing", order: 3, pointCost: 1,
-      prerequisiteKey: 'lunarStorm',
-      desc: 'Capstone: +10% Mark proc chance (20% → 30%). Requires both prior nodes. Completes the Sentinel loop.' },
+    // ─── ROW 1 (WoWHead r2) ────────────────────────────────
+    { key: 'dontLookBack', label: "Don't Look Back",
+      row: 1, col: 0, pointCost: 1,
+      desc: 'Sentinel-themed passive. WoWHead r2 c7.' },
+    { key: 'moonsBlessing', label: "Moon's Blessing",
+      row: 1, col: 1, pointCost: 1,
+      desc: 'Increases Sentinel Mark proc chance. WoWHead r2 c9.' },
+    { key: 'sanctifiedArmaments', label: 'Sanctified Armaments',
+      row: 1, col: 2, pointCost: 1,
+      desc: 'Sentinel-themed passive. WoWHead r2 c11.' },
+    { key: 'moonlightChakram', label: 'Moonlight Chakram',
+      row: 1, col: 3, pointCost: 1,
+      desc: 'Sentinel Mark procs release a bouncing shadow chakram hitting up to 5 targets. WoWHead r2 c13.' },
+    // ─── ROW 2 (WoWHead r3) ────────────────────────────────
+    { key: 'cantMissWontMissSent', label: "Can't Miss, Won't Miss",
+      row: 2, col: 1, pointCost: 1,
+      desc: 'Sentinel-themed accuracy passive. WoWHead r3 c9.' },
+    { key: 'invigoratingPulse', label: 'Invigorating Pulse',
+      row: 2, col: 2, pointCost: 1,
+      desc: 'Sentinel-themed regeneration passive. WoWHead r3 c11.' },
+    // ─── ROW 3 (WoWHead r4) ────────────────────────────────
+    { key: 'arcaneTalons', label: 'Arcane Talons',
+      row: 3, col: 0, pointCost: 1,
+      desc: 'Pet arcane damage passive. WoWHead r4 c7.' },
+    { key: 'lunarCalling', label: 'Lunar Calling',
+      row: 3, col: 1, pointCost: 1,
+      desc: 'Amplifies Lunar Storm damage. WoWHead r4 c9.' },
+    { key: 'radiantEdge', label: 'Radiant Edge',
+      row: 3, col: 3, pointCost: 1,
+      desc: 'Sentinel-themed edge damage passive. WoWHead r4 c13.' },
+    // ─── ROW 4 (WoWHead r5) — Capstone ────────────────────
+    { key: 'lunarStorm', label: 'Lunar Storm',
+      row: 4, col: 1, pointCost: 1,
+      desc: 'Capstone: Mark consumption triggers a Lunar Storm AoE burst. WoWHead r5 c10 (between c9 and c11).' },
   ],
   packLeader: [
-    { key: 'lethalBarbs', label: 'Lethal Barbs', order: 1, pointCost: 1,
-      desc: 'Auto-attacks generate 2 bonus Focus. First node — enables extra Kill Commands.' },
-    { key: 'direSummons', label: 'Dire Summons', order: 2, pointCost: 1,
-      prerequisiteKey: 'lethalBarbs',
-      desc: 'Reduces beast spawn cooldown. Gate: requires Lethal Barbs.' },
-    { key: 'stampede', label: 'Stampede', order: 3, pointCost: 1,
-      prerequisiteKey: 'direSummons',
-      desc: 'Capstone: Takedown triggers a beast stampede. Requires both prior nodes. The core ST damage amplifier.' },
+    // ─── ROW 1 (WoWHead r2) ────────────────────────────────
+    { key: 'packMentality', label: 'Pack Mentality',
+      row: 1, col: 0, pointCost: 1,
+      desc: 'Pack-themed damage passive. WoWHead r2 c7.' },
+    { key: 'direSummons', label: 'Dire Summons',
+      row: 1, col: 1, pointCost: 1,
+      desc: 'Reduces beast companion spawn cooldown. WoWHead r2 c9.' },
+    { key: 'betterTogether', label: 'Better Together',
+      row: 1, col: 2, pointCost: 1,
+      desc: 'Pack-themed synergy passive. WoWHead r2 c11.' },
+    // ─── ROW 2 (WoWHead r3) ────────────────────────────────
+    { key: 'furyOfTheWyvern', label: 'Fury of the Wyvern',
+      row: 2, col: 1, pointCost: 1,
+      desc: 'Wyvern companion damage amplifier. WoWHead r3 c9.' },
+    { key: 'hogstrider', label: 'Hogstrider',
+      row: 2, col: 2, pointCost: 1,
+      desc: 'Pack Leader beast ability. WoWHead r3 c11.' },
+    { key: 'lethalBarbs', label: 'Lethal Barbs',
+      row: 2, col: 3, pointCost: 1,
+      desc: 'Auto-attacks generate 2 bonus Focus. WoWHead r3 c13.' },
+    // ─── ROW 3 (WoWHead r4) ────────────────────────────────
+    { key: 'noMercy', label: 'No Mercy',
+      row: 3, col: 0, pointCost: 1,
+      desc: 'Pack Leader execute amplifier. WoWHead r4 c7.' },
+    { key: 'shellCover', label: 'Shell Cover',
+      row: 3, col: 1, pointCost: 1,
+      desc: 'Pack Leader defensive/utility passive. WoWHead r4 c9.' },
+    { key: 'sharpenedFangs', label: 'Sharpened Fangs',
+      row: 3, col: 3, pointCost: 1,
+      desc: 'Pet crit damage amplifier. WoWHead r4 c13.' },
+    // ─── ROW 4 (WoWHead r5) — Capstone ────────────────────
+    { key: 'stampede', label: 'Stampede!',
+      row: 4, col: 1, pointCost: 1,
+      desc: 'Capstone: Takedown triggers a beast stampede. The core ST damage amplifier. WoWHead r5 c10.' },
   ],
 };
 
@@ -515,12 +599,6 @@ const SPELLS: Record<string, SpellDef> = {
     hasteScalesCPM: true, bonusCritMult: 0,
     requiresTalent: 'raptorSwipe',
   },
-  flamefangPitch: {
-    label: 'Flamefang Pitch', apCoef: 4.20, baseCPM: 2.0,
-    isPet: false, isFire: true, isBleed: false, aoeTargetCap: 8,
-    hasteScalesCPM: false, bonusCritMult: 0,
-    requiresTalent: 'flamefangPitch',
-  },
   // ─ Sentinel hero ─
   moonlightChakram: {
     label: 'Moonlight Chakram', apCoef: 4.80, baseCPM: 0.67,  // 1/90s
@@ -594,18 +672,9 @@ function computeAbilityDps(
   // ── Crit damage ──
   // Base: 2.0× on crit. Bonus multipliers stack additively.
   let critMult = 2.0 + spell.bonusCritMult;
-  if (talents.vulnerability && (key === 'raptorStrike' || key === 'boomstick')) {
-    critMult += 0.20;
-    notes.push('Vulnerability +20% crit dmg');
-  }
   if (talents.lethalCalibration && (key === 'wildfireBombDirect' || key === 'wildfireBombDoT')) {
     critMult += 0.15;
-    notes.push('Lethal Calibration +15% crit dmg');
-  }
-  // Stargazer: RS gains ~2% crit dmg per stack, ~5 avg stacks in steady rotation
-  if (talents.stargazer && key === 'raptorStrike') {
-    critMult += 0.10;  // 5 stacks × 2% = +10% avg
-    notes.push('Stargazer +10% avg crit dmg (5 stacks)');
+    notes.push('Lethal Calibration +15% crit dmg on WFB');
   }
   // Expected damage per cast = unhit + crit component
   const critFrac = critPct / 100;
@@ -617,20 +686,30 @@ function computeAbilityDps(
   let cpm = spell.hasteScalesCPM ? spell.baseCPM * hasteMult : spell.baseCPM;
 
   // ── Takedown window model ──
-  // Takedown lasts 8s. With Savagery: 60s CD; without: 90s CD.
-  // Can't Miss Won't Miss extends duration by 2s → 10s.
-  const takedownCD = talents.savagery ? 60 : 90;
-  const takedownDur = talents.cantMissWontMiss ? 10 : 8;
+  // Takedown lasts 8s. With Savagery (always taken): 60s CD.
+  // Savagery is core in all 4 WoWHead builds — takedownCD is always 60s.
+  const takedownCD = 60;
+  const takedownDur = 8;
   const takedownUptime = takedownDur / takedownCD;
 
   if (key === 'raptorStrike' || key === 'raptorSwipe') {
     // +20% damage during Takedown window
     dmgPerCast *= 1 + takedownUptime * 0.20;
-    if (talents.cantMissWontMiss && key === 'raptorStrike') {
-      // Can't Miss Won't Miss: RS +10% damage (always-on)
-      dmgPerCast *= 1.10;
-      notes.push("Can't Miss Won't Miss +10%");
-    }
+  }
+
+  // ── Flanker's Advantage: Kill Command damage bonus ──
+  // Pet attacks from flanking position grant KC increased damage.
+  // Estimated: ~12% avg KC damage increase at ~70% flank uptime.
+  if (key === 'killCommand' && talents.flankerAdvantage) {
+    dmgPerCast *= 1.12;
+    notes.push("Flanker's Advantage: ~+12% avg KC dmg (est.)");
+  }
+
+  // ── Bloodseeker: Kill Command causes a bleed ──
+  // KC applies a bleed on the target. Modeled as ~25% extra KC hit value.
+  if (key === 'killCommand' && talents.bloodseeker) {
+    dmgPerCast *= 1.25;
+    notes.push('Bloodseeker: KC bleed adds ~+25% KC value (est.)');
   }
 
   // ── Raptor Swipe proc modeling ──
@@ -661,17 +740,12 @@ function computeAbilityDps(
   // ── Boomstick CD adjustments ──
   if (key === 'boomstick') {
     let boomCD = 60;
-    // Wildfire Shells: each Boomstick hit reduces WFB CD by 4s (AoE talent)
-    // Inverse effect: WFB resets Boomstick via 4pc → effectively more Boomsticks
+    // 4pc tier: WFB detonation 20% chance to reset Boomstick CD
+    // WFB fires ~3.9 times/min at full tier; 3.9 × 0.20 = 0.78 extra Boomstick casts per minute
+    // Effective CD = 60 / (1/60 + 0.78) ≈ 46s
     if (tierSet.has4pc) {
-      // WFB fires ~3.9 times/min at full tier; 20% reset chance
-      // → 3.9 × 0.20 = 0.78 extra Boomstick casts per minute
-      // Effective CD = 60 / (1/60 + 0.78) ≈ 46s
       boomCD = 46;
       notes.push('4pc tier: WFB 20% Boomstick reset → ~46s eff CD');
-    }
-    if (talents.mongooseRounds) {
-      notes.push('Mongoose Rounds: Boomstick grants MF stacks → RS buff');
     }
     cpm = 60 / boomCD;
   }
@@ -691,17 +765,6 @@ function computeAbilityDps(
     }
   }
 
-  // ── Flamefang Pitch: Grenade Juggler ──
-  if (key === 'flamefangPitch') {
-    if (talents.grenadeJuggler) {
-      cpm = 60 / 20;  // 2 charges, effectively ~50% more uses
-      notes.push('Grenade Juggler: 2 charges → ~3.0 CPM');
-    }
-    if (talents.flamebreak) {
-      notes.push('Flamebreak: +15% fire damage applied globally to fire spells');
-    }
-  }
-
   // ── Sentinel Mark → Lunar Storm CPM ──
   if (key === 'lunarStorm') {
     const markProcRate = talents.moonsBlessing
@@ -717,19 +780,6 @@ function computeAbilityDps(
   // ── Flamebreak: fire spell bonus ──
   if (spell.isFire && talents.flamebreak) {
     dmgPerCast *= 1.15;
-  }
-
-  // ── Shrapnel Bomb: WFB DoT bypasses armor ──
-  if (key === 'wildfireBombDoT' && talents.shrapnelBomb) {
-    // Physical mitigation avoided (rough: +8% effective damage vs armored targets)
-    dmgPerCast *= 1.08;
-    notes.push('Shrapnel Bomb: bleed bypasses armor +8%');
-  }
-
-  // ── Wildfire Imbuement: fire on RS ──
-  if (key === 'raptorStrike' && talents.wildfireImbuement && talents.flamefangPitch) {
-    dmgPerCast *= 1.06;
-    notes.push('Wildfire Imbuement: fire imbue +6%');
   }
 
   // ── Pack Leader: beast procs ──
@@ -775,55 +825,115 @@ function computeAbilityDps(
 
 // ── Build full rotation DPS ──────────────────────────────────
 
+/** Raid Sentinel (≤2 targets) — WoWHead-verified Midnight 12.0 build */
 function buildSentinelST(): TalentConfig {
   return {
-    mongooseFury: true, strikeAsOne: true, wildfireBomb: true, takedown: true,
-    boomstick: true, raptorSwipe: true, lethalCalibration: true,
-    savagery: true, vulnerability: true, mongooseRounds: true,
-    cantMissWontMiss: true, stargazer: true,
-    flamefangPitch: false, grenadeJuggler: false, wildfileShells: false,
-    shrapnelBomb: false, flamebreak: false, wildfireImbuement: false, twoAgainstMany: false,
-    moonlightChakram: true, lunarStorm: true, moonsBlessing: true,
-    lethalBarbs: false, direSummons: false, stampede: false,
+    // ── 25 always-taken core nodes ──
+    killCommand: true, wildfireBomb: true, raptorStrike: true,
+    guerrillaTactics: true, tipOfTheSpear: true, lunge: true,
+    boomstick: true, strikeAsOne: true, flamebreak: true,
+    quickReload: true, mongooseFury: true, wildfireShells: true,
+    shellshock: true, wallop: true, bonding: true, sweepingSpear: true,
+    blackrockMunitions: true, takedown: true, killerCompanion: true,
+    twinFangs: true, savagery: true, wildfireInfusion: true,
+    flanked: true, primalSurge: true, raptorSwipe: true,
+    // ── Variable spec nodes: Raid Sentinel ──
+    flankerAdvantage: true,   // all builds except Raid Pack Leader
+    bloodseeker: false,       // Raid Pack Leader only
+    twoAgainstMany: false,    // all builds except Raid Sentinel → NOT in Raid Sentinel
+    lethalCalibration: false, // all builds except Raid Sentinel → NOT in Raid Sentinel
+    // ── Sentinel hero: all 10 nodes ──
+    dontLookBack: true, moonsBlessing: true, sanctifiedArmaments: true,
+    moonlightChakram: true, cantMissWontMissSent: true, invigoratingPulse: true,
+    arcaneTalons: true, lunarCalling: true, radiantEdge: true, lunarStorm: true,
+    // ── Pack Leader hero: not taken ──
+    packMentality: false, direSummons: false, betterTogether: false,
+    furyOfTheWyvern: false, hogstrider: false, lethalBarbs: false,
+    noMercy: false, shellCover: false, sharpenedFangs: false, stampede: false,
   };
 }
 
+/** Dungeon Sentinel (>2 targets) — WoWHead-verified Midnight 12.0 build */
 function buildSentinelAoE(): TalentConfig {
   return {
-    mongooseFury: true, strikeAsOne: true, wildfireBomb: true, takedown: true,
-    boomstick: true, raptorSwipe: true, lethalCalibration: true,
-    savagery: false, vulnerability: false, mongooseRounds: false,
-    cantMissWontMiss: false, stargazer: false,
-    flamefangPitch: true, grenadeJuggler: true, wildfileShells: true,
-    shrapnelBomb: true, flamebreak: true, wildfireImbuement: true, twoAgainstMany: true,
-    moonlightChakram: true, lunarStorm: true, moonsBlessing: true,
-    lethalBarbs: false, direSummons: false, stampede: false,
+    // ── 25 always-taken core nodes ──
+    killCommand: true, wildfireBomb: true, raptorStrike: true,
+    guerrillaTactics: true, tipOfTheSpear: true, lunge: true,
+    boomstick: true, strikeAsOne: true, flamebreak: true,
+    quickReload: true, mongooseFury: true, wildfireShells: true,
+    shellshock: true, wallop: true, bonding: true, sweepingSpear: true,
+    blackrockMunitions: true, takedown: true, killerCompanion: true,
+    twinFangs: true, savagery: true, wildfireInfusion: true,
+    flanked: true, primalSurge: true, raptorSwipe: true,
+    // ── Variable spec nodes: Dungeon Sentinel ──
+    flankerAdvantage: true,  // all builds except Raid Pack Leader
+    bloodseeker: false,      // Raid Pack Leader only
+    twoAgainstMany: true,    // all builds except Raid Sentinel
+    lethalCalibration: true, // all builds except Raid Sentinel
+    // ── Sentinel hero: all 10 nodes ──
+    dontLookBack: true, moonsBlessing: true, sanctifiedArmaments: true,
+    moonlightChakram: true, cantMissWontMissSent: true, invigoratingPulse: true,
+    arcaneTalons: true, lunarCalling: true, radiantEdge: true, lunarStorm: true,
+    // ── Pack Leader hero: not taken ──
+    packMentality: false, direSummons: false, betterTogether: false,
+    furyOfTheWyvern: false, hogstrider: false, lethalBarbs: false,
+    noMercy: false, shellCover: false, sharpenedFangs: false, stampede: false,
   };
 }
 
+/** Raid Pack Leader (≤2 targets) — WoWHead-verified Midnight 12.0 build */
 function buildPackLeaderST(): TalentConfig {
   return {
-    mongooseFury: true, strikeAsOne: true, wildfireBomb: true, takedown: true,
-    boomstick: true, raptorSwipe: true, lethalCalibration: true,
-    savagery: true, vulnerability: true, mongooseRounds: true,
-    cantMissWontMiss: true, stargazer: true,
-    flamefangPitch: false, grenadeJuggler: false, wildfileShells: false,
-    shrapnelBomb: false, flamebreak: false, wildfireImbuement: false, twoAgainstMany: false,
-    moonlightChakram: false, lunarStorm: false, moonsBlessing: false,
-    lethalBarbs: true, direSummons: true, stampede: true,
+    // ── 25 always-taken core nodes ──
+    killCommand: true, wildfireBomb: true, raptorStrike: true,
+    guerrillaTactics: true, tipOfTheSpear: true, lunge: true,
+    boomstick: true, strikeAsOne: true, flamebreak: true,
+    quickReload: true, mongooseFury: true, wildfireShells: true,
+    shellshock: true, wallop: true, bonding: true, sweepingSpear: true,
+    blackrockMunitions: true, takedown: true, killerCompanion: true,
+    twinFangs: true, savagery: true, wildfireInfusion: true,
+    flanked: true, primalSurge: true, raptorSwipe: true,
+    // ── Variable spec nodes: Raid Pack Leader ──
+    flankerAdvantage: false, // Raid Pack Leader takes Bloodseeker instead
+    bloodseeker: true,       // Raid Pack Leader only
+    twoAgainstMany: true,    // all builds except Raid Sentinel
+    lethalCalibration: true, // all builds except Raid Sentinel
+    // ── Sentinel hero: not taken ──
+    dontLookBack: false, moonsBlessing: false, sanctifiedArmaments: false,
+    moonlightChakram: false, cantMissWontMissSent: false, invigoratingPulse: false,
+    arcaneTalons: false, lunarCalling: false, radiantEdge: false, lunarStorm: false,
+    // ── Pack Leader hero: all 10 nodes ──
+    packMentality: true, direSummons: true, betterTogether: true,
+    furyOfTheWyvern: true, hogstrider: true, lethalBarbs: true,
+    noMercy: true, shellCover: true, sharpenedFangs: true, stampede: true,
   };
 }
 
+/** Dungeon Pack Leader (>2 targets) — WoWHead-verified Midnight 12.0 build */
 function buildPackLeaderAoE(): TalentConfig {
   return {
-    mongooseFury: true, strikeAsOne: true, wildfireBomb: true, takedown: true,
-    boomstick: true, raptorSwipe: true, lethalCalibration: true,
-    savagery: false, vulnerability: false, mongooseRounds: false,
-    cantMissWontMiss: false, stargazer: false,
-    flamefangPitch: true, grenadeJuggler: true, wildfileShells: true,
-    shrapnelBomb: true, flamebreak: true, wildfireImbuement: true, twoAgainstMany: true,
-    moonlightChakram: false, lunarStorm: false, moonsBlessing: false,
-    lethalBarbs: true, direSummons: true, stampede: true,
+    // ── 25 always-taken core nodes ──
+    killCommand: true, wildfireBomb: true, raptorStrike: true,
+    guerrillaTactics: true, tipOfTheSpear: true, lunge: true,
+    boomstick: true, strikeAsOne: true, flamebreak: true,
+    quickReload: true, mongooseFury: true, wildfireShells: true,
+    shellshock: true, wallop: true, bonding: true, sweepingSpear: true,
+    blackrockMunitions: true, takedown: true, killerCompanion: true,
+    twinFangs: true, savagery: true, wildfireInfusion: true,
+    flanked: true, primalSurge: true, raptorSwipe: true,
+    // ── Variable spec nodes: Dungeon Pack Leader ──
+    flankerAdvantage: true,  // all builds except Raid Pack Leader
+    bloodseeker: false,      // Raid Pack Leader only
+    twoAgainstMany: true,    // all builds except Raid Sentinel
+    lethalCalibration: true, // all builds except Raid Sentinel
+    // ── Sentinel hero: not taken ──
+    dontLookBack: false, moonsBlessing: false, sanctifiedArmaments: false,
+    moonlightChakram: false, cantMissWontMissSent: false, invigoratingPulse: false,
+    arcaneTalons: false, lunarCalling: false, radiantEdge: false, lunarStorm: false,
+    // ── Pack Leader hero: all 10 nodes ──
+    packMentality: true, direSummons: true, betterTogether: true,
+    furyOfTheWyvern: true, hogstrider: true, lethalBarbs: true,
+    noMercy: true, shellCover: true, sharpenedFangs: true, stampede: true,
   };
 }
 
@@ -848,12 +958,45 @@ function calcTalentDeltas(
 ): TalentDelta[] {
   const deltas: TalentDelta[] = [];
 
-  // Talent point costs (must match SurvivalHunterSim.tsx definitions)
-  // Optional spec budget: 8 pts. Hero budget: 3 pts.
-  const TALENT_POINT_COSTS: Partial<Record<keyof TalentConfig, number>> = {
-    stargazer: 2, twoAgainstMany: 2,
-  };
-  const ptCost = (key: keyof TalentConfig) => TALENT_POINT_COSTS[key] ?? 1;
+  // All variable spec and key hero nodes are 1pt each.
+  const ptCost = (_key: keyof TalentConfig) => 1;
+
+  // ── Sentinel-specific hero node tests ──
+  const sentinelNodes: typeof talentsToTest = [
+    {
+      key: 'moonlightChakram', label: 'Moonlight Chakram (Sentinel)',
+      communityRanks: true,
+      reasoning: 'Highest single-cast AP coef in the kit (4.80). Fires every ~90s aligned with Takedown burst. Mandatory Sentinel node — every guide agrees.',
+    },
+    {
+      key: 'lunarStorm', label: 'Lunar Storm (Sentinel capstone)',
+      communityRanks: true,
+      reasoning: 'Capstone: Mark consumption triggers Lunar Storm AoE burst. With Moon\'s Blessing at 30% proc rate × 12 RS/min = ~3.6 fires/min. BiS Sentinel node.',
+    },
+    {
+      key: 'moonsBlessing', label: "Moon's Blessing (Sentinel)",
+      communityRanks: true,
+      reasoning: 'Raises Sentinel Mark proc rate 20% → 30% (+50% relative), directly multiplying Lunar Storm CPM. High value per point — scales Lunar Storm output by 50%.',
+    },
+  ];
+  // ── Pack Leader-specific hero node tests ──
+  const packLeaderNodes: typeof talentsToTest = [
+    {
+      key: 'stampede', label: 'Stampede! (Pack Leader capstone)',
+      communityRanks: true,
+      reasoning: 'Capstone: Takedown triggers a beast stampede. The core ST damage amplifier in Pack Leader — every guide marks this as mandatory.',
+    },
+    {
+      key: 'direSummons', label: 'Dire Summons (Pack Leader)',
+      communityRanks: true,
+      reasoning: 'Reduces beast companion spawn CD — modeled as +15% Pack Leader beast CPM. Standard Pack Leader node.',
+    },
+    {
+      key: 'lethalBarbs', label: 'Lethal Barbs (Pack Leader)',
+      communityRanks: true,
+      reasoning: 'Auto-attacks generate 2 bonus Focus, enabling faster KC cycling and more Raptor Strike casts per Takedown window.',
+    },
+  ];
 
   const talentsToTest: {
     key: keyof TalentConfig;
@@ -861,71 +1004,29 @@ function calcTalentDeltas(
     communityRanks: boolean;
     reasoning: string;
   }[] = [
+    // ── Variable spec nodes ──
     {
-      key: 'savagery', label: 'Savagery',
+      key: 'flankerAdvantage', label: "Flanker's Advantage",
       communityRanks: true,
-      reasoning: 'Reduces Takedown CD 90s → 60s; more Takedown windows = more Raptor Swipe 100% proc windows. Biggest ST gain after core talents.',
+      reasoning: 'All builds except Raid Pack Leader. Estimated ~+12% avg Kill Command damage via flanking proc. Direct KC DPS gain — standard across 3 of 4 WoWHead builds.',
     },
     {
-      key: 'vulnerability', label: 'Vulnerability',
-      communityRanks: true,
-      reasoning: 'RS and Boomstick +20% crit damage. Value scales with crit% and Boomstick 4pc frequency.',
-    },
-    {
-      key: 'mongooseRounds', label: 'Mongoose Rounds',
-      communityRanks: true,
-      reasoning: 'Boomstick hits grant Mongoose Fury stacks, which boosts next RS burst window.',
-    },
-    {
-      key: 'cantMissWontMiss', label: "Can't Miss Won't Miss",
+      key: 'bloodseeker', label: 'Bloodseeker',
       communityRanks: false,
-      reasoning: "RS +10% flat damage + Takedown window extended 8s → 10s. We rate this as core ST for tier set builds where Takedown uptime drives 4pc reset math — rated optional by most guides.",
+      reasoning: 'Raid Pack Leader only — replaces Flanker\'s Advantage. KC applies a bleed, modeled as ~+25% KC value. Most guides rank Flanker\'s Advantage higher in non-PL contexts; Bloodseeker is PL-specific.',
     },
     {
-      key: 'stargazer', label: 'Stargazer',
+      key: 'twoAgainstMany', label: 'Two Against Many',
       communityRanks: false,
-      reasoning: 'Up to +20% crit damage on RS at 10 stacks. In sustained ST with high crit% this outperforms Vulnerability as a third crit-dmg node. Largely absent from popular guide recommendations.',
+      reasoning: 'All builds except Raid Sentinel. Strike as One hits +2 additional targets. Our math shows BiS at 3+ targets (cleave) — most community guides only recommend it at 5+, undervaluing cleave scenarios.',
     },
     {
       key: 'lethalCalibration', label: 'Lethal Calibration',
       communityRanks: true,
-      reasoning: 'WFB crits deal +15% damage. With 2pc reducing WFB CD, uptime is near-permanent in tier gear.',
+      reasoning: 'All builds except Raid Sentinel. WFB crits deal +15% damage. With 2pc reducing WFB CD, near-permanent uptime in tier gear. Strong in dungeon content where WFB is fired more frequently.',
     },
-    {
-      key: 'moonlightChakram', label: 'Moonlight Chakram',
-      communityRanks: true,
-      reasoning: 'Highest single-cast AP coefficient in kit (4.80). Shares CD window with Takedown for burst alignment.',
-    },
-    {
-      key: 'lunarStorm', label: 'Lunar Storm',
-      communityRanks: true,
-      reasoning: 'AoE damage on Mark consume. With Moon\'s Blessing this fires ~3-4×/min in ST.',
-    },
-    {
-      key: 'moonsBlessing', label: "Moon's Blessing",
-      communityRanks: true,
-      reasoning: 'Increases Sentinel Mark proc rate 20% → 30%. Directly scales Lunar Storm frequency +50%.',
-    },
-    {
-      key: 'flamefangPitch', label: 'Flamefang Pitch (AoE)',
-      communityRanks: true,
-      reasoning: 'Ground AoE at 4.20 AP coef hitting 8 targets. Mandatory for M+ and AoE raid fights.',
-    },
-    {
-      key: 'grenadeJuggler', label: 'Grenade Juggler (AoE)',
-      communityRanks: true,
-      reasoning: '+1 Flamefang charge; ~50% more uses. Trivially BiS in AoE.',
-    },
-    {
-      key: 'flamebreak', label: 'Flamebreak (AoE)',
-      communityRanks: false,
-      reasoning: '+15% fire damage globally. Affects WFB, Flamefang, and Wildfire Imbuement. We rate this higher than most guides in a full fire build — the fire damage share is larger than commonly assumed.',
-    },
-    {
-      key: 'twoAgainstMany', label: 'Two Against Many (AoE, 2pt)',
-      communityRanks: false,
-      reasoning: 'Strike as One hits +2 enemies. Scales pet passive hits to 3 targets — undervalued in most guides which only recommend it at 5+ targets. Our math shows it is BiS at 3+.',
-    },
+    // ── Hero-specific nodes ──
+    ...(heroTalent === 'sentinel' ? sentinelNodes : packLeaderNodes),
   ];
 
   for (const t of talentsToTest) {
@@ -1009,48 +1110,37 @@ function buildVsCommunity(
   };
   return {
     agreements: [
-      'Sentinel is the preferred hero talent for Raid (ST and light cleave)',
-      'Wildfire Bomb, Kill Command, Boomstick, Takedown, Raptor Swipe are always talented',
-      'Lethal Calibration and Mongoose Fury are core to the RS-focused rotation',
-      'Moonlight Chakram + Lunar Storm + Moon\'s Blessing are mandatory Sentinel nodes',
-      'AoE: Flamefang Pitch + Grenade Juggler are BiS for 4+ targets',
+      'Sentinel is the preferred hero talent for Raid ST and light cleave',
+      'All 25 core spec nodes are mandatory across all 4 WoWHead builds — no variance',
+      'Wildfire Bomb, Kill Command, Boomstick, Takedown, and Raptor Swipe (Apex) are the backbone',
+      'Savagery is always taken (core node) — reduces Takedown CD to 60s in all builds',
+      'Moonlight Chakram + Lunar Storm + Moon\'s Blessing are mandatory Sentinel hero nodes',
       'Mastery (Spirit Bond) is the primary secondary stat for both ST and AoE',
+      'Two Against Many + Lethal Calibration are always taken in non-Raid-Sentinel builds',
     ],
     differences: [
       {
-        topic: "Can't Miss Won't Miss",
-        communityView: 'Rated as optional / situational filler point in most guides',
-        ourView: "We rate this as core ST: RS +10% flat + Takedown window 8s → 10s synergizes with 4pc tier (more Boomstick resets within window). Underrated due to the Takedown-uptime math.",
-        delta: d('cantMissWontMiss'),
+        topic: "Flanker's Advantage vs Bloodseeker",
+        communityView: 'Some guides treat these as roughly equivalent 1pt filler options; a few omit Bloodseeker analysis entirely',
+        ourView: "Flanker's Advantage is the default in 3 of 4 builds (all except Raid Pack Leader). Bloodseeker is the correct Raid Pack Leader pick — the bleed roughly matches or slightly exceeds Flanker's value for PL due to better pet synergy. Build context matters.",
+        delta: `FA: ${d('flankerAdvantage')} · BS: ${d('bloodseeker')}`,
       },
       {
-        topic: 'Stargazer (2pt)',
-        communityView: 'Largely absent from popular guide ST builds — considered niche',
-        ourView: 'At 25%+ crit with sustained ST, Stargazer averages 5+ stacks (+10% crit dmg on RS). At Hero-track gear levels it surpasses Vulnerability as the third crit-damage node.',
-        delta: d('stargazer'),
-      },
-      {
-        topic: 'Flamebreak (AoE)',
-        communityView: 'Rated as low priority / last-pick AoE talent in most AoE builds',
-        ourView: 'With WFB (fire), Flamefang (fire), and Wildfire Imbuement all active, Flamebreak +15% fire affects 35–40% of total damage. Our math puts it BiS in the full fire AoE build.',
-        delta: d('flamebreak'),
-      },
-      {
-        topic: 'Two Against Many (AoE, 2pt)',
-        communityView: 'Listed as optional for 5+ target scenarios; not recommended for cleave',
-        ourView: 'Strike as One fires on every ability cast. At 3 targets, Two Against Many adds 2× the pet proc value — BiS at 3+ targets (cleave), not just 5+. Budget cost of 2pts is repaid quickly.',
+        topic: 'Two Against Many threshold',
+        communityView: 'Most guides list Two Against Many as a 5+ target talent; rarely recommended for cleave (2–3 targets)',
+        ourView: 'Strike as One fires on every ability cast. At 3 targets Two Against Many adds 2 pet proc hits — our math shows it is worth taking at 3+ targets (cleave), not just 5+. The 1pt cost is repaid at 3T.',
         delta: `${d('twoAgainstMany')} at ${targetCount}T`,
       },
       {
-        topic: 'Savagery priority',
-        communityView: 'Most guides list Savagery as secondary after Vulnerability in ST',
-        ourView: 'Savagery should come first: 90s → 60s CD = 50% more Takedown windows = 50% more 100%-proc Raptor Swipe windows. Scales multiplicatively with Mongoose Fury stacks and 4pc resets.',
-        delta: d('savagery'),
+        topic: 'Lethal Calibration in dungeon builds',
+        communityView: 'Mostly rated as strong but primarily relevant in sustained single-target; some guides downgrade it in M+',
+        ourView: 'In dungeon content WFB CPM increases and 2pc tier amplifies it further. Lethal Calibration is taken in all 3 non-Raid-Sentinel builds precisely because WFB fires more frequently there — its value actually scales up in M+, not down.',
+        delta: d('lethalCalibration'),
       },
       {
-        topic: 'Tier set talent adjustment',
-        communityView: 'Most guides recommend a static talent build regardless of tier set',
-        ourView: '4pc Boomstick reset raises Boomstick from 1.0 to ~1.78 CPM. This elevates Vulnerability and Mongoose Rounds since each extra Boomstick hit also buffs the RS burst window. Talent priority shifts with 4pc active.',
+        topic: 'Tier set talent interaction',
+        communityView: 'Most guides recommend a static build independent of tier set ownership',
+        ourView: '4pc Boomstick reset raises Boomstick from 1.0 to ~1.78 CPM (+78%). This cascades into higher WFB frequency from Lethal Calibration windows. With 4pc, KC→WFB→Boomstick alignment is the primary burst loop — talent priority subtly shifts.',
         delta: 'System-wide; see Tier Set value breakdown',
       },
     ],
@@ -1130,8 +1220,8 @@ function buildRotationNotes(
     notes.push('Moonlight Chakram: use on CD inside Takedown window for peak burst alignment');
   }
   if (isAoE) {
-    notes.push('AoE: Wildfire Bomb → Boomstick → Flamefang Pitch priority; KC for focus generation');
-    if (talents.grenadeJuggler) notes.push('Pool 2 Flamefang charges; drop both on high-density pack pulls');
+    notes.push('AoE: Wildfire Bomb → Boomstick → Kill Command priority; Strike as One cleaves on every ability cast');
+    if (talents.twoAgainstMany) notes.push('Two Against Many: Strike as One hits 3 targets — KC and RS casts each trigger 3-target pet proc');
   } else {
     notes.push('ST: Kill Command on CD (focus gen), Wildfire Bomb on CD, Boomstick on CD, Takedown on CD');
     notes.push('During Takedown window: use ALL Raptor Strike charges (guaranteed Swipe procs)');
