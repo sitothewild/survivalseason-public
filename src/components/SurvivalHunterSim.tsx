@@ -520,7 +520,51 @@ const REALM_DATA: Record<string, string[]> = {
   tw: ["Arthas","Bleeding Hollow","Chillwind Point","Crystalpine Stinger","Demon Fall Canyon","Dragonmaw","Frostmane","Hellscream","Icecrown","Light's Hope","Nightsong","Onyxia","Order of the Cloud Serpent","Quel'dorei","Shadowmoon","Silverwing Hold","Skywall","Spirestone","Stormscale","Sundown Marsh","Whisperwind","World Tree","Wrathbringer","Zealot Blade"],
 };
 
-const SAMPLE_SIMC = `hunter="blezaa"\nlevel=90\nrace=tauren\nregion=us\nserver=turalyon\nspec=survival\ntalents=C8PAo4YcvOcqUdzB9zV+NhSAcMgxMG2ILwMM0gFzMzMzwyAAAAAAgZMjZYGjZMDGTzAAAAAGAALLzMziZmZmZGzMgZ2AgxYmZhB\nagility=1558\nattack_power=1635\nhaste_rating=370\ncrit_rating=282\nmastery_rating=722\nversatility_rating=285\n# Midnight Suneater Crown (639)\nhead=,id=232011,item_level=639\n# Midnight Thread Choker (636)\nneck=,id=231814,item_level=636\n# Midnight Suneater Shoulderguards (639)\nshoulders=,id=232013,item_level=639\n# Midnight Drape of Dusk (636)\nback=,id=231756,item_level=636\n# Midnight Suneater Hauberk (639)\nchest=,id=232009,item_level=639\n# Midnight Bindings of Twilight (636)\nwrist=,id=231758,item_level=636\n# Midnight Suneater Grips (639)\nhands=,id=232012,item_level=639\n# Midnight Cord of Shadows (636)\nwaist=,id=231760,item_level=636\n# Midnight Suneater Legguards (639)\nlegs=,id=232010,item_level=639\n# Midnight Boots of the Nightborne (636)\nfeet=,id=231762,item_level=636\n# Midnight Signet of Dusk (636)\nfinger1=,id=231770,item_level=636\n# Midnight Band of Eternal Night (636)\nfinger2=,id=231772,item_level=636\n# Kroluk's Warbanner (636)\ntrinket1=,id=231780,item_level=636\n# Light's Potential (636)\ntrinket2=,id=231782,item_level=636\n# Midnight Suneater Glaive (639)\nmain_hand=,id=231800,item_level=639\n# Midnight Suneater Dirk (636)\noff_hand=,id=231802,item_level=636`;
+const SAMPLE_SIMC = `hunter="blezaa"
+level=90
+race=tauren
+region=us
+server=turalyon
+spec=survival
+talents=C8PAo4YcvOcqUdzB9zV+NhSAcMgxMG2ILwMM0gFzMzMzwyAAAAAAgZMjZYGjZMDGTzAAAAAGAALLzMziZmZmZGzMgZ2AgxYmZhB
+agility=1477
+attack_power=1551
+haste_rating=1700
+crit_rating=3230
+mastery_rating=4250
+versatility_rating=1025
+# Vortex Visage (240)
+head=,id=221080,item_level=240
+# Farstrider's Pendant (220)
+neck=,id=221088,item_level=220
+# Rootspeaker's Canopy (230)
+shoulders=,id=221074,item_level=230
+# Preyseeker's Rugged Stole (233)
+back=,id=221085,item_level=233
+# Manipulator's Vest (227)
+chest=,id=221092,item_level=227
+# Elder Mossbands (227)
+wrist=,id=221094,item_level=227
+# Grips of Forgotten Honor (224)
+hands=,id=221073,item_level=224
+# Scout's Polished Wrap (207)
+waist=,id=221096,item_level=207
+# Rootspeaker's Leggings (230)
+legs=,id=221075,item_level=230,enchant_id=7594
+# Forgotten Tribe Footguards (240)
+feet=,id=221090,item_level=240
+# Preyseeker's Signet (237)
+finger1=,id=221082,item_level=237,enchant_id=7334
+# Circlet of Encroaching Shadow (220)
+finger2=,id=221095,item_level=220,enchant_id=7334
+# Kroluk's Warbanner (240)
+trinket1=,id=219315,item_level=240
+# Darkmoon Deck: Hunt (220)
+trinket2=,id=198478,item_level=220
+# Farstrider's Mercy (259)
+main_hand=,id=221083,item_level=259,enchant_id=7460
+# Bladesorrow (243)
+off_hand=,id=221086,item_level=243,enchant_id=7470`;
 
 const FIGHT_STYLES = {
   patchwerk: { label: '🎯 Patchwerk', desc: 'Pure single-target', mult: 1.0 },
