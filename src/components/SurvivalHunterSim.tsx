@@ -773,6 +773,10 @@ export default function SurvivalHunterSim() {
       setParsedChar(result);
       setImportedTalentSource('simc');
       setImportedTalentString(result.talents || '');
+      // Auto-scroll to sim config after successful parse
+      setTimeout(() => {
+        document.getElementById("sim-config")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     } else {
       setParseError(result.errors.join(' '));
       setParsedChar(null);
@@ -816,6 +820,10 @@ export default function SurvivalHunterSim() {
       setImportedTalentSource('armory');
       setImportedTalentString(simData?.talents || '');
       setSimResults(null);
+      // Auto-scroll to sim config after successful armory load
+      setTimeout(() => {
+        document.getElementById("sim-config")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
       if (fullData.media?.assets) {
         const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
         if (avatar?.value) setArmoryAvatar(avatar.value);
@@ -1382,7 +1390,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* RIGHT COLUMN — Sim Config (sticky) */}
-              <div style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}>
+              <div id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", alignSelf: "flex-start" }}>
                 <CARD>
                   <LBL>⚙ Simulation Config</LBL>
                   <div style={{ marginBottom: 16 }}>
@@ -1503,7 +1511,14 @@ export default function SurvivalHunterSim() {
                       </div>
                     )}
                   </div>
-                  <button className="sim-btn" onClick={handleSim} disabled={!parsedChar || isSimming}>{isSimming ? "⟳ SIMULATING..." : "▶ RUN SIMULATION"}</button>
+                  <button 
+                    className="sim-btn" 
+                    onClick={handleSim} 
+                    disabled={!parsedChar || isSimming}
+                    style={parsedChar && !isSimming ? { animation: "goldPulse 2s ease-in-out infinite" } : { opacity: 0.5 }}
+                  >
+                    {isSimming ? "⟳ SIMULATING..." : "▶ RUN SIMULATION"}
+                  </button>
                   {!parsedChar && <p style={{ textAlign: "center", color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, marginTop: 8 }}>Parse your character first</p>}
                 </CARD>
               </div>
@@ -1585,7 +1600,15 @@ export default function SurvivalHunterSim() {
 
                           {/* OPTIMAL BUILD */}
                           <div style={{ background: C.goldBg, border: `1px solid ${C.gold}`, borderRadius: "0 10px 10px 0", padding: 16 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10 }}>★ OPTIMAL BUILD</div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                              ★ OPTIMAL BUILD
+                              <span 
+                                title="Optimal build is based on Symex (Method.gg) and SimC APL data for Midnight 12.0 Pre-Season 1. Updated as the meta evolves."
+                                style={{ cursor: "help", fontFamily: "sans-serif", fontSize: 11, color: C.textMid, opacity: 0.7 }}
+                              >
+                                ℹ
+                              </span>
+                            </div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                               <span className="badge" style={{ background: C.sentBg, color: C.sentClr, border: `1px solid ${C.sentBdr}` }}>
                                 🦉 Sentinel
@@ -1598,8 +1621,20 @@ export default function SurvivalHunterSim() {
                             {(() => {
                               const optStr = optimalBuildInfo?.exportString || '';
                               return optStr ? (
-                                <div title={optStr} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: "rgba(0,0,0,0.3)", borderRadius: 5, padding: "4px 8px", marginBottom: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {optStr.length > 20 ? `${optStr.slice(0, 20)}...` : optStr}
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                                  <div title={optStr} style={{ flex: 1, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: "rgba(0,0,0,0.3)", borderRadius: 5, padding: "4px 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {optStr.length > 20 ? `${optStr.slice(0, 20)}...` : optStr}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(optStr);
+                                      setCopied('optimal');
+                                      setTimeout(() => setCopied(''), 2000);
+                                    }}
+                                    style={{ background: C.gold, color: "#000", border: "none", borderRadius: 4, padding: "4px 8px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}
+                                  >
+                                    {copied === 'optimal' ? '✓ Copied' : 'Copy'}
+                                  </button>
                                 </div>
                               ) : null;
                             })()}
