@@ -4,7 +4,7 @@ import { NavLink } from "@/components/NavLink";
 import {
   computeStatWeights,
   getOptimalTalentConfig,
-  HEROIC_MIDNIGHT_639,
+  HEROIC_MIDNIGHT_276,
 } from "@/lib/theorycrafting";
 import {
   MIDNIGHT_TRINKETS, MIDNIGHT_ENCHANTS, MIDNIGHT_GEMS, MIDNIGHT_RINGS,
@@ -53,11 +53,11 @@ export default function Gear() {
   const heroName = isSent ? "Sentinel" : "Pack Leader";
   const heroIcon = isSent ? "🦉" : "🐾";
 
-  // Compute stat weights from the theorycrafting engine using 639 heroic baseline
+  // Compute stat weights from the theorycrafting engine using 276 Hero-track baseline
   const { sentWeights, plWeights } = useMemo(() => {
     const tier  = { has2pc: true, has4pc: true };
-    const sent  = computeStatWeights(HEROIC_MIDNIGHT_639, getOptimalTalentConfig("sentinel",   "st"), tier, "sentinel",   1);
-    const pl    = computeStatWeights(HEROIC_MIDNIGHT_639, getOptimalTalentConfig("packLeader", "st"), tier, "packLeader", 1);
+    const sent  = computeStatWeights(HEROIC_MIDNIGHT_276, getOptimalTalentConfig("sentinel",   "st"), tier, "sentinel",   1);
+    const pl    = computeStatWeights(HEROIC_MIDNIGHT_276, getOptimalTalentConfig("packLeader", "st"), tier, "packLeader", 1);
     return { sentWeights: sent, plWeights: pl };
   }, []);
 
@@ -200,7 +200,7 @@ export default function Gear() {
             <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:15, color:C.textMid,
               marginTop:8, maxWidth:640 }}>
               BiS gear list, trinket rankings, enchants, gems, rings and tier set analysis
-              for <strong style={{ color:heroClr }}>Midnight 12.0 Heroic (639 ilvl)</strong>.
+              for <strong style={{ color:heroClr }}>Midnight 12.0 Heroic (276 ilvl)</strong>.
               All DPS values computed from first-principles stat weights — no guessing.
             </p>
           </div>
@@ -230,7 +230,7 @@ export default function Gear() {
           <Card>
             <SecTitle icon="⚖">Scale Factors (Stat Weights)</SecTitle>
             <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim, marginTop:0, marginBottom:16 }}>
-              DPS per 1 stat rating · Agility = 1.00 reference · 4pc tier active · 639 ilvl baseline
+              DPS per 1 stat rating · Agility = 1.00 reference · 4pc tier active · 276 ilvl baseline
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
               {([["🦉 Sentinel", sentWeights, C.sentClr], ["🐾 Pack Leader", plWeights, C.packClr]] as const).map(([label, w, clr]: any) => (
@@ -305,7 +305,7 @@ export default function Gear() {
             SECTION 2 — Trinket Rankings
         ═══════════════════════════════════════════════════ */}
         <Card style={{ marginBottom:20 }}>
-          <SecTitle icon="💎">Trinket Rankings — {heroName} (639 ilvl Heroic)</SecTitle>
+          <SecTitle icon="💎">Trinket Rankings — {heroName} (276 ilvl Heroic)</SecTitle>
           <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
             marginTop:0, marginBottom:20 }}>
             DPS contribution = stat budget × uptime × scale factor. Burst-alignable on-use trinkets
@@ -591,7 +591,7 @@ export default function Gear() {
               <span style={{ fontSize:20 }}>⚔</span>
               <h2 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:13, letterSpacing:3,
                 color:heroClr, textTransform:"uppercase", margin:0, fontWeight:700 }}>
-                BiS Gear List — {isSent ? "Sentinel (2H Polearm)" : "Pack Leader (Dual Wield)"} · 639 ilvl Heroic
+                BiS Gear List — {isSent ? "Sentinel (2H Polearm)" : "Pack Leader (Dual Wield)"} · 276 ilvl Heroic
               </h2>
             </div>
             <button onClick={() => setBisOpen(o => !o)} style={{

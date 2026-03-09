@@ -118,31 +118,57 @@ export interface VsMethodGg {
   differences: { topic: string; methodGg: string; ourView: string; delta: string }[];
 }
 
-// ── Heroic Midnight Gear Profiles ──────────────────────────
+// ── Midnight Season 1 Gear Profiles ─────────────────────────
+// Tracks: Adventurer 237 · Veteran 250 · Champion 263 · Hero 276 · Myth 289
 
 /**
- * Max heroic Midnight (639 ilvl) with 2H weapon and optimal stat distribution.
- * Represents a well-geared raider with Sentinel + 4pc tier + best-in-slot enchants.
+ * Myth-track Midnight (289 ilvl) — absolute best-in-slot ceiling.
+ * Achievable via Mythic raid or high Mythic+ (vault).
  */
-export const HEROIC_MIDNIGHT_639: GearProfile = {
-  ilvl: 639,
-  agility: 3_420,
-  attackPower: 3_680,    // 2H polearm/staff at 639 ilvl
+export const MYTH_MIDNIGHT_289: GearProfile = {
+  ilvl: 289,
+  agility: 3_520,
+  attackPower: 3_790,    // 2H polearm at 289 Myth
+  critPct: 26.2,
+  hastePct: 15.4,
+  masteryPct: 39.6,
+  versPct: 9.5,
+};
+
+/**
+ * Hero-track Midnight (276 ilvl) — Heroic raid / M+ +7 or above.
+ * Primary theorycrafting baseline; represents a well-geared Heroic raider
+ * with Sentinel + 4pc tier + best-in-slot enchants.
+ */
+export const HEROIC_MIDNIGHT_276: GearProfile = {
+  ilvl: 276,
+  agility: 3_240,
+  attackPower: 3_490,    // 2H polearm/staff at 276 Hero track
   critPct: 25.4,
   hastePct: 14.8,
   masteryPct: 38.2,      // Spirit Bond — BiS stat for Survival
   versPct: 9.1,
 };
 
-export const NORMAL_MIDNIGHT_626: GearProfile = {
-  ilvl: 626,
-  agility: 2_780,
-  attackPower: 2_960,
+/** @deprecated use HEROIC_MIDNIGHT_276 */
+export const HEROIC_MIDNIGHT_639 = HEROIC_MIDNIGHT_276;
+
+/**
+ * Champion-track Midnight (263 ilvl) — M+ Champ track / early Heroic.
+ * Represents a player progressing toward Hero-track gear.
+ */
+export const CHAMPION_MIDNIGHT_263: GearProfile = {
+  ilvl: 263,
+  agility: 2_870,
+  attackPower: 3_080,
   critPct: 21.0,
   hastePct: 12.5,
   masteryPct: 31.5,
   versPct: 7.8,
 };
+
+/** @deprecated use CHAMPION_MIDNIGHT_263 */
+export const NORMAL_MIDNIGHT_626 = CHAMPION_MIDNIGHT_263;
 
 // ── Physical constants ───────────────────────────────────────
 
@@ -963,7 +989,7 @@ export {
 export function getFullOptimalAnalysis(
   heroTalent: 'sentinel' | 'packLeader',
   targetCount: number,
-  gear: GearProfile = HEROIC_MIDNIGHT_639,
+  gear: GearProfile = HEROIC_MIDNIGHT_276,
   tierSet: TierSetConfig = { has2pc: true, has4pc: true },
 ) {
   const talents = getOptimalTalentConfig(heroTalent, targetCount);

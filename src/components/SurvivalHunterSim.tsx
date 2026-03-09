@@ -8,7 +8,7 @@ import survivalIconImg from "@/assets/survival-icon.png";
 import { parseSimcAPL, getRotationWeights, buildAPLFromActionLists, type ParsedAPL } from "@/utils/aplParser";
 import {
   runTheoryCraft, getOptimalTalentConfig, getFullOptimalAnalysis,
-  HEROIC_MIDNIGHT_639, NORMAL_MIDNIGHT_626,
+  HEROIC_MIDNIGHT_276, CHAMPION_MIDNIGHT_263,
   type GearProfile, type TierSetConfig,
 } from "@/lib/theorycrafting";
 
@@ -1005,11 +1005,11 @@ export default function SurvivalHunterSim() {
   const userBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, userHeroKey), [primaryTargetCount, userHeroKey]);
   const optimalBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, 'sentinel'), [primaryTargetCount]);
 
-  // First-principles theorycrafting analysis (Heroic Midnight 639 gear, 4pc tier)
+  // First-principles theorycrafting analysis (Heroic Midnight 276 Hero-track, 4pc tier)
   const theoryAnalysis = useMemo(() => {
     const heroKey = (userHeroKey === 'packLeader' ? 'packLeader' : 'sentinel') as 'sentinel' | 'packLeader';
     const tierSet: TierSetConfig = { has2pc: true, has4pc: true };
-    return getFullOptimalAnalysis(heroKey, primaryTargetCount, HEROIC_MIDNIGHT_639, tierSet);
+    return getFullOptimalAnalysis(heroKey, primaryTargetCount, HEROIC_MIDNIGHT_276, tierSet);
   }, [userHeroKey, primaryTargetCount]);
 
   const talentDiffRows = useMemo(() => {
