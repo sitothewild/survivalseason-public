@@ -305,7 +305,131 @@ const SIMC_BREAKDOWN_SENT_ST = {
   'Pet (Claw)':            0.0250,
   'Pet Melee':             0.0220,
   'Kroluk\'s Warbanner':   0.0200,
-};
+// ============================================================
+// DETAILED SIMULATION DATA GENERATOR
+// Provides detailed tracking for abilities, triggers, and mechanics
+// ============================================================
+function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCount, ap) {
+  const isPL = heroTalent === 'packLeader';
+  
+  // Calculate Strike as One trigger details
+  const strikeAsOneDps = breakdown['Strike as One'] || 0;
+  const strikeAsOneCoef = 1.10; // From MIDNIGHT_DATA.abilities.strikeAsOne.apCoef
+  const avgStrikeAsOneDamage = Math.round(ap * strikeAsOneCoef);
+  
+  // Estimate Strike as One frequency based on trigger abilities
+  // Strike as One triggers on: Raptor Strike, Kill Command, Wildfire Bomb, Boomstick, Raptor Swipe
+  const triggerAbilities = [
+    'Raptor Strike', 'Kill Command', 'Wildfire Bomb', 'Boomstick', 'Raptor Swipe'
+  ];
+  
+  const totalTriggerDps = triggerAbilities.reduce((sum, ability) => {
+    return sum + (breakdown[ability] || 0);
+  }, 0);
+  
+  // Estimate trigger frequency (assuming triggers happen roughly proportional to their DPS contribution)
+  const estimatedTriggersPerSecond = Math.max(0.8, Math.min(2.5, totalTriggerDps / (ap * 0.8)));
+  const totalTriggers = Math.round(estimatedTriggersPerSecond * fightDuration);
+  
+  // Strike as One mechanics explanation
+  const strikeAsOneExplanation = {
+    description: "Passive pet attack that triggers on every damaging ability you cast",
+    triggerAbilities: triggerAbilities,
+    mechanics: [
+      "Triggers automatically on Raptor Strike, Kill Command, Wildfire Bomb, Boomstick",
+      targetCount > 1 ? `With Two Against Many: Hits ${Math.min(targetCount, 3)} targets, +15% damage per target` : "Single target pet attack",
+      "During Takedown: Raptor Swipe triggers Strike as One at 300% damage",
+      isPL ? "Pack Leader: Benefits from beast synergies" : "Sentinel: Enhanced by Spirit Bond mastery scaling"
+    ],
+    estimatedFrequency: `~${estimatedTriggersPerSecond.toFixed(1)} triggers/sec`,
+    avgDamage: avgStrikeAsOneDamage,
+    totalTriggers: totalTriggers
+  };
+  
+  // Generate action counts for detailed report
+  const actionCounts = {};
+  Object.entries(breakdown).forEach(([ability, dps]) => {
+    const baseCoef = getAbilityCoefficient(ability);
+    const avgHit = Math.round(ap * baseCoef);
+    const hitsPerSec = dps > 0 ? Math.max(0.1, dps / avgHit) : 0;
+    const totalHits = Math.round(hitsPerSec * fightDuration);
+    const critRate = ability.includes('Strike as One') ? 0.25 : 0.30; // Pet abilities crit less
+    const crits = Math.round(totalHits * critRate);
+    
+    actionCounts[ability] = {
+      damage: dps * fightDuration,
+      count: totalHits,
+      avgHit: avgHit,
+      crits: crits,
+      dps: dps,
+      percentage: breakdown['Strike as One'] ? ((dps / Object.values(breakdown).reduce((s, v) => s + v, 0)) * 100) : 0
+    };
+  });
+  
+  // Buff uptimes (estimated)
+  const buffUptimes = {
+    'Mongoose Fury': { uptime: 0.65, description: 'Stacking damage buff from Mongoose Bite' },
+    'Takedown': { uptime: 0.18, description: '20% damage amplification window' },
+    'Lethal Calibration': { uptime: 0.80, description: '15% crit damage from Wildfire Bomb' },
+    'Spirit Bond': { uptime: 1.0, description: 'Permanent mastery scaling for you and pet' }
+  };
+  
+  if (isPL) {
+    buffUptimes['Pack Leader Beasts'] = { uptime: 0.45, description: 'Summoned beasts from Kill Command procs' };
+  } else {
+    buffUptimes['Sentinel Mark'] = { uptime: 0.35, description: 'Mark applied by Lunar Storm procs' };
+  }
+  
+  return {
+    actionCounts,
+    buffUptimes,
+    strikeAsOneDetails: strikeAsOneExplanation,
+    resourceData: {
+      focusGenerated: Math.round(fightDuration * 12), // Base focus regen
+      focusSpent: Math.round(fightDuration * 11),
+      focusWasted: Math.round(fightDuration * 1)
+    },
+    executionLog: generateSampleExecutionLog(fightDuration, heroTalent)
+  };
+}
+
+function getAbilityCoefficient(ability) {
+  const coefficients = {
+    'Strike as One': 1.10,
+    'Raptor Strike': 1.40,
+    'Kill Command': 1.55,
+    'Wildfire Bomb': 1.20,
+    'Boomstick': 2.50,
+    'Raptor Swipe': 1.85,
+    'Flamefang Pitch': 1.80,
+    'Mongoose Bite': 1.60,
+    'Hatchet Toss': 0.95
+  };
+  return coefficients[ability] || 1.0;
+}
+
+function generateSampleExecutionLog(duration, heroTalent) {
+  const isPL = heroTalent === 'packLeader';
+  const log = [];
+  
+  // Sample 30s execution sequence
+  const sequence = [
+    { time: 0.0, ability: 'Takedown', note: 'Damage amp window starts' },
+    { time: 0.5, ability: 'Strike as One', trigger: 'Takedown' },
+    { time: 1.2, ability: 'Wildfire Bomb', note: 'Applies Lethal Calibration' },
+    { time: 1.7, ability: 'Strike as One', trigger: 'Wildfire Bomb' },
+    { time: 3.0, ability: 'Raptor Strike', note: 'Focus builder' },
+    { time: 3.5, ability: 'Strike as One', trigger: 'Raptor Strike' },
+    { time: 4.8, ability: 'Kill Command', note: isPL ? 'May spawn Pack Leader beast' : 'Pet focus dump' },
+    { time: 5.3, ability: 'Strike as One', trigger: 'Kill Command' },
+    { time: 6.5, ability: 'Raptor Strike' },
+    { time: 7.0, ability: 'Strike as One', trigger: 'Raptor Strike' },
+    { time: 8.2, ability: 'Raptor Swipe', note: '25% proc from Raptor Strike' },
+    { time: 8.7, ability: 'Strike as One', trigger: 'Raptor Swipe (300% damage)' }
+  ];
+  
+  return sequence.slice(0, Math.min(10, sequence.length));
+}
 
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
   const stats = charData.stats;
