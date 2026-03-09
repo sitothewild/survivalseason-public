@@ -882,6 +882,8 @@ export default function SurvivalHunterSim() {
     return heroTalent;
   }, [detectedHeroTalent, heroTalent]);
 
+  const getTargets = () => simMode === 'single' ? [1] : simMode === 'cleave' ? [2, 3] : [5, 8, 10];
+
   const primaryTargetCount = useMemo(() => {
     const targets = getTargets();
     return targets[0] || 1;
