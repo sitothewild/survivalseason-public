@@ -3390,7 +3390,7 @@ export default function SurvivalHunterSim() {
                     Click the <strong style={{ color: '#38bdf8' }}>SYNC SIMC</strong> button in the header to pull the latest rotation data from SimulationCraft's GitHub repository.
                   </p>
                   <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
-                    This fetches the Survival Hunter APL (Action Priority List) directly from the thewarwithin branch and caches it for fast loading.
+                    This fetches the Survival Hunter APL (Action Priority List) directly from the midnight branch and caches it for fast loading.
                   </p>
                 </div>
               )}
