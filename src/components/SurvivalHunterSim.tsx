@@ -1036,177 +1036,177 @@ export default function SurvivalHunterSim() {
 
         {/* ═══ SIM TAB ═══ */}
         {activeTab === "sim" && (
-          <div className="responsive-grid" style={{ display: "grid", gridTemplateColumns: "minmax(340px,420px) 1fr", gap: 20 }}>
-            {/* LEFT */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {/* Armory Lookup */}
-              <CARD style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                  <span style={{ fontSize: 16 }}>🌐</span>
-                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 3, color: C.textMid, textTransform: "uppercase" }}>Armory Lookup</span>
-                </div>
-                <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
-                  Pull your character directly from the WoW Armory — no addon needed
-                </p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 12 }}>
-                  {["us", "eu", "kr", "tw"].map(r => (
-                    <button key={r} onClick={() => { setArmoryRegion(r); setArmoryRealm(""); setArmoryRealmSearch(""); }}
-                      style={{ background: armoryRegion === r ? "transparent" : C.surface2, border: `1px solid ${armoryRegion === r ? C.gold : C.border}`,
-                        borderRadius: 8, padding: "10px 0", color: armoryRegion === r ? C.goldLight : C.textMid,
-                        fontFamily: "'Orbitron',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: "pointer", transition: "all .2s",
-                        boxShadow: armoryRegion === r ? `inset 0 0 0 1px ${C.gold},0 0 12px rgba(217,119,6,.2)` : "none", textTransform: "uppercase"
-                      }}>{r}</button>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, position: "relative" }}>
-                  <div ref={realmDropdownRef} style={{ position: "relative" }}>
-                    <input
-                      ref={realmInputRef}
-                      className="ifield"
-                      value={armoryRealmSearch}
-                      onChange={(e) => {
-                        setArmoryRealmSearch(e.target.value);
-                        setShowRealmDropdown(true);
-                        setRealmHighlightIdx(-1);
-                      }}
-                      onKeyDown={(e) => {
-                        const filtered = realmSuggestions;
-
-                        if (e.key === 'Escape') {
-                          setShowRealmDropdown(false);
+          <>
+            {/* TOP ROW — Two equal columns */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }} className="sim-top-row">
+              {/* LEFT COLUMN — Import panels */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Armory Lookup */}
+                <CARD>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 16 }}>🌐</span>
+                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 3, color: C.textMid, textTransform: "uppercase" }}>Armory Lookup</span>
+                  </div>
+                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                    Pull your character directly from the WoW Armory — no addon needed
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 12 }}>
+                    {["us", "eu", "kr", "tw"].map(r => (
+                      <button key={r} onClick={() => { setArmoryRegion(r); setArmoryRealm(""); setArmoryRealmSearch(""); }}
+                        style={{ background: armoryRegion === r ? "transparent" : C.surface2, border: `1px solid ${armoryRegion === r ? C.gold : C.border}`,
+                          borderRadius: 8, padding: "10px 0", color: armoryRegion === r ? C.goldLight : C.textMid,
+                          fontFamily: "'Orbitron',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: "pointer", transition: "all .2s",
+                          boxShadow: armoryRegion === r ? `inset 0 0 0 1px ${C.gold},0 0 12px rgba(217,119,6,.2)` : "none", textTransform: "uppercase"
+                        }}>{r}</button>
+                    ))}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, position: "relative" }}>
+                    <div ref={realmDropdownRef} style={{ position: "relative" }}>
+                      <input
+                        ref={realmInputRef}
+                        className="ifield"
+                        value={armoryRealmSearch}
+                        onChange={(e) => {
+                          setArmoryRealmSearch(e.target.value);
+                          setShowRealmDropdown(true);
                           setRealmHighlightIdx(-1);
-                          return;
-                        }
+                        }}
+                        onKeyDown={(e) => {
+                          const filtered = realmSuggestions;
 
-                        if (e.key === 'ArrowDown') {
-                          e.preventDefault();
-                          if (!showRealmDropdown) { setShowRealmDropdown(true); setRealmHighlightIdx(0); return; }
-                          setRealmHighlightIdx(prev => (prev + 1) % filtered.length);
-                          return;
-                        }
+                          if (e.key === 'Escape') {
+                            setShowRealmDropdown(false);
+                            setRealmHighlightIdx(-1);
+                            return;
+                          }
 
-                        if (e.key === 'ArrowUp') {
-                          e.preventDefault();
-                          if (!showRealmDropdown) return;
-                          setRealmHighlightIdx(prev => (prev <= 0 ? filtered.length - 1 : prev - 1));
-                          return;
-                        }
-
-                        if (e.key === 'Tab' && showRealmDropdown && filtered.length > 0) {
-                          // Auto-complete top match on Tab
-                          const pick = realmHighlightIdx >= 0 ? filtered[realmHighlightIdx] : filtered[0];
-                          if (pick) {
+                          if (e.key === 'ArrowDown') {
                             e.preventDefault();
-                            setArmoryRealmSearch(pick);
-                            setArmoryRealm(normalizeRealmSlug(pick));
-                            setShowRealmDropdown(false);
-                            setRealmHighlightIdx(-1);
-                          }
-                          return;
-                        }
-
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-
-                          // If highlight active, pick that
-                          if (realmHighlightIdx >= 0 && filtered[realmHighlightIdx]) {
-                            setArmoryRealmSearch(filtered[realmHighlightIdx]);
-                            setArmoryRealm(normalizeRealmSlug(filtered[realmHighlightIdx]));
-                            setShowRealmDropdown(false);
-                            setRealmHighlightIdx(-1);
+                            if (!showRealmDropdown) { setShowRealmDropdown(true); setRealmHighlightIdx(0); return; }
+                            setRealmHighlightIdx(prev => (prev + 1) % filtered.length);
                             return;
                           }
 
-                          // If exact match already resolved, close dropdown
-                          if (resolvedRealmSlug) {
-                            setShowRealmDropdown(false);
-                            setRealmHighlightIdx(-1);
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (!showRealmDropdown) return;
+                            setRealmHighlightIdx(prev => (prev <= 0 ? filtered.length - 1 : prev - 1));
                             return;
                           }
 
-                          // Otherwise pick top suggestion
-                          const first = filtered[0];
-                          if (first) {
-                            setArmoryRealmSearch(first);
-                            setArmoryRealm(normalizeRealmSlug(first));
-                            setShowRealmDropdown(false);
-                            setRealmHighlightIdx(-1);
+                          if (e.key === 'Tab' && showRealmDropdown && filtered.length > 0) {
+                            const pick = realmHighlightIdx >= 0 ? filtered[realmHighlightIdx] : filtered[0];
+                            if (pick) {
+                              e.preventDefault();
+                              setArmoryRealmSearch(pick);
+                              setArmoryRealm(normalizeRealmSlug(pick));
+                              setShowRealmDropdown(false);
+                              setRealmHighlightIdx(-1);
+                            }
+                            return;
                           }
-                        }
-                      }}
-                      onFocus={() => { setShowRealmDropdown(true); setRealmHighlightIdx(-1); }}
-                      placeholder="Search realm..."
-                      style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }}
-                      autoComplete="off"
-                    />
-                    {showRealmDropdown && (() => {
-                      const filtered = realmSuggestions;
-                      if (filtered.length === 0) return null;
-                      return (
-                        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
-                          {filtered.map((rv, idx) => (
-                            <div
-                              key={rv}
-                              onMouseDown={() => {
-                                setArmoryRealm(normalizeRealmSlug(rv));
-                                setArmoryRealmSearch(rv);
-                                setShowRealmDropdown(false);
-                                setRealmHighlightIdx(-1);
-                              }}
-                              onMouseEnter={() => setRealmHighlightIdx(idx)}
-                              style={{
-                                padding: "9px 14px",
-                                fontFamily: "'Rajdhani',sans-serif",
-                                fontSize: 14,
-                                color: idx === realmHighlightIdx ? C.goldLight : C.textSec,
-                                cursor: "pointer",
-                                transition: "background .08s",
-                                borderBottom: `1px solid ${C.borderSub}`,
-                                background: idx === realmHighlightIdx ? C.surface3 : "transparent",
-                              }}
-                            >
-                              {rv}
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <input className="ifield" value={armoryName} onChange={e => setArmoryName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleArmoryLookup()} placeholder="Character name" style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }} />
-                </div>
-                {armoryError && <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.red, marginBottom: 10, lineHeight: 1.5 }}>⚠ {armoryError}</div>}
-                <button onClick={handleArmoryLookup} disabled={armoryLoading}
-                  style={{ width: "100%", background: armoryLoading ? "#1c2a3a" : C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: armoryLoading ? "not-allowed" : "pointer", transition: "all .2s", color: armoryLoading ? C.textDim : C.textSec, fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700 }}>
-                  {armoryLoading ? <><span style={{ width: 10, height: 10, border: "2px solid #2e3a50", borderTopColor: C.sentClr, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> FETCHING...</> : <>🔵 FETCH FROM ARMORY</>}
-                </button>
-                {armoryAvatar && (
-                  <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10 }}>
-                    <img src={armoryAvatar} alt="" style={{ width: 40, height: 40, borderRadius: 6, border: `2px solid ${C.border}` }} />
-                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.green }}>✓ Loaded from Armory {itemEnrichLoading && <span style={{ color: C.goldLight }}>· Enriching items...</span>}</span>
-                  </div>
-                )}
-              </CARD>
 
-              {/* SimC Import */}
-              <CARD>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                  <LBL>📋 SimulationCraft Import</LBL>
-                  <button onClick={handleLoadSample} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 6, color: C.textMid, fontSize: 12, padding: "4px 10px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, marginLeft: 10, whiteSpace: "nowrap" }}>Sample</button>
-                </div>
-                <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 10, lineHeight: 1.5 }}>
-                  In-game: <code style={{ background: C.surface2, padding: "1px 6px", borderRadius: 3, fontSize: 11, color: C.textSec }}>/simc</code> → copy all → paste below
-                </p>
-                <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ height: 130, resize: "vertical", lineHeight: 1.6 }} />
-                {parseError && <div style={{ color: C.red, fontSize: 13, marginTop: 6, fontFamily: "'Rajdhani',sans-serif" }}>⚠ {parseError}</div>}
-                <button className="parse-btn" onClick={handleParse} style={{ marginTop: 10 }}>✦ Parse Character Data</button>
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
 
+                            if (realmHighlightIdx >= 0 && filtered[realmHighlightIdx]) {
+                              setArmoryRealmSearch(filtered[realmHighlightIdx]);
+                              setArmoryRealm(normalizeRealmSlug(filtered[realmHighlightIdx]));
+                              setShowRealmDropdown(false);
+                              setRealmHighlightIdx(-1);
+                              return;
+                            }
+
+                            if (resolvedRealmSlug) {
+                              setShowRealmDropdown(false);
+                              setRealmHighlightIdx(-1);
+                              return;
+                            }
+
+                            const first = filtered[0];
+                            if (first) {
+                              setArmoryRealmSearch(first);
+                              setArmoryRealm(normalizeRealmSlug(first));
+                              setShowRealmDropdown(false);
+                              setRealmHighlightIdx(-1);
+                            }
+                          }
+                        }}
+                        onFocus={() => { setShowRealmDropdown(true); setRealmHighlightIdx(-1); }}
+                        placeholder="Search realm..."
+                        style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }}
+                        autoComplete="off"
+                      />
+                      {showRealmDropdown && (() => {
+                        const filtered = realmSuggestions;
+                        if (filtered.length === 0) return null;
+                        return (
+                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
+                            {filtered.map((rv, idx) => (
+                              <div
+                                key={rv}
+                                onMouseDown={() => {
+                                  setArmoryRealm(normalizeRealmSlug(rv));
+                                  setArmoryRealmSearch(rv);
+                                  setShowRealmDropdown(false);
+                                  setRealmHighlightIdx(-1);
+                                }}
+                                onMouseEnter={() => setRealmHighlightIdx(idx)}
+                                style={{
+                                  padding: "9px 14px",
+                                  fontFamily: "'Rajdhani',sans-serif",
+                                  fontSize: 14,
+                                  color: idx === realmHighlightIdx ? C.goldLight : C.textSec,
+                                  cursor: "pointer",
+                                  transition: "background .08s",
+                                  borderBottom: `1px solid ${C.borderSub}`,
+                                  background: idx === realmHighlightIdx ? C.surface3 : "transparent",
+                                }}
+                              >
+                                {rv}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <input className="ifield" value={armoryName} onChange={e => setArmoryName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleArmoryLookup()} placeholder="Character name" style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }} />
+                  </div>
+                  {armoryError && <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.red, marginBottom: 10, lineHeight: 1.5 }}>⚠ {armoryError}</div>}
+                  <button onClick={handleArmoryLookup} disabled={armoryLoading}
+                    style={{ width: "100%", background: armoryLoading ? "#1c2a3a" : C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: armoryLoading ? "not-allowed" : "pointer", transition: "all .2s", color: armoryLoading ? C.textDim : C.textSec, fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700 }}>
+                    {armoryLoading ? <><span style={{ width: 10, height: 10, border: "2px solid #2e3a50", borderTopColor: C.sentClr, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> FETCHING...</> : <>🔵 FETCH FROM ARMORY</>}
+                  </button>
+                  {armoryAvatar && (
+                    <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10 }}>
+                      <img src={armoryAvatar} alt="" style={{ width: 40, height: 40, borderRadius: 6, border: `2px solid ${C.border}` }} />
+                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.green }}>✓ Loaded from Armory {itemEnrichLoading && <span style={{ color: C.goldLight }}>· Enriching items...</span>}</span>
+                    </div>
+                  )}
+                </CARD>
+
+                {/* SimC Import */}
+                <CARD>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <LBL>📋 SimulationCraft Import</LBL>
+                    <button onClick={handleLoadSample} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 6, color: C.textMid, fontSize: 12, padding: "4px 10px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, marginLeft: 10, whiteSpace: "nowrap" }}>Sample</button>
+                  </div>
+                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 10, lineHeight: 1.5 }}>
+                    In-game: <code style={{ background: C.surface2, padding: "1px 6px", borderRadius: 3, fontSize: 11, color: C.textSec }}>/simc</code> → copy all → paste below
+                  </p>
+                  <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ height: 130, resize: "vertical", lineHeight: 1.6 }} />
+                  {parseError && <div style={{ color: C.red, fontSize: 13, marginTop: 6, fontFamily: "'Rajdhani',sans-serif" }}>⚠ {parseError}</div>}
+                  <button className="parse-btn" onClick={handleParse} style={{ marginTop: 10 }}>✦ Parse Character Data</button>
+                </CARD>
+
+                {/* Parsed Character panel — expands when character is loaded */}
                 {parsedChar && (
-                  <div style={{ marginTop: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.greenBdr}`, overflow: "hidden" }}>
-                    <div style={{ background: C.greenBg, padding: "10px 16px", borderBottom: `1px solid rgba(74,222,128,.15)`, display: "flex", alignItems: "center", gap: 8 }}>
+                  <CARD>
+                    <div style={{ background: C.greenBg, padding: "10px 16px", borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: C.green, fontSize: 13 }}>✓</span>
                       <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
                     </div>
-                    <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.borderSub}` }}>
+                    <div style={{ marginBottom: 14 }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 12 }}>
                         {[["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
                           <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
@@ -1223,7 +1223,6 @@ export default function SurvivalHunterSim() {
                               <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
                               <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: c, fontWeight: 700 }}>{v}</div>
                             </div>
-                            {/* Place model viewer in the 3rd column spanning all stat rows */}
                             {idx === 0 && (
                               <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                                 {parsedChar.media?.assets ? (
@@ -1244,7 +1243,7 @@ export default function SurvivalHunterSim() {
                     </div>
                     {/* Gear list */}
                     {parsedChar.gear.length > 0 && (
-                      <div style={{ padding: "12px 16px" }}>
+                      <div>
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 0 }} onMouseLeave={handleItemLeave}>
                           {parsedChar.gear.map((g, i) => {
@@ -1260,7 +1259,6 @@ export default function SurvivalHunterSim() {
                                       {g.nameDescription}
                                     </span>
                                   )}
-                                  {/* Enchantments from API */}
                                   {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => {
                                     const enchantLabel = formatEnchantLabel(enc);
                                     return enchantLabel ? (
@@ -1269,19 +1267,16 @@ export default function SurvivalHunterSim() {
                                       </span>
                                     ) : null;
                                   })}
-                                  {/* Fallback for SimC-parsed enchants */}
                                   {!g.enchantments?.length && g.enchant && (
                                     <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
                                       ✦ {g.enchant}
                                     </span>
                                   )}
-                                  {/* Sockets/gems from API */}
                                   {g.sockets?.length > 0 && g.sockets.map((s: any, si: number) => (
                                     <span key={si} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
                                       💎 {s.name || s.display}
                                     </span>
                                   ))}
-                                  {/* Fallback for SimC-parsed gems */}
                                   {!g.sockets?.length && g.gemId && (
                                     <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
                                       💎 Gem
@@ -1295,189 +1290,198 @@ export default function SurvivalHunterSim() {
                         </div>
                       </div>
                     )}
+                  </CARD>
+                )}
+              </div>
+
+              {/* RIGHT COLUMN — Sim Config (sticky) */}
+              <div style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}>
+                <CARD>
+                  <LBL>⚙ Simulation Config</LBL>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>HERO TALENT</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {Object.entries(MIDNIGHT_DATA.talents.hero).map(([k, h]) => (
+                        <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`} onClick={() => setHeroTalent(k)}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                            <span style={{ fontSize: 17 }}>{h.icon}</span>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: k === "sentinel" ? C.sentClr : C.packClr }}>{h.name}</span>
+                            {h.recommended && <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 7, padding: "1px 6px" }}>BEST</span>}
+                          </div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>{h.weaponPref}</div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: k === "sentinel" ? C.sentClr : C.packClr, marginTop: 4, fontWeight: 600 }}>ST +{Math.round(h.stBonus * 100)}% · AoE +{Math.round(h.aoeBonus * 100)}%</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>SIMULATION MODE</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {[["single", "🎯 Single", "1 target"], ["cleave", "⚔ Cleave", "2–3 targets"], ["multi", "💥 Multi", "5/8/10"]].map(([k, l, s]) => (
+                        <button key={k} className={`mode-btn ${simMode === k ? "sel" : ""}`} onClick={() => setSimMode(k)} style={{ flex: 1, textAlign: "center" }}>
+                          <div style={{ fontSize: 13, marginBottom: 2 }}>{l}</div>
+                          <div style={{ fontSize: 8, color: C.textDim }}>{s}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT DURATION — <span style={{ color: C.goldLight }}>{dL(fightDuration)}</span></div>
+                    <input type="range" min={60} max={600} step={30} value={fightDuration} onChange={e => setFightDuration(+e.target.value)} style={{ width: "100%", accentColor: C.gold }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>1 min</span><span>5 min</span><span>10 min</span></div>
+                  </div>
+                  {/* Advanced toggle */}
+                  <div style={{ marginBottom: 16 }}>
+                    <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
+                      <span>{showAdv ? "▾" : "▸"}</span> Advanced Options (Buffs / Consumables / Fight Style)
+                    </button>
+                    {showAdv && (
+                      <div style={{ marginTop: 12, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT STYLE</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                            {Object.entries(FIGHT_STYLES).map(([k, v]) => (
+                              <button key={k} onClick={() => setFightStyle(k)}
+                                style={{ background: fightStyle === k ? C.surface3 : C.surface, border: `1px solid ${fightStyle === k ? C.gold : C.border}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", textAlign: "left", transition: "all .15s" }}>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 600, color: fightStyle === k ? C.goldLight : C.textSec }}>{v.label}</div>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>{v.desc} · {Math.round(v.mult * 100)}%</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>RAID BUFFS</div>
+                          {Object.entries(RAID_BUFFS).map(([k, b]) => (
+                            <label key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", cursor: "pointer", borderBottom: `1px solid ${C.borderSub}` }} onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}>
+                              <input type="checkbox" checked={raidBuffs[k]} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 600, color: C.textSec, flex: 1 }}>{b.icon} {b.label}</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>{b.stat}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <div>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CONSUMABLES</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {Object.entries(CONSUMABLES).map(([k, d]) => (
+                              <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
+                                <select className="ifield" value={consumables[k]} onChange={e => setConsumables(p => ({ ...p, [k]: e.target.value }))} style={{ padding: "6px 10px", fontSize: 13 }}>
+                                  {d.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                                </select>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button className="sim-btn" onClick={handleSim} disabled={!parsedChar || isSimming}>{isSimming ? "⟳ SIMULATING..." : "▶ RUN SIMULATION"}</button>
+                  {!parsedChar && <p style={{ textAlign: "center", color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, marginTop: 8 }}>Parse your character first</p>}
+                </CARD>
+              </div>
+            </div>
+
+            {/* BOTTOM ROW — Results (full width, appears after sim) */}
+            {(isSimming || simResults) && (
+              <div style={{ display: "block", width: "100%", marginTop: 20 }}>
+                {isSimming && (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 360, gap: 18 }}>
+                    <div className="loading-ring" />
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 3, color: C.textDim }}>RUNNING SIMULATION</div>
+                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textMid, textAlign: "center", lineHeight: 1.7 }}>Calculating ability weights · cooldown alignment<br />talent synergies · target scaling</div>
                   </div>
                 )}
-              </CARD>
-
-              {/* Sim Config */}
-              <CARD style={{ marginTop: 16 }}>
-                <LBL>⚙ Simulation Config</LBL>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>HERO TALENT</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    {Object.entries(MIDNIGHT_DATA.talents.hero).map(([k, h]) => (
-                      <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`} onClick={() => setHeroTalent(k)}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                          <span style={{ fontSize: 17 }}>{h.icon}</span>
-                          <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: k === "sentinel" ? C.sentClr : C.packClr }}>{h.name}</span>
-                          {h.recommended && <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 7, padding: "1px 6px" }}>BEST</span>}
-                        </div>
-                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>{h.weaponPref}</div>
-                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: k === "sentinel" ? C.sentClr : C.packClr, marginTop: 4, fontWeight: 600 }}>ST +{Math.round(h.stBonus * 100)}% · AoE +{Math.round(h.aoeBonus * 100)}%</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>SIMULATION MODE</div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {[["single", "🎯 Single", "1 target"], ["cleave", "⚔ Cleave", "2–3 targets"], ["multi", "💥 Multi", "5/8/10"]].map(([k, l, s]) => (
-                      <button key={k} className={`mode-btn ${simMode === k ? "sel" : ""}`} onClick={() => setSimMode(k)} style={{ flex: 1, textAlign: "center" }}>
-                        <div style={{ fontSize: 13, marginBottom: 2 }}>{l}</div>
-                        <div style={{ fontSize: 8, color: C.textDim }}>{s}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT DURATION — <span style={{ color: C.goldLight }}>{dL(fightDuration)}</span></div>
-                  <input type="range" min={60} max={600} step={30} value={fightDuration} onChange={e => setFightDuration(+e.target.value)} style={{ width: "100%", accentColor: C.gold }} />
-                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>1 min</span><span>5 min</span><span>10 min</span></div>
-                </div>
-                {/* Advanced toggle */}
-                <div style={{ marginBottom: 16 }}>
-                  <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
-                    <span>{showAdv ? "▾" : "▸"}</span> Advanced Options (Buffs / Consumables / Fight Style)
-                  </button>
-                  {showAdv && (
-                    <div style={{ marginTop: 12, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
-                      <div style={{ marginBottom: 14 }}>
-                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT STYLE</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                          {Object.entries(FIGHT_STYLES).map(([k, v]) => (
-                            <button key={k} onClick={() => setFightStyle(k)}
-                              style={{ background: fightStyle === k ? C.surface3 : C.surface, border: `1px solid ${fightStyle === k ? C.gold : C.border}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", textAlign: "left", transition: "all .15s" }}>
-                              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 600, color: fightStyle === k ? C.goldLight : C.textSec }}>{v.label}</div>
-                              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>{v.desc} · {Math.round(v.mult * 100)}%</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div style={{ marginBottom: 14 }}>
-                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>RAID BUFFS</div>
-                        {Object.entries(RAID_BUFFS).map(([k, b]) => (
-                          <label key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", cursor: "pointer", borderBottom: `1px solid ${C.borderSub}` }} onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}>
-                            <input type="checkbox" checked={raidBuffs[k]} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 600, color: C.textSec, flex: 1 }}>{b.icon} {b.label}</span>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>{b.stat}</span>
-                          </label>
-                        ))}
-                      </div>
-                      <div>
-                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CONSUMABLES</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {Object.entries(CONSUMABLES).map(([k, d]) => (
-                            <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
-                              <select className="ifield" value={consumables[k]} onChange={e => setConsumables(p => ({ ...p, [k]: e.target.value }))} style={{ padding: "6px 10px", fontSize: 13 }}>
-                                {d.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                              </select>
+                {!isSimming && simResults && (
+                  <div className="result-anim" style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeUp .35s ease forwards" }}>
+                    {/* DPS Results */}
+                    <div style={{ display: "grid", gridTemplateColumns: simResults.length > 1 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: 16 }}>
+                      {simResults.map((res, ri) => {
+                        const sorted = Object.entries(res.breakdown).sort((a, b) => b[1] - a[1]); const maxVal = sorted[0][1];
+                        const h = MIDNIGHT_DATA.talents.hero[res.hero];
+                        return (
+                          <div key={ri} className="result-anim" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animationDelay: `${ri * .1}s` }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                              <div>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>
+                                  {res.targets === 1 ? "🎯 SINGLE TARGET" : res.targets <= 3 ? `⚔ CLEAVE — ${res.targets} TARGETS` : `💥 MULTI-TARGET — ${res.targets} TARGETS`}
+                                </div>
+                                <div className="dps-anim" style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 40, fontWeight: 900, color: C.goldLight, lineHeight: 1 }}>{fmt(res.totalDps)}</div>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginTop: 2 }}>DPS estimate</div>
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                                <span className="badge" style={{ background: res.hero === "sentinel" ? C.sentBg : C.packBg, color: res.hero === "sentinel" ? C.sentClr : C.packClr, border: `1px solid ${res.hero === "sentinel" ? C.sentBdr : C.packBdr}` }}>{h.icon} {h.name}</span>
+                                <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>{dL(res.duration)}</span>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {sorted.map(([key, val]) => (
+                                <div key={key}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, fontWeight: 500 }}>{key}</span>
+                                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.textSec }}>{fmt(val)} <span style={{ color: C.textDim, fontSize: 11 }}>({Math.round(val / res.totalDps * 100)}%)</span></span>
+                                  </div>
+                                  <div style={{ height: 5, background: C.surface2, borderRadius: 3, overflow: "hidden" }}>
+                                    <div style={{ height: "100%", borderRadius: 3, width: `${(val / maxVal) * 100}%`, background: bClr(key), animation: "barGrow .7s ease forwards", opacity: .9 }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-                <button className="sim-btn" onClick={handleSim} disabled={!parsedChar || isSimming}>{isSimming ? "⟳ SIMULATING..." : "▶ RUN SIMULATION"}</button>
-                {!parsedChar && <p style={{ textAlign: "center", color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, marginTop: 8 }}>Parse your character first</p>}
-              </CARD>
-            </div>
 
-            {/* RIGHT — Results */}
-            <div>
-              {isSimming && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 360, gap: 18 }}>
-                  <div className="loading-ring" />
-                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 3, color: C.textDim }}>RUNNING SIMULATION</div>
-                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textMid, textAlign: "center", lineHeight: 1.7 }}>Calculating ability weights · cooldown alignment<br />talent synergies · target scaling</div>
-                </div>
-              )}
-              {!isSimming && !simResults && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 360, gap: 14 }}>
-                  <div style={{ opacity: .1 }}><img src={SURVIVAL_ICON} style={{ width: 80, height: 80, borderRadius: 12, filter: "grayscale(1)" }} /></div>
-                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 3, color: C.border }}>RESULTS WILL APPEAR HERE</div>
-                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textMid, textAlign: "center", maxWidth: 260, lineHeight: 1.6 }}>Import your character and run a simulation to see your full DPS breakdown.</div>
-                </div>
-              )}
-              {!isSimming && simResults && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {simResults.map((res, ri) => {
-                    const sorted = Object.entries(res.breakdown).sort((a, b) => b[1] - a[1]); const maxVal = sorted[0][1];
-                    const h = MIDNIGHT_DATA.talents.hero[res.hero];
-                    return (
-                      <div key={ri} className="result-anim" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animationDelay: `${ri * .1}s` }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                          <div>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>
-                              {res.targets === 1 ? "🎯 SINGLE TARGET" : res.targets <= 3 ? `⚔ CLEAVE — ${res.targets} TARGETS` : `💥 MULTI-TARGET — ${res.targets} TARGETS`}
-                            </div>
-                            <div className="dps-anim" style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 40, fontWeight: 900, color: C.goldLight, lineHeight: 1 }}>{fmt(res.totalDps)}</div>
-                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginTop: 2 }}>DPS estimate</div>
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-                            <span className="badge" style={{ background: res.hero === "sentinel" ? C.sentBg : C.packBg, color: res.hero === "sentinel" ? C.sentClr : C.packClr, border: `1px solid ${res.hero === "sentinel" ? C.sentBdr : C.packBdr}` }}>{h.icon} {h.name}</span>
-                            <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>{dL(res.duration)}</span>
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {sorted.map(([key, val]) => (
-                            <div key={key}>
-                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, fontWeight: 500 }}>{key}</span>
-                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.textSec }}>{fmt(val)} <span style={{ color: C.textDim, fontSize: 11 }}>({Math.round(val / res.totalDps * 100)}%)</span></span>
+                    {/* Stat Weights & Target Scaling side by side */}
+                    <div style={{ display: "grid", gridTemplateColumns: simResults.length > 1 ? "2fr 1fr" : "1fr", gap: 16 }}>
+                      {statWeights && (
+                        <CARD>
+                          <LBL>📊 Stat Weights</LBL>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {Object.entries(statWeights.weights).sort((a, b) => b[1].normalized - a[1].normalized).map(([stat, w]) => (
+                              <div key={stat} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, fontWeight: 600, minWidth: 80 }}>{stat}</span>
+                                <div style={{ flex: 1, height: 5, background: C.surface2, borderRadius: 3, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", borderRadius: 3, width: `${w.normalized * 100}%`, background: stat === "Agility" ? C.goldLight : stat === "Mastery" ? "#a78bfa" : stat === "Crit" ? "#f59e0b" : stat === "Haste" ? "#60a5fa" : "#34d399", animation: "barGrow .7s ease forwards" }} />
+                                </div>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.goldLight, minWidth: 42, textAlign: "right" }}>{w.normalized.toFixed(3)}</span>
                               </div>
-                              <div style={{ height: 5, background: C.surface2, borderRadius: 3, overflow: "hidden" }}>
-                                <div style={{ height: "100%", borderRadius: 3, width: `${(val / maxVal) * 100}%`, background: bClr(key), animation: "barGrow .7s ease forwards", opacity: .9 }} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Stat Weights */}
-                  {statWeights && (
-                    <CARD>
-                      <LBL>📊 Stat Weights</LBL>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {Object.entries(statWeights.weights).sort((a, b) => b[1].normalized - a[1].normalized).map(([stat, w]) => (
-                          <div key={stat} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, fontWeight: 600, minWidth: 80 }}>{stat}</span>
-                            <div style={{ flex: 1, height: 5, background: C.surface2, borderRadius: 3, overflow: "hidden" }}>
-                              <div style={{ height: "100%", borderRadius: 3, width: `${w.normalized * 100}%`, background: stat === "Agility" ? C.goldLight : stat === "Mastery" ? "#a78bfa" : stat === "Crit" ? "#f59e0b" : stat === "Haste" ? "#60a5fa" : "#34d399", animation: "barGrow .7s ease forwards" }} />
-                            </div>
-                            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.goldLight, minWidth: 42, textAlign: "right" }}>{w.normalized.toFixed(3)}</span>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <div style={{ marginTop: 10, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Normalized to Agility = 1.000 · Base DPS: {fmt(statWeights.baseDps)}</div>
-                    </CARD>
-                  )}
+                          <div style={{ marginTop: 10, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Normalized to Agility = 1.000 · Base DPS: {fmt(statWeights.baseDps)}</div>
+                        </CARD>
+                      )}
 
-                  {/* Target Scaling */}
-                  {simResults.length > 1 && (
-                    <CARD>
-                      <LBL>📊 Target Scaling</LBL>
-                      <div style={{ display: "flex", gap: 14, alignItems: "flex-end", height: 110 }}>
-                        {simResults.map((r, i) => {
-                          const maxV = Math.max(...simResults.map(x => x.totalDps));
-                          return (
-                            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.goldLight }}>{fmt(r.totalDps)}</div>
-                              <div style={{ width: "100%", maxWidth: 50, height: `${(r.totalDps / maxV) * 80}px`, borderRadius: "4px 4px 0 0", background: `linear-gradient(to top,${C.gold},${C.goldLight})`, transition: "height .5s ease" }} />
-                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.textDim }}>{r.targets}T</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CARD>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+                      {simResults.length > 1 && (
+                        <CARD>
+                          <LBL>📊 Target Scaling</LBL>
+                          <div style={{ display: "flex", gap: 14, alignItems: "flex-end", height: 110 }}>
+                            {simResults.map((r, i) => {
+                              const maxV = Math.max(...simResults.map(x => x.totalDps));
+                              return (
+                                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.goldLight }}>{fmt(r.totalDps)}</div>
+                                  <div style={{ width: "100%", maxWidth: 50, height: `${(r.totalDps / maxV) * 80}px`, borderRadius: "4px 4px 0 0", background: `linear-gradient(to top,${C.gold},${C.goldLight})`, transition: "height .5s ease" }} />
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.textDim }}>{r.targets}T</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CARD>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mobile responsive styles */}
+            <style>{`
+              @media (max-width: 768px) {
+                .sim-top-row { grid-template-columns: 1fr !important; }
+                .sim-top-row > div:last-child { position: static !important; max-height: none !important; overflow: visible !important; }
+              }
+            `}</style>
+          </>
         )}
 
         {/* ═══ TALENTS TAB ═══ */}
