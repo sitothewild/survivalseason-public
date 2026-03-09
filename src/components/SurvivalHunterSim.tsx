@@ -811,6 +811,8 @@ export default function SurvivalHunterSim() {
         setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
       }
       setParsedChar(simData);
+      setImportedTalentSource('armory');
+      setImportedTalentString(simData?.talents || '');
       setSimResults(null);
       if (fullData.media?.assets) {
         const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
