@@ -435,7 +435,7 @@ function generateSampleExecutionLog(duration, heroTalent) {
   return sequence.slice(0, Math.min(10, sequence.length));
 }
 
-function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
+function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
   const stats = charData.stats;
   const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
 
