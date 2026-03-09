@@ -1070,17 +1070,16 @@ export default function SurvivalHunterSim() {
                                     </span>
                                   )}
                                   {/* Enchantments from API */}
-                                  {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => (
-                                    <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      ✦ {enc.name || enc.display}
-                                    </span>
-                                  ))}
+                                  {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => {
+                                    const enchantLabel = formatEnchantLabel(enc);
+                                    return enchantLabel ? (
+                                      <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                        ✦ {enchantLabel}
+                                      </span>
+                                    ) : null;
+                                  })}
                                   {/* Fallback for SimC-parsed enchants */}
                                   {!g.enchantments?.length && g.enchant && (
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      ✦ {g.enchant}
-                                    </span>
-                                  )}
                                   {/* Sockets/gems from API */}
                                   {g.sockets?.length > 0 && g.sockets.map((s: any, si: number) => (
                                     <span key={si} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
