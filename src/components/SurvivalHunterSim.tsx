@@ -1500,43 +1500,43 @@ export default function SurvivalHunterSim() {
       }} />
       <div style={{
         position: 'fixed', bottom: '-10%', right: '20%', width: '35%', height: '40%',
-        background: 'radial-gradient(ellipse, rgba(100,40,10,0.08) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, hsl(var(--accent) / 0.05) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0
       }} />
       {/* Background grid */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: 'linear-gradient(rgba(60,80,139,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(60,80,139,0.03) 1px, transparent 1px)',
-        backgroundSize: '40px 40px'
+        backgroundImage: 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)',
+        backgroundSize: '40px 40px',
+        opacity: 0.3
       }} />
 
       <div className="sim-shell">
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div className="title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+          <div className="title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 12 }}>
             <div style={{ fontSize: 28 }}>🦅</div>
             <h1 className="glow-text" style={{
-              fontFamily: "'Cinzel Decorative', serif", fontSize: 'clamp(20px, 3vw, 32px)',
-              fontWeight: 900, margin: 0, letterSpacing: 4,
-              background: 'linear-gradient(135deg, #e8c88a, #e07030, #c44e00)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+              fontFamily: "'Cinzel Decorative', serif", fontSize: 'clamp(24px, 4vw, 40px)',
+              fontWeight: 900, margin: 0, letterSpacing: 5,
+              color: 'hsl(var(--foreground))'
             }}>
               SURVIVAL HUNTER
             </h1>
             <div style={{ fontSize: 28 }}>🔥</div>
           </div>
-          <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: '#7a6040', margin: 0 }}>
+          <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, color: 'hsl(var(--muted-foreground))', margin: '0 0 16px' }}>
             MIDNIGHT 12.0.1 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
           </p>
           <div className="divider" style={{ margin: '16px auto', maxWidth: 400 }} />
-          <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#8a7050', margin: 0, fontStyle: 'italic' }}>
+          <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 15, color: 'hsl(var(--muted-foreground))', margin: 0, fontStyle: 'italic', lineHeight: 1.6 }}>
             Sources: Azortharion (Trueshot Lodge) · Method.gg (Symex) · Maxroll (heleni) · Wowhead · Raidbots/SimC APL
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #141e30', marginBottom: 28, gap: 4 }}>
+        <div className="tabs-row" style={{ display: 'flex', borderBottom: '2px solid hsl(var(--border))', marginBottom: 32, gap: 6 }}>
           <button className={`tab-btn ${activeTab === 'sim' ? 'active' : ''}`} onClick={() => setActiveTab('sim')}>⚔ Simulator</button>
           <button className={`tab-btn ${activeTab === 'talents' ? 'active' : ''}`} onClick={() => setActiveTab('talents')}>🌿 Talents</button>
           <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>📊 Detailed Report</button>
@@ -1551,23 +1551,23 @@ export default function SurvivalHunterSim() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Armory Lookup */}
-              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
-                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 12px' }}>
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 24 }}>
+                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 600, letterSpacing: 1.5, color: 'hsl(var(--foreground))', margin: '0 0 14px' }}>
                   🌐 ARMORY LOOKUP
                 </h3>
-                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#6a5030', marginBottom: 10 }}>
+                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', marginBottom: 14, lineHeight: 1.5 }}>
                   Pull your character directly from the WoW Armory — no addon needed
                 </p>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                   {['us', 'eu', 'kr', 'tw'].map(r => (
                     <button key={r} className={`mode-btn ${armoryRegion === r ? 'active' : ''}`}
                       onClick={() => setArmoryRegion(r)}
-                      style={{ flex: 1, padding: '6px 8px', fontSize: 11, textTransform: 'uppercase' }}>
+                      style={{ flex: 1, padding: '10px 12px', fontSize: 12, textTransform: 'uppercase', fontWeight: 600 }}>
                       {r}
                     </button>
                   ))}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
                   {/* Realm searchable dropdown */}
                   <div ref={realmDropdownRef} style={{ position: 'relative' }}>
                     <input className="input-field" placeholder="Search realm..."
@@ -1578,7 +1578,7 @@ export default function SurvivalHunterSim() {
                         if (!e.target.value) setArmoryRealm('');
                       }}
                       onFocus={() => setShowRealmDropdown(true)}
-                      style={{ width: '100%' }}
+                      style={{ width: '100%', fontSize: 14 }}
                     />
                     {showRealmDropdown && (() => {
                       const realms = REALM_DATA[armoryRegion] || [];
@@ -1588,8 +1588,8 @@ export default function SurvivalHunterSim() {
                       return (
                         <div style={{
                           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                          background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: '0 0 6px 6px',
-                          maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                          background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '0 0 8px 8px',
+                          maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 32px hsl(var(--foreground) / 0.2)',
                         }}>
                           {filtered.slice(0, 50).map(realm => (
                             <div key={realm}
@@ -1599,13 +1599,13 @@ export default function SurvivalHunterSim() {
                                 setShowRealmDropdown(false);
                               }}
                               style={{
-                                padding: '6px 10px', cursor: 'pointer', fontSize: 12,
-                                fontFamily: "'EB Garamond', serif", color: '#c8a870',
-                                borderBottom: '1px solid #1a1208',
-                                background: armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent',
+                                padding: '10px 14px', cursor: 'pointer', fontSize: 14,
+                                fontFamily: "'EB Garamond', serif", color: 'hsl(var(--foreground))',
+                                borderBottom: '1px solid hsl(var(--border))',
+                                background: armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? 'hsl(var(--accent) / 0.1)' : 'transparent',
                               }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#1a1a2a')}
-                              onMouseLeave={e => (e.currentTarget.style.background = armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent')}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--accent) / 0.15)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? 'hsl(var(--accent) / 0.1)' : 'transparent')}
                             >
                               {realm}
                             </div>
@@ -1616,46 +1616,47 @@ export default function SurvivalHunterSim() {
                   </div>
                   <input className="input-field" placeholder="Character name"
                     value={armoryName} onChange={e => setArmoryName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()} />
+                    onKeyDown={e => e.key === 'Enter' && handleArmoryLookup()}
+                    style={{ fontSize: 14 }} />
                 </div>
                 {armoryError && (
-                  <div style={{ color: armoryError.startsWith('Warning') ? '#f59e0b' : '#ef4444', fontSize: 12, marginBottom: 8, fontFamily: "'EB Garamond', serif" }}>
+                  <div style={{ color: armoryError.startsWith('Warning') ? '#f59e0b' : '#ef4444', fontSize: 14, marginBottom: 12, fontFamily: "'EB Garamond', serif", padding: '8px 12px', background: 'hsl(var(--destructive) / 0.1)', borderRadius: 6 }}>
                     ⚠ {armoryError}
                   </div>
                 )}
                 <button onClick={handleArmoryLookup} disabled={armoryLoading}
                   style={{
-                    width: '100%', background: armoryLoading ? '#1a1208' : '#0e1a1e', border: '1px solid #1a3a4a',
-                    borderRadius: 6, padding: '10px', color: '#38bdf8', fontFamily: "'Cinzel', serif",
-                    fontSize: 11, letterSpacing: 2, cursor: armoryLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
+                    width: '100%', background: armoryLoading ? 'hsl(var(--muted))' : 'hsl(var(--primary))', border: '1px solid hsl(var(--border))',
+                    borderRadius: 8, padding: '14px', color: armoryLoading ? 'hsl(var(--muted-foreground))' : 'hsl(var(--primary-foreground))', fontFamily: "'Cinzel', serif",
+                    fontSize: 13, letterSpacing: 1.5, fontWeight: 600, cursor: armoryLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
                   }}>
                   {armoryLoading ? '⟳ LOOKING UP...' : '🔍 FETCH FROM ARMORY'}
                 </button>
                 {armoryAvatar && (
-                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <img src={armoryAvatar} alt="Character avatar" style={{ width: 40, height: 40, borderRadius: 4, border: '1px solid #3a2810' }} />
-                    <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#86efac' }}>
+                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <img src={armoryAvatar} alt="Character avatar" style={{ width: 44, height: 44, borderRadius: 6, border: '2px solid hsl(var(--border))' }} />
+                    <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--accent))', fontWeight: 500 }}>
                       ✓ Character loaded from Armory
                       {itemEnrichLoading && <span style={{ color: '#f59e0b' }}> · Enriching item names...</span>}
                     </span>
                   </div>
                 )}
-                <div className="divider" style={{ margin: '16px 0 0' }} />
+                <div className="divider" style={{ margin: '20px 0 0' }} />
               </div>
 
               {/* SimC Import */}
-              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: 0 }}>
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 600, letterSpacing: 1.5, color: 'hsl(var(--foreground))', margin: 0 }}>
                     📋 SIMULATIONCRAFT IMPORT
                   </h3>
                   <button onClick={handleLoadSample} style={{
-                    background: '#1a1208', border: '1px solid #3a2810', borderRadius: 4,
-                    color: '#8a7050', fontSize: 11, padding: '4px 10px', cursor: 'pointer',
-                    fontFamily: "'EB Garamond', serif"
+                    background: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', borderRadius: 6,
+                    color: 'hsl(var(--secondary-foreground))', fontSize: 12, padding: '6px 12px', cursor: 'pointer',
+                    fontFamily: "'EB Garamond', serif", fontWeight: 500
                   }}>Load Sample</button>
                 </div>
-                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#6a5030', marginBottom: 10 }}>
+                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', marginBottom: 14, lineHeight: 1.5 }}>
                   In-game: /simc → copy all output and paste below
                 </p>
                 <textarea
@@ -1663,42 +1664,42 @@ export default function SurvivalHunterSim() {
                   value={simcInput}
                   onChange={e => setSimcInput(e.target.value)}
                   placeholder="Paste your SimulationCraft addon export here..."
-                  style={{ height: 160, resize: 'vertical', lineHeight: 1.6 }}
+                  style={{ height: 180, resize: 'vertical', lineHeight: 1.6, fontSize: 14 }}
                 />
                 {parseError && (
-                  <div style={{ color: '#ef4444', fontSize: 12, marginTop: 8, fontFamily: "'EB Garamond', serif" }}>
+                  <div style={{ color: 'hsl(var(--destructive))', fontSize: 14, marginTop: 12, fontFamily: "'EB Garamond', serif", padding: '10px 14px', background: 'hsl(var(--destructive) / 0.1)', borderRadius: 6 }}>
                     ⚠ {parseError}
                   </div>
                 )}
                 <button onClick={handleParse} style={{
-                  marginTop: 12, width: '100%', background: '#151e14', border: '1px solid #2a3a1a',
-                  borderRadius: 6, padding: '10px', color: '#86efac', fontFamily: "'Cinzel', serif",
-                  fontSize: 11, letterSpacing: 2, cursor: 'pointer', transition: 'all 0.2s'
+                  marginTop: 16, width: '100%', background: 'hsl(var(--accent))', border: '1px solid hsl(var(--border))',
+                  borderRadius: 8, padding: '14px', color: 'hsl(var(--accent-foreground))', fontFamily: "'Cinzel', serif",
+                  fontSize: 13, letterSpacing: 1.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
                 }}>
                   ✦ PARSE CHARACTER
                 </button>
 
                 {parsedChar && (
-                  <div style={{ marginTop: 14, padding: 12, background: '#0f1a0e', borderRadius: 6, border: '1px solid #1e3018', animation: 'fadeIn 0.3s ease' }}>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#86efac', marginBottom: 8 }}>
+                  <div style={{ marginTop: 18, padding: 16, background: 'hsl(var(--accent) / 0.05)', borderRadius: 8, border: '1px solid hsl(var(--accent) / 0.2)', animation: 'fadeIn 0.3s ease' }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 13, color: 'hsl(var(--accent))', marginBottom: 12, fontWeight: 600 }}>
                       ✓ CHARACTER LOADED
                     </div>
                     {/* Character info + 3D Model row */}
-                    <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ display: 'flex', gap: 16 }}>
                       <div style={{ flex: 1 }}>
                         {/* Character info */}
-                        <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
-                          {parsedChar.character.name && <span style={{ color: '#e8c88a' }}>Name: <b>{parsedChar.character.name}</b></span>}
-                          {parsedChar.character.level && <span style={{ color: '#c8a870' }}>Level: {parsedChar.character.level}</span>}
-                          {parsedChar.character.race && <span style={{ color: '#c8a870' }}>Race: {parsedChar.character.race}</span>}
-                          {parsedChar.character.avgIlvl > 0 && <span style={{ color: '#f0c880' }}>Avg iLvl: <b>{parsedChar.character.avgIlvl}</b></span>}
+                        <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, marginBottom: 14 }}>
+                          {parsedChar.character.name && <span style={{ color: 'hsl(var(--foreground))' }}>Name: <b>{parsedChar.character.name}</b></span>}
+                          {parsedChar.character.level && <span style={{ color: 'hsl(var(--muted-foreground))' }}>Level: {parsedChar.character.level}</span>}
+                          {parsedChar.character.race && <span style={{ color: 'hsl(var(--muted-foreground))' }}>Race: {parsedChar.character.race}</span>}
+                          {parsedChar.character.avgIlvl > 0 && <span style={{ color: 'hsl(var(--accent))' }}>Avg iLvl: <b>{parsedChar.character.avgIlvl}</b></span>}
                         </div>
 
                     {/* Stats */}
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 1, color: '#7a6040', marginBottom: 6 }}>STATS</div>
-                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
-                      <span style={{ color: '#a0a0a0' }}>AGI: <b>{parsedChar.stats.agility.toLocaleString()}</b></span>
-                      <span style={{ color: '#c8a870' }}>AP: <b>{Math.round(parsedChar.stats.attackPower).toLocaleString()}</b></span>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: 'hsl(var(--muted-foreground))', marginBottom: 8, fontWeight: 600 }}>STATS</div>
+                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, marginBottom: 14 }}>
+                      <span style={{ color: 'hsl(var(--muted-foreground))' }}>AGI: <b>{parsedChar.stats.agility.toLocaleString()}</b></span>
+                      <span style={{ color: 'hsl(var(--accent))' }}>AP: <b>{Math.round(parsedChar.stats.attackPower).toLocaleString()}</b></span>
                       <span style={{ color: '#60a5fa' }}>Haste: <b>{parsedChar.stats.haste}%</b></span>
                       <span style={{ color: '#f59e0b' }}>Crit: <b>{parsedChar.stats.crit}%</b></span>
                       <span style={{ color: '#a78bfa' }}>Mastery: <b>{parsedChar.stats.mastery}%</b></span>
@@ -1719,10 +1720,10 @@ export default function SurvivalHunterSim() {
                     {/* Gear list */}
                     {parsedChar.gear.length > 0 && (
                       <>
-                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 1, color: '#7a6040', marginBottom: 6 }}>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: 'hsl(var(--muted-foreground))', marginBottom: 8, fontWeight: 600 }}>
                           GEAR ({parsedChar.gear.length} PIECES)
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           {parsedChar.gear.map((g, gi) => {
                             const qualityColor = g.ilvl >= 250 ? '#ff8000' : g.ilvl >= 230 ? '#a335ee' : g.ilvl >= 200 ? '#0070dd' : g.ilvl > 0 ? '#1eff00' : '#9d9d9d';
                             return (
@@ -1731,17 +1732,27 @@ export default function SurvivalHunterSim() {
                               onMouseLeave={handleItemLeave}
                               style={{
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '4px 8px', borderRadius: 4,
-                                background: gi % 2 === 0 ? '#0a0e08' : 'transparent',
-                                fontFamily: "'EB Garamond', serif", fontSize: 12,
-                                position: 'relative'
-                              }}>
-                              <span style={{ color: '#8a7050', minWidth: 80 }}>{g.slotLabel}</span>
-                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 11 }}>
+                                padding: '8px 12px', borderRadius: 6,
+                                background: gi % 2 === 0 ? 'hsl(var(--muted) / 0.3)' : 'transparent',
+                                fontFamily: "'EB Garamond', serif", fontSize: 13,
+                                position: 'relative', border: '1px solid transparent',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={() => {
+                                const target = document.querySelector(`[data-gear-index="${gi}"]`);
+                                if (target) target.style.background = 'hsl(var(--accent) / 0.1)';
+                              }}
+                              onMouseLeave={() => {
+                                const target = document.querySelector(`[data-gear-index="${gi}"]`);
+                                if (target) target.style.background = gi % 2 === 0 ? 'hsl(var(--muted) / 0.3)' : 'transparent';
+                              }}
+                              data-gear-index={gi}>
+                              <span style={{ color: 'hsl(var(--muted-foreground))', minWidth: 90, fontWeight: 500 }}>{g.slotLabel}</span>
+                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 500 }}>
                                 {g.name}
-                                {g.itemId && <span style={{ color: '#4a3020', fontSize: 10 }}> 🔍</span>}
+                                {g.itemId && <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 10, marginLeft: 4 }}>🔍</span>}
                               </span>
-                              <span style={{ color: qualityColor, fontWeight: 600, minWidth: 30, textAlign: 'right' }}>
+                              <span style={{ color: qualityColor, fontWeight: 700, minWidth: 36, textAlign: 'right' }}>
                                 {g.ilvl > 0 ? g.ilvl : '—'}
                               </span>
                             </div>
@@ -1755,32 +1766,32 @@ export default function SurvivalHunterSim() {
                 </div>
 
                 {/* Advanced Options */}
-                <div style={{ marginBottom: 20, border: '1px solid #1a2540', borderRadius: 8, padding: 16, background: '#050810' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}
+                <div style={{ marginBottom: 24, border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 20, background: 'hsl(var(--card))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer' }}
                     onClick={() => setShowAdvanced(!showAdvanced)}>
-                    <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 1, color: '#e8c88a', margin: 0, flex: 1 }}>
+                    <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 1, color: 'hsl(var(--foreground))', margin: 0, flex: 1, fontWeight: 600 }}>
                       ⚙ ADVANCED OPTIONS
                     </h4>
-                    <span style={{ color: '#6a5030', fontSize: 14 }}>{showAdvanced ? '−' : '+'}</span>
+                    <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 16, fontWeight: 600 }}>{showAdvanced ? '−' : '+'}</span>
                   </div>
 
                   {showAdvanced && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 14 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 18 }}>
                       
                       {/* Fight Style */}
                       <div>
-                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 1, color: 'hsl(var(--muted-foreground))', display: 'block', marginBottom: 10, fontWeight: 600 }}>
                           FIGHT STYLE
                         </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           {Object.entries(FIGHT_STYLES).map(([key, style]) => (
                             <button key={key} className={`mode-btn ${fightStyle === key ? 'active' : ''}`}
                               onClick={() => setFightStyle(key)} 
-                              style={{ padding: '8px 10px', fontSize: 10, textAlign: 'left', position: 'relative' }}>
-                              <div style={{ fontWeight: 600, marginBottom: 2 }}>{style.label}</div>
-                              <div style={{ fontSize: 9, opacity: 0.7, lineHeight: 1.2 }}>{style.desc}</div>
+                              style={{ padding: '12px 14px', fontSize: 11, textAlign: 'left', position: 'relative' }}>
+                              <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>{style.label}</div>
+                              <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.3 }}>{style.desc}</div>
                               <span style={{ 
-                                position: 'absolute', right: 6, top: 6, fontSize: 8, 
+                                position: 'absolute', right: 8, top: 8, fontSize: 9, fontWeight: 600,
                                 color: style.mult >= 1 ? '#86efac' : '#fca5a5' 
                               }}>
                                 {style.mult === 1.0 ? '100%' : `${Math.round(style.mult * 100)}%`}
