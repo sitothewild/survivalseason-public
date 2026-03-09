@@ -369,18 +369,18 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
   return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists };
 }
 
-function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
-  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
+function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null) {
+  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
   const DELTA = { agility: 200, haste: 1.5, crit: 1.5, mastery: 1.5, versatility: 1.5 };
   const RATING_PER_PERCENT = { haste: 170, crit: 170, mastery: 170, versatility: 205 };
   const weights = {};
   const agiChar = JSON.parse(JSON.stringify(charData)); agiChar.stats.agility += DELTA.agility; agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
-  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
+  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
   const agiDelta = (agiDps - baseDps) / DELTA.agility;
   weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
   ['haste', 'crit', 'mastery', 'versatility'].forEach(stat => {
     const bumpChar = JSON.parse(JSON.stringify(charData)); bumpChar.stats[stat] = (bumpChar.stats[stat] || 0) + DELTA[stat];
-    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
+    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
     const dpsDelta = bumpDps - baseDps; const ratingBump = DELTA[stat] * RATING_PER_PERCENT[stat];
     const perRating = dpsDelta / ratingBump; const label = stat.charAt(0).toUpperCase() + stat.slice(1);
     weights[label] = { perPoint: perRating, perRating, delta: dpsDelta, bump: `+${DELTA[stat]}%`, ratingBump: Math.round(ratingBump) };
