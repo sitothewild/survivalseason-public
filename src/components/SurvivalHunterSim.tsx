@@ -1059,54 +1059,109 @@ export default function SurvivalHunterSim() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, position: "relative" }}>
                   <div ref={realmDropdownRef} style={{ position: "relative" }}>
                     <input
+                      ref={realmInputRef}
                       className="ifield"
                       value={armoryRealmSearch}
                       onChange={(e) => {
                         setArmoryRealmSearch(e.target.value);
                         setShowRealmDropdown(true);
+                        setRealmHighlightIdx(-1);
                       }}
                       onKeyDown={(e) => {
+                        const filtered = realmSuggestions;
+
                         if (e.key === 'Escape') {
                           setShowRealmDropdown(false);
+                          setRealmHighlightIdx(-1);
+                          return;
                         }
+
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          if (!showRealmDropdown) { setShowRealmDropdown(true); setRealmHighlightIdx(0); return; }
+                          setRealmHighlightIdx(prev => (prev + 1) % filtered.length);
+                          return;
+                        }
+
+                        if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          if (!showRealmDropdown) return;
+                          setRealmHighlightIdx(prev => (prev <= 0 ? filtered.length - 1 : prev - 1));
+                          return;
+                        }
+
+                        if (e.key === 'Tab' && showRealmDropdown && filtered.length > 0) {
+                          // Auto-complete top match on Tab
+                          const pick = realmHighlightIdx >= 0 ? filtered[realmHighlightIdx] : filtered[0];
+                          if (pick) {
+                            e.preventDefault();
+                            setArmoryRealmSearch(pick);
+                            setArmoryRealm(normalizeRealmSlug(pick));
+                            setShowRealmDropdown(false);
+                            setRealmHighlightIdx(-1);
+                          }
+                          return;
+                        }
+
                         if (e.key === 'Enter') {
                           e.preventDefault();
 
-                          // If the user already typed an exact realm, just close the dropdown.
-                          if (resolvedRealmSlug) {
+                          // If highlight active, pick that
+                          if (realmHighlightIdx >= 0 && filtered[realmHighlightIdx]) {
+                            setArmoryRealmSearch(filtered[realmHighlightIdx]);
+                            setArmoryRealm(normalizeRealmSlug(filtered[realmHighlightIdx]));
                             setShowRealmDropdown(false);
+                            setRealmHighlightIdx(-1);
                             return;
                           }
 
-                          // Otherwise pick the top suggestion (if any)
-                          const first = realmSuggestions[0];
+                          // If exact match already resolved, close dropdown
+                          if (resolvedRealmSlug) {
+                            setShowRealmDropdown(false);
+                            setRealmHighlightIdx(-1);
+                            return;
+                          }
+
+                          // Otherwise pick top suggestion
+                          const first = filtered[0];
                           if (first) {
                             setArmoryRealmSearch(first);
                             setArmoryRealm(normalizeRealmSlug(first));
                             setShowRealmDropdown(false);
+                            setRealmHighlightIdx(-1);
                           }
                         }
                       }}
-                      onFocus={() => setShowRealmDropdown(true)}
+                      onFocus={() => { setShowRealmDropdown(true); setRealmHighlightIdx(-1); }}
                       placeholder="Search realm..."
                       style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }}
+                      autoComplete="off"
                     />
                     {showRealmDropdown && (() => {
                       const filtered = realmSuggestions;
                       if (filtered.length === 0) return null;
                       return (
                         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
-                          {filtered.map(rv => (
+                          {filtered.map((rv, idx) => (
                             <div
                               key={rv}
                               onMouseDown={() => {
                                 setArmoryRealm(normalizeRealmSlug(rv));
                                 setArmoryRealmSearch(rv);
                                 setShowRealmDropdown(false);
+                                setRealmHighlightIdx(-1);
                               }}
-                              style={{ padding: "9px 14px", fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, cursor: "pointer", transition: "background .1s", borderBottom: `1px solid ${C.borderSub}` }}
-                              onMouseEnter={e => e.currentTarget.style.background = C.surface3}
-                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                              onMouseEnter={() => setRealmHighlightIdx(idx)}
+                              style={{
+                                padding: "9px 14px",
+                                fontFamily: "'Rajdhani',sans-serif",
+                                fontSize: 14,
+                                color: idx === realmHighlightIdx ? C.goldLight : C.textSec,
+                                cursor: "pointer",
+                                transition: "background .08s",
+                                borderBottom: `1px solid ${C.borderSub}`,
+                                background: idx === realmHighlightIdx ? C.surface3 : "transparent",
+                              }}
                             >
                               {rv}
                             </div>
