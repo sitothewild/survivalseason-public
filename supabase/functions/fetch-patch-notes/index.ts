@@ -97,21 +97,17 @@ async function fetchWowheadNews(): Promise<PatchNote[]> {
 
       const plainTitle = stripHtml(title);
       const plainDesc = stripHtml(desc);
-      const combined = `${plainTitle} ${plainDesc}`;
 
-      // Only include posts that explicitly mention hunter or survival
-      const isHunterRelated = /hunter|survival/i.test(combined);
+      // Include hotfixes, class tuning, patch notes, and any hunter/survival mentions
+      const isRelevant = /hotfix|class.?tuning|patch.*notes?|hunter|survival|balance.*changes?|nerf|buff/i.test(plainTitle);
 
-      if (isHunterRelated) {
-        let hunterContent = extractHunterSection(plainDesc);
-        if (!hunterContent) hunterContent = plainDesc;
-
+      if (isRelevant) {
         items.push({
           title: plainTitle,
           link: stripHtml(link),
           pubDate,
           date: formatDate(pubDate),
-          description: truncate(hunterContent, 350),
+          description: truncate(plainDesc, 350),
           source: 'Wowhead',
         });
       }
