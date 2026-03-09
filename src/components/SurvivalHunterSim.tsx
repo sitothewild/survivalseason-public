@@ -391,6 +391,16 @@ function getItemQualityColor(quality?: string, ilvl?: number, avgIlvl?: number):
   return '#ffffff';
 }
 
+function formatEnchantLabel(enchant: any): string {
+  const raw = String(enchant?.name || enchant?.display || '').trim();
+  if (!raw) return '';
+  return raw
+    .replace(/^Enchanted:\s*/i, '')
+    .replace(/^Enchant\s+(Ring|Weapon|Cloak|Chest|Bracer|Boots|Legs)\s*-\s*/i, '')
+    .replace(/\s*\|A:.*\|a\s*$/i, '')
+    .trim();
+}
+
 function getAbilityCoefficient(ability) {
   const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Mongoose Bite':1.60,'Hatchet Toss':0.95 };
   return c[ability] || 1.0;
