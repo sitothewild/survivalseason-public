@@ -622,6 +622,26 @@ export default function SurvivalHunterSim() {
             <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
             <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
             <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
+            <button onClick={() => handleSimcSync(true)} disabled={simcSyncStatus === 'loading'}
+              title={simcSyncInfo}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20,
+                fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, fontWeight: 600, cursor: simcSyncStatus === 'loading' ? 'not-allowed' : 'pointer',
+                border: `1px solid ${simcSyncStatus === 'synced' ? 'rgba(56,189,248,.4)' : simcSyncStatus === 'error' ? 'rgba(248,113,113,.4)' : C.border}`,
+                background: simcSyncStatus === 'synced' ? '#0c1e35' : simcSyncStatus === 'error' ? '#2a0f0f' : C.surface2,
+                color: simcSyncStatus === 'synced' ? '#38bdf8' : simcSyncStatus === 'error' ? '#f87171' : C.textMid,
+                transition: 'all .2s', whiteSpace: 'nowrap',
+              }}>
+              {simcSyncStatus === 'loading' ? (
+                <><span style={{ width: 8, height: 8, border: "1.5px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> SYNCING</>
+              ) : simcSyncStatus === 'synced' ? (
+                <>🔄 SIMC LIVE</>
+              ) : simcSyncStatus === 'error' ? (
+                <>⚠ SYNC</>
+              ) : (
+                <>🔄 SYNC SIMC</>
+              )}
+            </button>
           </div>
         </div>
       </div>
