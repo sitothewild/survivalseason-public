@@ -3,20 +3,16 @@
 // for the Survival Hunter simulation engine.
 
 const SIMC_TO_ENGINE: Record<string, string> = {
-  wildfire_bomb: "wildfireBomb",
+  // Midnight 12.0 abilities
   kill_command: "killCommand",
-  mongoose_bite: "mongooseBite",
-  raptor_bite: "raptorBite",
+  wildfire_bomb: "wildfireBomb",
+  raptor_strike: "raptorStrike",
   raptor_swipe: "raptorSwipe",
-  flanking_strike: "flankingStrike",
-  fury_of_the_eagle: "furyOfTheEagle",
-  coordinated_assault: "coordinatedAssault",
-  explosive_shot: "explosiveShot",
-  serpent_sting: "serpentSting",
-  butchery: "butchery",
-  wildfire_infusion: "wildfireInfusion",
-  spearhead: "spearhead",
-  steel_trap: "steelTrap",
+  takedown: "takedown",
+  flamefang_pitch: "flamefangPitch",
+  boomstick: "boomstick",
+  moonlight_chakram: "moonlightChakram",
+  hatchet_toss: "hatchetToss",
 };
 
 export interface RotationData {
@@ -32,22 +28,22 @@ export interface ParsedAPL {
 const FALLBACK_WEIGHTS: ParsedAPL = {
   sentinel: {
     st: {
-      ordered: ["killCommand", "wildfireBomb", "flankingStrike", "mongooseBite", "raptorBite", "furyOfTheEagle", "coordinatedAssault"],
-      weights: { killCommand: 0.267, wildfireBomb: 0.133, flankingStrike: 0.089, mongooseBite: 0.067, raptorBite: 0.053, furyOfTheEagle: 0.045, coordinatedAssault: 0.038 },
+      ordered: ["killCommand", "boomstick", "wildfireBomb", "takedown", "moonlightChakram", "flamefangPitch", "raptorStrike"],
+      weights: { killCommand: 0.220, boomstick: 0.160, wildfireBomb: 0.140, takedown: 0.120, moonlightChakram: 0.100, flamefangPitch: 0.080, raptorStrike: 0.180 },
     },
     aoe: {
-      ordered: ["wildfireBomb", "butchery", "killCommand", "furyOfTheEagle", "mongooseBite", "coordinatedAssault", "raptorSwipe"],
-      weights: { wildfireBomb: 0.267, butchery: 0.133, killCommand: 0.089, furyOfTheEagle: 0.067, mongooseBite: 0.053, coordinatedAssault: 0.045, raptorSwipe: 0.038 },
+      ordered: ["killCommand", "wildfireBomb", "boomstick", "takedown", "moonlightChakram", "flamefangPitch", "raptorStrike"],
+      weights: { killCommand: 0.180, wildfireBomb: 0.200, boomstick: 0.190, takedown: 0.080, moonlightChakram: 0.100, flamefangPitch: 0.120, raptorStrike: 0.130 },
     },
   },
   packLeader: {
     st: {
-      ordered: ["killCommand", "wildfireBomb", "flankingStrike", "mongooseBite", "raptorBite", "coordinatedAssault", "furyOfTheEagle"],
-      weights: { killCommand: 0.267, wildfireBomb: 0.133, flankingStrike: 0.089, mongooseBite: 0.067, raptorBite: 0.053, coordinatedAssault: 0.045, furyOfTheEagle: 0.038 },
+      ordered: ["killCommand", "takedown", "flamefangPitch", "boomstick", "wildfireBomb", "raptorStrike"],
+      weights: { killCommand: 0.230, takedown: 0.130, flamefangPitch: 0.100, boomstick: 0.150, wildfireBomb: 0.140, raptorStrike: 0.250 },
     },
     aoe: {
-      ordered: ["wildfireBomb", "killCommand", "butchery", "furyOfTheEagle", "mongooseBite", "coordinatedAssault", "raptorSwipe"],
-      weights: { wildfireBomb: 0.267, killCommand: 0.133, butchery: 0.089, furyOfTheEagle: 0.067, mongooseBite: 0.053, coordinatedAssault: 0.045, raptorSwipe: 0.038 },
+      ordered: ["killCommand", "takedown", "flamefangPitch", "wildfireBomb", "boomstick", "raptorStrike"],
+      weights: { killCommand: 0.180, takedown: 0.080, flamefangPitch: 0.140, wildfireBomb: 0.200, boomstick: 0.190, raptorStrike: 0.210 },
     },
   },
 };
