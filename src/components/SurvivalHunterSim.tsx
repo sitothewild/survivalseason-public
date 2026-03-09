@@ -695,12 +695,13 @@ export default function SurvivalHunterSim() {
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                           {parsedChar.gear.map((g, i) => {
-                            const ilvlColor = g.ilvl >= 645 ? "#fbbf24" : g.ilvl >= 635 ? "#a78bfa" : g.ilvl >= 620 ? "#34d399" : "#94a3b8";
+                            const ilvlColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#94a3b8";
+                            const nameColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#ffffff";
                             return (
-                              <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, transition: "background .15s", cursor: g.itemId ? "pointer" : "default" }}
+                              <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
                                 onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)} onMouseLeave={handleItemLeave}>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: "#a78bfa", fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
                                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: ilvlColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
                               </div>
                             );
@@ -1937,7 +1938,18 @@ export default function SurvivalHunterSim() {
 
       {/* Item Tooltip */}
       {hoveredItem && (
-        <div className="item-tooltip" style={{
+        <div style={{
+          position: "fixed",
+          pointerEvents: "none",
+          zIndex: 9999,
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: "12px 14px",
+          maxWidth: 320,
+          minWidth: 200,
+          boxShadow: "0 8px 24px rgba(0,0,0,.5)",
+          fontFamily: "'Rajdhani',sans-serif",
           left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
           top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
         }}>
@@ -1949,11 +1961,14 @@ export default function SurvivalHunterSim() {
             const item = itemCache[hoveredItem];
             const qualityColors = { LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd', UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d' };
             const nameColor = qualityColors[item.quality?.type] || '#a335ee';
+            // Find the actual ilvl from parsed gear
+            const gearPiece = parsedChar?.gear?.find((g: any) => g.itemId === hoveredItem);
+            const displayIlvl = gearPiece?.ilvl || item.preview_item?.level?.value || item.level;
             return (
               <>
                 {item._icon && <img src={item._icon} style={{ width: 36, height: 36, borderRadius: 6, border: `1px solid ${C.border}`, marginRight: 10, float: "left" }} />}
                 <div style={{ fontSize: 15, fontWeight: 700, color: nameColor, marginBottom: 4 }}>{item.name}</div>
-                {item.level && <div style={{ fontSize: 13, color: C.goldLight, marginBottom: 6 }}>Item Level {item.level}</div>}
+                {displayIlvl && <div style={{ fontSize: 13, color: C.goldLight, marginBottom: 6 }}>Item Level {displayIlvl}</div>}
                 {item.item_class?.name && item.item_subclass?.name && (
                   <div style={{ fontSize: 12, color: C.textDim, display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                     <span>{item.item_subclass.name}</span>
