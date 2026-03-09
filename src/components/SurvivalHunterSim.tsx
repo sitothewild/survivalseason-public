@@ -820,6 +820,10 @@ export default function SurvivalHunterSim() {
       setImportedTalentSource('armory');
       setImportedTalentString(simData?.talents || '');
       setSimResults(null);
+      // Auto-scroll to sim config after successful armory load
+      setTimeout(() => {
+        document.getElementById("sim-config")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
       if (fullData.media?.assets) {
         const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
         if (avatar?.value) setArmoryAvatar(avatar.value);
