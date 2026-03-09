@@ -213,7 +213,7 @@ const CURATED_NOTES: PatchNote[] = [
   },
   {
     title: 'Hotfixes — March 6, 2026',
-    link: 'https://www.wowhead.com/news/category=hotfixes',
+    link: 'https://www.wowhead.com/news/hunter',
     pubDate: '2026-03-06T00:00:00Z',
     date: 'Mar 6, 2026',
     description: 'Hunter — Survival: Fixed an issue where Sentinel owl could proc multiple times from a single Wildfire Bomb cast. Flamefang Pitch second charge now correctly benefits from mastery. Raptor Swipe haste proc now stacks correctly up to 5 times in AoE.',
