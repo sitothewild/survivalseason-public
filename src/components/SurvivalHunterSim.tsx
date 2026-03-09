@@ -401,6 +401,10 @@ export default function SurvivalHunterSim() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [tooltipLoading, setTooltipLoading] = useState(false);
+  // Report tab state
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [upgradeFrom, setUpgradeFrom] = useState(636);
+  const [upgradeTo, setUpgradeTo] = useState(645);
 
   const handleParse = useCallback(() => {
     setParseError(''); const result = parseSimcString(simcInput);
