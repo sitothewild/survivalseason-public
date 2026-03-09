@@ -141,16 +141,13 @@ async function fetchMmoChampionRss(): Promise<PatchNote[]> {
       const plainTitle = stripHtml(title);
       const plainDesc = stripHtml(desc);
 
-      if (/hunter|survival/i.test(`${plainTitle} ${plainDesc}`)) {
-        let hunterContent = extractHunterSection(plainDesc);
-        if (!hunterContent) hunterContent = plainDesc;
-
+      if (/hotfix|class.?tuning|patch.*notes?|hunter|survival|balance.*changes?|nerf|buff/i.test(plainTitle)) {
         items.push({
           title: plainTitle,
           link: stripHtml(link),
           pubDate,
           date: formatDate(pubDate),
-          description: truncate(hunterContent, 350),
+          description: truncate(plainDesc, 350),
           source: 'MMO-Champion',
         });
       }
