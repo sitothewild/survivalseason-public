@@ -1521,6 +1521,131 @@ export default function SurvivalHunterSim() {
                 )}
                 {!isSimming && simResults && (
                   <div className="result-anim" style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeUp .35s ease forwards" }}>
+
+                    {/* ═══ TALENT COMPARISON ═══ */}
+                    {userSimResult && optimalSimResult && (
+                      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: C.textDim, marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                          ⚖ TALENT COMPARISON
+                          <div style={{ flex: 1, height: 1, background: C.borderSub }} />
+                        </div>
+
+                        {/* Two build columns + center delta */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 0, marginBottom: 16 }}>
+                          {/* YOUR BUILD */}
+                          <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: "10px 0 0 10px", padding: 16 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textMid, marginBottom: 10 }}>YOUR BUILD</div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                              <span className="badge" style={{ background: userSimResult.hero === 'sentinel' ? C.sentBg : C.packBg, color: userSimResult.hero === 'sentinel' ? C.sentClr : C.packClr, border: `1px solid ${userSimResult.hero === 'sentinel' ? C.sentBdr : C.packBdr}` }}>
+                                {MIDNIGHT_DATA.talents.hero[userSimResult.hero]?.icon} {MIDNIGHT_DATA.talents.hero[userSimResult.hero]?.name || userSimResult.hero}
+                              </span>
+                            </div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 28, fontWeight: 900, color: C.textPri, lineHeight: 1, marginBottom: 6 }}>
+                              {fmt(userSimResult.totalDps)}
+                            </div>
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, marginBottom: 12 }}>DPS estimate</div>
+                            {importedTalentString && (
+                              <div title={importedTalentString} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: C.surface3, borderRadius: 5, padding: "4px 8px", marginBottom: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {importedTalentString.length > 20 ? `${importedTalentString.slice(0, 20)}...` : importedTalentString}
+                              </div>
+                            )}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                              {(userBuildInfo?.selected || []).map((t: any) => (
+                                <span key={t.key} className={`tag ${t.always ? 'tag-core' : t.aoePriority ? 'tag-aoe' : 'tag-st'}`} style={{ fontSize: 11, padding: "2px 8px" }}>
+                                  {t.key.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* CENTER DELTA */}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 16px", background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+                            <div style={{ width: 1, flex: 1, background: C.borderSub }} />
+                            {(() => {
+                              const diff = optimalSimResult.totalDps - userSimResult.totalDps;
+                              const isOptimal = diff <= 0;
+                              return (
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 0" }}>
+                                  {isOptimal ? (
+                                    <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}` }}>✓ OPTIMAL</span>
+                                  ) : (
+                                    <>
+                                      <span style={{ fontSize: 18, color: C.gold }}>→</span>
+                                      <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid ${C.gold}` }}>
+                                        ▲ +{fmt(diff)} DPS
+                                      </span>
+                                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, textAlign: "center", maxWidth: 60 }}>possible</span>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                            <div style={{ width: 1, flex: 1, background: C.borderSub }} />
+                          </div>
+
+                          {/* OPTIMAL BUILD */}
+                          <div style={{ background: C.goldBg, border: `1px solid ${C.gold}`, borderRadius: "0 10px 10px 0", padding: 16 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10 }}>★ OPTIMAL BUILD</div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                              <span className="badge" style={{ background: C.sentBg, color: C.sentClr, border: `1px solid ${C.sentBdr}` }}>
+                                🦉 Sentinel
+                              </span>
+                            </div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 28, fontWeight: 900, color: C.goldLight, lineHeight: 1, marginBottom: 6 }}>
+                              {fmt(optimalSimResult.totalDps)}
+                            </div>
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, marginBottom: 12 }}>DPS estimate</div>
+                            {(() => {
+                              const optStr = optimalBuildInfo?.exportString || '';
+                              return optStr ? (
+                                <div title={optStr} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, background: "rgba(0,0,0,0.3)", borderRadius: 5, padding: "4px 8px", marginBottom: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {optStr.length > 20 ? `${optStr.slice(0, 20)}...` : optStr}
+                                </div>
+                              ) : null;
+                            })()}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                              {(optimalBuildInfo?.selected || []).map((t: any) => (
+                                <span key={t.key} className={`tag ${t.always ? 'tag-core' : t.aoePriority ? 'tag-aoe' : 'tag-st'}`} style={{ fontSize: 11, padding: "2px 8px" }}>
+                                  {t.key.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* WHAT'S DIFFERENT */}
+                        {talentDiffRows.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>WHAT'S DIFFERENT</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                              {talentDiffRows.map((row: any, i: number) => (
+                                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", background: i % 2 === 0 ? C.surface2 : C.surface3, padding: "10px 14px", gap: 10 }}>
+                                  <div>
+                                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginBottom: 2, letterSpacing: 1 }}>YOU HAVE</div>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: "#a78bfa" }}>
+                                      {row.from.key.replace(/([A-Z])/g, ' $1').trim()}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                                    <span style={{ color: C.gold, fontSize: 14 }}>→</span>
+                                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, maxWidth: 140, textAlign: "center", lineHeight: 1.3 }}>
+                                      {row.note}
+                                    </div>
+                                  </div>
+                                  <div style={{ textAlign: "right" }}>
+                                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginBottom: 2, letterSpacing: 1 }}>OPTIMAL USES</div>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: C.goldLight }}>
+                                      {row.to.key.replace(/([A-Z])/g, ' $1').trim()}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* DPS Results */}
                     <div style={{ display: "grid", gridTemplateColumns: simResults.length > 1 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: 16 }}>
                       {simResults.map((res, ri) => {
