@@ -1424,6 +1424,352 @@ export default function SurvivalHunterSim() {
                     </CARD>
                   );
                 })()}
+
+                {/* ═══ MONGOOSE FURY WINDOW ANALYZER ═══ */}
+                {(() => {
+                  const ap = simResult?.attackPower || charData?.stats?.attackPower || 45000;
+                  const mbBase = Math.round(ap * 1.60);
+                  const STACKS = [0,1,2,3,4,5,6];
+                  const STACK_MULT = [1.0, 1.15, 1.30, 1.45, 1.60, 1.75, 1.90];
+                  const STACK_COLORS = ["#1a2236","#1e3a2a","#1f4a2e","#225a32","#258a3a","#28a744","#22c55e"];
+                  const WINDOW_DURATION = 14;
+                  const RAMP_END = 6;
+                  // MB casts during spend phase (6-14s), roughly every 1.5s GCD
+                  const MB_CASTS = [6.5, 8.0, 9.5, 11.0, 12.5];
+                  const missedStackDps = Math.round((mbBase * 0.15 * MB_CASTS.length) / WINDOW_DURATION);
+
+                  return (
+                    <CARD style={{ marginTop: 20 }}>
+                      <LBL>🐍 Mongoose Fury Window Analyzer</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                        Mongoose Fury stacks up to 6 via Kill Command crits (Mongoose Rounds). Each stack = +15% Mongoose Bite damage. Window lasts 14 seconds from first stack.
+                      </p>
+
+                      {/* Fury Window Diagram */}
+                      <div style={{ background: "#0d1117", borderRadius: 8, border: `1px solid ${C.border}`, padding: 16, marginBottom: 16 }}>
+                        <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+                          <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>FURY WINDOW — 14 SECONDS</span>
+                        </div>
+
+                        {/* Phase labels */}
+                        <div style={{ display: "flex", marginBottom: 6 }}>
+                          <div style={{ width: `${(RAMP_END / WINDOW_DURATION) * 100}%`, textAlign: "center" }}>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: "#22c55e", background: "rgba(34,197,94,.1)", padding: "2px 8px", borderRadius: 4 }}>RAMP PHASE</span>
+                          </div>
+                          <div style={{ flex: 1, textAlign: "center" }}>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.goldLight, background: C.goldBg, padding: "2px 8px", borderRadius: 4 }}>SPEND PHASE</span>
+                          </div>
+                        </div>
+
+                        {/* Main bar */}
+                        <div style={{ position: "relative", height: 48, borderRadius: 6, overflow: "hidden", background: "#1a2236", marginBottom: 8 }}>
+                          {/* Ramp gradient segments */}
+                          {STACKS.slice(0, 7).map((s, i) => {
+                            const segStart = i === 0 ? 0 : (i / 6) * RAMP_END;
+                            const segEnd = ((i + 1) / 6) * RAMP_END;
+                            if (segEnd > RAMP_END && i > 0) return null;
+                            const left = `${(segStart / WINDOW_DURATION) * 100}%`;
+                            const width = `${((Math.min(segEnd, RAMP_END) - segStart) / WINDOW_DURATION) * 100}%`;
+                            return (
+                              <div key={i} style={{
+                                position: "absolute", left, width, top: 0, bottom: 0,
+                                background: STACK_COLORS[i],
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                              }}>
+                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: i >= 4 ? "#fff" : C.textDim }}>
+                                  {i <= 6 ? `${i}` : ""}
+                                </span>
+                              </div>
+                            );
+                          })}
+
+                          {/* Spend phase background */}
+                          <div style={{
+                            position: "absolute",
+                            left: `${(RAMP_END / WINDOW_DURATION) * 100}%`,
+                            right: 0, top: 0, bottom: 0,
+                            background: "rgba(217,119,6,.12)",
+                          }} />
+
+                          {/* MB cast bars */}
+                          {MB_CASTS.map((t, i) => (
+                            <div key={i} style={{
+                              position: "absolute",
+                              left: `${(t / WINDOW_DURATION) * 100}%`,
+                              top: 4, bottom: 4, width: 4,
+                              background: C.goldLight,
+                              borderRadius: 2,
+                              boxShadow: `0 0 8px ${C.goldLight}60`,
+                            }}>
+                              <span style={{
+                                position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)",
+                                fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.goldLight, whiteSpace: "nowrap",
+                              }}>MB</span>
+                            </div>
+                          ))}
+
+                          {/* Phase divider */}
+                          <div style={{
+                            position: "absolute",
+                            left: `${(RAMP_END / WINDOW_DURATION) * 100}%`,
+                            top: 0, bottom: 0, width: 2,
+                            background: "#fff", opacity: 0.3,
+                          }} />
+                        </div>
+
+                        {/* Time ticks */}
+                        <div style={{ position: "relative", height: 16 }}>
+                          {[0, 2, 4, 6, 8, 10, 12, 14].map(t => (
+                            <span key={t} style={{
+                              position: "absolute",
+                              left: `${(t / WINDOW_DURATION) * 100}%`,
+                              transform: "translateX(-50%)",
+                              fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim,
+                            }}>{t}s</span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Stack Math */}
+                      <div style={{ background: C.borderSub, borderRadius: 8, padding: 14, marginBottom: 16 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>STACK DAMAGE SCALING</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 6 }}>
+                          {[
+                            { label: "1 stack MB", mult: "×1.15", dmg: fmt(Math.round(mbBase * 1.15)), color: STACK_COLORS[1] },
+                            { label: "3 stack MB", mult: "×1.45", dmg: fmt(Math.round(mbBase * 1.45)), color: STACK_COLORS[3] },
+                            { label: "6 stack MB", mult: "×1.90", dmg: fmt(Math.round(mbBase * 1.90)), color: STACK_COLORS[6] },
+                          ].map((row, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 6, background: row.color + "30", border: `1px solid ${row.color}50` }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec }}>{row.label}</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: row.color, fontWeight: 700 }}>{row.mult} = {row.dmg}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: 10, padding: "8px 12px", background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", borderRadius: 6 }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.red }}>
+                            ⚠ Missed stack = ~{fmt(missedStackDps)} DPS lost per window ({Math.round(missedStackDps / (simResult?.totalDps || 1) * 100 * 10) / 10}% of total)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Fury Tips — 3 cards */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                        {[
+                          {
+                            title: "Build Efficiently",
+                            icon: "🏗️",
+                            color: "#22c55e",
+                            text: "Don't cast Mongoose Bite while building stacks unless you're about to cap Focus. KC crits build stacks faster — more crit = faster ramp.",
+                          },
+                          {
+                            title: "Spend at Max",
+                            icon: "💥",
+                            color: C.goldLight,
+                            text: "Wait for 5–6 stacks before unloading Mongoose Bites. The damage difference between 3 stacks and 6 stacks is enormous (45% vs 90%).",
+                          },
+                          {
+                            title: "Tip of the Spear Sync",
+                            icon: "🎯",
+                            color: "#60a5fa",
+                            text: "Kill Command generates Tip of the Spear charges. Save 3 charges and spend them during your 6-stack Mongoose Bite window for maximum synergy.",
+                          },
+                        ].map((tip, i) => (
+                          <div key={i} style={{
+                            background: C.surface2, borderRadius: 8,
+                            border: `1px solid ${C.border}`,
+                            borderTop: `3px solid ${tip.color}`,
+                            padding: 14,
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                              <span style={{ fontSize: 16 }}>{tip.icon}</span>
+                              <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1.5, color: tip.color, fontWeight: 700 }}>{tip.title.toUpperCase()}</span>
+                            </div>
+                            <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.6, margin: 0 }}>{tip.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CARD>
+                  );
+                })()}
+
+                {/* ═══ STRIKE AS ONE ANALYZER ═══ */}
+                {(() => {
+                  const ap = simResult?.attackPower || charData?.stats?.attackPower || 45000;
+                  const saoBase = Math.round(ap * 1.10);
+                  const isPL = heroTalent === "packLeader";
+                  const triggerAbils = ["Raptor Strike", "Kill Command", "Wildfire Bomb", "Boomstick", "Raptor Swipe"];
+                  const tdMultiplier = 3.0; // 300% during Takedown
+                  const saoTdDmg = Math.round(saoBase * tdMultiplier);
+                  const tamTargets = 3; // Two Against Many hits +2
+                  const tamPerTarget = 0.15; // +15% per target
+
+                  // Example sequence showing SaO triggers over 10s
+                  const SAO_SEQUENCE = [
+                    { t: 0.0, trigger: "Raptor Strike", note: "Opener — triggers pet Strike as One" },
+                    { t: 1.2, trigger: "Kill Command", note: "Focus builder — triggers SaO" },
+                    { t: 2.0, trigger: "Wildfire Bomb", note: "AoE + Lethal Calibration — triggers SaO" },
+                    { t: 3.0, trigger: "Raptor Strike", note: "Spender — triggers SaO again" },
+                    { t: 4.0, trigger: "Boomstick", note: "Burst AoE — triggers SaO" },
+                    { t: 5.2, trigger: "Raptor Swipe", note: "Apex proc — triggers SaO" },
+                    { t: 6.5, trigger: "Kill Command", note: "Off CD — triggers SaO" },
+                    { t: 7.5, trigger: "Raptor Strike", note: "Spender — triggers SaO" },
+                  ];
+
+                  const TRIGGER_COLORS = {
+                    "Raptor Strike": BAR_COLORS["Raptor Strike"],
+                    "Kill Command": BAR_COLORS["Kill Command"],
+                    "Wildfire Bomb": BAR_COLORS["Wildfire Bomb"],
+                    "Boomstick": BAR_COLORS["Boomstick"],
+                    "Raptor Swipe": BAR_COLORS["Raptor Swipe"],
+                  };
+                  const TIMELINE_SECS = 10;
+
+                  return (
+                    <CARD style={{ marginTop: 20 }}>
+                      <LBL>⚔️ Strike as One Analyzer</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                        Strike as One is Survival's highest-throughput passive. Every damaging ability you cast triggers your pet to attack for {fmt(saoBase)} damage. During Takedown, Raptor Swipe triggers SaO at <span style={{ color: C.goldLight, fontWeight: 700 }}>300% damage</span> ({fmt(saoTdDmg)}).
+                        {isPL ? " As Pack Leader, your beast summons also benefit from SaO synergies." : " As Sentinel, Spirit Bond mastery amplifies all SaO damage."}
+                      </p>
+
+                      {/* How it works diagram */}
+                      <div style={{ background: "#0d1117", borderRadius: 8, border: `1px solid ${C.border}`, padding: 16, marginBottom: 16 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 12 }}>TRIGGER CHAIN — EVERY ABILITY FIRES SaO</div>
+
+                        {/* Visual: trigger → SaO arrow chain */}
+                        <div style={{ position: "relative", overflowX: "auto" }}>
+                          <div style={{ position: "relative", width: Math.max(800, TIMELINE_SECS * 80), height: 70 }}>
+                            {/* Time axis */}
+                            {Array.from({ length: TIMELINE_SECS + 1 }, (_, i) => (
+                              <div key={i} style={{
+                                position: "absolute",
+                                left: `${(i / TIMELINE_SECS) * 100}%`,
+                                top: 0, bottom: 0,
+                                borderLeft: i === 0 ? "none" : `1px solid ${i % 2 === 0 ? '#2e3a50' : '#1a2236'}`,
+                              }}>
+                                {i % 2 === 0 && (
+                                  <span style={{
+                                    position: "absolute", bottom: 2, left: 4,
+                                    fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim,
+                                  }}>{i}s</span>
+                                )}
+                              </div>
+                            ))}
+
+                            {/* Trigger pills (top row) */}
+                            {SAO_SEQUENCE.map((cast, i) => {
+                              const color = TRIGGER_COLORS[cast.trigger] || "#64748b";
+                              const abbrevMap = { "Raptor Strike": "RS", "Kill Command": "KC", "Wildfire Bomb": "WFB", "Boomstick": "BS", "Raptor Swipe": "RSw" };
+                              return (
+                                <React.Fragment key={i}>
+                                  {/* Trigger ability */}
+                                  <div style={{
+                                    position: "absolute",
+                                    left: `${(cast.t / TIMELINE_SECS) * 100}%`,
+                                    top: 2, height: 20, minWidth: 36, padding: "0 6px",
+                                    background: color, borderRadius: 6,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    zIndex: 2, boxShadow: `0 2px 6px ${color}40`,
+                                  }}>
+                                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" }}>
+                                      {abbrevMap[cast.trigger] || cast.trigger.slice(0, 3)}
+                                    </span>
+                                  </div>
+                                  {/* SaO response (bottom row) */}
+                                  <div style={{
+                                    position: "absolute",
+                                    left: `calc(${(cast.t / TIMELINE_SECS) * 100}% + 4px)`,
+                                    top: 32, height: 18, minWidth: 30, padding: "0 5px",
+                                    background: "#22c55e", borderRadius: 5,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    zIndex: 2, opacity: 0.85,
+                                  }}>
+                                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, fontWeight: 700, color: "#fff" }}>SaO</span>
+                                  </div>
+                                  {/* Arrow */}
+                                  <div style={{
+                                    position: "absolute",
+                                    left: `calc(${(cast.t / TIMELINE_SECS) * 100}% + 14px)`,
+                                    top: 22, height: 10, width: 2,
+                                    background: "rgba(34,197,94,.4)",
+                                    zIndex: 1,
+                                  }} />
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Legend */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+                          <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim }}>TRIGGERS:</span>
+                          {triggerAbils.map(a => (
+                            <div key={a} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: BAR_COLORS[a] || "#64748b" }} />
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textMid }}>{a}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Damage Breakdown */}
+                      <div style={{ background: C.borderSub, borderRadius: 8, padding: 14, marginBottom: 16 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>DAMAGE VALUES</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 6 }}>
+                          {[
+                            { label: "Base SaO hit", dmg: fmt(saoBase), color: "#22c55e", sub: "110% AP per trigger" },
+                            { label: "During Takedown", dmg: fmt(saoTdDmg), color: C.goldLight, sub: "Raptor Swipe → 300% SaO" },
+                            { label: `Two Against Many (${tamTargets}T)`, dmg: fmt(Math.round(saoBase * (1 + tamTargets * tamPerTarget) * tamTargets)), color: "#38bdf8", sub: `+${tamTargets} targets, +15% per target` },
+                          ].map((row, i) => (
+                            <div key={i} style={{ padding: "8px 12px", borderRadius: 6, background: `${row.color}10`, border: `1px solid ${row.color}30` }}>
+                              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginBottom: 2 }}>{row.label}</div>
+                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 16, color: row.color, fontWeight: 700 }}>{row.dmg}</div>
+                              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textMid }}>{row.sub}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* SaO Tips — 3 cards */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                        {[
+                          {
+                            title: "Never Stop Pressing Buttons",
+                            icon: "⚡",
+                            color: "#22c55e",
+                            text: "SaO fires on EVERY damaging ability. Dead GCDs = missed SaO procs. ABC: Always Be Casting. Every empty GCD is lost pet damage.",
+                          },
+                          {
+                            title: "Takedown is King",
+                            icon: "👑",
+                            color: C.goldLight,
+                            text: "During Takedown, Raptor Swipe triggers SaO at 300% damage. This makes Raptor Swipe your highest-priority button in the 8s Takedown window.",
+                          },
+                          {
+                            title: "Two Against Many (AoE)",
+                            icon: "🐺",
+                            color: "#38bdf8",
+                            text: "In AoE, the Two Against Many talent makes SaO hit +2 targets with +15% damage per target. SaO becomes your top damage source on 3+ targets.",
+                          },
+                        ].map((tip, i) => (
+                          <div key={i} style={{
+                            background: C.surface2, borderRadius: 8,
+                            border: `1px solid ${C.border}`,
+                            borderTop: `3px solid ${tip.color}`,
+                            padding: 14,
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                              <span style={{ fontSize: 16 }}>{tip.icon}</span>
+                              <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1.5, color: tip.color, fontWeight: 700 }}>{tip.title.toUpperCase()}</span>
+                            </div>
+                            <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.6, margin: 0 }}>{tip.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CARD>
+                  );
+                })()}
+
                 </>
               );
             })()}
