@@ -361,7 +361,7 @@ export const HERO_TALENT_TREES: Record<'sentinel' | 'packLeader', HeroTalentNode
       desc: "Kill Command grants 5 Focus and increases Kill Command damage by 20%. Maximum Focus increased by 25." },
     { key: 'scoutsVigil', label: "Scout's Vigil",
       row: 2, col: 3, pointCost: 1,
-      desc: 'Passively detects stealthed enemies within 20 yards. Eagle Eye range increased by 50%. Applies Sentinel\'s Mark to any enemy that breaks stealth within detection range.' },
+      desc: "Reduces nearby enemy detection radius by 10 yards. While in Camouflage, your stealth detection radius is increased by 25 yards — applying Sentinel's Mark to any enemy detected within that radius." },
     // ─── ROW 3 (WoWHead r4) — 4 nodes ─────────────────────
     { key: 'arcaneTalons', label: 'Arcane Talons',
       row: 3, col: 0, pointCost: 1,
