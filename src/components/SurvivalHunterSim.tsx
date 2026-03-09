@@ -648,7 +648,6 @@ export default function SurvivalHunterSim() {
     if (itemCacheRef.current[itemId] || pendingItemFetchesRef.current.has(itemId)) return;
 
     pendingItemFetchesRef.current.add(itemId);
-    setTooltipLoading(true);
 
     Promise.all([
       getItem(parseInt(itemId), armoryRegion || 'us'),
@@ -660,15 +659,14 @@ export default function SurvivalHunterSim() {
       setItemCache(prev => ({ ...prev, [itemId]: { _error: e.message } }));
     }).finally(() => {
       pendingItemFetchesRef.current.delete(itemId);
-      setTooltipLoading(false);
     });
   }, [armoryRegion]);
 
   const handleItemLeave = useCallback(() => {
-    // Small delay avoids tooltip flicker when crossing small row gaps
+    // Delay hide so cursor can move between rows without toggle flashing
     hoverHideTimeoutRef.current = window.setTimeout(() => {
       setHoveredItem(null);
-    }, 90);
+    }, 160);
   }, []);
 
   const getTargets = () => simMode === 'single' ? [1] : simMode === 'cleave' ? [2, 3] : [5, 8, 10];
