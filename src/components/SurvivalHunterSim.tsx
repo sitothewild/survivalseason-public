@@ -434,16 +434,32 @@ export default function SurvivalHunterSim() {
   }, [armoryRealm, armoryName, armoryRegion]);
 
   const handleItemHover = useCallback(async (itemId: string, event: any) => {
-    if (!itemId) return; const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipPos({ x: rect.right + 8, y: rect.top }); setHoveredItem(itemId);
-    if (itemCache[itemId]) return;
-    setTooltipLoading(true);
-    try {
-      const [itemData, mediaData] = await Promise.all([getItem(parseInt(itemId), armoryRegion || 'us'), getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)]);
-      const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
-      setItemCache(prev => ({ ...prev, [itemId]: { ...itemData, _icon: icon } }));
-    } catch (e) { setItemCache(prev => ({ ...prev, [itemId]: { _error: e.message } })); } finally { setTooltipLoading(false); }
-  }, [itemCache, armoryRegion]);
+    if (!itemId) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPos({ x: rect.right + 8, y: rect.top });
+    setHoveredItem(itemId);
+    // Check cache via functional update to avoid dependency on itemCache
+    setItemCache(prev => {
+      if (prev[itemId]) return prev; // Already cached, no fetch needed
+      // Fetch item data asynchronously
+      (async () => {
+        setTooltipLoading(true);
+        try {
+          const [itemData, mediaData] = await Promise.all([
+            getItem(parseInt(itemId), armoryRegion || 'us'),
+            getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
+          ]);
+          const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
+          setItemCache(p => ({ ...p, [itemId]: { ...itemData, _icon: icon } }));
+        } catch (e) {
+          setItemCache(p => ({ ...p, [itemId]: { _error: e.message } }));
+        } finally {
+          setTooltipLoading(false);
+        }
+      })();
+      return prev;
+    });
+  }, [armoryRegion]);
 
   const handleItemLeave = useCallback(() => { setHoveredItem(null); }, []);
 
