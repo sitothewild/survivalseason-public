@@ -546,7 +546,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
 // STAT WEIGHT CALCULATOR — Delta method (SimC-style)
 // Bumps each stat by a small amount and measures DPS delta
 // ============================================================
-function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build) {
+function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
   const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build).totalDps;
 
   const DELTA = {
