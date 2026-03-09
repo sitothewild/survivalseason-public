@@ -847,6 +847,23 @@ export default function SurvivalHunterSim() {
     }
   }, [armoryRealm, resolvedRealmSlug, armoryName, armoryRegion]);
 
+  const displayedTalentString = useMemo(() => {
+    const raw = (importedTalentString || '').trim();
+    if (!raw) return '';
+    return raw.length > 24 ? `${raw.slice(0, 24)}...` : raw;
+  }, [importedTalentString]);
+
+  const detectedHeroTalent = useMemo(() => {
+    const raw = (importedTalentString || '').trim();
+    if (!raw) return 'Unknown';
+
+    // Requested pattern detection
+    if (raw.startsWith('C8PAAA') && raw.includes('MWg')) return 'Sentinel';
+    if (raw.startsWith('C8PAAA') && raw.includes('Mgx')) return 'Pack Leader';
+
+    return 'Unknown';
+  }, [importedTalentString]);
+
   const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
 
