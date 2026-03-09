@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Fragment } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
@@ -1662,7 +1662,7 @@ export default function SurvivalHunterSim() {
                               const color = TRIGGER_COLORS[cast.trigger] || "#64748b";
                               const abbrevMap = { "Raptor Strike": "RS", "Kill Command": "KC", "Wildfire Bomb": "WFB", "Boomstick": "BS", "Raptor Swipe": "RSw" };
                               return (
-                                <React.Fragment key={i}>
+                                <Fragment key={i}>
                                   {/* Trigger ability */}
                                   <div style={{
                                     position: "absolute",
@@ -1695,7 +1695,7 @@ export default function SurvivalHunterSim() {
                                     background: "rgba(34,197,94,.4)",
                                     zIndex: 1,
                                   }} />
-                                </React.Fragment>
+                                </Fragment>
                               );
                             })}
                           </div>
