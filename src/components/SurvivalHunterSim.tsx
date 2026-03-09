@@ -919,17 +919,19 @@ export default function SurvivalHunterSim() {
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
 
-  // Helper components
-  const LBL = ({ children }) => (
+  // Helper components (memoized so inputs don't lose focus on state updates)
+  const LBL = useCallback(({ children }) => (
     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
       {children}
       <div style={{ flex: 1, height: 1, background: C.borderSub }} />
     </div>
-  );
+  ), []);
 
-  const CARD = ({ children, style = {} }) => (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, ...style }}>{children}</div>
-  );
+  const CARD = useCallback(({ children, style = {} }) => (
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, ...style }}>
+      {children}
+    </div>
+  ), []);
 
   return (
     <div style={{ minHeight: "100vh", background: C.pageBg, color: C.textPri, fontFamily: "'Rajdhani','Segoe UI',sans-serif" }}>
