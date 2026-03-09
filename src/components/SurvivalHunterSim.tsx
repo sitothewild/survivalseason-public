@@ -1002,7 +1002,19 @@ export default function SurvivalHunterSim() {
                               <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
                                 onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
+                                <div style={{ textAlign: "center" }}>
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, display: "block" }}>{g.name || `Item`}</span>
+                                  {g.enchant && (
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      ✦ {g.enchant}
+                                    </span>
+                                  )}
+                                  {g.gemId && (
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      💎 Gem
+                                    </span>
+                                  )}
+                                </div>
                                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: ilvlColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
                               </div>
                             );
