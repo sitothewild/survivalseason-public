@@ -1137,10 +1137,11 @@ export default function SurvivalHunterSim() {
         {/* ═══ SIM TAB ═══ */}
         {activeTab === "sim" && (
           <>
-            {/* TOP ROW — Two equal columns */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }} className="sim-top-row">
-              {/* LEFT COLUMN — Import panels */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* 3-COLUMN GRID */}
+            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "280px 1fr 320px", gap: 16, alignItems: "start" }}>
+
+              {/* ═══ LEFT COLUMN — Inputs Only (280px) ═══ */}
+              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", width: 280 }}>
                 {/* Armory Lookup */}
                 <CARD>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -1160,55 +1161,40 @@ export default function SurvivalHunterSim() {
                         }}>{r}</button>
                     ))}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12, position: "relative" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12, position: "relative" }}>
                     <div ref={realmDropdownRef} style={{ position: "relative" }}>
                       <input
                         ref={realmInputRef}
                         className="ifield"
                         value={armoryRealmSearch}
-                        onChange={(e) => {
+                        onChange={e => {
                           setArmoryRealmSearch(e.target.value);
                           setShowRealmDropdown(true);
                           setRealmHighlightIdx(-1);
                         }}
-                        onKeyDown={(e) => {
+                        onKeyDown={e => {
                           const filtered = realmSuggestions;
-
-                          if (e.key === 'Escape') {
-                            setShowRealmDropdown(false);
-                            setRealmHighlightIdx(-1);
-                            return;
-                          }
-
                           if (e.key === 'ArrowDown') {
                             e.preventDefault();
                             if (!showRealmDropdown) { setShowRealmDropdown(true); setRealmHighlightIdx(0); return; }
                             setRealmHighlightIdx(prev => (prev + 1) % filtered.length);
                             return;
                           }
-
                           if (e.key === 'ArrowUp') {
                             e.preventDefault();
-                            if (!showRealmDropdown) return;
-                            setRealmHighlightIdx(prev => (prev <= 0 ? filtered.length - 1 : prev - 1));
+                            setRealmHighlightIdx(prev => (prev - 1 + filtered.length) % filtered.length);
                             return;
                           }
-
-                          if (e.key === 'Tab' && showRealmDropdown && filtered.length > 0) {
-                            const pick = realmHighlightIdx >= 0 ? filtered[realmHighlightIdx] : filtered[0];
-                            if (pick) {
+                          if (e.key === 'Escape') {
+                            if (showRealmDropdown) {
                               e.preventDefault();
-                              setArmoryRealmSearch(pick);
-                              setArmoryRealm(normalizeRealmSlug(pick));
                               setShowRealmDropdown(false);
                               setRealmHighlightIdx(-1);
                             }
                             return;
                           }
-
                           if (e.key === 'Enter') {
                             e.preventDefault();
-
                             if (realmHighlightIdx >= 0 && filtered[realmHighlightIdx]) {
                               setArmoryRealmSearch(filtered[realmHighlightIdx]);
                               setArmoryRealm(normalizeRealmSlug(filtered[realmHighlightIdx]));
@@ -1216,13 +1202,11 @@ export default function SurvivalHunterSim() {
                               setRealmHighlightIdx(-1);
                               return;
                             }
-
                             if (resolvedRealmSlug) {
                               setShowRealmDropdown(false);
                               setRealmHighlightIdx(-1);
                               return;
                             }
-
                             const first = filtered[0];
                             if (first) {
                               setArmoryRealmSearch(first);
@@ -1285,8 +1269,8 @@ export default function SurvivalHunterSim() {
                   )}
                 </CARD>
 
-                {/* SimC Import */}
-                <CARD>
+                {/* SimC Import — textarea grows to fill remaining height */}
+                <CARD style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                     <LBL>📋 SimulationCraft Import</LBL>
                     <button onClick={handleLoadSample} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 6, color: C.textMid, fontSize: 12, padding: "4px 10px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, marginLeft: 10, whiteSpace: "nowrap" }}>Sample</button>
@@ -1294,34 +1278,66 @@ export default function SurvivalHunterSim() {
                   <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 10, lineHeight: 1.5 }}>
                     In-game: <code style={{ background: C.surface2, padding: "1px 6px", borderRadius: 3, fontSize: 11, color: C.textSec }}>/simc</code> → copy all → paste below
                   </p>
-                  <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ height: 130, resize: "vertical", lineHeight: 1.6 }} />
+                  <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ flexGrow: 1, minHeight: 100, resize: "vertical", lineHeight: 1.6 }} />
                   {parseError && <div style={{ color: C.red, fontSize: 13, marginTop: 6, fontFamily: "'Rajdhani',sans-serif" }}>⚠ {parseError}</div>}
                   <button className="parse-btn" onClick={handleParse} style={{ marginTop: 10 }}>✦ Parse Character Data</button>
                 </CARD>
+              </div>
 
-                {/* Parsed Character panel — expands when character is loaded */}
-                {parsedChar && (
-                  <CARD>
+              {/* ═══ MIDDLE COLUMN — Permanent Character Box (1fr) ═══ */}
+              <div className="sim-mid-col" style={{ alignSelf: "stretch" }}>
+                <div style={{
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 12,
+                  padding: 20,
+                  minHeight: 500,
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  ...(parsedChar ? {} : { animation: "waitPulse 3s ease-in-out infinite" }),
+                }}>
+                  {/* Header bar */}
+                  {parsedChar ? (
                     <div style={{ background: C.greenBg, padding: "10px 16px", borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: C.green, fontSize: 13 }}>✓</span>
                       <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
                     </div>
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 12 }}>
-                        {[["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
-                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "12px 0 8px", marginBottom: 14 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: "#2e3a50" }}>IMPORT VIA ARMORY OR SIMC TO POPULATE</div>
+                    </div>
+                  )}
+
+                  {/* Character info */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 12 }}>
+                      {parsedChar ? (
+                        [["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
+                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline", animation: "staggerFadeUp .3s ease forwards" }}>
                             <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
                             <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: bold ? 700 : 500, color: c }}>{v}</span>
                           </div>
-                        ))}
-                      </div>
-                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>STATS</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px", gap: 6 }}>
-                        {[["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c], idx) => (
+                        ))
+                      ) : (
+                        [["Name", "— — —"], ["Level", "—"], ["Race", "—"], ["Avg iLvl", "—"]].map(([l, v]) => (
+                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 500, color: "#2e3a50" }}>{v}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>STATS</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px", gap: 6 }}>
+                      {parsedChar ? (
+                        [["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c], idx) => (
                           <Fragment key={l}>
                             <div className="stat-chip" style={idx === 0 ? { gridColumn: "1" } : undefined}>
                               <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
-                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: c, fontWeight: 700 }}>{v}</div>
+                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: c, fontWeight: 700, animation: "staggerFadeUp .3s ease forwards", animationDelay: `${idx * 50}ms` }}>{v}</div>
                             </div>
                             {idx === 0 && (
                               <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -1338,87 +1354,104 @@ export default function SurvivalHunterSim() {
                               </div>
                             )}
                           </Fragment>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Gear list */}
-                    {parsedChar.gear.length > 0 && (
-                      <div>
-                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }} onMouseLeave={handleItemLeave}>
-                          {parsedChar.gear.map((g, i) => {
-                            const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
-                            return (
-                              <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
-                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
-                                <div style={{ textAlign: "center" }}>
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: qualityColor, fontWeight: 600, display: "block" }}>{g.name || `Item`}</span>
-                                  {g.nameDescription && (
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#1eff00', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      {g.nameDescription}
-                                    </span>
-                                  )}
-                                  {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => {
-                                    const enchantLabel = formatEnchantLabel(enc);
-                                    return enchantLabel ? (
-                                      <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                        ✦ {enchantLabel}
-                                      </span>
-                                    ) : null;
-                                  })}
-                                  {!g.enchantments?.length && g.enchant && (
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      ✦ {g.enchant}
-                                    </span>
-                                  )}
-                                  {g.sockets?.length > 0 && g.sockets.map((s: any, si: number) => (
-                                    <span key={si} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      💎 {s.name || s.display}
-                                    </span>
-                                  ))}
-                                  {!g.sockets?.length && g.gemId && (
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      💎 Gem
-                                    </span>
-                                  )}
+                        ))
+                      ) : (
+                        [["AGI", "—"], ["AP", "—"], ["Haste", "—"], ["Crit", "—"], ["Mastery", "—"], ["Vers", "—"]].map(([l, v], idx) => (
+                          <Fragment key={l}>
+                            <div className="stat-chip" style={idx === 0 ? { gridColumn: "1" } : undefined}>
+                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
+                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: "#2e3a50", fontWeight: 700 }}>{v}</div>
+                            </div>
+                            {idx === 0 && (
+                              <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                                <div style={{ width: "100%", height: 160, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 38, height: 38, borderRadius: 8, overflow: "hidden", opacity: .10 }}>
+                                    <img src={SURVIVAL_ICON} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  </div>
+                                  <div style={{ position: "relative", zIndex: 1, fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: "#2e3a50", textAlign: "center" }}>CHARACTER<br />RENDER</div>
                                 </div>
-                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: qualityColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </CARD>
-                )}
-              </div>
-
-              {/* RIGHT COLUMN — Sim Config (sticky) */}
-              <div id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", alignSelf: "flex-start" }}>
-                <CARD>
-                  <LBL>⚙ Simulation Config</LBL>
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>HERO TALENT</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      {Object.entries(MIDNIGHT_DATA.talents.hero).map(([k, h]) => (
-                        <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`} onClick={() => setHeroTalent(k)}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                            <span style={{ fontSize: 17 }}>{h.icon}</span>
-                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: k === "sentinel" ? C.sentClr : C.packClr }}>{h.name}</span>
-                            {h.recommended && <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 7, padding: "1px 6px" }}>BEST</span>}
-                          </div>
-                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>{h.weaponPref}</div>
-                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: k === "sentinel" ? C.sentClr : C.packClr, marginTop: 4, fontWeight: 600 }}>ST +{Math.round(h.stBonus * 100)}% · AoE +{Math.round(h.aoeBonus * 100)}%</div>
-                        </button>
-                      ))}
+                            )}
+                          </Fragment>
+                        ))
+                      )}
                     </div>
                   </div>
 
+                  {/* Gear list */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>
+                      {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
+                    </div>
+                    {parsedChar && parsedChar.gear.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }} onMouseLeave={handleItemLeave}>
+                        {parsedChar.gear.map((g, i) => {
+                          const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
+                          return (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default", animation: "staggerFadeUp .3s ease forwards", animationDelay: `${i * 50}ms` }}
+                              onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
+                              <div style={{ textAlign: "center" }}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: qualityColor, fontWeight: 600, display: "block" }}>{g.name || `Item`}</span>
+                                {g.nameDescription && (
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#1eff00', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                    {g.nameDescription}
+                                  </span>
+                                )}
+                                {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => {
+                                  const enchantLabel = formatEnchantLabel(enc);
+                                  return enchantLabel ? (
+                                    <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      ✦ {enchantLabel}
+                                    </span>
+                                  ) : null;
+                                })}
+                                {!g.enchantments?.length && g.enchant && (
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                    ✦ {g.enchant}
+                                  </span>
+                                )}
+                                {g.sockets?.length > 0 && g.sockets.map((s: any, si: number) => (
+                                  <span key={si} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                    💎 {s.name || s.display}
+                                  </span>
+                                ))}
+                                {!g.sockets?.length && g.gemId && (
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                    💎 Gem
+                                  </span>
+                                )}
+                              </div>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: qualityColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* Empty gear slots placeholder */
+                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        {["Head", "Neck", "Shoulders", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring 1", "Ring 2", "Trinket 1", "Trinket 2", "Main Hand", "Off Hand"].map((slot, i) => (
+                          <div key={slot} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub }}>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: "#5a6a82", fontWeight: 500 }}>{slot}</span>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: "#2e3a50", fontWeight: 600, textAlign: "center" }}>—</span>
+                            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: "#2e3a50", fontWeight: 700, textAlign: "right", minWidth: 32 }}>—</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ═══ RIGHT COLUMN — Simulation Config (320px, sticky) ═══ */}
+              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", alignSelf: "flex-start", width: 320 }}>
+                <CARD>
+                  <LBL>⚙ Simulation Config</LBL>
+
+                  {/* Current Talents — visible after character loaded */}
                   {parsedChar && (
                     <div style={{ marginBottom: 16, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                       <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
-
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                         <span className="badge" style={{ background: C.surface, color: C.goldLight, border: `1px solid ${C.gold}` }}>
                           {importedTalentSource === 'simc' ? 'IMPORTED FROM SIMC' : 'IMPORTED FROM ARMORY'}
@@ -1434,7 +1467,6 @@ export default function SurvivalHunterSim() {
                           Hero talent: {detectedHeroTalent}
                         </span>
                       </div>
-
                       <div
                         title={importedTalentString || 'No talent string found'}
                         style={{
@@ -1455,6 +1487,25 @@ export default function SurvivalHunterSim() {
                     </div>
                   )}
 
+                  {/* Hero Talent selector */}
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>HERO TALENT</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {Object.entries(MIDNIGHT_DATA.talents.hero).map(([k, h]) => (
+                        <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`} onClick={() => setHeroTalent(k)}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                            <span style={{ fontSize: 17 }}>{h.icon}</span>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: k === "sentinel" ? C.sentClr : C.packClr }}>{h.name}</span>
+                            {h.recommended && <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 7, padding: "1px 6px" }}>BEST</span>}
+                          </div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>{h.weaponPref}</div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: k === "sentinel" ? C.sentClr : C.packClr, marginTop: 4, fontWeight: 600 }}>ST +{Math.round(h.stBonus * 100)}% · AoE +{Math.round(h.aoeBonus * 100)}%</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Simulation Mode */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>SIMULATION MODE</div>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -1466,12 +1517,15 @@ export default function SurvivalHunterSim() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Fight Duration */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT DURATION — <span style={{ color: C.goldLight }}>{dL(fightDuration)}</span></div>
                     <input type="range" min={60} max={600} step={30} value={fightDuration} onChange={e => setFightDuration(+e.target.value)} style={{ width: "100%", accentColor: C.gold }} />
                     <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>1 min</span><span>5 min</span><span>10 min</span></div>
                   </div>
-                  {/* Advanced toggle */}
+
+                  {/* Advanced Options */}
                   <div style={{ marginBottom: 16 }}>
                     <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
                       <span>{showAdv ? "▾" : "▸"}</span> Advanced Options (Buffs / Consumables / Fight Style)
@@ -1516,6 +1570,8 @@ export default function SurvivalHunterSim() {
                       </div>
                     )}
                   </div>
+
+                  {/* Run Simulation button */}
                   <button 
                     className="sim-btn" 
                     onClick={handleSim} 
