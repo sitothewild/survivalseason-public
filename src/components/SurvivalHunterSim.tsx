@@ -633,9 +633,13 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
-  const realmDropdownRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    const handler = (e: MouseEvent) => { if (!node.contains(e.target as Node)) setShowRealmDropdown(false); };
+  const realmDropdownRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (realmDropdownRef.current && !realmDropdownRef.current.contains(e.target as Node)) {
+        setShowRealmDropdown(false);
+      }
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
@@ -1017,38 +1021,40 @@ export default function SurvivalHunterSim() {
                       <span style={{ color: C.green, fontSize: 13 }}>✓</span>
                       <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
                     </div>
-                    <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.borderSub}`, display: "grid", gridTemplateColumns: "1fr 160px", gap: 14 }}>
-                      <div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 12 }}>
-                          {[["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
-                            <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: bold ? 700 : 500, color: c }}>{v}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>STATS</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                          {[["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c]) => (
-                            <div key={l} className="stat-chip">
+                    <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.borderSub}` }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 12 }}>
+                        {[["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
+                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: bold ? 700 : 500, color: c }}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>STATS</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px", gap: 6 }}>
+                        {[["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c], idx) => (
+                          <Fragment key={l}>
+                            <div className="stat-chip" style={idx === 0 ? { gridColumn: "1" } : undefined}>
                               <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
                               <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: c, fontWeight: 700 }}>{v}</div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                      {/* Model viewer or placeholder */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                        {parsedChar.media?.assets ? (
-                          <WowModelViewer renderUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'main-raw')?.value || parsedChar.media?.assets?.find((a: any) => a.key === 'main')?.value} fallbackUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'avatar')?.value} width={150} height={180} />
-                        ) : (
-                          <div style={{ width: "100%", height: 160, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 38, height: 38, borderRadius: 8, overflow: "hidden", opacity: .18 }}>
-                              <img src={SURVIVAL_ICON} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            </div>
-                            <div style={{ position: "relative", zIndex: 1, fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, textAlign: "center" }}>CHARACTER<br />RENDER</div>
-                          </div>
-                        )}
+                            {/* Place model viewer in the 3rd column spanning all stat rows */}
+                            {idx === 0 && (
+                              <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                                {parsedChar.media?.assets ? (
+                                  <WowModelViewer renderUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'main-raw')?.value || parsedChar.media?.assets?.find((a: any) => a.key === 'main')?.value} fallbackUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'avatar')?.value} width={150} height={180} />
+                                ) : (
+                                  <div style={{ width: "100%", height: 160, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 38, height: 38, borderRadius: 8, overflow: "hidden", opacity: .18 }}>
+                                      <img src={SURVIVAL_ICON} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </div>
+                                    <div style={{ position: "relative", zIndex: 1, fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, textAlign: "center" }}>CHARACTER<br />RENDER</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </Fragment>
+                        ))}
                       </div>
                     </div>
                     {/* Gear list */}
