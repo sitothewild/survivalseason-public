@@ -182,14 +182,15 @@ serve(async (req) => {
         break;
       }
 
-      // Full character data — fetches profile, equipment, stats, media, and hunter-pets in parallel
+      // Full character data — fetches profile, equipment, stats, media, hunter-pets, and specializations in parallel
       case "full": {
-        const [profile, equipment, stats, media, hunterPets] = await Promise.allSettled([
+        const [profile, equipment, stats, media, hunterPets, specializations] = await Promise.allSettled([
           blizzardGet(charBase, region, "profile"),
           blizzardGet(`${charBase}/equipment`, region, "profile"),
           blizzardGet(`${charBase}/statistics`, region, "profile"),
           blizzardGet(`${charBase}/character-media`, region, "profile"),
           blizzardGet(`${charBase}/hunter-pets`, region, "profile"),
+          blizzardGet(`${charBase}/specializations`, region, "profile"),
         ]);
 
         result = {
@@ -198,6 +199,7 @@ serve(async (req) => {
           stats: stats.status === "fulfilled" ? stats.value : { error: (stats as PromiseRejectedResult).reason?.message },
           media: media.status === "fulfilled" ? media.value : { error: (media as PromiseRejectedResult).reason?.message },
           hunterPets: hunterPets.status === "fulfilled" ? hunterPets.value : { error: (hunterPets as PromiseRejectedResult).reason?.message },
+          specializations: specializations.status === "fulfilled" ? specializations.value : { error: (specializations as PromiseRejectedResult).reason?.message },
         };
         break;
       }
