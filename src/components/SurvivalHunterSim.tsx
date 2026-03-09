@@ -562,6 +562,8 @@ interface TalentLoadout {
   aoeDelta: number;
   exportString: string;
   talents: TalentPill[];
+  /** Keys of optional spec nodes selected in this build (the 4 variable nodes) */
+  enabledSpecKeys: string[];
 }
 interface CustomLoadout {
   name: string;
@@ -571,10 +573,10 @@ interface CustomLoadout {
   enabledHeroTalents: string[]; // keys of toggled-on hero sub-talents
 }
 
-// Spec tree: 18 total points. Core talents cost 10, leaving 8 for optional picks.
-// Hero tree: 3 nodes, each 1pt (all 3 are typically filled).
-const MAX_OPTIONAL_POINTS = 8;
-const MAX_HERO_POINTS = 3;
+// Spec tree optional budget: 4 variable nodes across the 4 WoWHead builds.
+// Hero tree: 10 nodes, each 1pt (all 10 are always taken).
+const MAX_OPTIONAL_POINTS = 4;
+const MAX_HERO_POINTS = 10;
 
 const CORE_TALENTS: TalentPill[] = [
   { name: 'Mongoose Fury',      type: 'core', points: 2, desc: 'Raptor Strike stacking damage buff, up to 5×. Always talented — backbone of the entire rotation. Each consecutive RS extends the buff duration.' },
@@ -632,6 +634,8 @@ export const TALENT_LOADOUTS: TalentLoadout[] = [
     stDelta: 0.07, aoeDelta: 0.03,
     exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNjZmxMPwy8AAAAAAAMzMzMDzYMjBGTGAAAAwAAYZbmZWMzMzMzYAgZYjZxYMjNG',
     talents: [...CORE_TALENTS, ...ST_TALENTS, ...SENTINEL_HERO],
+    // WoWHead Raid Sentinel: Flanker's Advantage only (no Lethal Calibration, no Two Against Many)
+    enabledSpecKeys: ['flankerAdvantage'],
   },
   {
     id: 'sentinel-aoe', heroKey: 'sentinel', simMode: 'multi',
@@ -639,6 +643,8 @@ export const TALENT_LOADOUTS: TalentLoadout[] = [
     stDelta: 0.02, aoeDelta: 0.12,
     exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNzMzMmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAALbzMziZmZmZGDAMDbMLGjZmNG',
     talents: [...CORE_TALENTS, ...AOE_TALENTS, ...SENTINEL_HERO],
+    // WoWHead Mythic+ Sentinel: Flanker's Advantage + Two Against Many + Lethal Calibration
+    enabledSpecKeys: ['flankerAdvantage', 'twoAgainstMany', 'lethalCalibration'],
   },
   {
     id: 'sentinel-cleave', heroKey: 'sentinel', simMode: 'cleave',
@@ -646,6 +652,8 @@ export const TALENT_LOADOUTS: TalentLoadout[] = [
     stDelta: 0.05, aoeDelta: 0.07,
     exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMWgBmxoxyAYmgNjZmxMPwy8AAAAAAAMzMzMDzYMjBGTGAAAAwAAYZbmZWMzMzMzYAgZYjZxYMjNG',
     talents: [...CORE_TALENTS, ...HYBRID_TALENTS, ...SENTINEL_HERO],
+    // Cleave hybrid: Flanker's Advantage + Lethal Calibration
+    enabledSpecKeys: ['flankerAdvantage', 'lethalCalibration'],
   },
   // ── Pack Leader ───────────────────────────────────────────
   {
@@ -654,6 +662,8 @@ export const TALENT_LOADOUTS: TalentLoadout[] = [
     stDelta: 0.05, aoeDelta: 0.02,
     exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMGWILwMM0gFjZmZmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAwYZbmZWMzMzMzYAMzGgZxYMjNG',
     talents: [...CORE_TALENTS, ...ST_TALENTS, ...PACK_LEADER_HERO],
+    // WoWHead Raid Pack Leader: Bloodseeker + Two Against Many + Lethal Calibration (no Flanker's Advantage)
+    enabledSpecKeys: ['bloodseeker', 'twoAgainstMany', 'lethalCalibration'],
   },
   {
     id: 'packLeader-aoe', heroKey: 'packLeader', simMode: 'multi',
@@ -661,6 +671,8 @@ export const TALENT_LOADOUTS: TalentLoadout[] = [
     stDelta: 0.01, aoeDelta: 0.07,
     exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMG2ILwMM0gFzMzMz4BWGAAAAAAMzMzMDzYMjBGTGAAAAwAAYZZmZ2MzMjZGDgZ2AgxYmZhB',
     talents: [...CORE_TALENTS, ...AOE_TALENTS, ...PACK_LEADER_HERO],
+    // WoWHead Mythic+ Pack Leader: Flanker's Advantage + Two Against Many + Lethal Calibration
+    enabledSpecKeys: ['flankerAdvantage', 'twoAgainstMany', 'lethalCalibration'],
   },
   {
     id: 'packLeader-cleave', heroKey: 'packLeader', simMode: 'cleave',
@@ -668,6 +680,8 @@ export const TALENT_LOADOUTS: TalentLoadout[] = [
     stDelta: 0.04, aoeDelta: 0.05,
     exportString: 'C8PAAAAAAAAAAAAAAAAAAAAAAMgxMGWILwMM0gFjZmZmxyAAAAAAgZmZmZYGjZMwYyAAAAAGAwYZbmZWMzMzMzYAMzGgZxYMjNG',
     talents: [...CORE_TALENTS, ...HYBRID_TALENTS, ...PACK_LEADER_HERO],
+    // Cleave hybrid: Two Against Many + Lethal Calibration
+    enabledSpecKeys: ['twoAgainstMany', 'lethalCalibration'],
   },
 ];
 
@@ -789,17 +803,17 @@ const CONSUMABLES = {
 };
 
 // ============================================================
-// TALENT TREE GRID — 2D visual tree (6 cols × 7 rows)
+// TALENT TREE GRID — 2D visual tree (7 cols × 11 rows)
 // Nodes are positioned by (col, row), SVG lines connect prereqs.
 // ============================================================
-const TREE_CELL_W = 88;
-const TREE_CELL_H = 68;
+const TREE_CELL_W = 72;
+const TREE_CELL_H = 48;
 const TREE_PAD_X  = 6;
 const TREE_PAD_Y  = 10;
-const TREE_COLS   = 6;
-const TREE_ROWS   = 7;
-const TREE_TOTAL_W = TREE_PAD_X * 2 + TREE_COLS * TREE_CELL_W; // 540
-const TREE_TOTAL_H = TREE_PAD_Y * 2 + TREE_ROWS * TREE_CELL_H; // 496
+const TREE_COLS   = 7;
+const TREE_ROWS   = 11;
+const TREE_TOTAL_W = TREE_PAD_X * 2 + TREE_COLS * TREE_CELL_W; // 516
+const TREE_TOTAL_H = TREE_PAD_Y * 2 + TREE_ROWS * TREE_CELL_H; // 548
 
 const CAT_CLR: Record<string, string> = {
   core: '#60a5fa', st: '#4ade80', aoe: '#f97316', gateway: '#c084fc',
@@ -955,8 +969,8 @@ function TalentTreeGrid({ selectedKeys, usedPts, maxPts, onToggle, onNodeHover, 
       })}
 
       {/* Row gate labels on the left */}
-      {[1,2,3,4,5,6,7].map(row => {
-        const gate = [0,2,5,8,11,14,17][row-1];
+      {[1,2,3,4,5,6,7,8,9,10,11].map(row => {
+        const gate = [0,1,2,3,4,5,6,7,8,9,10][row-1];
         const y = TREE_PAD_Y + (row - 1) * TREE_CELL_H;
         return (
           <div key={row} style={{
@@ -977,15 +991,21 @@ function TalentTreeGrid({ selectedKeys, usedPts, maxPts, onToggle, onNodeHover, 
 // MINI TALENT TREE — compact dot-tree for loadout card previews
 // Pure SVG circles + lines, no text labels, tooltip on hover.
 // ============================================================
-const MINI_CW = 24;  // px per column
-const MINI_CH = 18;  // px per row
-const MINI_R  = 4.5; // dot radius
+const MINI_CW = 20;  // px per column (7 cols × 20 = 140)
+const MINI_CH = 14;  // px per row (11 rows × 14 = 154)
+const MINI_R  = 4;   // dot radius
 const MINI_PAD = 6;
-const MINI_W = MINI_PAD * 2 + 6 * MINI_CW; // 108px spec tree
-const MINI_H = MINI_PAD * 2 + 7 * MINI_CH; // 138px
+const MINI_W = MINI_PAD * 2 + 7 * MINI_CW; // 152px spec tree
+const MINI_H = MINI_PAD * 2 + 11 * MINI_CH; // 166px
+
+// Hero tree grid: 4 rows × 4 cols below the spec tree
+const MINI_CW_HERO = (MINI_W - 2 * MINI_PAD) / 4; // ~35px per hero col
+const MINI_CH_HERO = MINI_CH; // same row height
 
 function miniCX(col: number) { return MINI_PAD + col * MINI_CW + MINI_CW / 2; }
 function miniCY(row: number) { return MINI_PAD + (row - 1) * MINI_CH + MINI_CH / 2; }
+function heroCX(col: number) { return MINI_PAD + col * MINI_CW_HERO + MINI_CW_HERO / 2; }
+function heroCY(row: number) { return MINI_H + 8 + (row - 1) * MINI_CH_HERO + MINI_CH_HERO / 2; }
 
 interface MiniTalentTreeProps {
   selectedKeys: string[];
@@ -995,21 +1015,13 @@ interface MiniTalentTreeProps {
   offDot: () => void;
 }
 
-// Convert a preset TalentLoadout's pills to selectedKeys for MiniTalentTree
-function loadoutToSpecKeys(talents: TalentPill[]): string[] {
-  return talents
-    .filter(t => t.type !== 'core' && t.type !== 'hero')
-    .map(t => SURVIVAL_SPEC_TREE.find(n => n.label === t.name)?.key)
-    .filter(Boolean) as string[];
+// Convert a preset TalentLoadout to selectedKeys for MiniTalentTree
+function loadoutToSpecKeys(loadout: TalentLoadout): string[] {
+  return loadout.enabledSpecKeys;
 }
-function loadoutToHeroNodeKeys(talents: TalentPill[]): string[] {
-  return talents.filter(t => t.type === 'hero').map(t => {
-    for (const tree of Object.values(HERO_TALENT_TREES)) {
-      const n = tree.find(h => h.label === t.name);
-      if (n) return n.key;
-    }
-    return null;
-  }).filter(Boolean) as string[];
+function loadoutToHeroNodeKeys(heroKey: 'sentinel' | 'packLeader'): string[] {
+  // All 10 hero nodes are always taken in every WoWHead build
+  return HERO_TALENT_TREES[heroKey].map(n => n.key);
 }
 
 function talentPillDesc(label: string): string {
@@ -1026,12 +1038,11 @@ function nodeToPill(node: TalentNode): TalentPill {
 }
 
 function MiniTalentTree({ selectedKeys, heroKey, heroSelectedKeys, onDot, offDot }: MiniTalentTreeProps) {
-  const heroTree  = HERO_TALENT_TREES[heroKey];
-  const heroClr   = heroKey === 'sentinel' ? '#818cf8' : '#fb923c';
-  const heroH     = 22; // extra height for hero chain below
-  const totalH    = MINI_H + heroH + 6;
-  const heroY     = MINI_H + 8;
-  const heroSpacing = MINI_W / (heroTree.length + 1);
+  const heroTree = HERO_TALENT_TREES[heroKey];
+  const heroClr  = heroKey === 'sentinel' ? '#818cf8' : '#fb923c';
+  // Hero tree occupies up to 4 rows below spec tree
+  const heroRows = Math.max(...heroTree.map(n => n.row));
+  const totalH   = MINI_H + 8 + heroRows * MINI_CH_HERO + 4;
 
   return (
     <svg width={MINI_W} height={totalH} style={{ display: 'block', overflow: 'visible' }}>
@@ -1059,14 +1070,12 @@ function MiniTalentTree({ selectedKeys, heroKey, heroSelectedKeys, onDot, offDot
         const isOn   = isCore || selectedKeys.includes(node.key);
         const fill   = isOn
           ? (isCore ? '#60a5fa'
-           : node.dpsCategory === 'st'      ? '#4ade80'
-           : node.dpsCategory === 'aoe'     ? '#f97316'
+           : node.dpsCategory === 'st'  ? '#4ade80'
+           : node.dpsCategory === 'aoe' ? '#f97316'
            : '#c084fc')
           : '#0d1520';
-        const stroke = isOn
-          ? (isCore ? '#60a5fa66' : fill + '88')
-          : '#1e2d3d';
-        const r = node.pointCost === 2 ? MINI_R + 1.5 : MINI_R;
+        const stroke = isOn ? (isCore ? '#60a5fa66' : fill + '88') : '#1e2d3d';
+        const r = node.pointCost >= 2 ? MINI_R + 1.5 : node.pointCost >= 4 ? MINI_R + 3 : MINI_R;
         return (
           <circle key={node.key}
             cx={miniCX(node.col)} cy={miniCY(node.row)} r={r}
@@ -1078,33 +1087,26 @@ function MiniTalentTree({ selectedKeys, heroKey, heroSelectedKeys, onDot, offDot
         );
       })}
 
-      {/* Hero talent chain — 3 dots below spec tree */}
-      {heroTree.map((hn, idx) => {
+      {/* Hero talent tree — 4-row × 4-col grid below spec tree */}
+      {heroTree.map(hn => {
         const isOn = heroSelectedKeys.includes(hn.key);
-        const hx   = heroSpacing * (idx + 1);
+        const cx   = heroCX(hn.col);
+        const cy   = heroCY(hn.row);
         return (
-          <g key={hn.key}>
-            {idx > 0 && (
-              <line
-                x1={heroSpacing * idx} y1={heroY}
-                x2={hx} y2={heroY}
-                stroke={isOn ? heroClr + '55' : '#1a2535'} strokeWidth={1}
-              />
-            )}
-            <circle cx={hx} cy={heroY} r={MINI_R + 0.5}
-              fill={isOn ? heroClr : '#0d1520'}
-              stroke={isOn ? heroClr + '88' : '#1e2d3d'} strokeWidth={isOn ? 0 : 1}
-              style={{ cursor: 'help' }}
-              onMouseEnter={e => onDot({
-                key: hn.key as any, label: hn.label, row: 0, col: idx,
-                pointCost: 1, prerequisites: [], gateRow: 0,
-                isGateway: false, inSTBuild: true, inAoEBuild: true,
-                dpsCategory: 'core' as any,
-                gatewayNote: hn.desc,
-              }, e)}
-              onMouseLeave={offDot}
-            />
-          </g>
+          <circle key={hn.key}
+            cx={cx} cy={cy} r={MINI_R + 0.5}
+            fill={isOn ? heroClr : '#0d1520'}
+            stroke={isOn ? heroClr + '88' : '#1e2d3d'} strokeWidth={isOn ? 0 : 1}
+            style={{ cursor: 'help' }}
+            onMouseEnter={e => onDot({
+              key: hn.key as any, label: hn.label, row: hn.row, col: hn.col,
+              pointCost: 1, prerequisites: [], gateRow: 0,
+              isGateway: false, inSTBuild: true, inAoEBuild: true,
+              dpsCategory: 'core' as any,
+              gatewayNote: hn.desc,
+            }, e)}
+            onMouseLeave={offDot}
+          />
         );
       })}
     </svg>
@@ -2508,8 +2510,8 @@ export default function SurvivalHunterSim() {
                       const heroBdr  = heroTalent === 'sentinel' ? C.sentBdr : C.packBdr;
                       return loadouts.map(loadout => {
                         const isSel = selectedLoadoutId === loadout.id;
-                        const specKeys = loadoutToSpecKeys(loadout.talents);
-                        const heroNodeKeys = loadoutToHeroNodeKeys(loadout.talents);
+                        const specKeys = loadoutToSpecKeys(loadout);
+                        const heroNodeKeys = loadoutToHeroNodeKeys(loadout.heroKey);
                         return (
                           <div key={loadout.id}
                             onClick={() => { setSelectedLoadoutId(loadout.id); setHeroTalent(loadout.heroKey); setSimMode(loadout.simMode); }}
