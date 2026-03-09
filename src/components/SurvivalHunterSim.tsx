@@ -343,34 +343,32 @@ function getBreakdowns(simcLiveData: any): { pl: Record<string, number>; sent: R
 
 function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCount, ap) {
   const isPL = heroTalent === 'packLeader';
-  const strikeAsOneDps = breakdown['Strike as One'] || 0;
-  const avgStrikeAsOneDamage = Math.round(ap * 1.10);
-  const triggerAbilities = ['Raptor Strike','Kill Command','Wildfire Bomb','Boomstick','Raptor Swipe'];
+  const triggerAbilities = ['Mongoose Bite','Raptor Bite','Kill Command','Wildfire Bomb','Boomstick','Raptor Swipe'];
   const totalTriggerDps = triggerAbilities.reduce((sum, a) => sum + (breakdown[a] || 0), 0);
   const estimatedTriggersPerSecond = Math.max(0.8, Math.min(2.5, totalTriggerDps / (ap * 0.8)));
   const totalTriggers = Math.round(estimatedTriggersPerSecond * fightDuration);
-  const strikeAsOneExplanation = {
-    description: "Passive pet attack that triggers on every damaging ability you cast",
+  const petDamageExplanation = {
+    description: "Combined pet damage including Strike as One, Pet Claw, and Pet Melee",
     triggerAbilities, mechanics: [
-      "Triggers automatically on Raptor Strike, Kill Command, Wildfire Bomb, Boomstick",
+      "Strike as One triggers automatically on every damaging ability you cast",
       targetCount > 1 ? `With Two Against Many: Hits ${Math.min(targetCount, 3)} targets` : "Single target pet attack",
       "During Takedown: Raptor Swipe triggers Strike as One at 300% damage",
       isPL ? "Pack Leader: Benefits from beast synergies" : "Sentinel: Enhanced by Spirit Bond mastery scaling"
     ],
     estimatedFrequency: `~${estimatedTriggersPerSecond.toFixed(1)} triggers/sec`,
-    avgDamage: avgStrikeAsOneDamage, totalTriggers
+    avgDamage: Math.round(ap * 1.10), totalTriggers
   };
   const actionCounts = {}; const totalDps = Object.values(breakdown).reduce((sum, dps) => sum + dps, 0);
   Object.entries(breakdown).forEach(([ability, dps]) => {
     const baseCoef = getAbilityCoefficient(ability); const avgHit = Math.round(ap * baseCoef);
     const hitsPerSec = dps > 0 ? Math.max(0.1, dps / avgHit) : 0; const totalHits = Math.round(hitsPerSec * fightDuration);
-    const critRate = ability.includes('Strike as One') ? 0.25 : 0.30; const crits = Math.round(totalHits * critRate);
+    const critRate = ability.includes('Pet') ? 0.25 : 0.30; const crits = Math.round(totalHits * critRate);
     actionCounts[ability] = { damage: Math.round(dps * fightDuration), count: totalHits, avgHit, crits, dps, percentage: totalDps > 0 ? ((dps / totalDps) * 100) : 0 };
   });
   const buffUptimes = { 'Mongoose Fury': { uptime: 0.65, description: 'Stacking damage buff' }, 'Takedown': { uptime: 0.18, description: '20% damage amplification window' }, 'Lethal Calibration': { uptime: 0.80, description: '15% crit damage from WFB' }, 'Spirit Bond': { uptime: 1.0, description: 'Permanent mastery scaling' } };
   if (isPL) buffUptimes['Pack Leader Beasts'] = { uptime: 0.45, description: 'Summoned beasts from KC procs' };
   else buffUptimes['Sentinel Mark'] = { uptime: 0.35, description: 'Mark applied by Lunar Storm procs' };
-  return { actionCounts, buffUptimes, strikeAsOneDetails: strikeAsOneExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
+  return { actionCounts, buffUptimes, petDamageDetails: petDamageExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
 }
 
 const QUALITY_COLORS: Record<string, string> = {
