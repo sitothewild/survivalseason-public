@@ -153,6 +153,8 @@ function parseSimcString(simcText) {
     '7385': 'Armored Avoidance', '7386': 'Armored Leech', '7387': 'Armored Speed',
     '7418': 'Cavalry\'s March', '7419': 'Defender\'s March', '7420': 'Scout\'s March',
     '7594': '+16 Agility/Strength', '7595': '+16 Agility/Strength',
+    '7965': 'Amani Mastery', '8160': 'Thalassian Scout Armor Kit',
+    '8039': 'Acuity of the Ren\'dorei', '8041': 'Arcane Mastery',
   };
 
   const slotLabels: Record<string, string> = {
