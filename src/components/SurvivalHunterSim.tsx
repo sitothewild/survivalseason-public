@@ -305,6 +305,8 @@ const SIMC_BREAKDOWN_SENT_ST = {
   'Pet (Claw)':            0.0250,
   'Pet Melee':             0.0220,
   'Kroluk\'s Warbanner':   0.0200,
+};
+
 // ============================================================
 // DETAILED SIMULATION DATA GENERATOR
 // Provides detailed tracking for abilities, triggers, and mechanics
