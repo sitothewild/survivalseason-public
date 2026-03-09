@@ -769,28 +769,67 @@ export default function SurvivalHunterSim() {
   const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); };
 
   const handleArmoryLookup = useCallback(async () => {
-    if (!armoryRealm.trim() || !armoryName.trim()) { setArmoryError('Enter both realm and character name.'); return; }
-    setArmoryLoading(true); setArmoryError(''); setArmoryAvatar('');
+    const realmSlug = armoryRealm || resolvedRealmSlug;
+
+    if (!realmSlug) {
+      setArmoryError("Select a realm from the dropdown (or type the full realm name). ");
+      return;
+    }
+
+    if (!armoryName.trim()) {
+      setArmoryError('Enter a character name.');
+      return;
+    }
+
+    setArmoryLoading(true);
+    setArmoryError('');
+    setArmoryAvatar('');
+
     try {
-      const fullData = await getFullCharacter(armoryRealm.trim().toLowerCase().replace(/\s+/g, '-'), armoryName.trim().toLowerCase(), armoryRegion);
+      const fullData = await getFullCharacter(
+        realmSlug,
+        armoryName.trim().toLowerCase(),
+        armoryRegion,
+      );
       if (fullData.profile?.error) throw new Error(fullData.profile.error);
       const simData = equipmentToSimData(fullData);
-      if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
-      setParsedChar(simData); setSimResults(null);
-      if (fullData.media?.assets) { const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar'); if (avatar?.value) setArmoryAvatar(avatar.value); }
+      if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') {
+        setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
+      }
+      setParsedChar(simData);
+      setSimResults(null);
+      if (fullData.media?.assets) {
+        const avatar = fullData.media.assets.find((a: any) => a.key === 'avatar');
+        if (avatar?.value) setArmoryAvatar(avatar.value);
+      }
       const itemIds = simData.gear.filter((g: any) => g.itemId).map((g: any) => parseInt(g.itemId));
       if (itemIds.length > 0) {
         setItemEnrichLoading(true);
         try {
           const items = await getItemsBatch(itemIds, armoryRegion);
-          if (Array.isArray(items)) { const itemMap = {}; items.forEach((item: any) => { if (item.id) itemMap[item.id] = item; });
-            const enrichedGear = simData.gear.map((g: any) => g.itemId && itemMap[g.itemId] ? { ...g, name: itemMap[g.itemId].name || g.name } : g);
-            setParsedChar(prev => prev ? { ...prev, gear: enrichedGear } : prev);
+          if (Array.isArray(items)) {
+            const itemMap = {};
+            items.forEach((item: any) => {
+              if (item.id) itemMap[item.id] = item;
+            });
+            const enrichedGear = simData.gear.map((g: any) =>
+              g.itemId && itemMap[g.itemId] ? { ...g, name: itemMap[g.itemId].name || g.name } : g,
+            );
+            setParsedChar((prev) => (prev ? { ...prev, gear: enrichedGear } : prev));
           }
-        } catch (e) { console.warn('Item enrichment failed:', e); } finally { setItemEnrichLoading(false); }
+        } catch (e) {
+          console.warn('Item enrichment failed:', e);
+        } finally {
+          setItemEnrichLoading(false);
+        }
       }
-    } catch (err) { setArmoryError(err.message || 'Failed to look up character.'); setParsedChar(null); } finally { setArmoryLoading(false); }
-  }, [armoryRealm, armoryName, armoryRegion]);
+    } catch (err) {
+      setArmoryError(err.message || 'Failed to look up character.');
+      setParsedChar(null);
+    } finally {
+      setArmoryLoading(false);
+    }
+  }, [armoryRealm, resolvedRealmSlug, armoryName, armoryRegion]);
 
   const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
