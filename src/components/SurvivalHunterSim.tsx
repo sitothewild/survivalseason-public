@@ -2473,6 +2473,9 @@ export default function SurvivalHunterSim() {
                           {isNew48h(note.pubDate) && (
                             <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`, fontSize: 7 }}>NEW</span>
                           )}
+                          {/hunter|survival/i.test(`${note.title} ${note.description}`) && (
+                            <span className="badge" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.25)', fontSize: 7 }}>🏹 HUNTER</span>
+                          )}
                         </div>
                         <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700, color: C.textPri, marginBottom: 8, lineHeight: 1.3 }}>{note.title}</div>
                         <p style={{
