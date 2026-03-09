@@ -264,10 +264,11 @@ const PASSIVE_SOURCES_SENT: Record<string, number> = {
 
 // Spell coefficients for weighting APL actions by damage per cast
 const SPELL_WEIGHT: Record<string, number> = {
-  'Raptor Strike': 2.86, 'Kill Command': 1.50, 'Wildfire Bomb': 2.48,
-  'Boomstick': 3.60, 'Takedown': 1.80, 'Raptor Swipe': 1.85,
-  'Flamefang Pitch': 4.20, 'Moonlight Chakram': 4.80,
+  'Mongoose Bite': 3.20, 'Raptor Bite': 1.40, 'Kill Command': 1.50,
+  'Wildfire Bomb': 2.48, 'Boomstick': 3.60, 'Takedown': 1.80,
+  'Raptor Swipe': 1.85, 'Flamefang Pitch': 4.20, 'Moonlight Chakram': 4.80,
   'Sentinel Mark + Lunar Storm': 2.00, 'Pack Leader Beasts': 1.50,
+  'Serpent Sting': 1.20,
 };
 
 /**
