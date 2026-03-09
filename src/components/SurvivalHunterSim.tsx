@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect, Fragment } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
+import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
 
