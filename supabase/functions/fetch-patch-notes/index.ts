@@ -205,7 +205,7 @@ async function fetchBlizzardHotfixes(): Promise<PatchNote[]> {
 const CURATED_NOTES: PatchNote[] = [
   {
     title: 'Midnight 12.0 Pre-Season 1 — Hunter Class Tuning',
-    link: 'https://www.wowhead.com/news/category=hunter',
+    link: 'https://www.wowhead.com/news/hunter',
     pubDate: '2026-03-04T00:00:00Z',
     date: 'Mar 4, 2026',
     description: 'Survival Hunter: Kill Command damage increased by 5%. Wildfire Bomb damage increased by 8%. Mongoose Bite damage reduced by 3%. Coordinated Assault cooldown reduced to 2 minutes (was 2.5 min). Sentinel owl now resets Wildfire Bomb cooldown when spawning.',
