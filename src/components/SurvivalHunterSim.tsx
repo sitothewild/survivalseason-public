@@ -1680,26 +1680,26 @@ export default function SurvivalHunterSim() {
                 </button>
 
                 {parsedChar && (
-                  <div style={{ marginTop: 14, padding: 12, background: '#0f1a0e', borderRadius: 6, border: '1px solid #1e3018', animation: 'fadeIn 0.3s ease' }}>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: '#86efac', marginBottom: 8 }}>
+                  <div style={{ marginTop: 18, padding: 16, background: 'hsl(var(--accent) / 0.05)', borderRadius: 8, border: '1px solid hsl(var(--accent) / 0.2)', animation: 'fadeIn 0.3s ease' }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 13, color: 'hsl(var(--accent))', marginBottom: 12, fontWeight: 600 }}>
                       ✓ CHARACTER LOADED
                     </div>
                     {/* Character info + 3D Model row */}
-                    <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ display: 'flex', gap: 16 }}>
                       <div style={{ flex: 1 }}>
                         {/* Character info */}
-                        <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
-                          {parsedChar.character.name && <span style={{ color: '#e8c88a' }}>Name: <b>{parsedChar.character.name}</b></span>}
-                          {parsedChar.character.level && <span style={{ color: '#c8a870' }}>Level: {parsedChar.character.level}</span>}
-                          {parsedChar.character.race && <span style={{ color: '#c8a870' }}>Race: {parsedChar.character.race}</span>}
-                          {parsedChar.character.avgIlvl > 0 && <span style={{ color: '#f0c880' }}>Avg iLvl: <b>{parsedChar.character.avgIlvl}</b></span>}
+                        <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, marginBottom: 14 }}>
+                          {parsedChar.character.name && <span style={{ color: 'hsl(var(--foreground))' }}>Name: <b>{parsedChar.character.name}</b></span>}
+                          {parsedChar.character.level && <span style={{ color: 'hsl(var(--muted-foreground))' }}>Level: {parsedChar.character.level}</span>}
+                          {parsedChar.character.race && <span style={{ color: 'hsl(var(--muted-foreground))' }}>Race: {parsedChar.character.race}</span>}
+                          {parsedChar.character.avgIlvl > 0 && <span style={{ color: 'hsl(var(--accent))' }}>Avg iLvl: <b>{parsedChar.character.avgIlvl}</b></span>}
                         </div>
 
                     {/* Stats */}
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 1, color: '#7a6040', marginBottom: 6 }}>STATS</div>
-                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, marginBottom: 10 }}>
-                      <span style={{ color: '#a0a0a0' }}>AGI: <b>{parsedChar.stats.agility.toLocaleString()}</b></span>
-                      <span style={{ color: '#c8a870' }}>AP: <b>{Math.round(parsedChar.stats.attackPower).toLocaleString()}</b></span>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: 'hsl(var(--muted-foreground))', marginBottom: 8, fontWeight: 600 }}>STATS</div>
+                    <div className="stats-grid" style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, marginBottom: 14 }}>
+                      <span style={{ color: 'hsl(var(--muted-foreground))' }}>AGI: <b>{parsedChar.stats.agility.toLocaleString()}</b></span>
+                      <span style={{ color: 'hsl(var(--accent))' }}>AP: <b>{Math.round(parsedChar.stats.attackPower).toLocaleString()}</b></span>
                       <span style={{ color: '#60a5fa' }}>Haste: <b>{parsedChar.stats.haste}%</b></span>
                       <span style={{ color: '#f59e0b' }}>Crit: <b>{parsedChar.stats.crit}%</b></span>
                       <span style={{ color: '#a78bfa' }}>Mastery: <b>{parsedChar.stats.mastery}%</b></span>
