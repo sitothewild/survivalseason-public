@@ -977,18 +977,32 @@ export default function SurvivalHunterSim() {
   const getTargets = () => simMode === 'single' ? [1] : simMode === 'cleave' ? [2, 3] : [5, 8, 10];
 
   const handleSim = useCallback(() => {
-    if (!parsedChar) return; setIsSimming(true); setSimResults(null);
+    if (!parsedChar) return; setIsSimming(true); setSimResults(null); setUserSimResult(null); setOptimalSimResult(null);
     let externalMult = 1.0; externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
     Object.entries(raidBuffs).forEach(([buff, enabled]) => { if (enabled && RAID_BUFFS[buff]) externalMult *= RAID_BUFFS[buff].mult; });
     Object.entries(consumables).forEach(([cat, sel]) => { const opt = CONSUMABLES[cat]?.options?.find(o => o.key === sel); if (opt) externalMult *= opt.mult; });
     setTimeout(() => {
       const targets = getTargets();
+      const primaryTarget = targets[0];
+      const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
+
+      // Run main results (all targets, user's selected hero)
       const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData));
-      const primaryBuild = targets[0] === 1 ? 'st' : 'aoe';
-      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData);
-      setStatWeights(sw); setSimResults(results); setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent)); setIsSimming(false);
+      const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData);
+
+      // Run user vs optimal single-target comparison
+      const uHeroKey = detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent;
+      const userResult = runSimulation(parsedChar, primaryTarget, fightDuration, uHeroKey, primaryBuild, externalMult, simcLiveData);
+      const optResult = runSimulation(parsedChar, primaryTarget, fightDuration, 'sentinel', primaryBuild, externalMult, simcLiveData);
+
+      setStatWeights(sw);
+      setSimResults(results);
+      setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
+      setUserSimResult(userResult);
+      setOptimalSimResult(optResult);
+      setIsSimming(false);
     }, 1200);
-  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables, simcLiveData]);
+  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables, simcLiveData, detectedHeroTalent]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
 
