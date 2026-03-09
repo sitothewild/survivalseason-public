@@ -254,14 +254,12 @@ const APL_TO_DISPLAY: Record<string, string> = {
 
 // Passive/auto sources not in APL but always present
 const PASSIVE_SOURCES_PL: Record<string, number> = {
-  'Strike as One': 0.16, 'Auto Attack (MH)': 0.07, 'Auto Attack (OH)': 0.035,
-  'Pet (Claw)': 0.025, 'Pet Melee': 0.02, "Kroluk's Warbanner": 0.022,
-  'Pack Leader Beasts': 0.07, 'Bear (Rend + Melee)': 0.026,
+  'Pet Damage': 0.05, 'Auto Attack (MH)': 0.07, 'Auto Attack (OH)': 0.035,
+  'Pack Leader Beasts': 0.07, 'Trinket Procs': 0.01,
 };
 const PASSIVE_SOURCES_SENT: Record<string, number> = {
-  'Strike as One': 0.12, 'Auto Attack (MH)': 0.065, 'Auto Attack (OH)': 0.03,
-  'Pet (Claw)': 0.025, 'Pet Melee': 0.022, "Kroluk's Warbanner": 0.02,
-  'Sentinel Mark + Lunar Storm': 0.07,
+  'Pet Damage': 0.09, 'Auto Attack (MH)': 0.065, 'Auto Attack (OH)': 0.03,
+  'Sentinel Mark + Lunar Storm': 0.04, 'Trinket Procs': 0.01,
 };
 
 // Spell coefficients for weighting APL actions by damage per cast
