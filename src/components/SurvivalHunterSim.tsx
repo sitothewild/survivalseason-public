@@ -1149,7 +1149,7 @@ export default function SurvivalHunterSim() {
         {activeTab === "sim" && (
           <>
             {/* 3-COLUMN GRID */}
-            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "260px 1fr 420px", gap: 16, alignItems: "stretch" }}>
+            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "260px minmax(340px, 1fr) 420px", gap: 20, alignItems: "stretch" }}>
 
               {/* ═══ LEFT COLUMN — Inputs Only (280px) ═══ */}
               <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", width: 280 }}>
