@@ -469,7 +469,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
   }
 
   // Use live SimC APL-derived breakdowns when available, otherwise fall back to defaults
-  const { pl: SIMC_BREAKDOWN_PL_ST, sent: SIMC_BREAKDOWN_SENT_ST } = getBreakdowns(simcLiveData);
+  const { pl: SIMC_BREAKDOWN_PL_ST, sent: SIMC_BREAKDOWN_SENT_ST } = getBreakdowns(simcLiveData, T);
   const breakdown = {}; const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
   if (build === 'aoe' || T > 2) {
     const aoeTemplate = {}; Object.entries(breakdownTemplate).forEach(([key, pct]) => {
