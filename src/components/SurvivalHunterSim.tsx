@@ -1572,6 +1572,7 @@ export default function SurvivalHunterSim() {
                   </div>
 
                   {/* Run Simulation button */}
+                  <div style={{ flex: 1 }} />
                   <button 
                     className="sim-btn" 
                     onClick={handleSim} 
