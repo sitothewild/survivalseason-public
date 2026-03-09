@@ -141,7 +141,7 @@ async function fetchMmoChampionRss(): Promise<PatchNote[]> {
       const plainTitle = stripHtml(title);
       const plainDesc = stripHtml(desc);
 
-      if (/hotfix|class.?tuning|patch.*notes?|hunter|survival|balance.*changes?|nerf|buff/i.test(plainTitle)) {
+      if (/hotfix|class.?tuning|patch.*notes?|hunter|survival|balance.*update/i.test(plainTitle)) {
         items.push({
           title: plainTitle,
           link: stripHtml(link),
