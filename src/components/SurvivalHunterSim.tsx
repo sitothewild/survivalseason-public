@@ -1843,6 +1843,80 @@ export default function SurvivalHunterSim() {
                 </div>
               ))}
             </CARD>
+
+            {/* SimC Live APL */}
+            <CARD style={{ gridColumn: "1 / -1" }}>
+              <LBL>🔄 SimC Live Action Priority List</LBL>
+              {simcSyncStatus === 'synced' && simcLiveData?.apl?.actionLists ? (
+                <div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                    <span className="badge" style={{ background: '#0c1e35', color: '#38bdf8', border: '1px solid rgba(56,189,248,.4)' }}>
+                      SHA: {simcLiveData.sha?.slice(0, 7)}
+                    </span>
+                    <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>
+                      Branch: {simcLiveData.branch || 'thewarwithin'}
+                    </span>
+                    <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>
+                      {simcLiveData.fetchedAt ? new Date(simcLiveData.fetchedAt).toLocaleString() : 'Cached'}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    {[
+                      { key: 'sentst', label: 'Sentinel ST', color: C.sentClr },
+                      { key: 'sentcleave', label: 'Sentinel Cleave', color: C.sentClr },
+                      { key: 'plst', label: 'Pack Leader ST', color: C.packClr },
+                      { key: 'plcleave', label: 'Pack Leader Cleave', color: C.packClr },
+                    ].map(({ key, label, color }) => {
+                      const actions = simcLiveData.apl.actionLists[key];
+                      if (!actions || actions.length === 0) return null;
+                      return (
+                        <div key={key} style={{ background: C.surface2, borderRadius: 8, padding: 12, border: `1px solid ${C.border}` }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color, marginBottom: 8, textTransform: "uppercase" }}>{label}</div>
+                          <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                            {actions.slice(0, 15).map((action, i) => {
+                              const parts = action.split('#');
+                              const spell = parts[0].split(',')[0].trim();
+                              return (
+                                <div key={i} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textMid, padding: "2px 0", borderBottom: `1px solid ${C.borderSub}` }}>
+                                  <span style={{ color: C.goldLight }}>{i + 1}.</span> <span style={{ color: C.textSec }}>{spell}</span>
+                                  {parts[1] && <span style={{ color: C.textDim, marginLeft: 6, fontSize: 9 }}>// {parts[1].trim()}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {simcLiveData.spells?.survival_spells && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color: C.textDim, marginBottom: 8, textTransform: "uppercase" }}>Parsed Spell Implementations</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {Object.entries(simcLiveData.spells.survival_spells).map(([spell, data]: [string, any]) => (
+                          <span key={spell} className="tag tag-core" style={{ fontSize: 11 }}>
+                            {spell.replace(/_/g, ' ')} {data.found ? '✓' : '✗'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : simcSyncStatus === 'loading' ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.textDim }}>
+                  <span style={{ width: 14, height: 14, border: "2px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />
+                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>Syncing SimC data from GitHub...</span>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 10 }}>
+                    Click the <strong style={{ color: '#38bdf8' }}>SYNC SIMC</strong> button in the header to pull the latest rotation data from SimulationCraft's GitHub repository.
+                  </p>
+                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
+                    This fetches the Survival Hunter APL (Action Priority List) directly from the thewarwithin branch and caches it for fast loading.
+                  </p>
+                </div>
+              )}
+            </CARD>
           </div>
         )}
 
