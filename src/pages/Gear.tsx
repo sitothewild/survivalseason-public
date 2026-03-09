@@ -782,9 +782,12 @@ export default function Gear() {
       {hoveredBiS && (() => {
         const row = bisList.find(r => r.slot === hoveredBiS);
         if (!row) return null;
+
         const isTier    = ["Head","Shoulders","Chest","Hands","Legs"].includes(row.slot);
         const isWeapon  = ["Main Hand","Off Hand"].includes(row.slot);
         const isJewelry = ["Neck","Ring 1","Ring 2","Trinket 1","Trinket 2"].includes(row.slot);
+        const isTrinket = ["Trinket 1","Trinket 2"].includes(row.slot);
+
         const SLOT_ICONS: Record<string,string> = {
           "Head":"🪖","Shoulders":"🛡","Chest":"🎽","Wrist":"⌚","Hands":"🧤",
           "Waist":"🪢","Legs":"🩲","Boots":"🥾","Back":"🧥",
@@ -792,109 +795,220 @@ export default function Gear() {
           "Trinket 1":"💎","Trinket 2":"💎",
           "Main Hand":"⚔","Off Hand":"🗡",
         };
-        const TRACK_CLR = { hero:"#a855f7", myth:"#fbbf24" };
-        // Parse keyStats into individual coloured pills
-        const stats = row.keyStats.split(/\s*[+/]\s*/).map(s => s.trim()).filter(Boolean);
         const STAT_CLR: Record<string,string> = {
-          "Mastery":"#4ade80","Crit":"#f87171","Critical Strike":"#f87171",
-          "Haste":"#60a5fa","Versatility":"#94a3b8","Vers":"#94a3b8",
-          "Agility":"#fbbf24","Agility 2H Polearm":"#fbbf24","Agility 1H Axe":"#fbbf24",
-          "Agility 1H Dagger":"#fbbf24","Passive Agi + Stacking proc":"#fbbf24",
-          "On-use Crit +3640":"#f87171","On-use Mastery +3920":"#4ade80",
+          Agility:"#fbbf24", Stamina:"#94a3b8",
+          Mastery:"#4ade80","Critical Strike":"#f87171",
+          Haste:"#60a5fa", Versatility:"#a3a3a3",
         };
-        // Split source at " — " to extract boss name for separate display
+
+        // Cross-referenced trinket data
+        const trinketData = row.trinketId
+          ? MIDNIGHT_TRINKETS.find(t => t.id === row.trinketId)
+          : null;
+
+        // Hero-specific tier set bonuses
+        const tierAnalysis = isTier ? TIER_SET_HERO_ANALYSIS[hero] : null;
+
+        // Source split
         const sourceParts = row.source.split(" — ");
         const sourceBase  = sourceParts[0];
         const sourceBoss  = sourceParts.slice(1).join(" — ");
 
-        const tipX = Math.min(bisTooltipPos.x, window.innerWidth - 348);
-        const tipY = Math.max(8, Math.min(bisTooltipPos.y, window.innerHeight - 360));
+        const tipX = Math.min(bisTooltipPos.x, window.innerWidth - 360);
+        const tipY = Math.max(8, Math.min(bisTooltipPos.y, window.innerHeight - 520));
+
+        const Divider = () => (
+          <div style={{ borderTop:`1px solid ${C.borderSub}`, margin:"10px 0" }} />
+        );
+        const Label = ({ children }: any) => (
+          <div style={{ fontSize:9, letterSpacing:2, color:C.textDim,
+            fontFamily:"'Orbitron',sans-serif", marginBottom:5, textTransform:"uppercase" }}>
+            {children}
+          </div>
+        );
 
         return (
           <div style={{
             position:"fixed", zIndex:9999, pointerEvents:"none",
             left: tipX, top: tipY,
-            width: 320,
-            background:"linear-gradient(180deg,#141c2a,#0c1220)",
+            width: 340,
+            background:"linear-gradient(180deg,#141c2a 0%,#0c1220 100%)",
             border:"1px solid #2e4a6a",
             borderRadius:12, padding:"16px 18px",
-            boxShadow:"0 10px 40px rgba(0,0,0,.75)",
+            boxShadow:"0 12px 48px rgba(0,0,0,.8)",
             fontFamily:"'Rajdhani',sans-serif",
           }}>
-            {/* Header — slot icon + item name */}
+
+            {/* ── Header: icon + name + slot ─────────────────── */}
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
               <div style={{
-                width:38, height:38, borderRadius:8, flexShrink:0,
+                width:40, height:40, borderRadius:8, flexShrink:0,
                 background: isTier ? C.goldBg : isWeapon ? heroBg : isJewelry ? "#1a1033" : C.surface2,
-                border:`1px solid ${isTier ? "#78350f" : isWeapon ? heroBdr : "#3b1a5c"}`,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:20,
+                border:`2px solid ${isTier ? "#92400e" : isWeapon ? heroBdr : "#4c1d95"}`,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:22,
               }}>
                 {SLOT_ICONS[row.slot] ?? "⚙"}
               </div>
-              <div>
-                <div style={{ fontSize:15, fontWeight:800, color:"#a335ee", lineHeight:1.2 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:"#c084fc", lineHeight:1.2 }}>
                   {isTier && <span style={{ color:C.goldLight }}>🏆 </span>}
                   {row.itemName}
                 </div>
-                <div style={{ fontSize:11, color:C.textDim, marginTop:2, letterSpacing:.5 }}>
-                  {row.slot.toUpperCase()}
+                <div style={{ display:"flex", gap:8, marginTop:4, alignItems:"center" }}>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11,
+                    color:"#a855f7", background:"#2a1a3a", border:"1px solid #5b21b6",
+                    borderRadius:4, padding:"1px 7px", fontWeight:700 }}>
+                    Hero {row.ilvl}
+                  </span>
+                  <span style={{ color:C.textDim, fontSize:10 }}>→</span>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11,
+                    color:C.goldLight, background:C.goldBg, border:"1px solid #78350f",
+                    borderRadius:4, padding:"1px 7px", fontWeight:700 }}>
+                    Myth {row.mythIlvl ?? "—"}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* ilvl track band */}
-            <div style={{ display:"flex", gap:8, marginBottom:12, alignItems:"center" }}>
-              <div style={{
-                fontFamily:"'IBM Plex Mono',monospace", fontSize:12, fontWeight:700,
-                color: TRACK_CLR.hero, background:"#2a1a3a",
-                border:"1px solid #5b21b6", borderRadius:6, padding:"3px 10px",
-              }}>
-                Hero {row.ilvl}
-              </div>
-              <span style={{ color:C.textDim, fontSize:11 }}>→</span>
-              <div style={{
-                fontFamily:"'IBM Plex Mono',monospace", fontSize:12, fontWeight:700,
-                color: TRACK_CLR.myth, background:C.goldBg,
-                border:"1px solid #78350f", borderRadius:6, padding:"3px 10px",
-              }}>
-                Myth {row.mythIlvl ?? "—"}
-              </div>
-            </div>
-
-            {/* Key stats */}
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:9, letterSpacing:2, color:C.textDim,
-                fontFamily:"'Orbitron',sans-serif", marginBottom:5 }}>KEY STATS</div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                {stats.map(s => (
-                  <span key={s} style={{
-                    fontFamily:"'IBM Plex Mono',monospace", fontSize:12, fontWeight:700,
-                    color: STAT_CLR[s] ?? C.textSec,
-                    background: (STAT_CLR[s] ?? C.textSec) + "18",
-                    border:`1px solid ${(STAT_CLR[s] ?? C.textSec)}44`,
-                    borderRadius:5, padding:"2px 8px",
-                  }}>{s}</span>
+            {/* ── Stat budget ─────────────────────────────────── */}
+            {row.statBudget && (
+              <>
+                {(row.statBudget.agility || row.statBudget.stamina) && (
+                  <div style={{ marginBottom:6 }}>
+                    {row.statBudget.agility && (
+                      <div style={{ fontSize:13, color:STAT_CLR.Agility, padding:"1px 0" }}>
+                        +{row.statBudget.agility.toLocaleString()} Agility
+                      </div>
+                    )}
+                    {row.statBudget.stamina && (
+                      <div style={{ fontSize:13, color:STAT_CLR.Stamina, padding:"1px 0" }}>
+                        +{row.statBudget.stamina.toLocaleString()} Stamina
+                      </div>
+                    )}
+                  </div>
+                )}
+                {row.statBudget.secondaries.map(s => (
+                  <div key={s.name} style={{ fontSize:13,
+                    color: STAT_CLR[s.name] ?? C.textSec, padding:"1px 0" }}>
+                    +{s.value.toLocaleString()} {s.name}
+                  </div>
                 ))}
-              </div>
-            </div>
+              </>
+            )}
 
-            {/* Source */}
-            <div style={{ marginBottom:10, borderTop:`1px solid ${C.borderSub}`, paddingTop:8 }}>
-              <div style={{ fontSize:9, letterSpacing:2, color:C.textDim,
-                fontFamily:"'Orbitron',sans-serif", marginBottom:4 }}>SOURCE</div>
-              <div style={{ fontSize:13, color:C.textSec, fontWeight:600 }}>{sourceBase}</div>
-              {sourceBoss && (
-                <div style={{ fontSize:12, color: heroClr, marginTop:2 }}>↳ {sourceBoss}</div>
-              )}
-            </div>
+            {/* ── Trinket proc / on-use data ──────────────────── */}
+            {isTrinket && trinketData && (
+              <>
+                <Divider />
+                {trinketData.primaryAgi > 0 && (
+                  <div style={{ fontSize:13, color:STAT_CLR.Agility, padding:"1px 0" }}>
+                    +{trinketData.primaryAgi.toLocaleString()} Agility
+                  </div>
+                )}
+                {trinketData.type === 'on_use' && (
+                  <div style={{ fontSize:13, color:"#34d399", padding:"2px 0", lineHeight:1.4 }}>
+                    Use: Gain +{trinketData.onUseAmount?.toLocaleString()}{" "}
+                    {trinketData.onUseStat === 'crit' ? 'Critical Strike'
+                      : trinketData.onUseStat === 'mastery' ? 'Mastery'
+                      : trinketData.onUseStat === 'haste' ? 'Haste'
+                      : 'stat'}{" "}
+                    for {trinketData.onUseDuration}s.{" "}
+                    <span style={{ color:C.textDim }}>({trinketData.onUseCD}s CD)</span>
+                  </div>
+                )}
+                {trinketData.type === 'proc' && trinketData.procAmount && (
+                  <div style={{ fontSize:13, color:"#a3e635", padding:"2px 0", lineHeight:1.4 }}>
+                    Equip: {trinketData.procStat === 'agi'
+                      ? `Stacking proc — +${(trinketData.procAmount / 10).toLocaleString()} Agility per stack (max 10, avg ~7). ~70% effective uptime.`
+                      : `Proc: +${trinketData.procAmount.toLocaleString()}{" "}
+                        ${trinketData.procStat === 'mastery' ? 'Mastery'
+                          : trinketData.procStat === 'haste' ? 'Haste'
+                          : trinketData.procStat === 'crit' ? 'Critical Strike'
+                          : 'stat'} (~${Math.round((trinketData.procUptime ?? 0)*100)}% uptime).`
+                    }
+                  </div>
+                )}
+                {trinketData.type === 'damage_proc' && (
+                  <div style={{ fontSize:13, color:"#f87171", padding:"2px 0", lineHeight:1.4 }}>
+                    Equip: Periodically deals {Math.round((trinketData.dmgApCoef ?? 0)*100)}% Attack Power to nearby enemies (~{trinketData.dmgCPM?.toFixed(1)}/min).
+                  </div>
+                )}
+                <div style={{ fontSize:11, color:C.textDim, marginTop:4, lineHeight:1.4 }}>
+                  {trinketData.notes}
+                </div>
+              </>
+            )}
 
-            {/* Notes */}
+            {/* ── Equip / special effect ──────────────────────── */}
+            {row.equipText && !isTier && (
+              <>
+                <Divider />
+                <div style={{ fontSize:13, color:"#34d399", lineHeight:1.5 }}>
+                  {row.equipText}
+                </div>
+              </>
+            )}
+
+            {/* ── Tier Set Bonus (hero-specific) ──────────────── */}
+            {isTier && tierAnalysis && (
+              <>
+                <Divider />
+                <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:10, fontFamily:"'Orbitron',sans-serif",
+                    color:C.goldLight, letterSpacing:1.5, marginBottom:6 }}>
+                    {heroIcon} {heroName} — Survival Hunter S1 Tier Set
+                  </div>
+                  {/* 2pc */}
+                  <div style={{ marginBottom:8 }}>
+                    <span style={{ fontSize:11, fontFamily:"'IBM Plex Mono',monospace",
+                      color:"#fbbf24", background:"#2a1f08", border:"1px solid #78350f",
+                      borderRadius:4, padding:"1px 7px", marginRight:6 }}>2pc</span>
+                    <span style={{ fontSize:13, color:C.textSec, fontWeight:700 }}>
+                      {tierAnalysis.twoPcMechanic}
+                    </span>
+                    <div style={{ fontSize:12, color:"#86efac", marginTop:4, lineHeight:1.5,
+                      paddingLeft:4, borderLeft:`2px solid #14532d` }}>
+                      {tierAnalysis.twoPcSynergy}
+                    </div>
+                  </div>
+                  {/* 4pc */}
+                  <div>
+                    <span style={{ fontSize:11, fontFamily:"'IBM Plex Mono',monospace",
+                      color:C.goldLight, background:C.goldBg, border:"1px solid #92400e",
+                      borderRadius:4, padding:"1px 7px", marginRight:6 }}>4pc</span>
+                    <span style={{ fontSize:13, color:C.textSec, fontWeight:700 }}>
+                      {tierAnalysis.fourPcMechanic}
+                    </span>
+                    <div style={{ fontSize:12, color:"#fde68a", marginTop:4, lineHeight:1.5,
+                      paddingLeft:4, borderLeft:`2px solid #78350f` }}>
+                      {tierAnalysis.fourPcSynergy}
+                    </div>
+                  </div>
+                </div>
+                {/* Stat priority shift */}
+                <div style={{ fontSize:11, color:C.textDim, background:C.surface2,
+                  borderRadius:6, padding:"6px 10px", lineHeight:1.5, marginTop:4 }}>
+                  <span style={{ color: heroClr, fontWeight:700 }}>Stat shift: </span>
+                  {tierAnalysis.statPriorityShift}
+                </div>
+              </>
+            )}
+
+            {/* ── Source ──────────────────────────────────────── */}
+            <Divider />
+            <Label>Source</Label>
+            <div style={{ fontSize:12, color:C.textSec, fontWeight:600 }}>{sourceBase}</div>
+            {sourceBoss && (
+              <div style={{ fontSize:12, color:heroClr, marginTop:2 }}>↳ {sourceBoss}</div>
+            )}
+
+            {/* ── Notes / enchant ─────────────────────────────── */}
             {row.notes && (
-              <div style={{ borderTop:`1px solid ${C.borderSub}`, paddingTop:8 }}>
-                <div style={{ fontSize:9, letterSpacing:2, color:C.textDim,
-                  fontFamily:"'Orbitron',sans-serif", marginBottom:4 }}>NOTES &amp; ENCHANTS</div>
+              <>
+                <Divider />
+                <Label>Notes &amp; Enchants</Label>
                 <div style={{ fontSize:12, color:C.textMid, lineHeight:1.5 }}>{row.notes}</div>
-              </div>
+              </>
             )}
           </div>
         );
