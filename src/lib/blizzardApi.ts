@@ -68,25 +68,52 @@ export async function getFullCharacter(realmSlug: string, characterName: string,
 export function equipmentToSimData(fullData: any) {
   const { profile, equipment, stats: charStats } = fullData;
   
-  const gear = (equipment?.equipped_items || []).map((item: any) => ({
-    slot: item.slot?.type?.toLowerCase() || "unknown",
-    slotLabel: item.slot?.name || item.slot?.type || "Unknown",
-    ilvl: item.level?.value || 0,
-    itemId: item.item?.id || null,
-    name: item.name || "Unknown Item",
-    quality: item.quality?.type || "COMMON",
-  }));
+  const gear = (equipment?.equipped_items || []).map((item: any) => {
+    // Extract enchantments
+    const enchantments = (item.enchantments || []).map((e: any) => ({
+      id: e.enchantment_id,
+      display: e.display_string?.replace(/\|[^|]*\|[a-z]/g, '').replace('Enchanted: ', '') || '',
+      name: e.source_item?.name || '',
+      slot: e.enchantment_slot?.type || 'PERMANENT',
+    }));
+
+    // Extract sockets/gems
+    const sockets = (item.sockets || []).map((s: any) => ({
+      display: s.display_string || '',
+      name: s.item?.name || '',
+      itemId: s.item?.id || null,
+    }));
+
+    // Extract per-item stats
+    const itemStats = (item.stats || [])
+      .filter((s: any) => !s.is_negated)
+      .map((s: any) => ({
+        type: s.type?.type || '',
+        name: s.type?.name || '',
+        value: s.value || 0,
+        isEquipBonus: !!s.is_equip_bonus,
+      }));
+
+    return {
+      slot: item.slot?.type?.toLowerCase() || "unknown",
+      slotLabel: item.slot?.name || item.slot?.type || "Unknown",
+      ilvl: item.level?.value || 0,
+      itemId: item.item?.id || null,
+      name: item.name || "Unknown Item",
+      quality: item.quality?.type || "COMMON",
+      enchantments,
+      sockets,
+      itemStats,
+      nameDescription: item.name_description?.display_string || '',
+    };
+  });
 
   // Extract stats from Blizzard API character statistics
-  // The API returns: agility.effective, attack_power (number), melee_crit.value (%), etc.
   const agility = charStats?.agility?.effective || charStats?.agility?.base || 0;
   const attackPower = (typeof charStats?.attack_power === 'number' ? charStats.attack_power : charStats?.attack_power?.effective) || Math.round(agility * 1.05);
 
-  // Secondary stats — use effective percentage values from the API
-  // The API provides .value as the actual % (e.g., 25.5 = 25.5%)
   let haste = 0, crit = 0, mastery = 0, versatility = 0;
 
-  // Prefer effective percentage values
   if (charStats?.melee_haste?.value != null) {
     haste = +charStats.melee_haste.value;
   } else if (charStats?.melee_haste?.rating) {

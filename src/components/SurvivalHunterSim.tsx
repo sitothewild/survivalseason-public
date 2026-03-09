@@ -369,19 +369,24 @@ function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCou
   return { actionCounts, buffUptimes, strikeAsOneDetails: strikeAsOneExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
 }
 
-/** WoW item quality color based on ilvl relative to the character's average.
- *  Uses relative thresholds so it works at any level range. */
-function getItemQualityColor(ilvl: number, avgIlvl?: number): string {
-  if (!ilvl || ilvl <= 0) return '#9d9d9d'; // Poor/grey
+const QUALITY_COLORS: Record<string, string> = {
+  LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd',
+  UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d',
+  ARTIFACT: '#e6cc80', HEIRLOOM: '#00ccff',
+};
+
+/** WoW item quality color — uses actual quality type from API when available,
+ *  falls back to ilvl-relative estimation. */
+function getItemQualityColor(quality?: string, ilvl?: number, avgIlvl?: number): string {
+  if (quality && QUALITY_COLORS[quality]) return QUALITY_COLORS[quality];
+  if (!ilvl || ilvl <= 0) return '#9d9d9d';
   const avg = avgIlvl && avgIlvl > 0 ? avgIlvl : ilvl;
-  const diff = ilvl - avg;
-  // Legendary: 15%+ above avg, Epic: 5%+ above, Rare: within 5%, Uncommon: up to 10% below, Common: lower
-  const pct = avg > 0 ? diff / avg : 0;
-  if (pct >= 0.15) return '#ff8000';  // Legendary orange
-  if (pct >= 0.03) return '#a335ee';  // Epic purple
-  if (pct >= -0.05) return '#0070dd'; // Rare blue
-  if (pct >= -0.12) return '#1eff00'; // Uncommon green
-  return '#ffffff';                    // Common white
+  const pct = avg > 0 ? (ilvl - avg) / avg : 0;
+  if (pct >= 0.15) return '#ff8000';
+  if (pct >= 0.03) return '#a335ee';
+  if (pct >= -0.05) return '#0070dd';
+  if (pct >= -0.12) return '#1eff00';
+  return '#ffffff';
 }
 
 function getAbilityCoefficient(ability) {
@@ -1040,26 +1045,44 @@ export default function SurvivalHunterSim() {
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 0 }} onMouseLeave={handleItemLeave}>
                           {parsedChar.gear.map((g, i) => {
-                            const ilvlColor = getItemQualityColor(g.ilvl, parsedChar.character?.avgIlvl);
-                            const nameColor = ilvlColor;
+                            const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
                             return (
                               <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
                                 onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
                                 <div style={{ textAlign: "center" }}>
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, display: "block" }}>{g.name || `Item`}</span>
-                                  {g.enchant && (
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: qualityColor, fontWeight: 600, display: "block" }}>{g.name || `Item`}</span>
+                                  {g.nameDescription && (
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#1eff00', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      {g.nameDescription}
+                                    </span>
+                                  )}
+                                  {/* Enchantments from API */}
+                                  {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => (
+                                    <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      ✦ {enc.name || enc.display}
+                                    </span>
+                                  ))}
+                                  {/* Fallback for SimC-parsed enchants */}
+                                  {!g.enchantments?.length && g.enchant && (
                                     <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
                                       ✦ {g.enchant}
                                     </span>
                                   )}
-                                  {g.gemId && (
+                                  {/* Sockets/gems from API */}
+                                  {g.sockets?.length > 0 && g.sockets.map((s: any, si: number) => (
+                                    <span key={si} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      💎 {s.name || s.display}
+                                    </span>
+                                  ))}
+                                  {/* Fallback for SimC-parsed gems */}
+                                  {!g.sockets?.length && g.gemId && (
                                     <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
                                       💎 Gem
                                     </span>
                                   )}
                                 </div>
-                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: ilvlColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: qualityColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
                               </div>
                             );
                           })}
