@@ -234,7 +234,7 @@ export default function Guide() {
             <Lbl>🏰 Mythic+ Tips</Lbl>
             {[
               { icon:"🎯", tip:"Pull around Takedown", desc:"Your burst cycle is ~60–90s. Chain pulls so Takedown is off cooldown when the pack lands." },
-              { icon:"🔥", tip:"Pre-place Flamefang Pitch", desc:"Drop the fire puddle where mobs will be gathered before the tank pulls. Full uptime from cast 1." },
+              { icon:"💣", tip:"Pool WFB charges for packs", desc:"Never let Wildfire Bomb sit at 2 charges — WFB is your highest AoE priority. Throw it immediately as the pack lands." },
               { icon:"💣", tip:"Never cap WFB charges",  desc:"Wildfire Bomb is the highest AoE-priority spell. Keep charges cycling — two-charge builds waste DPS if held." },
               { icon:"⚡", tip:"Lunar Storm positioning",  desc:"Position so your Sentinel Mark Lunar Storm AoE hits the full pack. It bounces — one missed target is real loss." },
               { icon:"🐾", tip:"Misdirect on every CD", desc:"MD your tank every 30s. Automate this with a macro: /cast [@focus] Misdirection." },
@@ -436,7 +436,7 @@ export default function Guide() {
           );
           const stPts  = SURVIVAL_SPEC_TREE.filter(n => n.inSTBuild).reduce((s,n) => s+n.pointCost, 0);
           const aoePts = SURVIVAL_SPEC_TREE.filter(n => n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
-          const heroPts = heroTree.length; // all 3 hero nodes, 1pt each
+          const heroPts = heroTree.length; // all 10 hero nodes, 1pt each
           const gatewayPts = SURVIVAL_SPEC_TREE.filter(n => n.isGateway && n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
 
           return (
@@ -457,7 +457,7 @@ export default function Guide() {
                   { label:"AoE Build Total", val:`${aoePts} pts`, clr:'#f97316',
                     sub:`incl. ${gatewayPts} gateway pts` },
                   { label:"Hero Talent Tree", val:`${heroPts} pts`, clr: heroClrL,
-                    sub:"separate budget · all 3 nodes" },
+                    sub:"separate budget · all 10 nodes" },
                   { label:"Full 30-pt Tree", val:"~30 pts", clr:C.textMid,
                     sub:"rem. ~11 pts = utility + class tree" },
                 ].map(s => (
@@ -557,37 +557,34 @@ export default function Guide() {
               {/* ── Hero talent tree path ────────────────────── */}
               <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
                 color: heroClrL, marginBottom:10 }}>
-                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT PATH (3 pts · MUST TAKE IN ORDER)
+                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT TREE (10 pts · WoWHead-verified)
               </div>
-              <div style={{ display:"flex", gap:0, alignItems:"stretch", marginBottom:14 }}>
-                {heroTree.map((node, i) => (
-                  <div key={node.key} style={{ display:"flex", alignItems:"center", flex:1 }}>
-                    <div style={{
-                      flex:1, borderRadius: i === 0 ? "8px 0 0 8px" : i === heroTree.length-1 ? "0 8px 8px 0" : 0,
-                      padding:"12px 14px",
-                      background: heroBgL,
-                      border:`1px solid ${heroBdrL}`,
-                      borderLeft: i > 0 ? "none" : `1px solid ${heroBdrL}`,
+              {/* 4-row × 4-col grid matching actual WoWHead tree layout */}
+              <div style={{
+                display:"grid", gridTemplateColumns:"repeat(4, 1fr)",
+                gridTemplateRows:"repeat(4, auto)", gap:8, marginBottom:14
+              }}>
+                {heroTree.map((node) => {
+                  const isCapstone = node.row === 4;
+                  return (
+                    <div key={node.key} style={{
+                      gridColumn: node.col + 1,
+                      gridRow: node.row,
+                      borderRadius:8, padding:"10px 12px",
+                      background: isCapstone ? heroBgL : C.surface2,
+                      border:`1px solid ${isCapstone ? heroClrL : heroBdrL}`,
                     }}>
                       <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
-                        color:heroClrL, letterSpacing:1.5, marginBottom:4 }}>
-                        {i === 0 ? 'FIRST' : i === heroTree.length-1 ? 'CAPSTONE' : 'MIDDLE'} · 1pt
+                        color: isCapstone ? heroClrL : C.textDim, letterSpacing:1.5, marginBottom:3 }}>
+                        {isCapstone ? 'CAPSTONE' : `ROW ${node.row}`} · 1pt
                       </div>
                       <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
                         fontWeight:700, color:heroClrL, marginBottom:4 }}>{node.label}</div>
-                      {node.prerequisiteKey && (
-                        <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10, color:C.textDim, marginBottom:4 }}>
-                          🔗 requires: {heroTree.find(n => n.key === node.prerequisiteKey)?.label}
-                        </div>
-                      )}
                       <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
                         color:C.textMid, lineHeight:1.4 }}>{node.desc}</div>
                     </div>
-                    {i < heroTree.length - 1 && (
-                      <div style={{ color:heroClrL, fontSize:16, padding:"0 2px", flexShrink:0 }}>▶</div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* ── Gateway talent callout ───────────────────── */}
