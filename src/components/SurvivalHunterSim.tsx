@@ -332,7 +332,7 @@ function getItemQualityColor(ilvl: number, avgIlvl?: number): string {
   return '#ffffff';                    // Common white
 }
 
-
+function getAbilityCoefficient(ability) {
   const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Mongoose Bite':1.60,'Hatchet Toss':0.95 };
   return c[ability] || 1.0;
 }
