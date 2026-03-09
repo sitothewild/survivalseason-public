@@ -1858,7 +1858,6 @@ export default function SurvivalHunterSim() {
                           : entries.sort((a, b) => (b[1] as number) - (a[1] as number));
                         const maxVal = Math.max(...entries.map(e => e[1] as number));
                         const h = MIDNIGHT_DATA.talents.hero[res.hero];
-                        const h = MIDNIGHT_DATA.talents.hero[res.hero];
                         return (
                           <div key={ri} className="result-anim" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animationDelay: `${ri * .1}s` }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
