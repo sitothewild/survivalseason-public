@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useCallback, useEffect, Fragment } from "react";
+import { useState, useCallback, useEffect, Fragment, useRef } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
 import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
@@ -528,9 +528,13 @@ export default function SurvivalHunterSim() {
   }, []);
   // Item tooltips
   const [itemCache, setItemCache] = useState<Record<string, any>>({});
+  const itemCacheRef = useRef<Record<string, any>>({});
+  const pendingItemFetchesRef = useRef<Set<string>>(new Set());
+  const hoverHideTimeoutRef = useRef<number | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
-  const [tooltipLoading, setTooltipLoading] = useState(false);
+  useEffect(() => { itemCacheRef.current = itemCache; }, [itemCache]);
+  useEffect(() => () => { if (hoverHideTimeoutRef.current) window.clearTimeout(hoverHideTimeoutRef.current); }, []);
   // Report tab state
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [upgradeFrom, setUpgradeFrom] = useState(636);
@@ -624,30 +628,70 @@ export default function SurvivalHunterSim() {
 
   const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
+
+    // Cancel pending hide to avoid flicker when moving between rows
+    if (hoverHideTimeoutRef.current) {
+      window.clearTimeout(hoverHideTimeoutRef.current);
+      hoverHideTimeoutRef.current = null;
+    }
+
     const rect = event.currentTarget.getBoundingClientRect();
     const newX = rect.right + 8;
     const newY = rect.top;
-    // Only update position if it actually changed (avoids re-render)
+
+    // Only update when changed (prevents unnecessary renders)
     setTooltipPos(prev => (prev.x === newX && prev.y === newY) ? prev : { x: newX, y: newY });
     setHoveredItem(prev => prev === itemId ? prev : itemId);
-    // Fetch item data if not cached — check synchronously, fetch outside setState
-    if (!itemCache[itemId]) {
-      setTooltipLoading(true);
-      Promise.all([
-        getItem(parseInt(itemId), armoryRegion || 'us'),
-        getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
-      ]).then(([itemData, mediaData]) => {
-        const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
-        setItemCache(p => ({ ...p, [itemId]: { ...itemData, _icon: icon } }));
-      }).catch(e => {
-        setItemCache(p => ({ ...p, [itemId]: { _error: e.message } }));
-      }).finally(() => {
-        setTooltipLoading(false);
-      });
-    }
-  }, [armoryRegion, itemCache]);
 
-  const handleItemLeave = useCallback(() => { setHoveredItem(null); }, []);
+    // Skip if cached or already being fetched
+    if (itemCacheRef.current[itemId] || pendingItemFetchesRef.current.has(itemId)) return;
+
+    pendingItemFetchesRef.current.add(itemId);
+
+    Promise.all([
+      getItem(parseInt(itemId), armoryRegion || 'us'),
+      getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
+    ]).then(([itemData, mediaData]) => {
+      const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
+      setItemCache(prev => ({ ...prev, [itemId]: { ...itemData, _icon: icon } }));
+    }).catch((e) => {
+      setItemCache(prev => ({ ...prev, [itemId]: { _error: e.message } }));
+    }).finally(() => {
+      pendingItemFetchesRef.current.delete(itemId);
+    });
+  }, [armoryRegion]);
+
+  const handleItemLeave = useCallback(() => {
+    // Delay hide so cursor can move between rows without toggle flashing
+    hoverHideTimeoutRef.current = window.setTimeout(() => {
+      setHoveredItem(null);
+    }, 160);
+  }, []);
+
+
+  // Prefetch item tooltip data in batch so hover doesn't trigger expensive fetches
+  useEffect(() => {
+    const itemIds = (parsedChar?.gear || [])
+      .map((g: any) => g.itemId)
+      .filter((id: string | null) => !!id && !itemCacheRef.current[id]);
+    if (!itemIds.length) return;
+
+    (async () => {
+      try {
+        const items = await getItemsBatch(itemIds, armoryRegion || 'us');
+        if (!Array.isArray(items)) return;
+        setItemCache(prev => {
+          const next = { ...prev };
+          items.forEach((item: any) => {
+            if (item?.id) next[String(item.id)] = { ...(next[String(item.id)] || {}), ...item };
+          });
+          return next;
+        });
+      } catch {
+        // Non-blocking: hover fetch will still work as fallback
+      }
+    })();
+  }, [parsedChar?.gear, armoryRegion]);
 
   const getTargets = () => simMode === 'single' ? [1] : simMode === 'cleave' ? [2, 3] : [5, 8, 10];
 
@@ -898,13 +942,13 @@ export default function SurvivalHunterSim() {
                     {parsedChar.gear.length > 0 && (
                       <div style={{ padding: "12px 16px" }}>
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }} onMouseLeave={handleItemLeave}>
                           {parsedChar.gear.map((g, i) => {
                             const ilvlColor = getItemQualityColor(g.ilvl, parsedChar.character?.avgIlvl);
                             const nameColor = ilvlColor;
                             return (
                               <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
-                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)} onMouseLeave={handleItemLeave}>
+                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
                                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: ilvlColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
@@ -2074,7 +2118,7 @@ export default function SurvivalHunterSim() {
           left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
           top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
         }}>
-          {tooltipLoading && !itemCache[hoveredItem] ? (
+          {pendingItemFetchesRef.current.has(hoveredItem) && !itemCache[hoveredItem] ? (
             <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>Loading item data...</div>
           ) : itemCache[hoveredItem]?._error ? (
             <div style={{ color: C.textDim, fontSize: 12 }}>Could not load item data</div>
