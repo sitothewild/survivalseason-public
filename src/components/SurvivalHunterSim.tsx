@@ -1,21 +1,16 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect, Fragment, useRef, useMemo } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
+import { NavLink } from "@/components/NavLink";
 import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
 import { parseSimcAPL, getRotationWeights, buildAPLFromActionLists, type ParsedAPL } from "@/utils/aplParser";
 import {
   runTheoryCraft, getOptimalTalentConfig, getFullOptimalAnalysis,
-  computeStatWeights,
   HEROIC_MIDNIGHT_639, NORMAL_MIDNIGHT_626,
   type GearProfile, type TierSetConfig,
 } from "@/lib/theorycrafting";
-import {
-  MIDNIGHT_TRINKETS, MIDNIGHT_ENCHANTS, MIDNIGHT_GEMS, MIDNIGHT_RINGS,
-  TIER_SET_HERO_ANALYSIS, STAT_PRIORITY, ENCHANT_SLOTS,
-  getBiSList, rankTrinkets, rankEnchantsForSlot,
-} from "@/lib/gearOptimizer";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -1161,6 +1156,9 @@ export default function SurvivalHunterSim() {
         *{box-sizing:border-box;}
         .tab-btn{background:transparent;border:none;border-bottom:3px solid transparent;padding:12px 24px;color:#64748b;font-family:"Rajdhani",sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
         .tab-btn.active{color:#fbbf24;border-bottom-color:#d97706;}
+        .site-nav-link{font-family:"Rajdhani",sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;color:#64748b;padding:10px 18px;border-bottom:3px solid transparent;transition:color .2s,border-color .2s;display:inline-block;}
+        .site-nav-link:hover{color:#94a3b8;}
+        .site-nav-link.active{color:#fbbf24;border-bottom-color:#d97706;}
         .tab-btn:hover{color:#94a3b8;}
         .hero-sent{background:#0c1e35;border:2px solid #1a3a5c;border-radius:10px;padding:15px;cursor:pointer;transition:all .2s;text-align:left;width:100%;}
         .hero-sent:hover{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.12);}
@@ -1274,10 +1272,18 @@ export default function SurvivalHunterSim() {
         </div>
       </div>
 
+      {/* ── Site-wide nav bar ── */}
+      <div style={{ background: "#0d1117", borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", paddingLeft: 10, display: "flex" }}>
+          <NavLink to="/"     className="site-nav-link" activeClassName="active" end>⚔ Simulator</NavLink>
+          <NavLink to="/gear" className="site-nav-link" activeClassName="active">⚗ Gear</NavLink>
+        </div>
+      </div>
+
       <div className="site-main" style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: 22, gap: 2 }}>
-          {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"], ["optimizer", "⚗ Optimizer"], ["guide", "📖 Guide"]].map(([k, l]) => (
+          {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"], ["guide", "📖 Guide"]].map(([k, l]) => (
             <button key={k} className={`tab-btn ${activeTab === k ? "active" : ""}`} onClick={() => setActiveTab(k)}>{l}</button>
           ))}
         </div>
@@ -3637,403 +3643,6 @@ export default function SurvivalHunterSim() {
             </CARD>
           </div>
         )}
-
-        {/* ═══ OPTIMIZER TAB ═══ */}
-        {activeTab === "optimizer" && (() => {
-          // Compute stat weights from the theorycrafting engine for the active hero talent
-          const optGear: GearProfile = {
-            agility:    parsedChar?.stats?.agility    || HEROIC_MIDNIGHT_639.agility,
-            attackPower:parsedChar?.stats?.attackPower|| HEROIC_MIDNIGHT_639.attackPower,
-            critPct:    parsedChar?.stats?.crit       || HEROIC_MIDNIGHT_639.critPct,
-            hastePct:   parsedChar?.stats?.haste      || HEROIC_MIDNIGHT_639.hastePct,
-            masteryPct: parsedChar?.stats?.mastery    || HEROIC_MIDNIGHT_639.masteryPct,
-            versPct:    parsedChar?.stats?.versatility|| HEROIC_MIDNIGHT_639.versPct,
-          };
-          const optTalents = getOptimalTalentConfig(heroTalent as OptimizerHeroTalent, 'st');
-          const optTier: TierSetConfig = { has2pc: true, has4pc: true };
-
-          const sentWeights = computeStatWeights(optGear, optTalents, optTier, 'sentinel', 1);
-          const plWeights   = computeStatWeights(optGear, optTalents, optTier, 'packLeader', 1);
-          const activeWeights = heroTalent === 'sentinel' ? sentWeights : plWeights;
-
-          const rankedTrinkets = rankTrinkets(activeWeights, heroTalent as OptimizerHeroTalent);
-          const bisList        = getBiSList(heroTalent as OptimizerHeroTalent);
-          const tierAnalysis   = TIER_SET_HERO_ANALYSIS[heroTalent as OptimizerHeroTalent];
-          const statPriority   = STAT_PRIORITY[heroTalent as OptimizerHeroTalent];
-
-          const isSent = heroTalent === 'sentinel';
-          const heroClr = isSent ? C.sentClr : C.packClr;
-          const heroBg  = isSent ? C.sentBg  : C.packBg;
-          const heroBdr = isSent ? C.sentBdr  : C.packBdr;
-
-          const ratingBadge = (grade: string) => {
-            const colors: Record<string, string> = { S:'#fbbf24', A:'#4ade80', B:'#60a5fa', C:'#94a3b8' };
-            return (
-              <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:10, fontWeight:700, color:'#000',
-                background: colors[grade]||'#94a3b8', borderRadius:4, padding:'1px 5px' }}>
-                {grade}
-              </span>
-            );
-          };
-
-          const SectionTitle = ({ children }: any) => (
-            <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:3,
-              color: heroClr, textTransform:'uppercase', marginBottom:14,
-              display:'flex', alignItems:'center', gap:10, fontWeight:700 }}>
-              {children}
-              <div style={{ flex:1, height:1, background:heroBdr }} />
-            </div>
-          );
-
-          return (
-            <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-
-              {/* ── Hero Switcher Banner ── */}
-              <div style={{ background: heroBg, border:`1px solid ${heroBdr}`, borderRadius:12, padding:'14px 20px',
-                display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
-                <div>
-                  <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:11, color:heroClr, letterSpacing:2 }}>
-                    {isSent ? '🦉 SENTINEL' : '🐾 PACK LEADER'} · GEAR OPTIMIZER
-                  </span>
-                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textMid, marginTop:4 }}>
-                    All rankings computed from live stat weights for your current gear profile (639 ilvl heroic baseline).
-                    Switch Hero Talent in the Simulator tab to recalculate.
-                  </div>
-                </div>
-                <div style={{ display:'flex', gap:8 }}>
-                  {(['sentinel','packLeader'] as const).map(h => (
-                    <button key={h} onClick={() => setHeroTalent(h)}
-                      style={{ fontFamily:"'Rajdhani',sans-serif", fontWeight:700, fontSize:13, letterSpacing:1,
-                        background: heroTalent === h ? (h==='sentinel' ? C.sentBg : C.packBg) : C.surface2,
-                        border:`1px solid ${heroTalent===h ? (h==='sentinel'?C.sentClr:C.packClr) : C.border}`,
-                        color: heroTalent===h ? (h==='sentinel'?C.sentClr:C.packClr) : C.textMid,
-                        borderRadius:8, padding:'7px 14px', cursor:'pointer' }}>
-                      {h==='sentinel' ? '🦉 Sentinel' : '🐾 Pack Leader'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── Row 1: Stat Weights + Stat Priority ── */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
-
-                {/* Stat Weights */}
-                <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                  <SectionTitle>⚖ Stat Weights (Scale Factors)</SectionTitle>
-                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textDim, marginBottom:12 }}>
-                    DPS gained per 1 stat rating · Agility = 1.00 reference · 4pc Tier active
-                  </div>
-                  {/* Both hero columns */}
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:4 }}>
-                    {[['🦉 Sentinel', sentWeights, C.sentClr], ['🐾 Pack Leader', plWeights, C.packClr]].map(([label, w, clr]: any) => (
-                      <div key={label}>
-                        <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, color:clr, letterSpacing:2, marginBottom:8 }}>{label}</div>
-                        {w.priority.map((p: any) => {
-                          const maxSf = w.priority[0].sf || 1;
-                          const barW  = Math.max(8, (p.sf / maxSf) * 100);
-                          const statClr: Record<string,string> = {
-                            'Agility':'#f59e0b','Critical Strike':'#f87171','Haste':'#60a5fa',
-                            'Mastery':'#4ade80','Versatility':'#94a3b8'
-                          };
-                          return (
-                            <div key={p.stat} style={{ marginBottom:7 }}>
-                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
-                                <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color: statClr[p.stat]||C.textSec, fontWeight:600 }}>{p.stat}</span>
-                                <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:C.textMid }}>
-                                  {p.sf.toFixed(3)}
-                                </span>
-                              </div>
-                              <div style={{ height:5, background:C.surface3, borderRadius:3 }}>
-                                <div style={{ height:'100%', width:`${barW}%`, borderRadius:3,
-                                  background: statClr[p.stat]||'#64748b', transition:'width .4s' }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop:10, padding:'8px 10px', background:C.surface2, borderRadius:8,
-                    fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textDim, borderLeft:`2px solid ${heroClr}` }}>
-                    {isSent
-                      ? 'Sentinel: Crit ≈ Mastery for ST due to Moonlight Chakram + Lethal Calibration + Vulnerability multiplicative scaling.'
-                      : 'Pack Leader: Mastery clearly ahead — Spirit Bond scales pet damage (0.6%/mastery%) across KC beasts, bear, boar, wyvern + Stampede.'}
-                  </div>
-                </div>
-
-                {/* Stat Priority */}
-                <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                  <SectionTitle>📊 Stat Priority</SectionTitle>
-                  {statPriority.map((s, i) => {
-                    const statClr: Record<string,string> = {
-                      'Agility':'#f59e0b','Critical Strike':'#f87171','Haste':'#60a5fa',
-                      'Mastery (Spirit Bond)':'#4ade80','Versatility':'#94a3b8'
-                    };
-                    return (
-                      <div key={s.stat} style={{ display:'flex', gap:10, marginBottom:12, alignItems:'flex-start' }}>
-                        <div style={{ width:22, height:22, borderRadius:6, background:heroBg,
-                          border:`1px solid ${heroBdr}`, display:'flex', alignItems:'center', justifyContent:'center',
-                          fontFamily:"'Orbitron',sans-serif", fontSize:10, color:heroClr, flexShrink:0 }}>
-                          {i+1}
-                        </div>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:14, fontWeight:700,
-                            color: statClr[s.stat]||C.textSec }}>
-                            {s.stat}
-                            <span style={{ marginLeft:8, fontFamily:"'Orbitron',sans-serif", fontSize:8,
-                              color:C.textDim, letterSpacing:2 }}>
-                              ST #{s.stPriority} · AoE #{s.aoePriority}
-                            </span>
-                          </div>
-                          <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textDim, marginTop:2 }}>
-                            {s.reasoning}
-                          </div>
-                          {s.hardCap && (
-                            <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:'#fb923c', marginTop:3 }}>
-                              ⚠ {s.hardCap}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ── Row 2: Trinket Rankings ── */}
-              <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                <SectionTitle>💎 Trinket Rankings — {isSent ? 'Sentinel' : 'Pack Leader'} (639 ilvl Heroic)</SectionTitle>
-                <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textDim, marginBottom:14 }}>
-                  DPS contribution estimated from stat weights × uptime. Burst-alignable on-use trinkets include +12% Takedown/Boomstick window bonus.
-                </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:10 }}>
-                  {rankedTrinkets.map((t) => {
-                    const isTopTwo = t.rank <= 2;
-                    const typeClr: Record<string,string> = { on_use:'#f59e0b', proc:'#60a5fa', equip:'#4ade80', damage_proc:'#f87171' };
-                    const typeLabel: Record<string,string> = { on_use:'ON-USE', proc:'PROC', equip:'EQUIP', damage_proc:'DMG PROC' };
-                    const heroRating = isSent ? t.sentinelRating : t.packLeaderRating;
-                    return (
-                      <div key={t.id} style={{
-                        background: isTopTwo ? heroBg : C.surface2,
-                        border:`1px solid ${isTopTwo ? heroBdr : C.border}`,
-                        borderRadius:10, padding:14, position:'relative' }}>
-                        {/* Rank badge */}
-                        <div style={{ position:'absolute', top:10, right:10, display:'flex', gap:4, alignItems:'center' }}>
-                          {ratingBadge(heroRating)}
-                          <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, color:C.textDim }}>#{t.rank}</span>
-                        </div>
-                        <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:14, fontWeight:700, color:C.textPri, marginBottom:3, paddingRight:50 }}>
-                          {t.name}
-                        </div>
-                        <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:6, flexWrap:'wrap' }}>
-                          <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color: typeClr[t.type]||'#94a3b8',
-                            background: `${typeClr[t.type]}18`, borderRadius:4, padding:'2px 5px', letterSpacing:1 }}>
-                            {typeLabel[t.type]}
-                          </span>
-                          {t.burstAlignable && (
-                            <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:'#fbbf24',
-                              background:'#2a1f08', borderRadius:4, padding:'2px 5px', letterSpacing:1 }}>⚡ BURST ALIGN</span>
-                          )}
-                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:C.goldLight }}>
-                            +{t.estimatedDps.toLocaleString()} DPS
-                          </span>
-                        </div>
-                        <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textDim, marginBottom:4 }}>
-                          {t.source} · ilvl {t.ilvl}
-                        </div>
-                        <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textMid }}>
-                          {t.notes}
-                        </div>
-                        {/* Sentinel vs PL DPS compare */}
-                        <div style={{ display:'flex', gap:12, marginTop:8 }}>
-                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:C.sentClr }}>
-                            🦉 {t.sentinelDps.toLocaleString()}
-                          </span>
-                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:C.packClr }}>
-                            🐾 {t.packLeaderDps.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ── Row 3: Enchants + Gems side by side ── */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
-
-                {/* Enchant Rankings */}
-                <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                  <SectionTitle>✦ Enchant Recommendations</SectionTitle>
-                  {ENCHANT_SLOTS.map(slot => {
-                    const ranked = rankEnchantsForSlot(slot, activeWeights, heroTalent as OptimizerHeroTalent);
-                    if (!ranked.length) return null;
-                    const best = ranked[0];
-                    return (
-                      <div key={slot} style={{ marginBottom:12 }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-                          <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, color:C.textMid, letterSpacing:2 }}>{slot.toUpperCase()}</span>
-                          {best.estimatedDps > 0 && (
-                            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:C.goldLight }}>
-                              +{best.estimatedDps.toLocaleString()} DPS
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, fontWeight:700, color:C.textPri }}>
-                          {best.name}
-                        </div>
-                        <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textDim, marginTop:2 }}>
-                          {best.notes}
-                        </div>
-                        {ranked.length > 1 && (
-                          <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textDim, marginTop:3 }}>
-                            Alt: {ranked[1].name}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Gems + Rings */}
-                <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-
-                  {/* Gems */}
-                  <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                    <SectionTitle>💠 Gem Recommendations</SectionTitle>
-                    {MIDNIGHT_GEMS
-                      .filter(g => (isSent ? g.sentinelRank : g.packLeaderRank) <= 2 || g.isUnique)
-                      .sort((a,b) => (isSent ? a.sentinelRank : a.packLeaderRank) - (isSent ? b.sentinelRank : b.packLeaderRank))
-                      .map(g => (
-                        <div key={g.id} style={{ marginBottom:10, padding:'8px 10px',
-                          background: g.isUnique ? heroBg : C.surface2,
-                          border:`1px solid ${g.isUnique ? heroBdr : C.border}`,
-                          borderRadius:8 }}>
-                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                            <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, fontWeight:700, color: g.isUnique ? heroClr : C.textPri }}>
-                              {g.isUnique ? '⭐ ' : ''}{g.name}
-                              {g.isUnique && <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:'#fbbf24', marginLeft:6 }}>UNIQUE</span>}
-                            </span>
-                            <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:heroClr, letterSpacing:1 }}>
-                              #{isSent ? g.sentinelRank : g.packLeaderRank}
-                            </span>
-                          </div>
-                          <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textDim, marginTop:3 }}>
-                            {g.notes}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-
-                  {/* Rings */}
-                  <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                    <SectionTitle>💍 Ring Rankings</SectionTitle>
-                    {MIDNIGHT_RINGS
-                      .sort((a,b) => (isSent ? a.sentinelRank : a.packLeaderRank) - (isSent ? b.sentinelRank : b.packLeaderRank))
-                      .map(r => (
-                        <div key={r.id} style={{ marginBottom:10, padding:'8px 10px',
-                          background: (isSent ? r.sentinelRank : r.packLeaderRank) === 1 ? heroBg : C.surface2,
-                          border:`1px solid ${(isSent ? r.sentinelRank : r.packLeaderRank) === 1 ? heroBdr : C.border}`,
-                          borderRadius:8 }}>
-                          <div style={{ display:'flex', justifyContent:'space-between' }}>
-                            <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, fontWeight:700, color:C.textPri }}>
-                              #{isSent ? r.sentinelRank : r.packLeaderRank} {r.name}
-                            </span>
-                            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:C.textMid }}>ilvl {r.ilvl}</span>
-                          </div>
-                          <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textMid, marginTop:2 }}>
-                            +{r.stat1Rating} {r.stat1} · +{r.stat2Rating} {r.stat2}
-                          </div>
-                          <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textDim, marginTop:3 }}>
-                            {r.notes}
-                          </div>
-                        </div>
-                      ))}
-                    <div style={{ marginTop:8, fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textDim,
-                      padding:'6px 8px', background:C.surface3, borderRadius:6 }}>
-                      ✦ Enchant: {isSent
-                        ? 'Radiant Crit on Ring 1 + Radiant Mastery on Ring 2'
-                        : '2× Radiant Mastery for maximum Spirit Bond value'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Row 4: Tier Set Hero Analysis ── */}
-              <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                <SectionTitle>🏆 Tier Set Analysis — {isSent ? 'Sentinel' : 'Pack Leader'}</SectionTitle>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-                  {[
-                    { label:'2PC', mechanic: tierAnalysis.twoPcMechanic, synergy: tierAnalysis.twoPcSynergy },
-                    { label:'4PC', mechanic: tierAnalysis.fourPcMechanic, synergy: tierAnalysis.fourPcSynergy },
-                  ].map(({ label, mechanic, synergy }) => (
-                    <div key={label} style={{ background: heroBg, border:`1px solid ${heroBdr}`, borderRadius:10, padding:14 }}>
-                      <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:11, color:heroClr, letterSpacing:2, marginBottom:8 }}>
-                        {label} BONUS
-                      </div>
-                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, fontWeight:700, color:C.textPri, marginBottom:6 }}>
-                        {mechanic}
-                      </div>
-                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textMid }}>
-                        {synergy}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginBottom:8 }}>
-                  <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, color:heroClr, letterSpacing:2, marginBottom:8 }}>
-                    KEY INTERACTIONS
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {tierAnalysis.keyInteractions.map((ki, i) => (
-                      <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
-                        <span style={{ color:heroClr, fontSize:14, lineHeight:1, flexShrink:0 }}>→</span>
-                        <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textSec }}>{ki}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ marginTop:12, padding:'10px 14px', background:C.surface2,
-                  borderLeft:`3px solid ${C.goldLight}`, borderRadius:'0 8px 8px 0',
-                  fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textSec }}>
-                  <span style={{ color:C.goldLight, fontWeight:700 }}>Stat shift with 4pc: </span>
-                  {tierAnalysis.statPriorityShift}
-                </div>
-              </div>
-
-              {/* ── Row 5: BiS Gear List ── */}
-              <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:20 }}>
-                <SectionTitle>⚔ BiS Gear List — {isSent ? 'Sentinel (2H Polearm)' : 'Pack Leader (Dual Wield)'} · 639 ilvl Heroic</SectionTitle>
-                <div style={{ overflowX:'auto' }}>
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'Rajdhani',sans-serif", fontSize:13 }}>
-                    <thead>
-                      <tr style={{ borderBottom:`1px solid ${C.border}` }}>
-                        {['Slot','Item','Source','Key Stats','Notes'].map(h => (
-                          <th key={h} style={{ textAlign:'left', padding:'6px 10px', fontFamily:"'Orbitron',sans-serif",
-                            fontSize:8, color:C.textDim, letterSpacing:2, whiteSpace:'nowrap' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bisList.map((row, i) => (
-                        <tr key={row.slot} style={{ borderBottom:`1px solid ${C.borderSub}`,
-                          background: i % 2 === 0 ? 'transparent' : C.surface2 }}>
-                          <td style={{ padding:'7px 10px', color:heroClr, fontWeight:700, whiteSpace:'nowrap' }}>{row.slot}</td>
-                          <td style={{ padding:'7px 10px', color:C.textPri, fontWeight:600 }}>{row.itemName}</td>
-                          <td style={{ padding:'7px 10px', color:C.textMid, fontSize:11, whiteSpace:'nowrap' }}>{row.source}</td>
-                          <td style={{ padding:'7px 10px', color:C.goldLight, whiteSpace:'nowrap' }}>{row.keyStats}</td>
-                          <td style={{ padding:'7px 10px', color:C.textDim, fontSize:11 }}>{row.notes}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-            </div>
-          );
-        })()}
-
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.borderSub}` }}>
           <p style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim }}>SURVIVAL HUNTER SIM · MIDNIGHT 12.0 PRE-SEASON 1 · INTERNAL ENGINE</p>
