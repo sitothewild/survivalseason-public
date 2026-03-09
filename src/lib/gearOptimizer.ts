@@ -18,6 +18,75 @@
 
 import type { StatWeights } from './theorycrafting';
 
+// ── Midnight Season 1 Track & Rank System ───────────────────
+
+export interface GearTrack {
+  name: string;
+  rankMin: number;   // ilvl at Rank 1
+  rankMax: number;   // ilvl at Rank 6
+  ilvlPerRank: number;
+  currency: string;
+  source: string;
+  color: string;
+}
+
+/** Full Season 1 gear track table. Each track has 6 ranks (+3 ilvl each). */
+export const GEAR_TRACKS: GearTrack[] = [
+  {
+    name: 'Adventurer', rankMin: 224, rankMax: 237, ilvlPerRank: 3,
+    currency: 'Weathered Dawncrests',
+    source: 'World Quests, Normal Dungeons',
+    color: '#6b7280',
+  },
+  {
+    name: 'Veteran', rankMin: 237, rankMax: 250, ilvlPerRank: 3,
+    currency: 'Carved Dawncrests',
+    source: 'Heroic Dungeons, Delves T1-3',
+    color: '#22c55e',
+  },
+  {
+    name: 'Champion', rankMin: 250, rankMax: 263, ilvlPerRank: 3,
+    currency: 'Runed Dawncrests',
+    source: 'Mythic 0, Normal Raid, Delves T4-7',
+    color: '#3b82f6',
+  },
+  {
+    name: 'Hero', rankMin: 263, rankMax: 276, ilvlPerRank: 3,
+    currency: 'Runed Dawncrests',
+    source: 'M+ +2–+6, Heroic Raid, Bountiful Delves',
+    color: '#a855f7',
+  },
+  {
+    name: 'Myth', rankMin: 276, rankMax: 289, ilvlPerRank: 3,
+    currency: 'Gilded Dawncrests',
+    source: 'M+ +7 or higher, Mythic Raid, Great Vault',
+    color: '#f59e0b',
+  },
+];
+
+/** Dawncrest currency tiers and their upgrade scope. */
+export const DAWNCREST_TIERS = [
+  { name: 'Weathered Dawncrests', tracks: ['Adventurer', 'Veteran'],    weeklyCapNotes: 'No cap — easy content' },
+  { name: 'Carved Dawncrests',    tracks: ['Champion'],                  weeklyCapNotes: '~100/week from M0/Normal raid' },
+  { name: 'Runed Dawncrests',     tracks: ['Hero'],                      weeklyCapNotes: '~100/week from Heroic Raid / M+ +2–+6' },
+  { name: 'Gilded Dawncrests',    tracks: ['Myth'],                      weeklyCapNotes: '~100/week from Mythic Raid / M+ +7+; ~1.2 pieces/week' },
+];
+
+/**
+ * Upgrade cost constants.
+ * 120 Dawncrests to fully upgrade one piece (Rank 1 → Rank 6).
+ * Weekly cap: ~100 crests of each tier.
+ * Slot discount: if you own a max-rank (Rank 6) item in a slot, upgrading
+ * any OTHER item in that same slot to Rank 6 costs 0 crests (Gold only).
+ */
+export const UPGRADE_COSTS = {
+  crestsPerPiece: 120,
+  weeklyCrestedCap: 100,
+  totalPieces: 15,   // full character gear slots
+  weeksToFullyUpgrade: Math.ceil((120 * 15) / 100), // ~18 weeks ignoring discounts
+  slotDiscountNote: 'Free upgrade if you already have Rank 6 in the same slot — allows swapping secondary stat combos at no crest cost.',
+} as const;
+
 export type HeroTalent = 'sentinel' | 'packLeader';
 export type FightType  = 'st' | 'aoe';
 
@@ -189,8 +258,8 @@ export const MIDNIGHT_TRINKETS: TrinketDef[] = [
   {
     id: 225608,
     name: "Windscale Compass",
-    source: "M+ Dungeons (any Midnight-era dungeon key 10+)",
-    ilvl: 263,
+    source: "M+ Dungeons — Hero track (+2–+6, fully upgraded to 276) or Myth track (+7+, up to 289)",
+    ilvl: 276,
     type: 'proc',
     primaryAgi: 430,
     procStat: 'haste',
@@ -199,7 +268,7 @@ export const MIDNIGHT_TRINKETS: TrinketDef[] = [
     sentinelRating: 'B',
     packLeaderRating: 'B',
     burstAlignable: false,
-    notes: "M+ trinket. +430 Agi + proc: +1900 Haste (40% uptime). Slightly Champion track at 263 in M+. Decent filler if raid trinkets unavailable.",
+    notes: "M+ trinket. +430 Agi + proc: +1900 Haste (40% uptime). Hero track at 276 (M+ +2–+6 fully upgraded); Myth track at 289 from +7+ or vault. Decent filler if raid trinkets unavailable.",
   },
   {
     id: 225609,
@@ -235,7 +304,7 @@ export const MIDNIGHT_TRINKETS: TrinketDef[] = [
   {
     id: 225611,
     name: "Mark of the Midnight Hunt",
-    source: "Midnight Raid — Opening Event (First boss)",
+    source: "Midnight Raid — Opening Event (First boss) — Hero track, upgrades to 276",
     ilvl: 263,
     type: 'damage_proc',
     primaryAgi: 460,
@@ -244,7 +313,7 @@ export const MIDNIGHT_TRINKETS: TrinketDef[] = [
     sentinelRating: 'C',
     packLeaderRating: 'C',
     burstAlignable: false,
-    notes: "Entry-level raid trinket. Proc: 160% AP physical hit on melee attack (~6.5/min). Outclassed by any Heroic trinket but useful for progression gearing.",
+    notes: "Entry-level raid trinket from first boss (Champion→Hero track, 250–276). Proc: 160% AP physical hit (~6.5/min). Outclassed by mid/late-raid trinkets but excellent for progression gearing in.",
   },
 ];
 
@@ -494,13 +563,13 @@ export const MIDNIGHT_RINGS: RingDef[] = [
   {
     id: 225653,
     name: "Void Ranger's Circlet",
-    source: "M+ Dungeons (key 10+)",
-    ilvl: 263,
-    stat1: 'Mastery', stat1Rating: 1100,
-    stat2: 'Critical Strike', stat2Rating: 920,
+    source: "M+ Dungeons — Hero track (+2–+6, max 276) or Myth track (+7+, max 289)",
+    ilvl: 276,
+    stat1: 'Mastery', stat1Rating: 1180,
+    stat2: 'Critical Strike', stat2Rating: 980,
     sentinelRank: 3,
     packLeaderRank: 3,
-    notes: "M+ alternative at 263 ilvl — same stat combo as BiS ring but lower budget. Use until raid ring drops.",
+    notes: "M+ alternative at Hero track 276 (or 289 Myth from +7+ vault). Same stat combo as BiS raid ring at equivalent ilvl — use while farming raid rings or as swap piece using slot discount.",
   },
 ];
 
@@ -510,37 +579,41 @@ export interface BiSSlot {
   slot: string;
   itemName: string;
   source: string;
+  /** Hero-track ilvl (Heroic Raid or M+ +2–+6 fully upgraded) */
   ilvl: number;
+  /** Myth-track ilvl if accessible via Mythic Raid / M+ +7+ vault (usually 289) */
+  mythIlvl?: number;
   keyStats: string;
   notes: string;
 }
 
 export function getBiSList(hero: HeroTalent): BiSSlot[] {
+  // ilvl = Hero track max (276) from Heroic Raid — upgrade to 289 via Myth track (Mythic Raid)
   const shared: BiSSlot[] = [
-    { slot: 'Head',      itemName: 'Crown of the Midnight Hunt',         source: 'Midnight Raid (Tier — Final Boss)',        ilvl: 276, keyStats: 'Mastery + Crit', notes: '4pc tier piece. Priority over any non-tier item.' },
-    { slot: 'Shoulders', itemName: 'Spaulders of the Midnight Hunt',     source: 'Midnight Raid (Tier — Wing 2 Boss)',       ilvl: 276, keyStats: 'Mastery + Haste', notes: '4pc tier piece.' },
-    { slot: 'Chest',     itemName: 'Breastplate of the Midnight Hunt',   source: 'Midnight Raid (Tier — Wing 1 Boss)',       ilvl: 276, keyStats: 'Mastery + Crit', notes: '4pc tier piece.' },
-    { slot: 'Hands',     itemName: 'Gauntlets of the Midnight Hunt',     source: 'Midnight Raid (Tier — Heroic Unique)',     ilvl: 276, keyStats: 'Mastery + Vers', notes: '4pc tier piece.' },
-    { slot: 'Legs',      itemName: 'Legguards of the Midnight Hunt',     source: 'Midnight Raid (Tier — Wing 3 Boss)',       ilvl: 276, keyStats: 'Mastery + Haste', notes: '4pc tier piece. Complete 4pc before pursuing off-set.' },
-    { slot: 'Neck',      itemName: "Kroluk's Trophy Chain",              source: 'Midnight Raid — Kroluk',                  ilvl: 276, keyStats: 'Mastery + Crit', notes: 'Neck with unique +2% Crit proc on kill. No enchant slot.' },
-    { slot: 'Back',      itemName: 'Shadowsworn Ranger Cloak',           source: 'Midnight Raid — Wing 1',                  ilvl: 276, keyStats: 'Agility + Mastery', notes: 'Enchant: Winged Grace.' },
-    { slot: 'Wrist',     itemName: 'Voidcaller Bracers',                 source: 'Midnight Raid — Council Boss',             ilvl: 276, keyStats: 'Agility + Mastery', notes: 'Enchant: +16 Agility.' },
-    { slot: 'Waist',     itemName: 'Huntmaster\'s Voidstalker Belt',     source: 'Midnight Raid — Wing 2 Boss',              ilvl: 276, keyStats: 'Mastery + Crit', notes: 'Socket: Elusive Blasphemite or Queen\'s Ruby/Deadly Onyx.' },
-    { slot: 'Boots',     itemName: 'Stalker\'s Twilight Treads',         source: 'Midnight Raid — Wing 1 Boss',              ilvl: 276, keyStats: 'Mastery + Haste', notes: "Enchant: Cavalry's March (Pack Leader) or Scout's March (Sentinel AoE)." },
-    { slot: 'Ring 1',    itemName: 'Signet of the Midnight Hunt',        source: 'Midnight Raid — Final Wing Boss',          ilvl: 276, keyStats: 'Mastery + Crit', notes: 'Enchant: Radiant Crit (Sentinel) or Radiant Mastery (Pack Leader).' },
-    { slot: 'Ring 2',    itemName: "Kroluk's Eternal Band",              source: 'Midnight Raid — Kroluk',                  ilvl: 276, keyStats: 'Mastery + Haste', notes: 'Enchant: Radiant Mastery. Both rings should have ring enchants.' },
-    { slot: 'Trinket 1', itemName: 'Abyssal Night Effigy',               source: 'Midnight Raid — Xal\'atath',               ilvl: 276, keyStats: 'Passive Agi + Stacking proc', notes: 'Best sustained damage trinket for both specs.' },
+    { slot: 'Head',      itemName: 'Crown of the Midnight Hunt',         source: 'Midnight Raid Tier — Final Boss (Hero 276 / Myth 289)',    ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Crit', notes: '4pc tier piece. Priority over any non-tier item.' },
+    { slot: 'Shoulders', itemName: 'Spaulders of the Midnight Hunt',     source: 'Midnight Raid Tier — Wing 2 Boss (Hero 276 / Myth 289)',   ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Haste', notes: '4pc tier piece.' },
+    { slot: 'Chest',     itemName: 'Breastplate of the Midnight Hunt',   source: 'Midnight Raid Tier — Wing 1 Boss (Hero 276 / Myth 289)',   ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Crit', notes: '4pc tier piece.' },
+    { slot: 'Hands',     itemName: 'Gauntlets of the Midnight Hunt',     source: 'Midnight Raid Tier — Heroic Boss (Hero track, max 276)',   ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Vers', notes: '4pc tier piece. Heroic-difficulty boss required for this piece.' },
+    { slot: 'Legs',      itemName: 'Legguards of the Midnight Hunt',     source: 'Midnight Raid Tier — Wing 3 Boss (Hero 276 / Myth 289)',   ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Haste', notes: '4pc tier piece. Complete 4pc before pursuing off-set.' },
+    { slot: 'Neck',      itemName: "Kroluk's Trophy Chain",              source: 'Midnight Raid — Kroluk (Hero 276 / Myth 289)',             ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Crit', notes: 'Neck with unique +2% Crit proc on kill. No enchant slot.' },
+    { slot: 'Back',      itemName: 'Shadowsworn Ranger Cloak',           source: 'Midnight Raid — Wing 1 (Hero 276 / Myth 289)',             ilvl: 276, mythIlvl: 289, keyStats: 'Agility + Mastery', notes: 'Enchant: Winged Grace.' },
+    { slot: 'Wrist',     itemName: 'Voidcaller Bracers',                 source: 'Midnight Raid — Council Boss (Hero 276 / Myth 289)',       ilvl: 276, mythIlvl: 289, keyStats: 'Agility + Mastery', notes: 'Enchant: +16 Agility.' },
+    { slot: 'Waist',     itemName: "Huntmaster's Voidstalker Belt",      source: 'Midnight Raid — Wing 2 Boss (Hero 276 / Myth 289)',        ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Crit', notes: 'Socket: Elusive Blasphemite or Queen\'s Ruby/Deadly Onyx.' },
+    { slot: 'Boots',     itemName: "Stalker's Twilight Treads",          source: 'Midnight Raid — Wing 1 Boss (Hero 276 / Myth 289)',        ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Haste', notes: "Enchant: Cavalry's March (Pack Leader) or Scout's March (Sentinel AoE)." },
+    { slot: 'Ring 1',    itemName: 'Signet of the Midnight Hunt',        source: 'Midnight Raid — Final Wing Boss (Hero 276 / Myth 289)',    ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Crit', notes: 'Enchant: Radiant Crit (Sentinel) or Radiant Mastery (Pack Leader).' },
+    { slot: 'Ring 2',    itemName: "Kroluk's Eternal Band",              source: 'Midnight Raid — Kroluk (Hero 276 / Myth 289)',             ilvl: 276, mythIlvl: 289, keyStats: 'Mastery + Haste', notes: 'Enchant: Radiant Mastery. Both rings should have ring enchants.' },
+    { slot: 'Trinket 1', itemName: 'Abyssal Night Effigy',               source: "Midnight Raid — Xal'atath (Hero 276 / Myth 289)",          ilvl: 276, mythIlvl: 289, keyStats: 'Passive Agi + Stacking proc', notes: 'Best sustained damage trinket for both specs.' },
   ];
 
   const sentinelSpecific: BiSSlot[] = [
-    { slot: 'Main Hand', itemName: 'Spear of the Midnight Sentinel',     source: 'Midnight Raid — Final Boss',               ilvl: 276, keyStats: 'Agility 2H Polearm', notes: 'Sentinel: 2H weapon required. Enchant: Authority of Radiant Power (+Crit).' },
-    { slot: 'Trinket 2', itemName: "Moonwarden's Focal Lens",            source: 'Midnight Raid — Kroluk (Heroic)',           ilvl: 276, keyStats: 'On-use Crit +3640', notes: 'Sentinel BiS trinket #2 — aligns with Moonlight Chakram + Takedown window for peak burst.' },
+    { slot: 'Main Hand', itemName: 'Spear of the Midnight Sentinel',     source: 'Midnight Raid — Final Boss (Hero 276 / Myth 289)',         ilvl: 276, mythIlvl: 289, keyStats: 'Agility 2H Polearm', notes: 'Sentinel: 2H weapon required. Enchant: Authority of Radiant Power (+Crit).' },
+    { slot: 'Trinket 2', itemName: "Moonwarden's Focal Lens",            source: 'Midnight Raid — Kroluk, Heroic Boss (Hero 276 / Myth 289)',ilvl: 276, mythIlvl: 289, keyStats: 'On-use Crit +3640', notes: 'Sentinel BiS trinket #2 — aligns with Moonlight Chakram + Takedown window for peak burst.' },
   ];
 
   const packLeaderSpecific: BiSSlot[] = [
-    { slot: 'Main Hand', itemName: "Voidhunter's Blade",                 source: 'Midnight Raid — Wing 2 Boss',              ilvl: 276, keyStats: 'Agility 1H Axe', notes: 'Pack Leader: can dual-wield. Enchant: Stonebound Artistry (+Mastery) on each weapon.' },
-    { slot: 'Off Hand',  itemName: "Dagger of the Pack",                 source: 'Midnight Raid — Council Boss',             ilvl: 276, keyStats: 'Agility 1H Dagger', notes: 'Off-hand slot unlocked with Pack Leader DW. Enchant: Stonebound Artistry.' },
-    { slot: 'Trinket 2', itemName: "Ranger's Precision Stone",           source: 'Midnight Raid — Eternal Hunt Council',     ilvl: 276, keyStats: 'On-use Mastery +3920', notes: 'Pack Leader BiS trinket #2 — +3920 Mastery amplifies pet damage scaling during burst window.' },
+    { slot: 'Main Hand', itemName: "Voidhunter's Blade",                 source: 'Midnight Raid — Wing 2 Boss (Hero 276 / Myth 289)',        ilvl: 276, mythIlvl: 289, keyStats: 'Agility 1H Axe', notes: 'Pack Leader: can dual-wield. Enchant: Stonebound Artistry (+Mastery) on each weapon.' },
+    { slot: 'Off Hand',  itemName: "Dagger of the Pack",                 source: 'Midnight Raid — Council Boss (Hero 276 / Myth 289)',       ilvl: 276, mythIlvl: 289, keyStats: 'Agility 1H Dagger', notes: 'Off-hand slot unlocked with Pack Leader DW. Enchant: Stonebound Artistry.' },
+    { slot: 'Trinket 2', itemName: "Ranger's Precision Stone",           source: 'Midnight Raid — Eternal Hunt Council (Hero 276 / Myth 289)',ilvl: 276, mythIlvl: 289, keyStats: 'On-use Mastery +3920', notes: 'Pack Leader BiS trinket #2 — +3920 Mastery amplifies pet damage scaling during burst window.' },
   ];
 
   return [
