@@ -130,6 +130,31 @@ function parseSimcString(simcText) {
     if (key === 'versatility_rating') result.stats.versatility = +(v / 205 * 100).toFixed(2);
     if (key === 'attack_power') result.stats.attackPower = v;
   });
+
+  // Known enchant IDs → display names (Midnight / TWW)
+  const ENCHANT_NAMES: Record<string, string> = {
+    '7460': 'Arcane Mastery', '7461': 'Stormrider\'s Fury',
+    '7462': 'Stonebound Artistry', '7463': 'Oathsworn\'s Tenacity',
+    '7464': 'Authority of Air', '7465': 'Authority of Fiery Resolve',
+    '7466': 'Authority of Radiant Power', '7467': 'Authority of Storms',
+    '7468': 'Authority of the Depths', '7469': 'Council\'s Intellect',
+    '7470': 'Acuity of the Ren\'dorei',
+    '7334': 'Amani Mastery', '7335': 'Amani Haste',
+    '7336': 'Amani Crit', '7337': 'Amani Versatility',
+    '7338': 'Cursed Mastery', '7339': 'Cursed Haste',
+    '7340': 'Cursed Crit', '7341': 'Cursed Versatility',
+    '7342': 'Radiant Mastery', '7343': 'Radiant Haste',
+    '7344': 'Radiant Crit', '7345': 'Radiant Versatility',
+    '7529': 'Stormbound Armor Kit', '7531': 'Defender\'s Armor Kit',
+    '7532': 'Dual Layered Armor Kit', '7534': 'Sunset Spellthread',
+    '7535': 'Daybreak Spellthread', '7536': 'Weavercloth Spellthread',
+    '7355': 'Crystalline Radiance', '7356': 'Council\'s Intellect',
+    '7409': 'Winged Grace', '7410': 'Leeching Fangs', '7411': 'Burrowing Raptor',
+    '7385': 'Armored Avoidance', '7386': 'Armored Leech', '7387': 'Armored Speed',
+    '7418': 'Cavalry\'s March', '7419': 'Defender\'s March', '7420': 'Scout\'s March',
+    '7594': '+16 Agility/Strength', '7595': '+16 Agility/Strength',
+  };
+
   const slotLabels: Record<string, string> = {
     head:'Head',neck:'Neck',shoulders:'Shoulders',back:'Back',chest:'Chest',wrist:'Wrist',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',
     finger1:'Ring 1',finger2:'Ring 2',trinket1:'Trinket 1',trinket2:'Trinket 2',main_hand:'Main Hand',off_hand:'Off Hand',tabard:'Tabard',shirt:'Shirt'
@@ -149,20 +174,47 @@ function parseSimcString(simcText) {
     let itemName = slotLabels[slotKey] || slotKey; let ilvl = 0;
     if (idx > 0) { const cm = equipLines[idx - 1].match(commentItemPattern); if (cm) { itemName = cm[1]; ilvl = parseInt(cm[2]) || 0; } }
     const iLvlInline = line.match(/item_level=(\d+)/); if (iLvlInline) ilvl = parseInt(iLvlInline[1]);
-    result.gear.push({ slot: slotKey, slotLabel: slotLabels[slotKey] || slotKey, ilvl, itemId: idMatch ? idMatch[1] : null, name: itemName });
+
+    // Parse enchant_id or enchant= from gear line
+    const enchantIdMatch = line.match(/enchant_id=(\d+)/);
+    const enchantStrMatch = line.match(/,enchant=([^,]+)/);
+    let enchant: string | null = null;
+    if (enchantIdMatch) {
+      enchant = ENCHANT_NAMES[enchantIdMatch[1]] || `Enchant #${enchantIdMatch[1]}`;
+    } else if (enchantStrMatch) {
+      enchant = enchantStrMatch[1].replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // Parse gem_id
+    const gemMatch = line.match(/gem_id=(\d+)/);
+    const gemId = gemMatch ? gemMatch[1] : null;
+
+    result.gear.push({
+      slot: slotKey, slotLabel: slotLabels[slotKey] || slotKey,
+      ilvl, itemId: idMatch ? idMatch[1] : null,
+      name: itemName, enchant, gemId
+    });
   });
   if (result.gear.length > 0) { result.character.avgIlvl = Math.round(result.gear.reduce((sum, g) => sum + (g.ilvl || 0), 0) / result.gear.filter(g => g.ilvl > 0).length) || 0; }
   const talentLine = lines.find(l => /^talents=/.test(l)); if (talentLine) result.talents = talentLine.replace('talents=', '').trim();
   if (result.character.name || result.stats.agility > 0 || result.gear.length > 0) result.valid = true;
   else result.errors.push("Could not parse character data.");
+
+  // Stat estimation — Midnight expansion: ilvl ~200-260 at level 90
+  // Calibrated to Blezaa armory: ilvl 231 → Agi 1477, Crit 19%, Haste 10%, Mastery 25%, Vers 5%
   const avgIlvl = result.character.avgIlvl || 0;
-  if (result.stats.agility === 0 && avgIlvl > 0) result.stats.agility = Math.round(400 + Math.max(0, avgIlvl - 550) * 13.5);
+  if (result.stats.agility === 0 && avgIlvl > 0) {
+    const s = Math.max(0, avgIlvl - 200) / 60;
+    result.stats.agility = Math.round(800 + s * 900);
+  }
   if (result.stats.agility === 0) result.stats.agility = 1500;
   if (result.stats.attackPower === 0) result.stats.attackPower = Math.round(result.stats.agility * 1.05);
   if (result.stats.haste === 0 && avgIlvl > 0) {
-    const s = Math.max(0, (avgIlvl - 550)) / 86;
-    result.stats.haste = +(5 + s * 5.6).toFixed(2); result.stats.crit = +(8 + s * 12.1).toFixed(2);
-    result.stats.mastery = +(10 + s * 20.2).toFixed(2); result.stats.versatility = +(2 + s * 6.3).toFixed(2);
+    const s = Math.max(0, avgIlvl - 200) / 60;
+    result.stats.haste = +(5 + s * 8).toFixed(2);
+    result.stats.crit = +(10 + s * 14).toFixed(2);
+    result.stats.mastery = +(15 + s * 16).toFixed(2);
+    result.stats.versatility = +(3 + s * 5).toFixed(2);
   }
   return result;
 }
@@ -468,7 +520,51 @@ const REALM_DATA: Record<string, string[]> = {
   tw: ["Arthas","Bleeding Hollow","Chillwind Point","Crystalpine Stinger","Demon Fall Canyon","Dragonmaw","Frostmane","Hellscream","Icecrown","Light's Hope","Nightsong","Onyxia","Order of the Cloud Serpent","Quel'dorei","Shadowmoon","Silverwing Hold","Skywall","Spirestone","Stormscale","Sundown Marsh","Whisperwind","World Tree","Wrathbringer","Zealot Blade"],
 };
 
-const SAMPLE_SIMC = `hunter="blezaa"\nlevel=90\nrace=tauren\nregion=us\nserver=turalyon\nspec=survival\ntalents=C8PAo4YcvOcqUdzB9zV+NhSAcMgxMG2ILwMM0gFzMzMzwyAAAAAAgZMjZYGjZMDGTzAAAAAGAALLzMziZmZmZGzMgZ2AgxYmZhB\nagility=1558\nattack_power=1635\nhaste_rating=370\ncrit_rating=282\nmastery_rating=722\nversatility_rating=285\n# Midnight Suneater Crown (639)\nhead=,id=232011,item_level=639\n# Midnight Thread Choker (636)\nneck=,id=231814,item_level=636\n# Midnight Suneater Shoulderguards (639)\nshoulders=,id=232013,item_level=639\n# Midnight Drape of Dusk (636)\nback=,id=231756,item_level=636\n# Midnight Suneater Hauberk (639)\nchest=,id=232009,item_level=639\n# Midnight Bindings of Twilight (636)\nwrist=,id=231758,item_level=636\n# Midnight Suneater Grips (639)\nhands=,id=232012,item_level=639\n# Midnight Cord of Shadows (636)\nwaist=,id=231760,item_level=636\n# Midnight Suneater Legguards (639)\nlegs=,id=232010,item_level=639\n# Midnight Boots of the Nightborne (636)\nfeet=,id=231762,item_level=636\n# Midnight Signet of Dusk (636)\nfinger1=,id=231770,item_level=636\n# Midnight Band of Eternal Night (636)\nfinger2=,id=231772,item_level=636\n# Kroluk's Warbanner (636)\ntrinket1=,id=231780,item_level=636\n# Light's Potential (636)\ntrinket2=,id=231782,item_level=636\n# Midnight Suneater Glaive (639)\nmain_hand=,id=231800,item_level=639\n# Midnight Suneater Dirk (636)\noff_hand=,id=231802,item_level=636`;
+const SAMPLE_SIMC = `hunter="blezaa"
+level=90
+race=tauren
+region=us
+server=turalyon
+spec=survival
+talents=C8PAo4YcvOcqUdzB9zV+NhSAcMgxMG2ILwMM0gFzMzMzwyAAAAAAgZMjZYGjZMDGTzAAAAAGAALLzMziZmZmZGzMgZ2AgxYmZhB
+agility=1477
+attack_power=1551
+haste_rating=1700
+crit_rating=3230
+mastery_rating=4250
+versatility_rating=1025
+# Vortex Visage (240)
+head=,id=221080,item_level=240
+# Farstrider's Pendant (220)
+neck=,id=221088,item_level=220
+# Rootspeaker's Canopy (230)
+shoulders=,id=221074,item_level=230
+# Preyseeker's Rugged Stole (233)
+back=,id=221085,item_level=233
+# Manipulator's Vest (227)
+chest=,id=221092,item_level=227
+# Elder Mossbands (227)
+wrist=,id=221094,item_level=227
+# Grips of Forgotten Honor (224)
+hands=,id=221073,item_level=224
+# Scout's Polished Wrap (207)
+waist=,id=221096,item_level=207
+# Rootspeaker's Leggings (230)
+legs=,id=221075,item_level=230,enchant_id=7594
+# Forgotten Tribe Footguards (240)
+feet=,id=221090,item_level=240
+# Preyseeker's Signet (237)
+finger1=,id=221082,item_level=237,enchant_id=7334
+# Circlet of Encroaching Shadow (220)
+finger2=,id=221095,item_level=220,enchant_id=7334
+# Kroluk's Warbanner (240)
+trinket1=,id=219315,item_level=240
+# Darkmoon Deck: Hunt (220)
+trinket2=,id=198478,item_level=220
+# Farstrider's Mercy (259)
+main_hand=,id=221083,item_level=259,enchant_id=7460
+# Bladesorrow (243)
+off_hand=,id=221086,item_level=243,enchant_id=7470`;
 
 const FIGHT_STYLES = {
   patchwerk: { label: '🎯 Patchwerk', desc: 'Pure single-target', mult: 1.0 },
@@ -950,7 +1046,19 @@ export default function SurvivalHunterSim() {
                               <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
                                 onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
+                                <div style={{ textAlign: "center" }}>
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, display: "block" }}>{g.name || `Item`}</span>
+                                  {g.enchant && (
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      ✦ {g.enchant}
+                                    </span>
+                                  )}
+                                  {g.gemId && (
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                      💎 Gem
+                                    </span>
+                                  )}
+                                </div>
                                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: ilvlColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
                               </div>
                             );
