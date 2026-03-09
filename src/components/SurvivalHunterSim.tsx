@@ -766,6 +766,13 @@ export default function SurvivalHunterSim() {
           const sha = (cached.data as any)?.sha || cached.github_sha || '';
           setSimcSyncInfo(`SimC data loaded (${sha.slice(0, 7)}) · ${new Date(cached.updated_at).toLocaleDateString()}`);
           setSimcSyncStatus('synced');
+          // Parse APL from cached data
+          try {
+            const rawApl = (cached.data as any)?.apl?.rawText;
+            if (rawApl) {
+              setAplData(parseSimcAPL(rawApl));
+            }
+          } catch (e) { console.warn('APL parse from cache failed:', e); }
         } else {
           // No cached data, trigger a sync
           await handleSimcSync();
