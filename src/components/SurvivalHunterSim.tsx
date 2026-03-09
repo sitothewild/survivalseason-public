@@ -2248,52 +2248,79 @@ export default function SurvivalHunterSim() {
       </div>
 
       {/* Item Tooltip */}
-      {hoveredItem && (
-        <div style={{
-          position: "fixed",
-          pointerEvents: "none",
-          zIndex: 9999,
-          background: C.surface,
-          border: `1px solid ${C.border}`,
-          borderRadius: 8,
-          padding: "12px 14px",
-          maxWidth: 320,
-          minWidth: 200,
-          boxShadow: "0 8px 24px rgba(0,0,0,.5)",
-          fontFamily: "'Rajdhani',sans-serif",
-          left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
-          top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
-        }}>
-          {pendingItemFetchesRef.current.has(hoveredItem) && !itemCache[hoveredItem] ? (
-            <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>Loading item data...</div>
-          ) : itemCache[hoveredItem]?._error ? (
-            <div style={{ color: C.textDim, fontSize: 12 }}>Could not load item data</div>
-          ) : itemCache[hoveredItem] ? (() => {
-            const item = itemCache[hoveredItem];
-            const qualityColors = { LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd', UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d' };
-            const nameColor = qualityColors[item.quality?.type] || '#a335ee';
-            // Find the actual ilvl from parsed gear
-            const gearPiece = parsedChar?.gear?.find((g: any) => g.itemId === hoveredItem);
-            const displayIlvl = gearPiece?.ilvl || item.preview_item?.level?.value || item.level;
-            return (
+      {hoveredItem && (() => {
+        const gearPiece = parsedChar?.gear?.find((g: any) => String(g.itemId) === String(hoveredItem));
+        const item = itemCache[hoveredItem];
+        const qualityColors = { LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd', UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d' };
+        const quality = gearPiece?.quality || item?.quality?.type || 'EPIC';
+        const nameColor = qualityColors[quality] || '#a335ee';
+        const displayName = gearPiece?.name || item?.name || 'Unknown Item';
+        const displayIlvl = gearPiece?.ilvl || item?.preview_item?.level?.value || item?.level;
+        // Use equipped item stats from equipment API (accurate to ilvl), fallback to base item template
+        const equippedStats = gearPiece?.itemStats;
+        const templateStats = item?.preview_item?.stats;
+
+        return (
+          <div style={{
+            position: "fixed",
+            pointerEvents: "none",
+            zIndex: 9999,
+            background: "linear-gradient(180deg,#141c2a,#0c1220)",
+            border: `1px solid #2e4a6a`,
+            borderRadius: 10,
+            padding: "14px 16px",
+            maxWidth: 320,
+            minWidth: 220,
+            boxShadow: "0 8px 32px rgba(0,0,0,.6)",
+            fontFamily: "'Rajdhani',sans-serif",
+            left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
+            top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
+          }}>
+            {pendingItemFetchesRef.current.has(hoveredItem) && !item ? (
+              <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>Loading item data...</div>
+            ) : (
               <>
-                {item._icon && <img src={item._icon} style={{ width: 36, height: 36, borderRadius: 6, border: `1px solid ${C.border}`, marginRight: 10, float: "left" }} />}
-                <div style={{ fontSize: 15, fontWeight: 700, color: nameColor, marginBottom: 4 }}>{item.name}</div>
+                {item?._icon && <img src={item._icon} style={{ width: 36, height: 36, borderRadius: 6, border: `1px solid ${C.border}`, marginRight: 10, float: "left" }} />}
+                <div style={{ fontSize: 15, fontWeight: 700, color: nameColor, marginBottom: 4 }}>{displayName}</div>
                 {displayIlvl && <div style={{ fontSize: 13, color: C.goldLight, marginBottom: 6 }}>Item Level {displayIlvl}</div>}
-                {item.item_class?.name && item.item_subclass?.name && (
-                  <div style={{ fontSize: 12, color: C.textDim, display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                {item?.item_subclass?.name && (
+                  <div style={{ fontSize: 12, color: C.textDim, display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                     <span>{item.item_subclass.name}</span>
-                    {item.inventory_type?.name && <span>{item.inventory_type.name}</span>}
+                    {gearPiece?.slotLabel && <span>{gearPiece.slotLabel}</span>}
                   </div>
                 )}
-                {item.preview_item?.stats && item.preview_item.stats.map((s, i) => (
+                {/* Show equipped stats (from equipment API — correct for actual ilvl) */}
+                {equippedStats?.length > 0 ? equippedStats.map((s: any, i: number) => (
+                  <div key={i} style={{ fontSize: 13, color: s.isEquipBonus ? '#1eff00' : C.textSec, padding: "1px 0" }}>
+                    {s.isEquipBonus ? 'Equip: ' : '+'}{s.value} {s.name || s.type}
+                  </div>
+                )) : templateStats?.map((s: any, i: number) => (
                   <div key={i} style={{ fontSize: 13, color: C.textSec, padding: "1px 0" }}>+{s.value} {s.type?.name}</div>
                 ))}
+                {/* Enchantments */}
+                {gearPiece?.enchantments?.length > 0 && (
+                  <div style={{ marginTop: 6, borderTop: `1px solid ${C.borderSub}`, paddingTop: 4 }}>
+                    {gearPiece.enchantments.map((enc: any, i: number) => {
+                      const label = formatEnchantLabel(enc);
+                      return label ? (
+                        <div key={i} style={{ fontSize: 12, color: '#4ade80', padding: "1px 0" }}>✦ {label}</div>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+                {/* Gems */}
+                {gearPiece?.sockets?.length > 0 && (
+                  <div style={{ marginTop: 4 }}>
+                    {gearPiece.sockets.map((s: any, i: number) => (
+                      <div key={i} style={{ fontSize: 12, color: '#60a5fa', padding: "1px 0" }}>💎 {s.name || s.display}</div>
+                    ))}
+                  </div>
+                )}
               </>
-            );
-          })() : null}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
