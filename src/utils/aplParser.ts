@@ -100,8 +100,17 @@ function buildRotationData(abilities: string[]): RotationData {
 
 // ─── Main parser ───────────────────────────────────────────
 
+const DEPRECATED_ABILITIES = ["spearhead", "flanking_strike", "mongoose_bite", "coordinated_assault", "fury_of_the_eagle", "butchery", "raptor_bite"];
+
 export function parseSimcAPL(rawAPLText: string): ParsedAPL {
   try {
+    // If fetched APL contains deprecated War Within abilities, reject and use Midnight fallback
+    const lowerText = rawAPLText.toLowerCase();
+    if (DEPRECATED_ABILITIES.some(a => lowerText.includes(a))) {
+      console.warn("SimC APL contains deprecated War Within abilities — using Midnight fallback");
+      return FALLBACK_WEIGHTS;
+    }
+
     const lines = rawAPLText.split("\n");
     const sections: Record<string, string[]> = {};
     let currentKey: string | null = null;

@@ -181,7 +181,7 @@ function extractSpellSection(source: string, spellName: string): string | null {
 
 function buildSimcData(aplData: any, spellData: any, sha: string) {
   return {
-    version: "simc-thewarwithin",
+    version: "simc-midnight",
     branch: BRANCH,
     sha,
     fetchedAt: new Date().toISOString(),
