@@ -232,12 +232,13 @@ const SIMC_BREAKDOWN_SENT_ST_DEFAULT = { 'Mongoose Bite':0.3000,'Wildfire Bomb':
 
 // Map SimC APL action names → display names used in breakdowns
 const APL_TO_DISPLAY: Record<string, string> = {
-  'raptor_strike': 'Raptor Strike', 'raptor_strike_melee': 'Raptor Strike',
-  'mongoose_bite': 'Raptor Strike', // mongoose_bite replaced by raptor_strike in TWW
+  'raptor_strike': 'Raptor Bite', 'raptor_strike_melee': 'Raptor Bite',
+  'raptor_bite': 'Raptor Bite',
+  'mongoose_bite': 'Mongoose Bite',
   'kill_command': 'Kill Command', 'kill_command_sv': 'Kill Command',
   'wildfire_bomb': 'Wildfire Bomb', 'volatile_bomb': 'Wildfire Bomb',
   'fury_of_the_eagle': 'Boomstick', 'boomstick': 'Boomstick',
-  'flanking_strike': 'Raptor Strike',
+  'flanking_strike': 'Mongoose Bite',
   'coordinated_assault': 'Takedown', 'takedown': 'Takedown',
   'harpoon': 'Takedown',
   'butchery': 'Raptor Swipe', 'carve': 'Raptor Swipe', 'raptor_swipe': 'Raptor Swipe',
@@ -250,6 +251,7 @@ const APL_TO_DISPLAY: Record<string, string> = {
   'spearhead': 'Takedown',
   'call_of_the_wild': 'Pack Leader Beasts',
   'aspect_of_the_eagle': 'Takedown',
+  'serpent_sting': 'Serpent Sting',
 };
 
 // Passive/auto sources not in APL but always present
