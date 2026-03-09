@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect, Fragment } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
+import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
 
@@ -405,6 +406,60 @@ export default function SurvivalHunterSim() {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [upgradeFrom, setUpgradeFrom] = useState(636);
   const [upgradeTo, setUpgradeTo] = useState(645);
+  // SimC GitHub data
+  const [simcLiveData, setSimcLiveData] = useState<any>(null);
+  const [simcSyncStatus, setSimcSyncStatus] = useState<'idle' | 'loading' | 'synced' | 'error'>('idle');
+  const [simcSyncInfo, setSimcSyncInfo] = useState<string>('');
+
+  // Auto-load SimC data on mount
+  useEffect(() => {
+    (async () => {
+      setSimcSyncStatus('loading');
+      setSimcSyncInfo('Loading cached SimC data...');
+      try {
+        // First try reading from cache
+        const { data: cached } = await supabase
+          .from('simc_data_cache')
+          .select('*')
+          .eq('data_key', 'survival_hunter_data')
+          .single();
+        if (cached?.data) {
+          setSimcLiveData(cached.data);
+          const sha = (cached.data as any)?.sha || cached.github_sha || '';
+          setSimcSyncInfo(`SimC data loaded (${sha.slice(0, 7)}) · ${new Date(cached.updated_at).toLocaleDateString()}`);
+          setSimcSyncStatus('synced');
+        } else {
+          // No cached data, trigger a sync
+          await handleSimcSync();
+        }
+      } catch (e) {
+        console.warn('SimC cache load failed, trying sync:', e);
+        try { await handleSimcSync(); } catch (e2) {
+          setSimcSyncStatus('error');
+          setSimcSyncInfo('Using hardcoded data (sync failed)');
+        }
+      }
+    })();
+  }, []);
+
+  const handleSimcSync = useCallback(async (force = false) => {
+    setSimcSyncStatus('loading');
+    setSimcSyncInfo('Syncing from SimC GitHub...');
+    try {
+      const { data, error } = await supabase.functions.invoke('simc-data-sync', {
+        body: { force },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setSimcLiveData(data.data);
+      const status = data.status === 'cached' ? 'Up to date' : 'Updated';
+      setSimcSyncInfo(`${status} (${data.sha?.slice(0, 7)}) · ${new Date().toLocaleDateString()}`);
+      setSimcSyncStatus('synced');
+    } catch (e) {
+      setSimcSyncStatus('error');
+      setSimcSyncInfo(`Sync failed: ${e.message}`);
+    }
+  }, []);
 
   const handleParse = useCallback(() => {
     setParseError(''); const result = parseSimcString(simcInput);
@@ -567,6 +622,26 @@ export default function SurvivalHunterSim() {
             <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
             <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
             <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
+            <button onClick={() => handleSimcSync(true)} disabled={simcSyncStatus === 'loading'}
+              title={simcSyncInfo}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20,
+                fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, fontWeight: 600, cursor: simcSyncStatus === 'loading' ? 'not-allowed' : 'pointer',
+                border: `1px solid ${simcSyncStatus === 'synced' ? 'rgba(56,189,248,.4)' : simcSyncStatus === 'error' ? 'rgba(248,113,113,.4)' : C.border}`,
+                background: simcSyncStatus === 'synced' ? '#0c1e35' : simcSyncStatus === 'error' ? '#2a0f0f' : C.surface2,
+                color: simcSyncStatus === 'synced' ? '#38bdf8' : simcSyncStatus === 'error' ? '#f87171' : C.textMid,
+                transition: 'all .2s', whiteSpace: 'nowrap',
+              }}>
+              {simcSyncStatus === 'loading' ? (
+                <><span style={{ width: 8, height: 8, border: "1.5px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> SYNCING</>
+              ) : simcSyncStatus === 'synced' ? (
+                <>🔄 SIMC LIVE</>
+              ) : simcSyncStatus === 'error' ? (
+                <>⚠ SYNC</>
+              ) : (
+                <>🔄 SYNC SIMC</>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -1768,12 +1843,91 @@ export default function SurvivalHunterSim() {
                 </div>
               ))}
             </CARD>
+
+            {/* SimC Live APL */}
+            <CARD style={{ gridColumn: "1 / -1" }}>
+              <LBL>🔄 SimC Live Action Priority List</LBL>
+              {simcSyncStatus === 'synced' && simcLiveData?.apl?.actionLists ? (
+                <div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                    <span className="badge" style={{ background: '#0c1e35', color: '#38bdf8', border: '1px solid rgba(56,189,248,.4)' }}>
+                      SHA: {simcLiveData.sha?.slice(0, 7)}
+                    </span>
+                    <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>
+                      Branch: {simcLiveData.branch || 'thewarwithin'}
+                    </span>
+                    <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>
+                      {simcLiveData.fetchedAt ? new Date(simcLiveData.fetchedAt).toLocaleString() : 'Cached'}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    {[
+                      { key: 'sentst', label: 'Sentinel ST', color: C.sentClr },
+                      { key: 'sentcleave', label: 'Sentinel Cleave', color: C.sentClr },
+                      { key: 'plst', label: 'Pack Leader ST', color: C.packClr },
+                      { key: 'plcleave', label: 'Pack Leader Cleave', color: C.packClr },
+                    ].map(({ key, label, color }) => {
+                      const actions = simcLiveData.apl.actionLists[key];
+                      if (!actions || actions.length === 0) return null;
+                      return (
+                        <div key={key} style={{ background: C.surface2, borderRadius: 8, padding: 12, border: `1px solid ${C.border}` }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color, marginBottom: 8, textTransform: "uppercase" }}>{label}</div>
+                          <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                            {actions.slice(0, 15).map((action, i) => {
+                              const parts = action.split('#');
+                              const spell = parts[0].split(',')[0].trim();
+                              return (
+                                <div key={i} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textMid, padding: "2px 0", borderBottom: `1px solid ${C.borderSub}` }}>
+                                  <span style={{ color: C.goldLight }}>{i + 1}.</span> <span style={{ color: C.textSec }}>{spell}</span>
+                                  {parts[1] && <span style={{ color: C.textDim, marginLeft: 6, fontSize: 9 }}>// {parts[1].trim()}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {simcLiveData.spells?.survival_spells && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color: C.textDim, marginBottom: 8, textTransform: "uppercase" }}>Parsed Spell Implementations</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {Object.entries(simcLiveData.spells.survival_spells).map(([spell, data]: [string, any]) => (
+                          <span key={spell} className="tag tag-core" style={{ fontSize: 11 }}>
+                            {spell.replace(/_/g, ' ')} {data.found ? '✓' : '✗'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : simcSyncStatus === 'loading' ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.textDim }}>
+                  <span style={{ width: 14, height: 14, border: "2px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />
+                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>Syncing SimC data from GitHub...</span>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 10 }}>
+                    Click the <strong style={{ color: '#38bdf8' }}>SYNC SIMC</strong> button in the header to pull the latest rotation data from SimulationCraft's GitHub repository.
+                  </p>
+                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
+                    This fetches the Survival Hunter APL (Action Priority List) directly from the thewarwithin branch and caches it for fast loading.
+                  </p>
+                </div>
+              )}
+            </CARD>
           </div>
         )}
 
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.borderSub}` }}>
           <p style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim }}>SURVIVAL HUNTER SIM · MIDNIGHT 12.0 PRE-SEASON 1 · INTERNAL ENGINE</p>
+          {simcSyncStatus === 'synced' && simcSyncInfo && (
+            <p style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim, marginTop: 4 }}>
+              SimC Data: {simcSyncInfo}
+            </p>
+          )}
         </div>
       </div>
 
