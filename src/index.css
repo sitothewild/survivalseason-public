@@ -3,106 +3,107 @@
 @tailwind utilities;
 
 /* 
-  MIDNIGHT SURVIVAL HUNTER SIM — DESIGN SYSTEM
-  Modern charcoal navy blue theme with high readability
+  SURVIVAL HUNTER SIM — V8 OFF-WHITE + CHARCOAL NAVY DESIGN SYSTEM
+  Page: soft blue-grey (#d4dae2)
+  Cards: charcoal navy (#1c2333)
   All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    /* Page background - soft slate gray for light mode */
-    --background: 220 20% 96%;
-    --foreground: 220 15% 20%;
+    /* Page background - soft blue-grey (off-white) */
+    --background: 216 18% 85%;
+    --foreground: 215 30% 14%;
 
-    --card: 220 20% 98%;
-    --card-foreground: 220 15% 20%;
+    --card: 220 25% 14%;
+    --card-foreground: 214 32% 91%;
 
-    --popover: 220 20% 98%;
-    --popover-foreground: 220 15% 20%;
+    --popover: 220 25% 14%;
+    --popover-foreground: 214 32% 91%;
 
-    --primary: 220 25% 25%;
-    --primary-foreground: 220 20% 98%;
+    --primary: 36 90% 45%;
+    --primary-foreground: 48 100% 96%;
 
-    --secondary: 220 15% 88%;
-    --secondary-foreground: 220 20% 25%;
+    --secondary: 218 25% 22%;
+    --secondary-foreground: 214 32% 85%;
 
-    --muted: 220 15% 92%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 218 20% 18%;
+    --muted-foreground: 215 15% 55%;
 
     --accent: 200 75% 50%;
-    --accent-foreground: 220 20% 98%;
+    --accent-foreground: 214 32% 95%;
 
     --destructive: 0 72% 55%;
-    --destructive-foreground: 220 20% 98%;
+    --destructive-foreground: 214 32% 95%;
 
-    --border: 220 15% 88%;
-    --input: 220 15% 92%;
-    --ring: 200 75% 50%;
+    --border: 218 22% 28%;
+    --input: 220 30% 10%;
+    --ring: 36 90% 45%;
 
     --radius: 0.5rem;
 
     /* Sidebar tokens */
-    --sidebar-background: 220 20% 96%;
-    --sidebar-foreground: 220 15% 25%;
-    --sidebar-primary: 220 25% 25%;
-    --sidebar-primary-foreground: 220 20% 98%;
-    --sidebar-accent: 220 15% 88%;
-    --sidebar-accent-foreground: 220 20% 25%;
-    --sidebar-border: 220 15% 88%;
-    --sidebar-ring: 200 75% 50%;
+    --sidebar-background: 216 18% 85%;
+    --sidebar-foreground: 215 30% 18%;
+    --sidebar-primary: 36 90% 45%;
+    --sidebar-primary-foreground: 48 100% 96%;
+    --sidebar-accent: 218 25% 22%;
+    --sidebar-accent-foreground: 214 32% 85%;
+    --sidebar-border: 218 22% 28%;
+    --sidebar-ring: 36 90% 45%;
 
-    /* Custom sim tokens - light mode */
-    --sim-gold: 38 90% 55%;
-    --sim-gold-light: 42 95% 70%;
-    --sim-green: 142 70% 45%;
-    --sim-sentinel: 200 85% 55%;
-    --sim-pack: 270 70% 65%;
+    /* Custom sim tokens */
+    --sim-gold: 36 90% 45%;
+    --sim-gold-light: 45 96% 56%;
+    --sim-green: 142 70% 50%;
+    --sim-sentinel: 200 90% 60%;
+    --sim-pack: 270 75% 70%;
   }
 
   .dark {
-    /* Dark mode - charcoal navy blue for easy reading */
-    --background: 222 25% 10%;
-    --foreground: 220 20% 92%;
+    /* Same as root for this app — always dark cards on light page */
+    --background: 216 18% 85%;
+    --foreground: 215 30% 14%;
 
-    --card: 222 22% 14%;
-    --card-foreground: 220 20% 92%;
+    --card: 220 25% 14%;
+    --card-foreground: 214 32% 91%;
 
-    --popover: 222 22% 14%;
-    --popover-foreground: 220 20% 92%;
+    --popover: 220 25% 14%;
+    --popover-foreground: 214 32% 91%;
 
-    --primary: 200 80% 55%;
-    --primary-foreground: 222 25% 10%;
+    --primary: 36 90% 45%;
+    --primary-foreground: 48 100% 96%;
 
-    --secondary: 222 20% 20%;
-    --secondary-foreground: 220 20% 88%;
+    --secondary: 218 25% 22%;
+    --secondary-foreground: 214 32% 85%;
 
-    --muted: 222 20% 18%;
-    --muted-foreground: 220 15% 55%;
+    --muted: 218 20% 18%;
+    --muted-foreground: 215 15% 55%;
 
     --accent: 200 75% 50%;
-    --accent-foreground: 220 20% 95%;
+    --accent-foreground: 214 32% 95%;
 
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 220 20% 95%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 214 32% 95%;
 
-    --border: 222 20% 22%;
-    --input: 222 20% 18%;
-    --ring: 200 80% 55%;
-    
+    --border: 218 22% 28%;
+    --input: 220 30% 10%;
+    --ring: 36 90% 45%;
+
     /* Sidebar - dark mode */
-    --sidebar-background: 222 25% 12%;
-    --sidebar-foreground: 220 20% 88%;
-    --sidebar-primary: 200 80% 55%;
-    --sidebar-primary-foreground: 222 25% 10%;
-    --sidebar-accent: 222 20% 20%;
-    --sidebar-accent-foreground: 220 20% 88%;
-    --sidebar-border: 222 20% 22%;
-    --sidebar-ring: 200 80% 55%;
+    --sidebar-background: 220 25% 12%;
+    --sidebar-foreground: 214 32% 85%;
+    --sidebar-primary: 36 90% 45%;
+    --sidebar-primary-foreground: 48 100% 96%;
+    --sidebar-accent: 218 25% 22%;
+    --sidebar-accent-foreground: 214 32% 85%;
+    --sidebar-border: 218 22% 28%;
+    --sidebar-ring: 36 90% 45%;
 
-    /* Custom sim tokens - dark mode */
-    --sim-gold: 40 95% 58%;
-    --sim-gold-light: 45 100% 68%;
-    --sim-green: 145 75% 50%;
+    /* Custom sim tokens - same */
+    --sim-gold: 36 90% 45%;
+    --sim-gold-light: 45 96% 56%;
+    --sim-green: 142 70% 50%;
     --sim-sentinel: 200 90% 60%;
     --sim-pack: 270 75% 70%;
   }
@@ -119,22 +120,22 @@
   }
 }
 
-/* Modern scrollbar styling */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+  background: #d4dae2;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: #2e3a50;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.6);
+  background: #3d4f6a;
 }
