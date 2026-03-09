@@ -1449,36 +1449,35 @@ export default function SurvivalHunterSim() {
         pointerEvents: 'none', zIndex: 0
       }} />
 
+      {/* ── HEADER ── */}
+      <div style={{ background: 'linear-gradient(135deg, #0d1117, #141c2a, #0f1a2e)', padding: '18px 28px', borderBottom: '1px solid #2e3a50', marginBottom: 0 }}>
+        <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ fontSize: 28 }}>🦅</div>
+            <div>
+              <h1 className="glow-text" style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 'clamp(14px, 2vw, 22px)', fontWeight: 900, letterSpacing: 4, color: '#e2e8f0', margin: 0, lineHeight: 1 }}>
+                SURVIVAL HUNTER
+              </h1>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 9, letterSpacing: 3, color: '#64748b', marginTop: 5 }}>
+                MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span className="badge" style={{ background: 'hsl(40 50% 15%)', color: '#fbbf24', border: '1px solid hsl(40 60% 30%)' }}>★ PRE-SEASON 1</span>
+            <span className="badge" style={{ background: '#1e2a3a', color: '#94a3b8', border: '1px solid #2e3a50' }}>PATCH 12.0.1</span>
+            <span className="badge" style={{ background: '#0f2a1a', color: '#4ade80', border: '1px solid rgba(74,222,128,.22)' }}>🦉 SENTINEL META</span>
+          </div>
+        </div>
+      </div>
+
       <div className="sim-shell">
 
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div className="title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 12 }}>
-            <div style={{ fontSize: 28 }}>🦅</div>
-            <h1 className="glow-text" style={{
-              fontFamily: "'Cinzel Decorative', serif", fontSize: 'clamp(24px, 4vw, 40px)',
-              fontWeight: 900, margin: 0, letterSpacing: 5,
-              color: 'hsl(var(--foreground))'
-            }}>
-              SURVIVAL HUNTER
-            </h1>
-            <div style={{ fontSize: 28 }}>🔥</div>
-          </div>
-          <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, color: 'hsl(var(--muted-foreground))', margin: '0 0 16px' }}>
-            MIDNIGHT 12.0.1 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
-          </p>
-          <div className="divider" style={{ margin: '16px auto', maxWidth: 400 }} />
-          <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 15, color: 'hsl(var(--muted-foreground))', margin: 0, fontStyle: 'italic', lineHeight: 1.6 }}>
-            Sources: Azortharion (Trueshot Lodge) · Method.gg (Symex) · Maxroll (heleni) · Wowhead · Raidbots/SimC APL
-          </p>
-        </div>
-
         {/* Tabs */}
-        <div className="tabs-row" style={{ display: 'flex', borderBottom: '2px solid hsl(var(--border))', marginBottom: 32, gap: 6 }}>
-          <button className={`tab-btn ${activeTab === 'sim' ? 'active' : ''}`} onClick={() => setActiveTab('sim')}>⚔ Simulator</button>
-          <button className={`tab-btn ${activeTab === 'talents' ? 'active' : ''}`} onClick={() => setActiveTab('talents')}>🌿 Talents</button>
-          <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>📊 Detailed Report</button>
-          <button className={`tab-btn ${activeTab === 'guide' ? 'active' : ''}`} onClick={() => setActiveTab('guide')}>📖 Guide</button>
+        <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #2e3a50', marginBottom: 24, gap: 2 }}>
+          {[['sim', '⚔ Simulator'], ['talents', '🌿 Talents'], ['report', '📊 Report'], ['guide', '📖 Guide']].map(([k, l]) => (
+            <button key={k} className={`tab-btn ${activeTab === k ? 'active' : ''}`} onClick={() => setActiveTab(k as any)}>{l}</button>
+          ))}
         </div>
 
         {/* ===== SIM TAB ===== */}
