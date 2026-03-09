@@ -1938,7 +1938,18 @@ export default function SurvivalHunterSim() {
 
       {/* Item Tooltip */}
       {hoveredItem && (
-        <div className="item-tooltip" style={{
+        <div style={{
+          position: "fixed",
+          pointerEvents: "none",
+          zIndex: 9999,
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: "12px 14px",
+          maxWidth: 320,
+          minWidth: 200,
+          boxShadow: "0 8px 24px rgba(0,0,0,.5)",
+          fontFamily: "'Rajdhani',sans-serif",
           left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
           top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
         }}>
