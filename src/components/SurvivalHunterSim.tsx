@@ -423,7 +423,7 @@ function generateSampleExecutionLog(duration, heroTalent) {
   ];
 }
 
-function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null) {
+function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null, aplData = null) {
   const stats = charData.stats; const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
   const hastePct = stats.haste || 10.58, critPct = stats.crit || 20.13, masteryPct = stats.mastery || 30.16, versPct = stats.versatility || 8.28;
   const ANCHOR_AP = 1635, ANCHOR_DPS = 51024, ANCHOR_CRIT = 20.13, ANCHOR_HASTE = 10.58, ANCHOR_MASTERY = 30.16, ANCHOR_VERS = 8.28;
@@ -437,6 +437,23 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
   const T = targetCount;
   if (T > 1) { const cf = T <= 3 ? 1 + (T - 1) * 0.55 : T <= 5 ? 2.1 + (T - 3) * 0.35 : T <= 8 ? 2.8 + (T - 5) * 0.20 : 3.4 + (T - 8) * 0.12; totalDps *= cf; }
   totalDps *= externalMult;
+
+  // Determine rotation weights from APL parser if available
+  let aplWeights: Record<string, number> | null = null;
+  if (aplData) {
+    const heroKey = heroTalent === 'packLeader' ? 'packLeader' : 'sentinel';
+    const mode = (build === 'aoe' || T > 2) ? 'aoe' : 'st';
+    aplWeights = getRotationWeights(aplData, heroKey, mode);
+    if (aplWeights && Object.keys(aplWeights).length > 0) {
+      console.log("Using SimC APL weights:", aplWeights);
+    } else {
+      aplWeights = null;
+      console.log("Using fallback rotation weights");
+    }
+  } else {
+    console.log("Using fallback rotation weights");
+  }
+
   // Use live SimC APL-derived breakdowns when available, otherwise fall back to defaults
   const { pl: SIMC_BREAKDOWN_PL_ST, sent: SIMC_BREAKDOWN_SENT_ST } = getBreakdowns(simcLiveData);
   const breakdown = {}; const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
@@ -451,7 +468,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
     Object.entries(aoeTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); });
   } else { Object.entries(breakdownTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); }); }
   const detailed = generateDetailedSimData(breakdown, fightDuration, heroTalent, T, ap);
-  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists };
+  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists, aplDataUsed: !!aplData };
 }
 
 function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null) {
