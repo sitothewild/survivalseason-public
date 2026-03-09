@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useCallback, useEffect, Fragment, useRef } from "react";
+import { useState, useCallback, useEffect, Fragment, useRef, useMemo } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
 import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
@@ -153,6 +153,8 @@ function parseSimcString(simcText) {
     '7385': 'Armored Avoidance', '7386': 'Armored Leech', '7387': 'Armored Speed',
     '7418': 'Cavalry\'s March', '7419': 'Defender\'s March', '7420': 'Scout\'s March',
     '7594': '+16 Agility/Strength', '7595': '+16 Agility/Strength',
+    '7965': 'Amani Mastery', '8160': 'Thalassian Scout Armor Kit',
+    '8039': 'Acuity of the Ren\'dorei', '8041': 'Arcane Mastery',
   };
 
   const slotLabels: Record<string, string> = {
@@ -387,6 +389,16 @@ function getItemQualityColor(quality?: string, ilvl?: number, avgIlvl?: number):
   if (pct >= -0.05) return '#0070dd';
   if (pct >= -0.12) return '#1eff00';
   return '#ffffff';
+}
+
+function formatEnchantLabel(enchant: any): string {
+  const raw = String(enchant?.name || enchant?.display || '').trim();
+  if (!raw) return '';
+  return raw
+    .replace(/^Enchanted:\s*/i, '')
+    .replace(/^Enchant\s+(Ring|Weapon|Cloak|Chest|Bracer|Boots|Legs)\s*-\s*/i, '')
+    .replace(/\s*\|A:.*\|a\s*$/i, '')
+    .trim();
 }
 
 function getAbilityCoefficient(ability) {
@@ -1000,7 +1012,7 @@ export default function SurvivalHunterSim() {
                 <button className="parse-btn" onClick={handleParse} style={{ marginTop: 10 }}>✦ Parse Character Data</button>
 
                 {parsedChar && (
-                  <div style={{ marginTop: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.greenBdr}`, animation: "fadeUp .3s ease", overflow: "hidden" }}>
+                  <div style={{ marginTop: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.greenBdr}`, overflow: "hidden" }}>
                     <div style={{ background: C.greenBg, padding: "10px 16px", borderBottom: `1px solid rgba(74,222,128,.15)`, display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: C.green, fontSize: 13 }}>✓</span>
                       <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
@@ -1058,11 +1070,14 @@ export default function SurvivalHunterSim() {
                                     </span>
                                   )}
                                   {/* Enchantments from API */}
-                                  {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => (
-                                    <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      ✦ {enc.name || enc.display}
-                                    </span>
-                                  ))}
+                                  {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => {
+                                    const enchantLabel = formatEnchantLabel(enc);
+                                    return enchantLabel ? (
+                                      <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
+                                        ✦ {enchantLabel}
+                                      </span>
+                                    ) : null;
+                                  })}
                                   {/* Fallback for SimC-parsed enchants */}
                                   {!g.enchantments?.length && g.enchant && (
                                     <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
