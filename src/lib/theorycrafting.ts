@@ -5,7 +5,7 @@
 // Sources: Blizzard API spell data, SimulationCraft:midnight APL, spell coefficients
 // from sc_hunter.cpp, and verified against Raidbots/Warcraft Logs parses.
 //
-// Key differences vs method.gg:
+// Key differences vs community guides (Wowhead, Icy Veins, class discords):
 //  1. Takedown window modeled per-second (8s amp on ~13–20% uptime)
 //  2. Tier set interaction: 2pc KC crit → WFB CD reduction → Lethal Calibration uptime
 //  3. Sentinel Mark proc math modeled per ability cast, not assumed flat
@@ -93,7 +93,7 @@ export interface TheoryCraftResult {
   talentDeltas: TalentDelta[];
   tierSetValue: TierSetValue;
   rotationNotes: string[];
-  vsMethodGg: VsMethodGg;
+  vsCommunity: VsCommunity;
 }
 
 export interface TalentDelta {
@@ -102,8 +102,10 @@ export interface TalentDelta {
   dpsDelta: number;
   pctIncrease: number;
   reasoning: string;
-  methodGgRanks: boolean;
+  communityRanks: boolean; // whether most community guides include this talent
   ourRanks: boolean;
+  inBuild: boolean;        // true = talent is in the current build (delta = DPS loss if removed)
+  pointCost: number;       // talent point cost (1 or 2); budget = 8 optional + 3 hero
 }
 
 export interface TierSetValue {
@@ -113,9 +115,9 @@ export interface TierSetValue {
   notes: string[];
 }
 
-export interface VsMethodGg {
+export interface VsCommunity {
   agreements: string[];
-  differences: { topic: string; methodGg: string; ourView: string; delta: string }[];
+  differences: { topic: string; communityView: string; ourView: string; delta: string }[];
 }
 
 // ── Midnight Season 1 Gear Profiles ─────────────────────────
@@ -618,83 +620,93 @@ function calcTalentDeltas(
 ): TalentDelta[] {
   const deltas: TalentDelta[] = [];
 
+  // Talent point costs (must match SurvivalHunterSim.tsx definitions)
+  // Optional spec budget: 8 pts. Hero budget: 3 pts.
+  const TALENT_POINT_COSTS: Partial<Record<keyof TalentConfig, number>> = {
+    stargazer: 2, twoAgainstMany: 2,
+  };
+  const ptCost = (key: keyof TalentConfig) => TALENT_POINT_COSTS[key] ?? 1;
+
   const talentsToTest: {
     key: keyof TalentConfig;
     label: string;
-    methodGgRanks: boolean;
+    communityRanks: boolean;
     reasoning: string;
   }[] = [
     {
-      key: 'savagery', label: 'Savagery (2pt)',
-      methodGgRanks: true,
+      key: 'savagery', label: 'Savagery',
+      communityRanks: true,
       reasoning: 'Reduces Takedown CD 90s → 60s; more Takedown windows = more Raptor Swipe 100% proc windows. Biggest ST gain after core talents.',
     },
     {
       key: 'vulnerability', label: 'Vulnerability',
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: 'RS and Boomstick +20% crit damage. Value scales with crit% and Boomstick 4pc frequency.',
     },
     {
       key: 'mongooseRounds', label: 'Mongoose Rounds',
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: 'Boomstick hits grant Mongoose Fury stacks, which boosts next RS burst window.',
     },
     {
       key: 'cantMissWontMiss', label: "Can't Miss Won't Miss",
-      methodGgRanks: false,
-      reasoning: "RS +10% flat damage + Takedown window extended 8s → 10s. We rank this higher than method.gg for tier set builds where Takedown uptime drives 4pc reset math.",
+      communityRanks: false,
+      reasoning: "RS +10% flat damage + Takedown window extended 8s → 10s. We rate this as core ST for tier set builds where Takedown uptime drives 4pc reset math — rated optional by most guides.",
     },
     {
       key: 'stargazer', label: 'Stargazer',
-      methodGgRanks: false,
-      reasoning: 'Up to +20% crit damage on RS at 10 stacks. In sustained ST with high crit% this outperforms Vulnerability as a third crit-dmg node.',
+      communityRanks: false,
+      reasoning: 'Up to +20% crit damage on RS at 10 stacks. In sustained ST with high crit% this outperforms Vulnerability as a third crit-dmg node. Largely absent from popular guide recommendations.',
     },
     {
       key: 'lethalCalibration', label: 'Lethal Calibration',
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: 'WFB crits deal +15% damage. With 2pc reducing WFB CD, uptime is near-permanent in tier gear.',
     },
     {
       key: 'moonlightChakram', label: 'Moonlight Chakram',
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: 'Highest single-cast AP coefficient in kit (4.80). Shares CD window with Takedown for burst alignment.',
     },
     {
       key: 'lunarStorm', label: 'Lunar Storm',
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: 'AoE damage on Mark consume. With Moon\'s Blessing this fires ~3-4×/min in ST.',
     },
     {
       key: 'moonsBlessing', label: "Moon's Blessing",
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: 'Increases Sentinel Mark proc rate 20% → 30%. Directly scales Lunar Storm frequency +50%.',
     },
     {
       key: 'flamefangPitch', label: 'Flamefang Pitch (AoE)',
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: 'Ground AoE at 4.20 AP coef hitting 8 targets. Mandatory for M+ and AoE raid fights.',
     },
     {
       key: 'grenadeJuggler', label: 'Grenade Juggler (AoE)',
-      methodGgRanks: true,
+      communityRanks: true,
       reasoning: '+1 Flamefang charge; ~50% more uses. Trivially BiS in AoE.',
     },
     {
       key: 'flamebreak', label: 'Flamebreak (AoE)',
-      methodGgRanks: false,
-      reasoning: '+15% fire damage globally. Affects WFB, Flamefang, and Wildfire Imbuement. We rank this higher than method.gg in full fire build.',
+      communityRanks: false,
+      reasoning: '+15% fire damage globally. Affects WFB, Flamefang, and Wildfire Imbuement. We rate this higher than most guides in a full fire build — the fire damage share is larger than commonly assumed.',
     },
     {
-      key: 'twoAgainstMany', label: 'Two Against Many (AoE)',
-      methodGgRanks: false,
-      reasoning: 'Strike as One hits +2 enemies. Scales pet passive hits to 3 targets — undervalued by method.gg in cleave (2-4 targets).',
+      key: 'twoAgainstMany', label: 'Two Against Many (AoE, 2pt)',
+      communityRanks: false,
+      reasoning: 'Strike as One hits +2 enemies. Scales pet passive hits to 3 targets — undervalued in most guides which only recommend it at 5+ targets. Our math shows it is BiS at 3+.',
     },
   ];
 
   for (const t of talentsToTest) {
-    // Toggle the talent off and recompute
-    const modTalents = { ...baseTalents, [t.key]: !baseTalents[t.key] };
+    const inBuild = !!baseTalents[t.key];
+    // Toggle the talent and recompute (if in build: remove it; if not: add it)
+    const modTalents = { ...baseTalents, [t.key]: !inBuild };
     const modTotal = computeDpsOnly(gear, modTalents, tierSet, targetCount, heroTalent);
+    // dpsDelta > 0 → DPS loss when talent is removed from build
+    // dpsDelta < 0 → DPS gain when talent is added to build (hypothetical)
     const dpsDelta = baseResult.totalDps - modTotal;
     const pct = baseResult.totalDps > 0 ? (dpsDelta / baseResult.totalDps) * 100 : 0;
     deltas.push({
@@ -703,8 +715,10 @@ function calcTalentDeltas(
       dpsDelta: Math.round(dpsDelta),
       pctIncrease: parseFloat(pct.toFixed(2)),
       reasoning: t.reasoning,
-      methodGgRanks: t.methodGgRanks,
+      communityRanks: t.communityRanks,
       ourRanks: true,
+      inBuild,
+      pointCost: ptCost(t.key),
     });
   }
 
@@ -752,14 +766,19 @@ function calcTierSetValue(
   };
 }
 
-// ── vs method.gg comparison ──────────────────────────────────
+// ── vs community comparison ───────────────────────────────────
 
-function buildVsMethodGg(
+function buildVsCommunity(
   heroTalent: 'sentinel' | 'packLeader',
   targetCount: number,
   talentDeltas: TalentDelta[],
-): VsMethodGg {
-  const isAoE = targetCount > 2;
+): VsCommunity {
+  const d = (key: string) => {
+    const t = talentDeltas.find(x => x.key === key);
+    if (!t) return 'See talent delta table';
+    const sign = t.dpsDelta > 0 ? '+' : '';
+    return `${sign}${t.dpsDelta.toLocaleString()} DPS (${t.pctIncrease.toFixed(2)}%)`;
+  };
   return {
     agreements: [
       'Sentinel is the preferred hero talent for Raid (ST and light cleave)',
@@ -772,48 +791,38 @@ function buildVsMethodGg(
     differences: [
       {
         topic: "Can't Miss Won't Miss",
-        methodGg: 'Rated as optional / situational filler point',
-        ourView: "Rated as core ST node: RS +10% flat + Takedown window 8s → 10s synergizes with 4pc tier (more Boomstick resets within window)",
-        delta: talentDeltas.find(d => d.key === 'cantMissWontMiss')
-          ? `+${talentDeltas.find(d => d.key === 'cantMissWontMiss')!.dpsDelta.toLocaleString()} DPS (${talentDeltas.find(d => d.key === 'cantMissWontMiss')!.pctIncrease}%)`
-          : 'See talent delta table',
+        communityView: 'Rated as optional / situational filler point in most guides',
+        ourView: "We rate this as core ST: RS +10% flat + Takedown window 8s → 10s synergizes with 4pc tier (more Boomstick resets within window). Underrated due to the Takedown-uptime math.",
+        delta: d('cantMissWontMiss'),
       },
       {
-        topic: 'Stargazer',
-        methodGg: 'Unranked — not mentioned in their ST build',
-        ourView: 'At 25%+ crit with sustained ST, Stargazer averages 5+ stacks (+10% crit dmg on RS). Surpasses Vulnerability as third RS-damage node.',
-        delta: talentDeltas.find(d => d.key === 'stargazer')
-          ? `+${talentDeltas.find(d => d.key === 'stargazer')!.dpsDelta.toLocaleString()} DPS (${talentDeltas.find(d => d.key === 'stargazer')!.pctIncrease}%)`
-          : 'See talent delta table',
+        topic: 'Stargazer (2pt)',
+        communityView: 'Largely absent from popular guide ST builds — considered niche',
+        ourView: 'At 25%+ crit with sustained ST, Stargazer averages 5+ stacks (+10% crit dmg on RS). At Hero-track gear levels it surpasses Vulnerability as the third crit-damage node.',
+        delta: d('stargazer'),
       },
       {
         topic: 'Flamebreak (AoE)',
-        methodGg: 'Rated as low priority / last-pick AoE talent',
-        ourView: 'With WFB (fire), Flamefang (fire), and Wildfire Imbuement all active, Flamebreak +15% fire affects 35-40% of total damage. BiS in full fire AoE build.',
-        delta: talentDeltas.find(d => d.key === 'flamebreak')
-          ? `+${talentDeltas.find(d => d.key === 'flamebreak')!.dpsDelta.toLocaleString()} DPS (${talentDeltas.find(d => d.key === 'flamebreak')!.pctIncrease}%)`
-          : 'See talent delta table',
+        communityView: 'Rated as low priority / last-pick AoE talent in most AoE builds',
+        ourView: 'With WFB (fire), Flamefang (fire), and Wildfire Imbuement all active, Flamebreak +15% fire affects 35–40% of total damage. Our math puts it BiS in the full fire AoE build.',
+        delta: d('flamebreak'),
       },
       {
-        topic: 'Two Against Many (AoE)',
-        methodGg: 'Listed as optional for 5+ target scenarios',
-        ourView: 'Strike as One fires on every ability cast. With 3 targets, Two Against Many adds 2× the pet proc value. BiS at 3+ targets (cleave), not just 5+.',
-        delta: talentDeltas.find(d => d.key === 'twoAgainstMany')
-          ? `+${talentDeltas.find(d => d.key === 'twoAgainstMany')!.dpsDelta.toLocaleString()} DPS at ${targetCount}T`
-          : 'See talent delta table',
+        topic: 'Two Against Many (AoE, 2pt)',
+        communityView: 'Listed as optional for 5+ target scenarios; not recommended for cleave',
+        ourView: 'Strike as One fires on every ability cast. At 3 targets, Two Against Many adds 2× the pet proc value — BiS at 3+ targets (cleave), not just 5+. Budget cost of 2pts is repaid quickly.',
+        delta: `${d('twoAgainstMany')} at ${targetCount}T`,
       },
       {
-        topic: 'Savagery point investment',
-        methodGg: 'Recommends 2 points (full reduction), but labels it secondary after Vulnerability',
-        ourView: 'Savagery should be maxed first in ST. 90s → 60s CD = 50% more Takedown windows = 50% more Raptor Swipe guaranteed proc windows. This scales multiplicatively with Mongoose Fury stacks.',
-        delta: talentDeltas.find(d => d.key === 'savagery')
-          ? `+${talentDeltas.find(d => d.key === 'savagery')!.dpsDelta.toLocaleString()} DPS (${talentDeltas.find(d => d.key === 'savagery')!.pctIncrease}%)`
-          : 'See talent delta table',
+        topic: 'Savagery priority',
+        communityView: 'Most guides list Savagery as secondary after Vulnerability in ST',
+        ourView: 'Savagery should come first: 90s → 60s CD = 50% more Takedown windows = 50% more 100%-proc Raptor Swipe windows. Scales multiplicatively with Mongoose Fury stacks and 4pc resets.',
+        delta: d('savagery'),
       },
       {
-        topic: 'Tier set optimization note',
-        methodGg: 'Recommends standard talent build regardless of tier set',
-        ourView: '4pc Boomstick reset changes Boomstick from 1.0 to ~1.78 CPM. This elevates Vulnerability and Mongoose Rounds further since each extra Boomstick hit also buffs RS burst. Talent priority shifts slightly with 4pc active.',
+        topic: 'Tier set talent adjustment',
+        communityView: 'Most guides recommend a static talent build regardless of tier set',
+        ourView: '4pc Boomstick reset raises Boomstick from 1.0 to ~1.78 CPM. This elevates Vulnerability and Mongoose Rounds since each extra Boomstick hit also buffs the RS burst window. Talent priority shifts with 4pc active.',
         delta: 'System-wide; see Tier Set value breakdown',
       },
     ],
@@ -866,9 +875,9 @@ export function runTheoryCraft(
   const tierSetValue = calcTierSetValue(gear, talents, targetCount, heroTalent);
 
   const rotationNotes = buildRotationNotes(talents, tierSet, targetCount, heroTalent, gear);
-  const vsMethodGg = buildVsMethodGg(heroTalent, targetCount, talentDeltas);
+  const vsCommunity = buildVsCommunity(heroTalent, targetCount, talentDeltas);
 
-  return { totalDps: Math.round(totalDps), abilities, talentDeltas, tierSetValue, rotationNotes, vsMethodGg };
+  return { totalDps: Math.round(totalDps), abilities, talentDeltas, tierSetValue, rotationNotes, vsCommunity };
 }
 
 function buildRotationNotes(

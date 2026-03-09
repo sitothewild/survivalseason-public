@@ -170,7 +170,7 @@ export default function Guide() {
             </h1>
             <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:15, color:C.textMid,
               marginTop:8, maxWidth:620 }}>
-              First-principles ability DPS breakdown, talent analysis, vs Method.gg comparison,
+              First-principles ability DPS breakdown, talent analysis, community comparison,
               and live SimC APL. All numbers computed from raw AP coefficients —
               not anchored to a fixed value.
             </p>
@@ -418,19 +418,20 @@ export default function Guide() {
             SECTION — Talent Delta Table
         ═══════════════════════════════════════════════════ */}
         <Card span style={{ marginBottom:20 }}>
-          <Lbl>🧮 Talent DPS Delta — Our Math vs Method.gg Rankings</Lbl>
+          <Lbl>🧮 Talent DPS Delta — Our Math vs Community Rankings</Lbl>
           <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
-            marginTop:0, marginBottom:14, lineHeight:1.6 }}>
-            DPS lost if that talent is removed from the optimal build.
-            <span style={{ color:C.green, marginLeft:10 }}>✓ We agree</span>
-            <span style={{ color:"#f59e0b", marginLeft:10 }}>⚡ We differ</span> from method.gg.
+            marginTop:0, marginBottom:6, lineHeight:1.6 }}>
+            DPS impact of each talent in the optimal budget-constrained build (8 optional spec pts · 3 hero pts).
+            <span style={{ color:C.green, marginLeft:10 }}>✓ Agreement</span>
+            <span style={{ color:"#f59e0b", marginLeft:10 }}>⚡ We differ</span> from mainstream guides.
+            Talents <em>not in the current build</em> show potential gain if a swap were made.
           </p>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse",
               fontFamily:"'Rajdhani',sans-serif", fontSize:13 }}>
               <thead>
                 <tr style={{ borderBottom:`1px solid ${C.border}` }}>
-                  {["Talent","DPS Loss if Removed","% Impact","Method.gg","Our Rank","Reasoning"].map(h => (
+                  {["Talent","Pts","In Build","DPS Impact","% Impact","Community","Our Rank","Reasoning"].map(h => (
                     <th key={h} style={{ textAlign:"left", padding:"7px 10px",
                       fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:1,
                       color:C.textDim, fontWeight:400 }}>{h}</th>
@@ -439,7 +440,9 @@ export default function Guide() {
               </thead>
               <tbody>
                 {theory.talentDeltas.map((t, i) => {
-                  const differs = t.methodGgRanks !== t.ourRanks;
+                  const differs = t.communityRanks !== t.ourRanks;
+                  const isLoss = t.inBuild && t.dpsDelta > 0;
+                  const isGain = !t.inBuild && t.dpsDelta < 0;
                   return (
                     <tr key={t.key} style={{
                       borderBottom:`1px solid ${C.borderSub}`,
@@ -452,42 +455,64 @@ export default function Guide() {
                         {t.label}
                       </td>
                       <td style={{ padding:"7px 10px" }}>
-                        <span style={{ color:t.dpsDelta>0?C.red:C.textMid,
-                          fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }}>
-                          {t.dpsDelta>0 ? `-${t.dpsDelta.toLocaleString()}` : "N/A"}
+                        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11,
+                          color: t.pointCost === 2 ? "#fbbf24" : C.textMid,
+                          fontWeight: t.pointCost === 2 ? 700 : 400 }}>
+                          {t.pointCost}pt
                         </span>
                       </td>
-                      <td style={{ padding:"7px 10px", color:t.dpsDelta>0?C.red:C.textDim }}>
-                        {t.pctIncrease>0 ? `-${t.pctIncrease.toFixed(2)}%` : "—"}
+                      <td style={{ padding:"7px 10px" }}>
+                        <span style={{ fontSize:12, color: t.inBuild ? C.green : C.textDim }}>
+                          {t.inBuild ? "✓ Yes" : "✗ No"}
+                        </span>
                       </td>
                       <td style={{ padding:"7px 10px" }}>
-                        <span style={{ color:t.methodGgRanks?C.green:C.textDim, fontSize:12 }}>
-                          {t.methodGgRanks ? "✓ Ranked" : "✗ Skip"}
+                        {isLoss ? (
+                          <span style={{ color:C.red, fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }}>
+                            −{t.dpsDelta.toLocaleString()} DPS
+                          </span>
+                        ) : isGain ? (
+                          <span style={{ color:C.green, fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }}>
+                            +{Math.abs(t.dpsDelta).toLocaleString()} DPS*
+                          </span>
+                        ) : (
+                          <span style={{ color:C.textDim, fontSize:12 }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding:"7px 10px", color: isLoss ? C.red : isGain ? C.green : C.textDim }}>
+                        {isLoss ? `-${t.pctIncrease.toFixed(2)}%` : isGain ? `+${Math.abs(t.pctIncrease).toFixed(2)}%*` : "—"}
+                      </td>
+                      <td style={{ padding:"7px 10px" }}>
+                        <span style={{ color:t.communityRanks?C.green:C.textDim, fontSize:12 }}>
+                          {t.communityRanks ? "✓ Ranked" : "✗ Skip"}
                         </span>
                       </td>
                       <td style={{ padding:"7px 10px" }}>
                         <span style={{ color:C.green, fontSize:12 }}>✓ Core</span>
                       </td>
                       <td style={{ padding:"7px 10px", color:C.textDim, fontSize:11,
-                        maxWidth:300 }}>{t.reasoning}</td>
+                        maxWidth:280 }}>{t.reasoning}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+          <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textDim, marginTop:8 }}>
+            * Gain shown for talents not in current build. Requires freeing points from another talent (8pt optional budget). Not freely addable.
+          </p>
         </Card>
 
         {/* ═══════════════════════════════════════════════════
-            SECTION — vs Method.gg
+            SECTION — vs Community
         ═══════════════════════════════════════════════════ */}
         <Card span style={{ marginBottom:20 }}>
-          <Lbl>🆚 Our Build vs Method.gg — Where We Differ</Lbl>
+          <Lbl>🆚 Our Build vs Community Rankings — Where We Differ</Lbl>
           <div style={{ marginBottom:18 }}>
             <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, color:C.green,
-              letterSpacing:1, marginBottom:10 }}>✓ AGREEMENTS</div>
+              letterSpacing:1, marginBottom:10 }}>✓ AGREEMENTS WITH POPULAR GUIDES</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-              {theory.vsMethodGg.agreements.map((a, i) => (
+              {theory.vsCommunity.agreements.map((a, i) => (
                 <span key={i} style={{ background:C.greenBg, color:C.green,
                   border:C.greenBdr, borderRadius:8, padding:"5px 10px",
                   fontFamily:"'Rajdhani',sans-serif", fontSize:12,
@@ -498,9 +523,9 @@ export default function Guide() {
             </div>
           </div>
           <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, color:"#f59e0b",
-            letterSpacing:1, marginBottom:12 }}>⚡ KEY DIFFERENCES</div>
+            letterSpacing:1, marginBottom:12 }}>⚡ KEY DIFFERENCES FROM MAINSTREAM GUIDES</div>
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-            {theory.vsMethodGg.differences.map((d, i) => (
+            {theory.vsCommunity.differences.map((d, i) => (
               <div key={i} style={{ background:C.surface2, borderRadius:10,
                 padding:16, border:`1px solid rgba(245,158,11,.2)` }}>
                 <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:10,
@@ -509,9 +534,9 @@ export default function Guide() {
                   gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:10 }}>
                   <div>
                     <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8,
-                      color:C.textDim, letterSpacing:1, marginBottom:5 }}>METHOD.GG</div>
+                      color:C.textDim, letterSpacing:1, marginBottom:5 }}>COMMUNITY VIEW</div>
                     <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
-                      color:C.textMid, lineHeight:1.6 }}>{d.methodGg}</div>
+                      color:C.textMid, lineHeight:1.6 }}>{d.communityView}</div>
                   </div>
                   <div>
                     <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8,

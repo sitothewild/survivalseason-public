@@ -1352,8 +1352,8 @@ export default function SurvivalHunterSim() {
         .result-anim{animation:fadeUp .35s ease forwards;}
         .dps-anim{animation:counterUp .5s ease forwards;}
         .loading-ring{width:42px;height:42px;border:3px solid #2e3a50;border-top-color:#d97706;border-radius:50%;animation:spin .8s linear infinite;}
-        .adv-toggle{background:none;border:none;color:#5a6a82;font-family:"Orbitron",sans-serif;font-size:8px;letter-spacing:2px;cursor:pointer;padding:0;display:flex;align-items:center;gap:6px;text-transform:uppercase;transition:color .2s;}
-        .adv-toggle:hover{color:#94a3b8;}
+        .adv-toggle{background:none;border:none;color:#94a3b8;font-family:"Orbitron",sans-serif;font-size:8px;letter-spacing:2px;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:6px;text-transform:uppercase;transition:color .2s;font-weight:700;}
+        .adv-toggle:hover{color:#fbbf24;}
         .divider{height:1px;background:#1a2236;margin:14px 0;}
         .item-tooltip{position:fixed;z-index:9999;background:linear-gradient(180deg,#141c2a,#0c1220);border:1px solid #2e4a6a;border-radius:10px;padding:14px 16px;min-width:260px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.6);pointer-events:none;animation:fadeIn .15s ease;font-family:"Rajdhani",sans-serif;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
@@ -2369,21 +2369,23 @@ export default function SurvivalHunterSim() {
                     <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>1 min</span><span>5 min</span><span>10 min</span></div>
                   </div>
 
-                  {/* Advanced Options */}
+                  {/* Advanced Options — content renders above toggle so it collapses upward */}
                   <div style={{ marginBottom: 16 }}>
-                    <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
-                      <span>{showAdv ? "▾" : "▸"}</span> Advanced Options (Buffs / Consumables / Fight Style)
-                    </button>
                     {showAdv && (
-                      <div style={{ marginTop: 12, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
+                      <div style={{ marginBottom: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT STYLE</div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             {Object.entries(FIGHT_STYLES).map(([k, v]) => (
                               <button key={k} onClick={() => setFightStyle(k)}
-                                style={{ background: fightStyle === k ? C.surface3 : C.surface, border: `1px solid ${fightStyle === k ? C.gold : C.border}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", textAlign: "left", transition: "all .15s" }}>
-                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 600, color: fightStyle === k ? C.goldLight : C.textSec }}>{v.label}</div>
-                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>{v.desc} · {Math.round(v.mult * 100)}%</div>
+                                style={{
+                                  background: fightStyle === k ? C.goldBg : C.surface,
+                                  border: `1px solid ${fightStyle === k ? C.gold : C.border}`,
+                                  borderRadius: 8, padding: "8px 10px", cursor: "pointer", textAlign: "left", transition: "all .15s",
+                                  boxShadow: fightStyle === k ? `0 0 8px rgba(217,119,6,.25)` : 'none',
+                                }}>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: fightStyle === k ? 800 : 600, color: fightStyle === k ? C.goldLight : C.textMid }}>{v.label}</div>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: fightStyle === k ? '#a16207' : C.textDim }}>{v.desc} · {Math.round(v.mult * 100)}%</div>
                               </button>
                             ))}
                           </div>
@@ -2391,28 +2393,66 @@ export default function SurvivalHunterSim() {
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>RAID BUFFS</div>
                           {Object.entries(RAID_BUFFS).map(([k, b]) => (
-                            <label key={k} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", cursor: "pointer", borderBottom: `1px solid ${C.borderSub}` }} onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}>
+                            <label key={k}
+                              onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}
+                              style={{
+                                display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", cursor: "pointer",
+                                borderBottom: `1px solid ${C.borderSub}`,
+                                background: raidBuffs[k] ? 'rgba(251,191,36,.05)' : 'transparent',
+                                borderRadius: 4, transition: "background .15s",
+                              }}>
                               <input type="checkbox" checked={raidBuffs[k]} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 600, color: C.textSec, flex: 1 }}>{b.icon} {b.label}</span>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>{b.stat}</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: raidBuffs[k] ? 800 : 500, color: raidBuffs[k] ? C.goldLight : C.textMid, flex: 1, transition: "color .15s, font-weight .15s" }}>
+                                {b.icon} {b.label}
+                              </span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: raidBuffs[k] ? 700 : 400, color: raidBuffs[k] ? '#a16207' : C.textDim }}>
+                                {b.stat}
+                              </span>
                             </label>
                           ))}
                         </div>
                         <div>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CONSUMABLES</div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {Object.entries(CONSUMABLES).map(([k, d]) => (
-                              <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
-                                <select className="ifield" value={consumables[k]} onChange={e => setConsumables(p => ({ ...p, [k]: e.target.value }))} style={{ padding: "6px 10px", fontSize: 13 }}>
-                                  {d.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                                </select>
-                              </div>
-                            ))}
+                            {Object.entries(CONSUMABLES).map(([k, d]) => {
+                              const selOpt = d.options.find(o => o.key === consumables[k]);
+                              const isNone = consumables[k] === 'none';
+                              return (
+                                <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
+                                  <div style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="ifield"
+                                      value={consumables[k]}
+                                      onChange={e => setConsumables(p => ({ ...p, [k]: e.target.value }))}
+                                      style={{
+                                        width: "100%", padding: "6px 10px", fontSize: 13,
+                                        color: isNone ? C.textDim : C.goldLight,
+                                        fontWeight: isNone ? 400 : 700,
+                                        background: isNone ? C.surface3 : C.goldBg,
+                                        border: `1px solid ${isNone ? C.border : C.gold}`,
+                                        borderRadius: 6, cursor: "pointer",
+                                      }}>
+                                      {d.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                                    </select>
+                                  </div>
+                                  {!isNone && (
+                                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.green, fontWeight: 700, flexShrink: 0 }}>
+                                      +{Math.round((selOpt!.mult - 1) * 100)}%
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
                     )}
+                    {/* Toggle sits at the bottom — content collapses upward */}
+                    <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
+                      <span style={{ fontSize: 10 }}>{showAdv ? "▲" : "▼"}</span>
+                      {showAdv ? "COLLAPSE" : "ADVANCED OPTIONS"} {!showAdv && <span style={{ color: C.textDim }}>(Buffs / Consumables / Fight Style)</span>}
+                    </button>
                   </div>
 
                   {/* Run Simulation button */}
@@ -2509,7 +2549,7 @@ export default function SurvivalHunterSim() {
                             <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                               ★ OPTIMAL BUILD
                               <span 
-                                title="Optimal build is based on Symex (Method.gg) and SimC APL data for Midnight 12.0 Pre-Season 1. Updated as the meta evolves."
+                                title="Optimal build derived from first-principles AP coefficient math and SimC APL data for Midnight 12.0 Pre-Season 1. Updated as the meta evolves."
                                 style={{ cursor: "help", fontFamily: "sans-serif", fontSize: 11, color: C.textMid, opacity: 0.7 }}
                               >
                                 ℹ
@@ -2770,7 +2810,7 @@ export default function SurvivalHunterSim() {
             {/* ═══ SECTION 1: OPTIMAL BUILDS ═══ */}
             <div>
               <LBL>🌿 Optimal Talent Builds</LBL>
-              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Method.gg & Icy Veins verified · Midnight 12.0.1 Pre-Season</p>
+              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
 
               {/* Legend */}
               <div style={{ display: "flex", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
