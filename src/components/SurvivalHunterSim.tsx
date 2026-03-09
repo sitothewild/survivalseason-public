@@ -1866,34 +1866,6 @@ export default function SurvivalHunterSim() {
 
         {/* ═══ TALENTS TAB ═══ */}
         {activeTab === "talents" && (() => {
-          // Patch notes state
-          const [patchNotes, setPatchNotes] = useState<any[]>([]);
-          const [patchLoading, setPatchLoading] = useState(false);
-          const [patchError, setPatchError] = useState('');
-          const [patchLastUpdated, setPatchLastUpdated] = useState('');
-          const [patchSourceFilter, setPatchSourceFilter] = useState('All');
-
-          const fetchPatchNotes = useCallback(async (force = false) => {
-            setPatchLoading(true);
-            setPatchError('');
-            try {
-              const { data, error } = await supabase.functions.invoke('fetch-patch-notes', { body: { force } });
-              if (error) throw error;
-              if (data?.notes) {
-                setPatchNotes(data.notes);
-                setPatchLastUpdated(data.lastUpdated || new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }));
-              } else {
-                setPatchNotes([]);
-              }
-            } catch (e) {
-              console.warn('Patch notes fetch failed:', e);
-              setPatchError('Could not load patch notes.');
-            } finally {
-              setPatchLoading(false);
-            }
-          }, []);
-
-          useEffect(() => { fetchPatchNotes(); }, []);
 
           const highlightKeywords = (text: string) => {
             if (!text) return text;
