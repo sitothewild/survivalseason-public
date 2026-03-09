@@ -493,6 +493,9 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
     totalDps *= cleaveFactor;
   }
 
+  // Apply external multiplier (fight style + raid buffs + consumables)
+  totalDps *= externalMult;
+
   // Build breakdown using real SimC percentages
   const breakdown = {};
   const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
