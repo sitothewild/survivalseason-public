@@ -335,17 +335,21 @@ function aplToBreakdown(actionList: string[], isPL: boolean, targetCount: number
 /**
  * Build dynamic breakdowns from live SimC data, or fall back to hardcoded defaults.
  */
-function getBreakdowns(simcLiveData: any): { pl: Record<string, number>; sent: Record<string, number> } {
+function getBreakdowns(simcLiveData: any, targetCount: number = 1): { pl: Record<string, number>; sent: Record<string, number> } {
   const apl = simcLiveData?.apl?.actionLists;
   if (!apl) return { pl: SIMC_BREAKDOWN_PL_ST_DEFAULT, sent: SIMC_BREAKDOWN_SENT_ST_DEFAULT };
 
-  // Pack Leader: prefer plst, fall back to default_pl or default
-  const plActions = apl.plst || apl.default_pl || apl.default || [];
-  // Sentinel: prefer sentst, fall back to default_sent or default
-  const sentActions = apl.sentst || apl.default_sent || apl.default || [];
+  // Pack Leader: prefer plst/plcleave based on targets
+  const plActions = targetCount > 2
+    ? (apl.plcleave || apl.plst || apl.default || [])
+    : (apl.plst || apl.default || []);
+  // Sentinel: prefer sentst/sentcleave based on targets
+  const sentActions = targetCount > 2
+    ? (apl.sentcleave || apl.sentst || apl.default || [])
+    : (apl.sentst || apl.default || []);
 
-  const plBreakdown = plActions.length > 2 ? aplToBreakdown(plActions, true) : SIMC_BREAKDOWN_PL_ST_DEFAULT;
-  const sentBreakdown = sentActions.length > 2 ? aplToBreakdown(sentActions, false) : SIMC_BREAKDOWN_SENT_ST_DEFAULT;
+  const plBreakdown = plActions.length > 2 ? aplToBreakdown(plActions, true, targetCount) : SIMC_BREAKDOWN_PL_ST_DEFAULT;
+  const sentBreakdown = sentActions.length > 2 ? aplToBreakdown(sentActions, false, targetCount) : SIMC_BREAKDOWN_SENT_ST_DEFAULT;
 
   return { pl: plBreakdown, sent: sentBreakdown };
 }
