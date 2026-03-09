@@ -633,9 +633,13 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
-  const realmDropdownRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    const handler = (e: MouseEvent) => { if (!node.contains(e.target as Node)) setShowRealmDropdown(false); };
+  const realmDropdownRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (realmDropdownRef.current && !realmDropdownRef.current.contains(e.target as Node)) {
+        setShowRealmDropdown(false);
+      }
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
