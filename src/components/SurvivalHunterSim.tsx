@@ -1720,10 +1720,10 @@ export default function SurvivalHunterSim() {
                     {/* Gear list */}
                     {parsedChar.gear.length > 0 && (
                       <>
-                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 1, color: '#7a6040', marginBottom: 6 }}>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: 'hsl(var(--muted-foreground))', marginBottom: 8, fontWeight: 600 }}>
                           GEAR ({parsedChar.gear.length} PIECES)
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           {parsedChar.gear.map((g, gi) => {
                             const qualityColor = g.ilvl >= 250 ? '#ff8000' : g.ilvl >= 230 ? '#a335ee' : g.ilvl >= 200 ? '#0070dd' : g.ilvl > 0 ? '#1eff00' : '#9d9d9d';
                             return (
@@ -1732,17 +1732,27 @@ export default function SurvivalHunterSim() {
                               onMouseLeave={handleItemLeave}
                               style={{
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '4px 8px', borderRadius: 4,
-                                background: gi % 2 === 0 ? '#0a0e08' : 'transparent',
-                                fontFamily: "'EB Garamond', serif", fontSize: 12,
-                                position: 'relative'
-                              }}>
-                              <span style={{ color: '#8a7050', minWidth: 80 }}>{g.slotLabel}</span>
-                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 11 }}>
+                                padding: '8px 12px', borderRadius: 6,
+                                background: gi % 2 === 0 ? 'hsl(var(--muted) / 0.3)' : 'transparent',
+                                fontFamily: "'EB Garamond', serif", fontSize: 13,
+                                position: 'relative', border: '1px solid transparent',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={() => {
+                                const target = document.querySelector(`[data-gear-index="${gi}"]`);
+                                if (target) target.style.background = 'hsl(var(--accent) / 0.1)';
+                              }}
+                              onMouseLeave={() => {
+                                const target = document.querySelector(`[data-gear-index="${gi}"]`);
+                                if (target) target.style.background = gi % 2 === 0 ? 'hsl(var(--muted) / 0.3)' : 'transparent';
+                              }}
+                              data-gear-index={gi}>
+                              <span style={{ color: 'hsl(var(--muted-foreground))', minWidth: 90, fontWeight: 500 }}>{g.slotLabel}</span>
+                              <span style={{ color: qualityColor, flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 500 }}>
                                 {g.name}
-                                {g.itemId && <span style={{ color: '#4a3020', fontSize: 10 }}> 🔍</span>}
+                                {g.itemId && <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 10, marginLeft: 4 }}>🔍</span>}
                               </span>
-                              <span style={{ color: qualityColor, fontWeight: 600, minWidth: 30, textAlign: 'right' }}>
+                              <span style={{ color: qualityColor, fontWeight: 700, minWidth: 36, textAlign: 'right' }}>
                                 {g.ilvl > 0 ? g.ilvl : '—'}
                               </span>
                             </div>
