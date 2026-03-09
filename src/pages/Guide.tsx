@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getFullOptimalAnalysis,
   HEROIC_MIDNIGHT_276,
+  SURVIVAL_SPEC_TREE,
+  HERO_TALENT_TREES,
+  ROW_GATES,
 } from "@/lib/theorycrafting";
 import survivalIconImg from "@/assets/survival-icon.png";
 
@@ -413,6 +416,210 @@ export default function Guide() {
             ))}
           </div>
         </Card>
+
+        {/* ═══════════════════════════════════════════════════
+            SECTION — Talent Tree Path & Constraints
+        ═══════════════════════════════════════════════════ */}
+        {(() => {
+          const heroTree = HERO_TALENT_TREES[hero];
+          const rows = [1,2,3,4,5,6,7];
+          const CAT_CLR:  Record<string,string> = { core:'#60a5fa', st:'#4ade80', aoe:'#f97316', gateway:'#f59e0b' };
+          const CAT_BG:   Record<string,string> = { core:'#0c1a2e', st:'#0f2a1a', aoe:'#1f1000', gateway:'#2a1f08' };
+          const CAT_LBL:  Record<string,string> = { core:'CORE', st:'ST', aoe:'AoE', gateway:'GATEWAY' };
+          const heroClrL  = hero === 'sentinel' ? C.sentClr : C.packClr;
+          const heroBgL   = hero === 'sentinel' ? C.sentBg  : C.packBg;
+          const heroBdrL  = hero === 'sentinel' ? C.sentBdr : C.packBdr;
+
+          // Point totals for the selected build
+          const specNodes = SURVIVAL_SPEC_TREE.filter(n =>
+            hero === 'sentinel' ? n.inSTBuild : n.inSTBuild  // default to ST build display
+          );
+          const stPts  = SURVIVAL_SPEC_TREE.filter(n => n.inSTBuild).reduce((s,n) => s+n.pointCost, 0);
+          const aoePts = SURVIVAL_SPEC_TREE.filter(n => n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
+          const heroPts = heroTree.length; // all 3 hero nodes, 1pt each
+          const gatewayPts = SURVIVAL_SPEC_TREE.filter(n => n.isGateway && n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
+
+          return (
+            <Card span style={{ marginBottom:20 }}>
+              <Lbl>🌲 Spec Talent Tree — Path, Gates & Forced Picks</Lbl>
+              <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
+                marginTop:0, marginBottom:14, lineHeight:1.6 }}>
+                Blizzard's talent tree enforces two constraints: <strong style={{color:C.textSec}}>row gates</strong> (you must spend N
+                points in earlier rows to unlock deeper nodes) and <strong style={{color:C.textSec}}>prerequisite links</strong> (some talents
+                require a specific prior node). This means certain <strong style={{color:'#f59e0b'}}>gateway talents</strong> must be taken
+                not for their own value, but to open the path to better nodes.
+              </p>
+
+              {/* ── Budget summary ──────────────────────────── */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:18 }}>
+                {[
+                  { label:"ST Build Total", val:`${stPts} pts`, sub:"spec tree (DPS nodes)", clr:C.sentClr },
+                  { label:"AoE Build Total", val:`${aoePts} pts`, clr:'#f97316',
+                    sub:`incl. ${gatewayPts} gateway pts` },
+                  { label:"Hero Talent Tree", val:`${heroPts} pts`, clr: heroClrL,
+                    sub:"separate budget · all 3 nodes" },
+                  { label:"Full 30-pt Tree", val:"~30 pts", clr:C.textMid,
+                    sub:"rem. ~11 pts = utility + class tree" },
+                ].map(s => (
+                  <div key={s.label} style={{ background:C.surface2, borderRadius:8,
+                    padding:"12px 14px", border:`1px solid ${C.border}`, textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7, color:C.textDim,
+                      letterSpacing:1.5, marginBottom:6 }}>{s.label}</div>
+                    <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:18,
+                      color:s.clr, marginBottom:4 }}>{s.val}</div>
+                    <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textDim }}>{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Row-by-row spec tree ─────────────────────── */}
+              <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
+                color:C.textDim, marginBottom:10 }}>SPEC TALENT TREE — ROW BY ROW</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:20 }}>
+                {rows.map(row => {
+                  const nodes = SURVIVAL_SPEC_TREE.filter(n => n.row === row);
+                  const gate  = ROW_GATES[row];
+                  return (
+                    <div key={row} style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+                      {/* Row label */}
+                      <div style={{ width:72, flexShrink:0, paddingTop:10 }}>
+                        <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
+                          color:C.textDim, letterSpacing:1 }}>ROW {row}</div>
+                        <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                          color: gate === 0 ? C.green : C.textDim, marginTop:2 }}>
+                          {gate === 0 ? 'FREE' : `≥${gate}pt`}
+                        </div>
+                      </div>
+                      {/* Talent nodes */}
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:6, flex:1 }}>
+                        {nodes.map(node => {
+                          const clr = CAT_CLR[node.dpsCategory];
+                          const bg  = CAT_BG[node.dpsCategory];
+                          const hasNote = node.isGateway || node.isApex || (node.pointCost === 2 && node.dpsCategory !== 'gateway');
+                          return (
+                            <div key={node.key} style={{
+                              borderRadius:8, padding:"8px 12px",
+                              background: node.isGateway ? '#1c1505' : bg,
+                              border:`1px solid ${node.isGateway ? '#f59e0b66' : clr+'44'}`,
+                              minWidth:160, maxWidth:260, flex:"1 1 160px",
+                            }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                                <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
+                                  fontWeight:700, color:clr }}>
+                                  {node.label}
+                                </span>
+                                <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                                  color: node.pointCost === 2 ? '#fbbf24' : C.textDim,
+                                  background: node.pointCost === 2 ? '#2a1f08' : C.surface3,
+                                  borderRadius:3, padding:"1px 5px",
+                                  fontWeight: node.pointCost === 2 ? 700 : 400 }}>
+                                  {node.pointCost}pt
+                                </span>
+                                <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
+                                  color:clr, background:bg, border:`1px solid ${clr}44`,
+                                  borderRadius:3, padding:"1px 5px", letterSpacing:1 }}>
+                                  {node.isApex ? 'APEX' : CAT_LBL[node.dpsCategory]}
+                                </span>
+                              </div>
+                              {node.prerequisites.length > 0 && (
+                                <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10,
+                                  color:C.textDim, marginBottom:3 }}>
+                                  🔗 requires:{" "}
+                                  {node.prerequisites.map(p => {
+                                    const pn = SURVIVAL_SPEC_TREE.find(x => x.key === p);
+                                    return pn?.label ?? p;
+                                  }).join(' + ')}
+                                </div>
+                              )}
+                              {/* ST / AoE build membership */}
+                              <div style={{ display:"flex", gap:4, marginBottom: hasNote ? 5 : 0 }}>
+                                {node.inSTBuild  && <span style={{ fontSize:9, color:C.green,  background:C.greenBg, borderRadius:3, padding:"0 5px" }}>✓ ST</span>}
+                                {node.inAoEBuild && <span style={{ fontSize:9, color:'#f97316', background:'#1f1000', borderRadius:3, padding:"0 5px" }}>✓ AoE</span>}
+                                {!node.inSTBuild && !node.inAoEBuild && <span style={{ fontSize:9, color:C.textDim }}>situational</span>}
+                              </div>
+                              {hasNote && node.gatewayNote && (
+                                <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10,
+                                  color: node.isGateway ? '#f59e0b' : '#60a5fa',
+                                  lineHeight:1.4,
+                                  borderTop:`1px solid ${C.borderSub}`, paddingTop:4, marginTop:4 }}>
+                                  {node.isGateway ? '⚠ ' : 'ℹ '}{node.gatewayNote}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Hero talent tree path ────────────────────── */}
+              <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
+                color: heroClrL, marginBottom:10 }}>
+                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT PATH (3 pts · MUST TAKE IN ORDER)
+              </div>
+              <div style={{ display:"flex", gap:0, alignItems:"stretch", marginBottom:14 }}>
+                {heroTree.map((node, i) => (
+                  <div key={node.key} style={{ display:"flex", alignItems:"center", flex:1 }}>
+                    <div style={{
+                      flex:1, borderRadius: i === 0 ? "8px 0 0 8px" : i === heroTree.length-1 ? "0 8px 8px 0" : 0,
+                      padding:"12px 14px",
+                      background: heroBgL,
+                      border:`1px solid ${heroBdrL}`,
+                      borderLeft: i > 0 ? "none" : `1px solid ${heroBdrL}`,
+                    }}>
+                      <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
+                        color:heroClrL, letterSpacing:1.5, marginBottom:4 }}>
+                        {i === 0 ? 'FIRST' : i === heroTree.length-1 ? 'CAPSTONE' : 'MIDDLE'} · 1pt
+                      </div>
+                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
+                        fontWeight:700, color:heroClrL, marginBottom:4 }}>{node.label}</div>
+                      {node.prerequisiteKey && (
+                        <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10, color:C.textDim, marginBottom:4 }}>
+                          🔗 requires: {heroTree.find(n => n.key === node.prerequisiteKey)?.label}
+                        </div>
+                      )}
+                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
+                        color:C.textMid, lineHeight:1.4 }}>{node.desc}</div>
+                    </div>
+                    {i < heroTree.length - 1 && (
+                      <div style={{ color:heroClrL, fontSize:16, padding:"0 2px", flexShrink:0 }}>▶</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Gateway talent callout ───────────────────── */}
+              <div style={{ background:'#1c1505', border:'1px solid #f59e0b55',
+                borderRadius:10, padding:"12px 16px" }}>
+                <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:'#f59e0b',
+                  letterSpacing:2, marginBottom:8 }}>⚠ GATEWAY / FORCED PICKS EXPLAINED</div>
+                <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:'#fbbf24',
+                  margin:"0 0 8px", lineHeight:1.5 }}>
+                  Some talents in the AoE path exist primarily as path gates — their standalone DPS value
+                  is lower than what you'd choose if points were unrestricted, but the tree path forces
+                  them to reach higher-value nodes.
+                </p>
+                {SURVIVAL_SPEC_TREE.filter(n => n.isGateway).map(node => (
+                  <div key={node.key} style={{ display:"flex", gap:10, padding:"8px 0",
+                    borderTop:`1px solid ${C.borderSub}` }}>
+                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
+                      fontWeight:700, color:'#f59e0b', minWidth:140 }}>{node.label}</span>
+                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
+                      color:C.textMid, lineHeight:1.5 }}>{node.gatewayNote}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop:10, fontFamily:"'Rajdhani',sans-serif", fontSize:12,
+                  color:C.textDim, borderTop:`1px solid ${C.borderSub}`, paddingTop:8 }}>
+                  The DPS delta table on the right accounts for gateway picks — their removal cost
+                  reflects both their own value <em>and</em> the fact that removing them collapses
+                  the entire downstream path.
+                </div>
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════════════
             SECTION — Talent Delta Table

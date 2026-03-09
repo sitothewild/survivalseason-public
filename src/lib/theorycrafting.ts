@@ -120,6 +120,229 @@ export interface VsCommunity {
   differences: { topic: string; communityView: string; ourView: string; delta: string }[];
 }
 
+// ============================================================
+// SURVIVAL HUNTER SPEC TALENT TREE — MIDNIGHT 12.0
+// ============================================================
+// Models the real Blizzard talent tree with:
+//   • Row gates: you must spend N points in rows 1–(R-1) to unlock row R
+//   • Prerequisites: some talents require specific other talents
+//   • Gateway talents: suboptimal nodes forced by path design to reach better ones
+//   • Apex talent (Raptor Swipe): multi-rank, all points required for full value
+//
+// Point budget (DPS-relevant spec talents only):
+//   Core:     8 pts  (always taken — rows 1–4)
+//   Optional: 8 pts  (ST: 6 pts, AoE: 8 pts)
+//   Hero:     3 pts  (Sentinel or Pack Leader, all 3 nodes)
+//   Total:   ~16–19 pts of the full 30-pt spec tree
+//   (remaining ~11–14 pts go to defensive, utility, and class tree nodes)
+// ============================================================
+
+export interface TalentNode {
+  key: keyof TalentConfig;
+  label: string;
+  row: number;         // 1–7 in the spec tree
+  pointCost: number;   // 1 or 2 pts
+  prerequisites: (keyof TalentConfig)[];   // must have these to unlock
+  gateRow: number;     // unlock requires this many pts spent in earlier rows
+  isApex?: boolean;    // Apex talent: special multi-rank system, needs all pts
+  isGateway: boolean;  // suboptimal but forced by path to reach better node
+  gatewayNote?: string;// why it's a forced gateway pick
+  inSTBuild: boolean;
+  inAoEBuild: boolean;
+  dpsCategory: 'core' | 'st' | 'aoe' | 'gateway';
+}
+
+export interface HeroTalentNode {
+  key: keyof TalentConfig;
+  label: string;
+  order: number;       // 1 = first, 3 = capstone
+  pointCost: 1;
+  prerequisiteKey?: keyof TalentConfig;
+  desc: string;
+}
+
+// Row gate thresholds: to access row R, you need this many points spent in rows 1–(R-1)
+export const ROW_GATES: Record<number, number> = {
+  1: 0,   // free
+  2: 2,   // need 2 pts in row 1
+  3: 5,   // need 5 pts in rows 1–2
+  4: 8,   // need 8 pts in rows 1–3
+  5: 11,  // need 11 pts in rows 1–4
+  6: 14,  // need 14 pts in rows 1–5
+  7: 17,  // need 17 pts in rows 1–6
+};
+
+export const SURVIVAL_SPEC_TREE: TalentNode[] = [
+  // ─── ROW 1 — Gate: 0 pts (always accessible) ────────────────────────────
+  {
+    key: 'mongooseFury', label: 'Mongoose Fury', row: 1, pointCost: 1,
+    prerequisites: [], gateRow: 0, isGateway: false,
+    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+  },
+  {
+    key: 'wildfireBomb', label: 'Wildfire Bomb', row: 1, pointCost: 1,
+    prerequisites: [], gateRow: 0, isGateway: false,
+    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+  },
+
+  // ─── ROW 2 — Gate: 2 pts in row 1 ───────────────────────────────────────
+  {
+    key: 'raptorSwipe', label: 'Raptor Swipe', row: 2, pointCost: 2,
+    prerequisites: ['mongooseFury'], gateRow: 2, isApex: true, isGateway: false,
+    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+    gatewayNote: 'Apex talent: both points required. Rank 1 = 25% proc; Rank 2 = 100% proc during Takedown. Half-investing (1pt) leaves you at Rank 1 — a significant power gap.',
+  },
+  {
+    key: 'strikeAsOne', label: 'Strike as One', row: 2, pointCost: 1,
+    prerequisites: ['wildfireBomb'], gateRow: 2, isGateway: false,
+    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+  },
+
+  // ─── ROW 3 — Gate: 5 pts in rows 1–2 ────────────────────────────────────
+  {
+    key: 'takedown', label: 'Takedown', row: 3, pointCost: 1,
+    prerequisites: ['raptorSwipe'], gateRow: 5, isGateway: false,
+    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+  },
+  {
+    key: 'boomstick', label: 'Boomstick', row: 3, pointCost: 1,
+    prerequisites: ['strikeAsOne'], gateRow: 5, isGateway: false,
+    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+  },
+  {
+    key: 'mongooseRounds', label: 'Mongoose Rounds', row: 3, pointCost: 1,
+    prerequisites: ['boomstick'], gateRow: 5, isGateway: false,
+    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
+  },
+
+  // ─── ROW 4 — Gate: 8 pts in rows 1–3 ────────────────────────────────────
+  {
+    key: 'lethalCalibration', label: 'Lethal Calibration', row: 4, pointCost: 1,
+    prerequisites: ['boomstick'], gateRow: 8, isGateway: false,
+    inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
+  },
+  {
+    key: 'savagery', label: 'Savagery', row: 4, pointCost: 1,
+    prerequisites: ['takedown'], gateRow: 8, isGateway: false,
+    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
+  },
+  {
+    key: 'wildfileShells', label: 'Wildfire Shells', row: 4, pointCost: 1,
+    prerequisites: ['lethalCalibration'], gateRow: 8,
+    isGateway: true,
+    gatewayNote: 'Moderate standalone value. In AoE, taken primarily to unlock Flamefang Pitch (row 5) and the fire damage path. Without it, the entire AoE damage chain — Flamefang → Wildfire Imbuement → Flamebreak — is inaccessible.',
+    inSTBuild: false, inAoEBuild: true, dpsCategory: 'gateway',
+  },
+
+  // ─── ROW 5 — Gate: 11 pts in rows 1–4 ───────────────────────────────────
+  {
+    key: 'vulnerability', label: 'Vulnerability', row: 5, pointCost: 1,
+    prerequisites: ['savagery', 'mongooseRounds'], gateRow: 11, isGateway: false,
+    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
+  },
+  {
+    key: 'cantMissWontMiss', label: "Can't Miss Won't Miss", row: 5, pointCost: 1,
+    prerequisites: ['savagery'], gateRow: 11, isGateway: false,
+    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
+  },
+  {
+    key: 'flamefangPitch', label: 'Flamefang Pitch', row: 5, pointCost: 1,
+    prerequisites: ['wildfileShells'], gateRow: 11, isGateway: false,
+    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
+  },
+  {
+    key: 'shrapnelBomb', label: 'Shrapnel Bomb', row: 5, pointCost: 1,
+    prerequisites: ['wildfileShells'], gateRow: 11,
+    isGateway: true,
+    gatewayNote: 'Taken as a path filler to unlock Wildfire Imbuement (row 6). Standalone value is real but lower than other AoE picks. Players often take it solely to enable the Wildfire Imbuement → Flamebreak chain.',
+    inSTBuild: false, inAoEBuild: true, dpsCategory: 'gateway',
+  },
+
+  // ─── ROW 6 — Gate: 14 pts in rows 1–5 ───────────────────────────────────
+  {
+    key: 'stargazer', label: 'Stargazer', row: 6, pointCost: 2,
+    prerequisites: ['vulnerability'], gateRow: 14, isGateway: false,
+    inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
+    gatewayNote: '2-point talent: rank 1 alone is weak (+10% crit dmg cap). Both points required to reach the +20% cap at 10 stacks. Never invest only 1pt.',
+  },
+  {
+    key: 'grenadeJuggler', label: 'Grenade Juggler', row: 6, pointCost: 1,
+    prerequisites: ['flamefangPitch'], gateRow: 14, isGateway: false,
+    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
+  },
+  {
+    key: 'wildfireImbuement', label: 'Wildfire Imbuement', row: 6, pointCost: 1,
+    prerequisites: ['flamefangPitch', 'shrapnelBomb'], gateRow: 14, isGateway: false,
+    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
+  },
+  {
+    key: 'flamebreak', label: 'Flamebreak', row: 6, pointCost: 1,
+    prerequisites: ['wildfireImbuement'], gateRow: 14, isGateway: false,
+    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
+  },
+
+  // ─── ROW 7 — Gate: 17 pts in rows 1–6 ───────────────────────────────────
+  {
+    key: 'twoAgainstMany', label: 'Two Against Many', row: 7, pointCost: 2,
+    prerequisites: ['strikeAsOne', 'grenadeJuggler'], gateRow: 17, isGateway: false,
+    inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
+    gatewayNote: '2-point talent: rank 1 hits +1 enemy; rank 2 hits +2 enemies. The AoE value only becomes meaningful at rank 2. Never invest only 1pt here.',
+  },
+];
+
+export const HERO_TALENT_TREES: Record<'sentinel' | 'packLeader', HeroTalentNode[]> = {
+  sentinel: [
+    { key: 'moonlightChakram', label: 'Moonlight Chakram', order: 1, pointCost: 1,
+      desc: 'Sentinel Mark procs release a bouncing shadow chakram hitting up to 5 targets. First node — must be taken before Lunar Storm.' },
+    { key: 'lunarStorm', label: 'Lunar Storm', order: 2, pointCost: 1,
+      prerequisiteKey: 'moonlightChakram',
+      desc: 'Mark consumption triggers a Lunar Storm AoE burst. Gate: requires Moonlight Chakram.' },
+    { key: 'moonsBlessing', label: "Moon's Blessing", order: 3, pointCost: 1,
+      prerequisiteKey: 'lunarStorm',
+      desc: 'Capstone: +10% Mark proc chance (20% → 30%). Requires both prior nodes. Completes the Sentinel loop.' },
+  ],
+  packLeader: [
+    { key: 'lethalBarbs', label: 'Lethal Barbs', order: 1, pointCost: 1,
+      desc: 'Auto-attacks generate 2 bonus Focus. First node — enables extra Kill Commands.' },
+    { key: 'direSummons', label: 'Dire Summons', order: 2, pointCost: 1,
+      prerequisiteKey: 'lethalBarbs',
+      desc: 'Reduces beast spawn cooldown. Gate: requires Lethal Barbs.' },
+    { key: 'stampede', label: 'Stampede', order: 3, pointCost: 1,
+      prerequisiteKey: 'direSummons',
+      desc: 'Capstone: Takedown triggers a beast stampede. Requires both prior nodes. The core ST damage amplifier.' },
+  ],
+};
+
+// Validate that a TalentConfig respects the tree prerequisites and row gates
+export function validateBuildPath(talents: TalentConfig): { valid: boolean; violations: string[] } {
+  const violations: string[] = [];
+
+  for (const node of SURVIVAL_SPEC_TREE) {
+    if (!talents[node.key]) continue; // not taken, no need to check
+
+    // Check prerequisites
+    for (const prereq of node.prerequisites) {
+      if (!talents[prereq]) {
+        const prereqNode = SURVIVAL_SPEC_TREE.find(n => n.key === prereq);
+        violations.push(`${node.label} requires ${prereqNode?.label ?? prereq} but it is not taken.`);
+      }
+    }
+
+    // Check row gate: count points spent in rows before this one
+    const ptsInEarlierRows = SURVIVAL_SPEC_TREE
+      .filter(n => n.row < node.row && talents[n.key])
+      .reduce((s, n) => s + n.pointCost, 0);
+
+    if (ptsInEarlierRows < node.gateRow) {
+      violations.push(
+        `${node.label} (row ${node.row}) requires ${node.gateRow} pts in earlier rows, but only ${ptsInEarlierRows} are spent.`
+      );
+    }
+  }
+
+  return { valid: violations.length === 0, violations };
+}
+
 // ── Midnight Season 1 Gear Profiles ─────────────────────────
 //
 // Track & Rank system — each track has 6 ranks, +3 ilvl per rank:
