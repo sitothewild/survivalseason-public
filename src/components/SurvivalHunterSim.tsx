@@ -9,7 +9,8 @@ import { parseSimcAPL, getRotationWeights, buildAPLFromActionLists, type ParsedA
 import {
   runTheoryCraft, getOptimalTalentConfig, getFullOptimalAnalysis,
   HEROIC_MIDNIGHT_276, CHAMPION_MIDNIGHT_263,
-  type GearProfile, type TierSetConfig,
+  SURVIVAL_SPEC_TREE, HERO_TALENT_TREES,
+  type GearProfile, type TierSetConfig, type TalentNode,
 } from "@/lib/theorycrafting";
 
 // ============================================================
@@ -566,8 +567,8 @@ interface CustomLoadout {
   name: string;
   heroKey: 'sentinel' | 'packLeader';
   simMode: 'single' | 'cleave' | 'multi';
-  enabledTalents: string[];     // names of toggled-on optional spec talents
-  enabledHeroTalents: string[]; // names of toggled-on hero sub-talents
+  enabledTalents: string[];     // keys of toggled-on optional spec talents (from TalentNode.key)
+  enabledHeroTalents: string[]; // keys of toggled-on hero sub-talents
 }
 
 // Spec tree: 18 total points. Core talents cost 10, leaving 8 for optional picks.
@@ -786,6 +787,191 @@ const CONSUMABLES = {
   food: { label: 'Food', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'mastery', label: 'Mastery (+90)', mult: 1.025 },{ key: 'crit', label: 'Crit (+90)', mult: 1.02 },{ key: 'haste', label: 'Haste (+90)', mult: 1.018 }] },
   potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'tempered', label: 'Tempered Potion', mult: 1.02 },{ key: 'frontLoaded', label: 'Unwavering Focus', mult: 1.025 }] },
 };
+
+// ============================================================
+// TALENT TREE GRID — 2D visual tree (6 cols × 7 rows)
+// Nodes are positioned by (col, row), SVG lines connect prereqs.
+// ============================================================
+const TREE_CELL_W = 88;
+const TREE_CELL_H = 68;
+const TREE_PAD_X  = 6;
+const TREE_PAD_Y  = 10;
+const TREE_COLS   = 6;
+const TREE_ROWS   = 7;
+const TREE_TOTAL_W = TREE_PAD_X * 2 + TREE_COLS * TREE_CELL_W; // 540
+const TREE_TOTAL_H = TREE_PAD_Y * 2 + TREE_ROWS * TREE_CELL_H; // 496
+
+const CAT_CLR: Record<string, string> = {
+  core: '#60a5fa', st: '#4ade80', aoe: '#f97316', gateway: '#c084fc',
+};
+
+function treeCellCenter(col: number, row: number) {
+  return {
+    x: TREE_PAD_X + col * TREE_CELL_W + TREE_CELL_W / 2,
+    y: TREE_PAD_Y + (row - 1) * TREE_CELL_H + TREE_CELL_H / 2,
+  };
+}
+
+function getNodeState(
+  node: TalentNode,
+  selectedKeys: string[],
+  usedPts: number,
+  maxPts: number,
+): 'core' | 'selected' | 'available' | 'locked-prereq' | 'locked-gate' | 'locked-budget' {
+  if (node.dpsCategory === 'core') return 'core';
+  if (selectedKeys.includes(node.key)) return 'selected';
+
+  // Row gate: count points from core nodes + selected optional nodes in earlier rows
+  const ptsBefore = SURVIVAL_SPEC_TREE.filter(n => n.row < node.row).reduce((s, n) => {
+    if (n.dpsCategory === 'core') return s + n.pointCost;
+    if (selectedKeys.includes(n.key)) return s + n.pointCost;
+    return s;
+  }, 0);
+  if (ptsBefore < node.gateRow) return 'locked-gate';
+
+  // Prerequisites
+  for (const prereq of node.prerequisites) {
+    const prereqNode = SURVIVAL_SPEC_TREE.find(n => n.key === prereq);
+    const met = prereqNode?.dpsCategory === 'core' || selectedKeys.includes(prereq);
+    if (!met) return 'locked-prereq';
+  }
+
+  if (usedPts + node.pointCost > maxPts) return 'locked-budget';
+  return 'available';
+}
+
+// Cascade-deselect: when removing key, also remove any nodes that depended on it
+function cascadeRemove(keyToRemove: string, currentSelected: string[]): string[] {
+  const toRemove = new Set([keyToRemove]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of SURVIVAL_SPEC_TREE) {
+      if (toRemove.has(node.key) || !currentSelected.includes(node.key)) continue;
+      if (node.prerequisites.some(p => toRemove.has(p))) {
+        toRemove.add(node.key);
+        changed = true;
+      }
+    }
+  }
+  return currentSelected.filter(k => !toRemove.has(k));
+}
+
+interface TalentTreeGridProps {
+  selectedKeys: string[];
+  usedPts: number;
+  maxPts: number;
+  onToggle: (key: string, nowSelected: boolean) => void;
+  onNodeHover: (node: TalentNode, e: React.MouseEvent) => void;
+  onNodeLeave: () => void;
+}
+
+function TalentTreeGrid({ selectedKeys, usedPts, maxPts, onToggle, onNodeHover, onNodeLeave }: TalentTreeGridProps) {
+  return (
+    <div style={{ position: 'relative', width: TREE_TOTAL_W, height: TREE_TOTAL_H, flexShrink: 0, margin: '0 auto' }}>
+      {/* SVG prerequisite connection lines */}
+      <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
+        width={TREE_TOTAL_W} height={TREE_TOTAL_H}>
+        {SURVIVAL_SPEC_TREE.flatMap(node =>
+          node.prerequisites.map(prereqKey => {
+            const prereqNode = SURVIVAL_SPEC_TREE.find(n => n.key === prereqKey);
+            if (!prereqNode) return null;
+            const from = treeCellCenter(prereqNode.col, prereqNode.row);
+            const to   = treeCellCenter(node.col, node.row);
+            const prereqOn = prereqNode.dpsCategory === 'core' || selectedKeys.includes(prereqKey);
+            const nodeOn   = node.dpsCategory === 'core' || selectedKeys.includes(node.key);
+            const active   = prereqOn && nodeOn;
+            return (
+              <line key={`${prereqKey}→${node.key}`}
+                x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                stroke={active ? '#fbbf2488' : '#1e2d3d'}
+                strokeWidth={active ? 2 : 1.5}
+                strokeDasharray={active ? undefined : '4 3'}
+              />
+            );
+          })
+        )}
+      </svg>
+
+      {/* Talent nodes */}
+      {SURVIVAL_SPEC_TREE.map(node => {
+        const state  = getNodeState(node, selectedKeys, usedPts, maxPts);
+        const isOn   = state === 'core' || state === 'selected';
+        const locked = state.startsWith('locked');
+        const catClr = CAT_CLR[node.dpsCategory] || '#94a3b8';
+        const lockTitle =
+          state === 'locked-gate'   ? `Row ${node.row} locked — spend ${node.gateRow} pts in earlier rows first` :
+          state === 'locked-prereq' ? `Requires: ${node.prerequisites.map(p => SURVIVAL_SPEC_TREE.find(n => n.key === p)?.label ?? p).join(' + ')}` :
+          state === 'locked-budget' ? `Over ${maxPts}-pt optional budget` : '';
+
+        const btnBg  = isOn
+          ? (node.dpsCategory === 'core' ? '#0a1c3d'
+           : node.dpsCategory === 'st'   ? '#092a18'
+           : node.dpsCategory === 'aoe'  ? '#1f0e00'
+           : '#17082e')
+          : locked ? '#0c111a' : '#131c2b';
+        const btnBdr = isOn ? catClr + 'bb' : locked ? '#1e293b' : '#2d3e52';
+        const btnClr = isOn ? catClr : locked ? '#2d3e52' : '#4b6070';
+
+        const x = TREE_PAD_X + node.col * TREE_CELL_W;
+        const y = TREE_PAD_Y + (node.row - 1) * TREE_CELL_H;
+
+        return (
+          <button key={node.key}
+            onClick={() => !locked && state !== 'core' && onToggle(node.key, !isOn)}
+            onMouseEnter={e => onNodeHover(node, e)}
+            onMouseLeave={onNodeLeave}
+            title={locked ? lockTitle : node.label}
+            style={{
+              position: 'absolute',
+              left: x + 4, top: y + 5,
+              width: TREE_CELL_W - 8, height: TREE_CELL_H - 10,
+              background: btnBg,
+              border: `2px solid ${btnBdr}`,
+              borderRadius: 7,
+              color: btnClr,
+              fontSize: 10,
+              fontWeight: isOn ? 700 : 400,
+              fontFamily: "'Rajdhani',sans-serif",
+              textAlign: 'center',
+              lineHeight: 1.2,
+              cursor: state === 'core' ? 'default' : locked ? 'not-allowed' : 'pointer',
+              opacity: locked ? 0.38 : 1,
+              padding: '3px 4px',
+              zIndex: 1,
+              transition: 'border-color .12s, background .12s',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+              boxShadow: isOn && !locked ? `0 0 6px ${catClr}44` : undefined,
+            }}>
+            <span style={{ fontSize: 10, lineHeight: 1.2, display: 'block' }}>{node.label}</span>
+            <span style={{ fontSize: 8, opacity: 0.75, display: 'flex', gap: 3, alignItems: 'center' }}>
+              <span>{node.pointCost === 2 ? '·· 2pt' : '· 1pt'}</span>
+              {state === 'core'    && <span style={{ color: '#60a5fa88' }}>🔒</span>}
+              {node.isGateway      && <span style={{ color: '#c084fc99' }}>⚡</span>}
+              {node.isApex         && <span style={{ color: '#fbbf2499' }}>★</span>}
+            </span>
+          </button>
+        );
+      })}
+
+      {/* Row gate labels on the left */}
+      {[1,2,3,4,5,6,7].map(row => {
+        const gate = [0,2,5,8,11,14,17][row-1];
+        const y = TREE_PAD_Y + (row - 1) * TREE_CELL_H;
+        return (
+          <div key={row} style={{
+            position: 'absolute', left: -2, top: y + TREE_CELL_H / 2 - 7,
+            fontSize: 8, color: '#2d4460', fontFamily: "'IBM Plex Mono',monospace",
+            lineHeight: 1, width: TREE_PAD_X, textAlign: 'right', whiteSpace: 'nowrap',
+            transform: 'translateX(-100%)', paddingRight: 4,
+          }}>
+            {gate > 0 ? `${gate}+` : 'R1'}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ============================================================
 // MAIN COMPONENT — V8 Off-White + Charcoal Navy Design
@@ -1989,137 +2175,136 @@ export default function SurvivalHunterSim() {
                             </div>
                           </div>
 
-                          {/* Core talents (locked) */}
-                          <div style={{ marginBottom: 10 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: '#60a5fa', marginBottom: 5, opacity: .7 }}>
-                              ALWAYS ACTIVE (CORE) — {CORE_TALENTS.reduce((s, t) => s + t.points, 0)} pts spent
-                            </div>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {CORE_TALENTS.map(t => (
-                                <span key={t.name}
-                                  onMouseEnter={e => handleTalentHover(t, e)}
-                                  onMouseLeave={handleTalentLeave}
-                                  style={{
-                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                    color: '#60a5fa', background: '#0c1a2e',
-                                    border: '1px solid #60a5fa44', borderRadius: 5, padding: "2px 8px",
-                                    cursor: "help",
-                                  }}>🔒 {t.name}{t.points === 2 ? ' ··' : ''}</span>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Optional spec talents with budget meter */}
+                          {/* ── 2D SPEC TALENT TREE ─────────────────────────── */}
                           {(() => {
-                            const usedOpt = editDraft.enabledTalents.reduce((sum, name) => {
-                              const t = allOptional.find(x => x.name === name);
-                              return sum + (t?.points ?? 1);
+                            const usedOpt = editDraft.enabledTalents.reduce((sum, key) => {
+                              const n = SURVIVAL_SPEC_TREE.find(x => x.key === key);
+                              return sum + (n?.pointCost ?? 1);
                             }, 0);
                             const pct = Math.min(usedOpt / MAX_OPTIONAL_POINTS, 1);
                             const overBudget = usedOpt > MAX_OPTIONAL_POINTS;
                             return (
                               <div style={{ marginBottom: 10 }}>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                                {/* Budget bar header */}
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                                   <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim }}>
-                                    OPTIONAL SPEC TALENTS <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span>
+                                    SPEC TALENT TREE
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0, marginLeft: 6, color: '#4b6070' }}>
+                                      🔒 = core (always on) · click optional nodes to toggle
+                                    </span>
                                   </div>
                                   <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10,
                                     color: overBudget ? C.red : usedOpt === MAX_OPTIONAL_POINTS ? C.green : C.textMid,
                                     fontWeight: 700 }}>
-                                    {usedOpt} / {MAX_OPTIONAL_POINTS} pts
+                                    {usedOpt} / {MAX_OPTIONAL_POINTS} optional pts
                                   </div>
                                 </div>
-                                {/* Budget bar */}
-                                <div style={{ height: 3, borderRadius: 2, background: C.surface3, marginBottom: 8, overflow: "hidden" }}>
+                                <div style={{ height: 3, borderRadius: 2, background: C.surface3, marginBottom: 10, overflow: "hidden" }}>
                                   <div style={{ height: "100%", borderRadius: 2, transition: "width .2s, background .2s",
                                     width: `${pct * 100}%`,
                                     background: overBudget ? C.red : usedOpt === MAX_OPTIONAL_POINTS ? C.green : C.sentClr }} />
                                 </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                  {allOptional.map(t => {
-                                    const isOn = editDraft.enabledTalents.includes(t.name);
-                                    const wouldExceed = !isOn && (usedOpt + t.points) > MAX_OPTIONAL_POINTS;
-                                    const tClr = PILL_CLR_E[t.type] || '#94a3b8';
-                                    return (
-                                      <button key={t.name}
-                                        onMouseEnter={e => handleTalentHover(t, e)}
-                                        onMouseLeave={handleTalentLeave}
-                                        disabled={wouldExceed && !isOn}
-                                        onClick={() => setEditDraft(d => {
-                                          if (!d || (wouldExceed && !isOn)) return d;
-                                          const next = isOn ? d.enabledTalents.filter(n => n !== t.name) : [...d.enabledTalents, t.name];
-                                          return { ...d, enabledTalents: next };
-                                        })}
-                                        style={{
-                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                          color: isOn ? tClr : wouldExceed ? C.textDim : C.textMid,
-                                          background: isOn ? (t.type === 'st' ? '#0f2a1a' : t.type === 'aoe' ? '#1f1000' : C.surface3) : C.surface3,
-                                          border: `1px solid ${isOn ? tClr + '66' : wouldExceed ? C.border + '55' : C.border}`,
-                                          borderRadius: 5, padding: "2px 8px",
-                                          cursor: wouldExceed && !isOn ? "not-allowed" : "pointer",
-                                          opacity: wouldExceed && !isOn ? 0.3 : isOn ? 1 : 0.7,
-                                          transition: "all .15s",
-                                        }}>
-                                        {t.name}
-                                        <span style={{ marginLeft: 4, fontSize: 9, opacity: .65 }}>
-                                          {t.points === 2 ? '··' : '·'}{t.type === 'st' ? ' ST' : t.type === 'aoe' ? ' AoE' : ''}
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
+                                {/* Category legend */}
+                                <div style={{ display: "flex", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                                  {([['core','#60a5fa','Core (always on)'],['st','#4ade80','ST path'],['aoe','#f97316','AoE path'],['gateway','#c084fc','Gateway (forced pick)']] as const).map(([cat, clr, lbl]) => (
+                                    <span key={cat} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: clr, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <span style={{ width: 8, height: 8, borderRadius: 2, background: clr, display: 'inline-block' }} />{lbl}
+                                    </span>
+                                  ))}
+                                </div>
+                                {/* The 2D tree */}
+                                <div style={{ overflowX: 'auto', paddingLeft: 28 }}>
+                                  <TalentTreeGrid
+                                    selectedKeys={editDraft.enabledTalents}
+                                    usedPts={usedOpt}
+                                    maxPts={MAX_OPTIONAL_POINTS}
+                                    onToggle={(key, nowSelected) => {
+                                      setEditDraft(d => {
+                                        if (!d) return d;
+                                        if (nowSelected) {
+                                          return { ...d, enabledTalents: [...d.enabledTalents, key] };
+                                        } else {
+                                          return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
+                                        }
+                                      });
+                                    }}
+                                    onNodeHover={(node, e) => {
+                                      const pill: TalentPill = {
+                                        name: node.label,
+                                        type: node.dpsCategory === 'gateway' ? 'aoe' : node.dpsCategory as any,
+                                        points: node.pointCost,
+                                        desc: node.gatewayNote || node.label,
+                                      };
+                                      handleTalentHover(pill, e);
+                                    }}
+                                    onNodeLeave={handleTalentLeave}
+                                  />
                                 </div>
                                 {overBudget && (
-                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.red, marginTop: 5 }}>
-                                    ⚠ Over talent point budget — remove a talent to continue.
+                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.red, marginTop: 6 }}>
+                                    ⚠ Over {MAX_OPTIONAL_POINTS}-pt optional budget — deselect a node to continue.
                                   </div>
                                 )}
                               </div>
                             );
                           })()}
 
-                          {/* Hero sub-talents */}
+                          {/* ── HERO TALENT CHAIN ───────────────────────────── */}
                           {(() => {
-                            const usedHero = editDraft.enabledHeroTalents.reduce((sum, name) => {
-                              const t = heroTals.find(x => x.name === name);
-                              return sum + (t?.points ?? 1);
-                            }, 0);
+                            const heroTree = HERO_TALENT_TREES[editDraft.heroKey];
+                            const usedHero = editDraft.enabledHeroTalents.length;
                             return (
                               <div style={{ marginBottom: 12 }}>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: heroClrE, opacity: .7 }}>
-                                    HERO TALENTS <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: heroClrE, opacity: .8 }}>
+                                    HERO TALENT CHAIN
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0, marginLeft: 6, opacity: .6 }}>sequential — unlock in order</span>
                                   </div>
                                   <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10,
                                     color: usedHero === MAX_HERO_POINTS ? heroClrE : C.textMid, fontWeight: 700 }}>
                                     {usedHero} / {MAX_HERO_POINTS} pts
                                   </div>
                                 </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                  {heroTals.map(t => {
-                                    const isOn = editDraft.enabledHeroTalents.includes(t.name);
-                                    const wouldExceed = !isOn && (usedHero + t.points) > MAX_HERO_POINTS;
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  {heroTree.map((hn, idx) => {
+                                    const isOn = editDraft.enabledHeroTalents.includes(hn.key);
+                                    const prevOn = idx === 0 || editDraft.enabledHeroTalents.includes(heroTree[idx - 1].key);
+                                    const locked = !prevOn && !isOn;
+                                    const wouldExceed = !isOn && usedHero >= MAX_HERO_POINTS;
                                     return (
-                                      <button key={t.name}
-                                        onMouseEnter={e => handleTalentHover(t, e)}
-                                        onMouseLeave={handleTalentLeave}
-                                        disabled={wouldExceed && !isOn}
-                                        onClick={() => setEditDraft(d => {
-                                          if (!d || (wouldExceed && !isOn)) return d;
-                                          const next = isOn ? d.enabledHeroTalents.filter(n => n !== t.name) : [...d.enabledHeroTalents, t.name];
-                                          return { ...d, enabledHeroTalents: next };
-                                        })}
-                                        style={{
-                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                          color: isOn ? heroClrE : wouldExceed ? C.textDim : C.textMid,
-                                          background: isOn ? heroBgE : C.surface3,
-                                          border: `1px solid ${isOn ? heroBdrE : C.border}`,
-                                          borderRadius: 5, padding: "2px 8px",
-                                          cursor: wouldExceed && !isOn ? "not-allowed" : "pointer",
-                                          opacity: wouldExceed && !isOn ? 0.3 : isOn ? 1 : 0.7,
-                                          transition: "all .15s",
-                                        }}>
-                                        {t.name}·
-                                      </button>
+                                      <Fragment key={hn.key}>
+                                        {idx > 0 && (
+                                          <span style={{ color: isOn ? heroClrE : '#2d3e52', fontSize: 14, flexShrink: 0 }}>▶</span>
+                                        )}
+                                        <button
+                                          disabled={locked || wouldExceed}
+                                          onClick={() => setEditDraft(d => {
+                                            if (!d || locked) return d;
+                                            if (isOn) {
+                                              // Remove this and all subsequent nodes
+                                              const keysToRemove = heroTree.slice(idx).map(x => x.key);
+                                              return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => !keysToRemove.includes(k)) };
+                                            } else {
+                                              return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, hn.key] };
+                                            }
+                                          })}
+                                          style={{
+                                            flex: 1, padding: "6px 8px", borderRadius: 7, cursor: locked || wouldExceed ? "not-allowed" : "pointer",
+                                            background: isOn ? heroBgE : locked ? '#0c111a' : C.surface3,
+                                            border: `2px solid ${isOn ? heroBdrE : locked ? '#1e293b' : C.border}`,
+                                            color: isOn ? heroClrE : locked ? '#2d3e52' : C.textMid,
+                                            fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: isOn ? 700 : 400,
+                                            textAlign: 'center', lineHeight: 1.3,
+                                            opacity: locked ? 0.4 : 1,
+                                            transition: "all .12s",
+                                            boxShadow: isOn ? `0 0 6px ${heroClrE}44` : undefined,
+                                          }}>
+                                          <div>{hn.label}</div>
+                                          <div style={{ fontSize: 8, opacity: 0.65, marginTop: 2 }}>
+                                            {idx === 0 ? '① First' : idx === 1 ? '② Requires ①' : '③ Capstone'}
+                                          </div>
+                                        </button>
+                                      </Fragment>
                                     );
                                   })}
                                 </div>
@@ -2280,9 +2465,9 @@ export default function SurvivalHunterSim() {
                       const heroBdrC  = slot.heroKey === 'sentinel' ? C.sentBdr : C.packBdr;
                       const PILL_CLR_C: Record<string,string> = { core:'#60a5fa', st:'#4ade80', aoe:'#f97316', hero: heroClrC, hybrid:'#c084fc' };
                       const PILL_BG_C: Record<string,string>  = { core:'#0c1a2e', st:'#0f2a1a', aoe:'#1f1000', hero: heroBgC, hybrid:'#1a1033' };
-                      const corePills = CORE_TALENTS;
-                      const specPills = [...ST_TALENTS, ...AOE_TALENTS].filter((t, i, arr) => arr.findIndex(x => x.name === t.name) === i).filter(t => slot.enabledTalents.includes(t.name));
-                      const heroPills = (slot.heroKey === 'sentinel' ? SENTINEL_HERO : PACK_LEADER_HERO).filter(t => slot.enabledHeroTalents.includes(t.name));
+                      const corePills  = SURVIVAL_SPEC_TREE.filter(n => n.dpsCategory === 'core');
+                      const specPills  = SURVIVAL_SPEC_TREE.filter(n => n.dpsCategory !== 'core' && slot.enabledTalents.includes(n.key));
+                      const heroPills  = HERO_TALENT_TREES[slot.heroKey].filter(hn => slot.enabledHeroTalents.includes(hn.key));
                       return (
                         <div key={customId}
                           onClick={() => { setSelectedLoadoutId(customId); setHeroTalent(slot.heroKey); setSimMode(slot.simMode); }}
@@ -2326,30 +2511,53 @@ export default function SurvivalHunterSim() {
                           {/* Expanded talent pills */}
                           {isSel && (
                             <>
-                              {[{ label: 'ALWAYS', pills: corePills, type: 'core' }, { label: 'SELECTED SPEC', pills: specPills, type: specPills[0]?.type || 'st' }, { label: 'HERO TALENTS', pills: heroPills, type: 'hero' }]
-                                .filter(g => g.pills.length > 0)
-                                .map(g => (
-                                  <div key={g.label} style={{ marginBottom: 8 }}>
-                                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2,
-                                      color: PILL_CLR_C[g.type] || heroClrC, marginBottom: 5, opacity: .7 }}>
-                                      {g.label}
-                                    </div>
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                      {g.pills.map(t => (
-                                        <span key={t.name}
-                                          onMouseEnter={e => handleTalentHover(t, e)}
-                                          onMouseLeave={handleTalentLeave}
-                                          style={{
-                                            fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                            color: PILL_CLR_C[t.type] || heroClrC,
-                                            background: PILL_BG_C[t.type] || heroBgC,
-                                            border: `1px solid ${(PILL_CLR_C[t.type] || heroClrC)}44`,
-                                            borderRadius: 5, padding: "2px 8px", cursor: "help",
-                                          }}>{t.name}{t.points === 2 ? ' ··' : ''}</span>
-                                      ))}
-                                    </div>
+                              {/* Core nodes */}
+                              <div style={{ marginBottom: 6 }}>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: PILL_CLR_C['core'], marginBottom: 4, opacity: .7 }}>ALWAYS ACTIVE (CORE)</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  {corePills.map(n => (
+                                    <span key={n.key} style={{
+                                      fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                      color: '#60a5fa', background: '#0c1a2e', border: '1px solid #60a5fa44',
+                                      borderRadius: 5, padding: "2px 8px",
+                                    }}>{n.label}{n.pointCost === 2 ? ' ··' : ''}</span>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* Optional spec nodes selected */}
+                              {specPills.length > 0 && (
+                                <div style={{ marginBottom: 6 }}>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 4, opacity: .7 }}>SELECTED OPTIONAL</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {specPills.map(n => {
+                                      const clr = CAT_CLR[n.dpsCategory] || '#94a3b8';
+                                      const bg  = n.dpsCategory === 'st' ? '#0f2a1a' : n.dpsCategory === 'aoe' ? '#1f1000' : n.dpsCategory === 'gateway' ? '#170828' : C.surface3;
+                                      return (
+                                        <span key={n.key} style={{
+                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                          color: clr, background: bg, border: `1px solid ${clr}44`,
+                                          borderRadius: 5, padding: "2px 8px",
+                                        }}>{n.label}{n.pointCost === 2 ? ' ··' : ''}{n.isGateway ? ' ⚡' : ''}</span>
+                                      );
+                                    })}
                                   </div>
-                                ))}
+                                </div>
+                              )}
+                              {/* Hero chain */}
+                              {heroPills.length > 0 && (
+                                <div style={{ marginBottom: 6 }}>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: heroClrC, marginBottom: 4, opacity: .7 }}>HERO TALENTS</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {heroPills.map(hn => (
+                                      <span key={hn.key} style={{
+                                        fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                        color: heroClrC, background: heroBgC, border: `1px solid ${heroBdrC}44`,
+                                        borderRadius: 5, padding: "2px 8px",
+                                      }}>{hn.label}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                               {specPills.length === 0 && heroPills.length === 0 && (
                                 <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontStyle: "italic" }}>
                                   No optional talents selected — only core talents active.
