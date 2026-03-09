@@ -984,7 +984,6 @@ export default function SurvivalHunterSim() {
     })();
   }, [parsedChar?.gear, armoryRegion]);
 
-  const getTargets = () => simMode === 'single' ? [1] : simMode === 'cleave' ? [2, 3] : [5, 8, 10];
 
   const handleSim = useCallback(() => {
     if (!parsedChar) return; setIsSimming(true); setSimResults(null); setUserSimResult(null); setOptimalSimResult(null);
