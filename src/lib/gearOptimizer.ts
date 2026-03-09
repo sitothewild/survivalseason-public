@@ -127,7 +127,7 @@ export interface TrinketDef {
   notes: string;
 }
 
-// Midnight 12.0 Heroic (276 ilvl) trinket database.
+// Midnight 12.0 trinket database — Hero track 276 (Heroic Raid) to Myth track 289 (Mythic Raid / +7 vault).
 // Values extrapolated from Blizzard item scaling formulas and SimC coefficient data.
 export const MIDNIGHT_TRINKETS: TrinketDef[] = [
   // ─ Raid: Midnight Citadel ─
