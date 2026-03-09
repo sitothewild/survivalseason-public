@@ -548,6 +548,7 @@ interface TalentPill {
   name: string;
   type: 'core' | 'st' | 'aoe' | 'hero' | 'hybrid';
   desc: string;
+  points: number; // talent point cost (1 or 2)
 }
 interface TalentLoadout {
   id: string;
@@ -569,52 +570,57 @@ interface CustomLoadout {
   enabledHeroTalents: string[]; // names of toggled-on hero sub-talents
 }
 
+// Spec tree: 18 total points. Core talents cost 10, leaving 8 for optional picks.
+// Hero tree: 3 nodes, each 1pt (all 3 are typically filled).
+const MAX_OPTIONAL_POINTS = 8;
+const MAX_HERO_POINTS = 3;
+
 const CORE_TALENTS: TalentPill[] = [
-  { name: 'Mongoose Fury',    type: 'core', desc: 'RS stacking damage buff up to 5×. Always talented — backbone of the rotation.' },
-  { name: 'Strike as One',    type: 'core', desc: 'All damaging abilities trigger a pet attack. Core pet scaling node.' },
-  { name: 'Wildfire Bomb',    type: 'core', desc: 'No-focus nuke + Lethal Calibration (+15% WFB crit dmg buff). Highest single ability value.' },
-  { name: 'Takedown',         type: 'core', desc: '20% damage amp for 8s. 90s base CD (reduced by Savagery). Replaces Coordinated Assault.' },
-  { name: 'Boomstick',        type: 'core', desc: 'Frontal AoE with Shellshock (+40% ST). 60s CD. Replaces Focus Fire.' },
-  { name: 'Raptor Swipe',     type: 'core', desc: 'Apex talent (4pts). 25% proc → 100% proc during Takedown windows.' },
-  { name: 'Lethal Calibration', type: 'core', desc: 'WFB applies +15% crit damage buff for 12s. Multiplicative with Vulnerability.' },
+  { name: 'Mongoose Fury',      type: 'core', points: 2, desc: 'Raptor Strike stacking damage buff, up to 5×. Always talented — backbone of the entire rotation. Each consecutive RS extends the buff duration.' },
+  { name: 'Strike as One',      type: 'core', points: 1, desc: 'All your damaging abilities trigger a coordinated pet attack. Core pet-scaling node — affects Kill Command, Claw, and all beast procs.' },
+  { name: 'Wildfire Bomb',      type: 'core', points: 2, desc: 'No-focus bomb nuke that ignites the area. Highest single-cast ability value. Enables Lethal Calibration on detonation and benefits from all fire amplifiers.' },
+  { name: 'Takedown',           type: 'core', points: 1, desc: '+20% damage amplifier for 8s. 90s base CD (reduced by Savagery to 60s). Replaces Coordinated Assault. Line up RS stacks + cooldowns inside this window.' },
+  { name: 'Boomstick',          type: 'core', points: 1, desc: 'Frontal cone attack with Shellshock (+40% Boomstick ST damage). 60s CD. Replaces Focus Fire. Triggers Mongoose Rounds and reduces WFB CD via Wildfire Shells.' },
+  { name: 'Raptor Swipe',       type: 'core', points: 2, desc: 'Apex 2-point talent. Raptor Strike has a 25% proc chance to strike again for free. During Takedown the proc rate becomes 100% — massive burst synergy.' },
+  { name: 'Lethal Calibration', type: 'core', points: 1, desc: 'Wildfire Bomb detonation applies a +15% critical damage buff for 12s. Multiplicative with Vulnerability. Keep WFB on CD to maintain near-100% uptime.' },
 ];
 
 const ST_TALENTS: TalentPill[] = [
-  { name: 'Savagery',          type: 'st', desc: 'Takedown CD −30s (90s → 60s). Dramatically increases Takedown usage in a 5min fight.' },
-  { name: 'Vulnerability',     type: 'st', desc: 'RS and Boomstick deal +20% crit damage. Synergises with Stargazer stacks and Lethal Calibration.' },
-  { name: 'Mongoose Rounds',   type: 'st', desc: 'Each Boomstick hit grants 1 Mongoose Fury stack. Burst-window Boomstick → max MF stacks instantly.' },
-  { name: "Can't Miss Won't Miss", type: 'st', desc: 'RS +10% damage; Takedown duration +2s. More RS hits inside the amp window.' },
-  { name: 'Stargazer',         type: 'st', desc: 'RS increases crit damage by 2% for 10s, stacking up to ×10 (+20%). Sentinel: stacks multiply with LC+Vulnerability.' },
+  { name: 'Savagery',              type: 'st', points: 1, desc: 'Reduces Takedown cooldown by 30s (90s → 60s). In a 5-minute fight this adds ~2 extra Takedown windows — one of the highest ST value optional talents.' },
+  { name: 'Vulnerability',         type: 'st', points: 1, desc: 'Raptor Strike and Boomstick deal +20% critical strike damage. Stacks multiplicatively with Lethal Calibration and Stargazer. Core of the Sentinel crit-amp build.' },
+  { name: 'Mongoose Rounds',       type: 'st', points: 1, desc: 'Each Boomstick hit grants 1 Mongoose Fury stack immediately. Burst-window: fire Boomstick first → hit max MF stacks instantly, then Takedown for maximum overlap.' },
+  { name: "Can't Miss Won't Miss", type: 'st', points: 1, desc: 'Raptor Strike deals +10% damage; Takedown duration extended by 2s (8s → 10s). More RS hits land inside the amp window, compounding with Mongoose Fury stacks.' },
+  { name: 'Stargazer',             type: 'st', points: 2, desc: '2-point talent. RS grants +2% critical damage for 10s, stacking up to ×10 (+20% total). Sentinel synergy: Stargazer stacks multiply with Lethal Calibration + Vulnerability for massive crit damage.' },
 ];
 
 const AOE_TALENTS: TalentPill[] = [
-  { name: 'Flamefang Pitch',    type: 'aoe', desc: '30s CD ground AoE + fire puddle. Highest AoE ability per cast.' },
-  { name: 'Grenade Juggler',    type: 'aoe', desc: 'Flamefang Pitch gains 1 extra charge — doubles Flamefang usage.' },
-  { name: 'Wildfire Shells',    type: 'aoe', desc: 'Each Boomstick hit reduces WFB CD by 4s. In AoE: Boomstick hits 5+ targets → WFB every ~18s.' },
-  { name: 'Shrapnel Bomb',      type: 'aoe', desc: 'WFB periodic becomes a bleed (bypasses armor). +~8% total AoE DPS on armored targets.' },
-  { name: 'Flamebreak',         type: 'aoe', desc: 'All Fire damage +15%. Amplifies WFB, Flamefang Pitch, and all fire dots.' },
-  { name: 'Wildfire Imbuement', type: 'aoe', desc: 'Flamefang imbues weapon — RS gains fire damage component, scaling with Flamebreak.' },
-  { name: 'Two Against Many',   type: 'aoe', desc: 'Strike as One hits 2 additional enemies. Scales pet damage across entire pack.' },
+  { name: 'Flamefang Pitch',    type: 'aoe', points: 1, desc: '30s CD ground AoE that leaves a fire puddle. Highest AoE damage per cast. Positions matter — drop on clustered enemies. Synergises with Flamebreak and Wildfire Imbuement.' },
+  { name: 'Grenade Juggler',    type: 'aoe', points: 1, desc: 'Flamefang Pitch gains 1 additional charge. Effectively doubles Flamefang usage: you can pool 2 charges and dump both during a burn window on large pulls.' },
+  { name: 'Wildfire Shells',    type: 'aoe', points: 1, desc: 'Each Boomstick hit reduces Wildfire Bomb cooldown by 4s. In a 5+ target scenario Boomstick hits all enemies: WFB cooldown effectively reduces to ~18s per use.' },
+  { name: 'Shrapnel Bomb',      type: 'aoe', points: 1, desc: 'Wildfire Bomb\'s periodic damage becomes a physical bleed — bypasses armor reduction on beasts/constructs. Adds ~8% total AoE DPS on armored target types.' },
+  { name: 'Flamebreak',         type: 'aoe', points: 1, desc: 'All Fire damage you deal is increased by 15%. Amplifies Wildfire Bomb, Flamefang Pitch, and all fire DoTs. Stacks with Wildfire Imbuement\'s fire conversion on Raptor Strike.' },
+  { name: 'Wildfire Imbuement', type: 'aoe', points: 1, desc: 'Flamefang Pitch imbues your weapon with fire. Raptor Strike gains a fire damage component that scales with Flamebreak (+15%). Converts a core ST filler into an AoE contributor.' },
+  { name: 'Two Against Many',   type: 'aoe', points: 2, desc: '2-point talent. Strike as One hits 2 additional enemies beyond the primary target. Scales all pet-proc damage (Claw, beast rushes, Pack Leader beasts) across the entire pack — top AoE node.' },
 ];
 
 const HYBRID_TALENTS: TalentPill[] = [
-  { name: 'Vulnerability',     type: 'hybrid', desc: 'Kept for ST damage on priority target. Still strong even in cleave.' },
-  { name: "Can't Miss Won't Miss", type: 'hybrid', desc: 'RS boost helps maintain priority-target pressure in multi-target.' },
-  { name: 'Flamefang Pitch',    type: 'hybrid', desc: 'Core AoE cooldown. Even 2-target cleave benefits significantly.' },
-  { name: 'Wildfire Shells',    type: 'hybrid', desc: 'Boomstick WFB reduction works on any target — valuable at 2+.' },
-  { name: 'Flamebreak',         type: 'hybrid', desc: '+15% Fire damage, amplifies WFB and Flamefang on all targets.' },
+  { name: 'Vulnerability',         type: 'hybrid', points: 1, desc: 'Kept for ST damage on priority target. RS/Boomstick +20% crit — still strong even in cleave.' },
+  { name: "Can't Miss Won't Miss", type: 'hybrid', points: 1, desc: 'RS boost helps maintain priority-target pressure in multi-target situations.' },
+  { name: 'Flamefang Pitch',       type: 'hybrid', points: 1, desc: 'Core AoE cooldown. Even 2-target cleave benefits significantly from the ground AoE.' },
+  { name: 'Wildfire Shells',       type: 'hybrid', points: 1, desc: 'Boomstick-to-WFB reduction works on any target — valuable at 2+ targets.' },
+  { name: 'Flamebreak',            type: 'hybrid', points: 1, desc: '+15% Fire damage amplifies WFB and Flamefang on all targets.' },
 ];
 
 const SENTINEL_HERO: TalentPill[] = [
-  { name: 'Moonlight Chakram', type: 'hero', desc: 'Bouncing shadow attack proc. Hits up to 5 targets. Sentinel\'s top AoE dealer.' },
-  { name: 'Lunar Storm',       type: 'hero', desc: 'AoE burst when Sentinel\'s Mark is consumed. Scales massively in packs.' },
-  { name: "Moon's Blessing",   type: 'hero', desc: '+10% Sentinel\'s Mark proc chance (20% → 30%). More Lunar Storm procs per minute.' },
+  { name: 'Moonlight Chakram', type: 'hero', points: 1, desc: 'Sentinel\'s Mark procs now release a bouncing shadow chakram that ricochets between up to 5 enemies. Sentinel\'s top AoE damage source. At 5+ targets this overwhelms Pack Leader in sustained AoE.' },
+  { name: 'Lunar Storm',       type: 'hero', points: 1, desc: 'When Sentinel\'s Mark is consumed, it triggers a Lunar Storm that strikes all nearby enemies. Scales massively in packs — each consumption is a mini AoE burst. Key reason Sentinel is competitive on M+.' },
+  { name: "Moon's Blessing",   type: 'hero', points: 1, desc: 'Increases Sentinel\'s Mark proc chance by +10% (20% → 30%). More Lunar Storm procs per minute in sustained fights. Synergises with any ability that generates procs (RS, pet attacks).' },
 ];
 
 const PACK_LEADER_HERO: TalentPill[] = [
-  { name: 'Lethal Barbs',   type: 'hero', desc: 'Auto-attacks generate 2 Focus each. Enables more Kill Commands → more beast procs.' },
-  { name: 'Dire Summons',   type: 'hero', desc: 'Reduces beast spawn cooldown. More frequent Howl of the Pack Leader procs.' },
-  { name: 'Stampede',       type: 'hero', desc: 'Capstone: Takedown triggers a beast rush — maximum beast overlap during burst window.' },
+  { name: 'Lethal Barbs',   type: 'hero', points: 1, desc: 'Your auto-attacks generate 2 bonus Focus each. Enables significantly more Kill Command casts → more beast proc opportunities per minute. Strong in all scenarios.' },
+  { name: 'Dire Summons',   type: 'hero', points: 1, desc: 'Reduces beast companion spawn cooldown. More frequent Howl of the Pack Leader procs. Stacks with Lethal Barbs\' extra Kill Commands for maximum beast uptime.' },
+  { name: 'Stampede',       type: 'hero', points: 1, desc: 'Capstone node. Takedown now triggers a full beast stampede — maximum beast damage overlap during your burst window. The primary reason Pack Leader leads ST DPS at Mythic track gear.' },
 ];
 
 export const TALENT_LOADOUTS: TalentLoadout[] = [
@@ -819,6 +825,11 @@ export default function SurvivalHunterSim() {
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
 
+  // Talent pill tooltip
+  const [hoveredTalent, setHoveredTalent] = useState<TalentPill | null>(null);
+  const [talentTooltipPos, setTalentTooltipPos] = useState({ x: 0, y: 0 });
+  const talentHideTimer = useRef<number | null>(null);
+
   const realmDropdownRef = useRef<HTMLDivElement | null>(null);
   const realmInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -830,6 +841,19 @@ export default function SurvivalHunterSim() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleTalentHover = useCallback((talent: TalentPill, e: React.MouseEvent) => {
+    if (talentHideTimer.current) { window.clearTimeout(talentHideTimer.current); talentHideTimer.current = null; }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.min(rect.right + 10, window.innerWidth - 310);
+    const y = Math.max(8, Math.min(rect.top, window.innerHeight - 260));
+    setTalentTooltipPos({ x, y });
+    setHoveredTalent(talent);
+  }, []);
+
+  const handleTalentLeave = useCallback(() => {
+    talentHideTimer.current = window.setTimeout(() => setHoveredTalent(null), 160);
   }, []);
 
   const normalizeRealmSlug = useCallback((name: string) => {
@@ -1967,80 +1991,141 @@ export default function SurvivalHunterSim() {
 
                           {/* Core talents (locked) */}
                           <div style={{ marginBottom: 10 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: '#60a5fa', marginBottom: 5, opacity: .7 }}>ALWAYS ACTIVE (CORE)</div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: '#60a5fa', marginBottom: 5, opacity: .7 }}>
+                              ALWAYS ACTIVE (CORE) — {CORE_TALENTS.reduce((s, t) => s + t.points, 0)} pts spent
+                            </div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {CORE_TALENTS.map(t => (
-                                <span key={t.name} title={t.desc} style={{
-                                  fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                  color: '#60a5fa', background: '#0c1a2e',
-                                  border: '1px solid #60a5fa44', borderRadius: 5, padding: "2px 8px",
-                                  cursor: "help",
-                                }}>🔒 {t.name}</span>
+                                <span key={t.name}
+                                  onMouseEnter={e => handleTalentHover(t, e)}
+                                  onMouseLeave={handleTalentLeave}
+                                  style={{
+                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                    color: '#60a5fa', background: '#0c1a2e',
+                                    border: '1px solid #60a5fa44', borderRadius: 5, padding: "2px 8px",
+                                    cursor: "help",
+                                  }}>🔒 {t.name}{t.points === 2 ? ' ··' : ''}</span>
                               ))}
                             </div>
                           </div>
 
-                          {/* Optional spec talents */}
-                          <div style={{ marginBottom: 10 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 5 }}>OPTIONAL SPEC TALENTS <span style={{ color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span></div>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {allOptional.map(t => {
-                                const isOn = editDraft.enabledTalents.includes(t.name);
-                                const tClr = PILL_CLR_E[t.type] || '#94a3b8';
-                                return (
-                                  <button key={t.name} title={t.desc}
-                                    onClick={() => setEditDraft(d => {
-                                      if (!d) return d;
-                                      const next = isOn ? d.enabledTalents.filter(n => n !== t.name) : [...d.enabledTalents, t.name];
-                                      return { ...d, enabledTalents: next };
-                                    })}
-                                    style={{
-                                      fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                      color: isOn ? tClr : C.textDim,
-                                      background: isOn ? (t.type === 'st' ? '#0f2a1a' : t.type === 'aoe' ? '#1f1000' : C.surface3) : C.surface3,
-                                      border: `1px solid ${isOn ? tClr + '66' : C.border}`,
-                                      borderRadius: 5, padding: "2px 8px", cursor: "pointer",
-                                      opacity: isOn ? 1 : 0.55,
-                                      transition: "all .15s",
-                                    }}>
-                                    {t.name}
-                                    <span style={{ marginLeft: 4, fontSize: 9, opacity: .6 }}>
-                                      {t.type === 'st' ? 'ST' : t.type === 'aoe' ? 'AoE' : ''}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                          {/* Optional spec talents with budget meter */}
+                          {(() => {
+                            const usedOpt = editDraft.enabledTalents.reduce((sum, name) => {
+                              const t = allOptional.find(x => x.name === name);
+                              return sum + (t?.points ?? 1);
+                            }, 0);
+                            const pct = Math.min(usedOpt / MAX_OPTIONAL_POINTS, 1);
+                            const overBudget = usedOpt > MAX_OPTIONAL_POINTS;
+                            return (
+                              <div style={{ marginBottom: 10 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim }}>
+                                    OPTIONAL SPEC TALENTS <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span>
+                                  </div>
+                                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10,
+                                    color: overBudget ? C.red : usedOpt === MAX_OPTIONAL_POINTS ? C.green : C.textMid,
+                                    fontWeight: 700 }}>
+                                    {usedOpt} / {MAX_OPTIONAL_POINTS} pts
+                                  </div>
+                                </div>
+                                {/* Budget bar */}
+                                <div style={{ height: 3, borderRadius: 2, background: C.surface3, marginBottom: 8, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", borderRadius: 2, transition: "width .2s, background .2s",
+                                    width: `${pct * 100}%`,
+                                    background: overBudget ? C.red : usedOpt === MAX_OPTIONAL_POINTS ? C.green : C.sentClr }} />
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  {allOptional.map(t => {
+                                    const isOn = editDraft.enabledTalents.includes(t.name);
+                                    const wouldExceed = !isOn && (usedOpt + t.points) > MAX_OPTIONAL_POINTS;
+                                    const tClr = PILL_CLR_E[t.type] || '#94a3b8';
+                                    return (
+                                      <button key={t.name}
+                                        onMouseEnter={e => handleTalentHover(t, e)}
+                                        onMouseLeave={handleTalentLeave}
+                                        disabled={wouldExceed && !isOn}
+                                        onClick={() => setEditDraft(d => {
+                                          if (!d || (wouldExceed && !isOn)) return d;
+                                          const next = isOn ? d.enabledTalents.filter(n => n !== t.name) : [...d.enabledTalents, t.name];
+                                          return { ...d, enabledTalents: next };
+                                        })}
+                                        style={{
+                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                          color: isOn ? tClr : wouldExceed ? C.textDim : C.textMid,
+                                          background: isOn ? (t.type === 'st' ? '#0f2a1a' : t.type === 'aoe' ? '#1f1000' : C.surface3) : C.surface3,
+                                          border: `1px solid ${isOn ? tClr + '66' : wouldExceed ? C.border + '55' : C.border}`,
+                                          borderRadius: 5, padding: "2px 8px",
+                                          cursor: wouldExceed && !isOn ? "not-allowed" : "pointer",
+                                          opacity: wouldExceed && !isOn ? 0.3 : isOn ? 1 : 0.7,
+                                          transition: "all .15s",
+                                        }}>
+                                        {t.name}
+                                        <span style={{ marginLeft: 4, fontSize: 9, opacity: .65 }}>
+                                          {t.points === 2 ? '··' : '·'}{t.type === 'st' ? ' ST' : t.type === 'aoe' ? ' AoE' : ''}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                {overBudget && (
+                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.red, marginTop: 5 }}>
+                                    ⚠ Over talent point budget — remove a talent to continue.
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* Hero sub-talents */}
-                          <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: heroClrE, marginBottom: 5, opacity: .7 }}>HERO TALENTS <span style={{ color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span></div>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {heroTals.map(t => {
-                                const isOn = editDraft.enabledHeroTalents.includes(t.name);
-                                return (
-                                  <button key={t.name} title={t.desc}
-                                    onClick={() => setEditDraft(d => {
-                                      if (!d) return d;
-                                      const next = isOn ? d.enabledHeroTalents.filter(n => n !== t.name) : [...d.enabledHeroTalents, t.name];
-                                      return { ...d, enabledHeroTalents: next };
-                                    })}
-                                    style={{
-                                      fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                      color: isOn ? heroClrE : C.textDim,
-                                      background: isOn ? heroBgE : C.surface3,
-                                      border: `1px solid ${isOn ? heroBdrE : C.border}`,
-                                      borderRadius: 5, padding: "2px 8px", cursor: "pointer",
-                                      opacity: isOn ? 1 : 0.55,
-                                      transition: "all .15s",
-                                    }}>
-                                    {t.name}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                          {(() => {
+                            const usedHero = editDraft.enabledHeroTalents.reduce((sum, name) => {
+                              const t = heroTals.find(x => x.name === name);
+                              return sum + (t?.points ?? 1);
+                            }, 0);
+                            return (
+                              <div style={{ marginBottom: 12 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: heroClrE, opacity: .7 }}>
+                                    HERO TALENTS <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0 }}>(click to toggle)</span>
+                                  </div>
+                                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10,
+                                    color: usedHero === MAX_HERO_POINTS ? heroClrE : C.textMid, fontWeight: 700 }}>
+                                    {usedHero} / {MAX_HERO_POINTS} pts
+                                  </div>
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  {heroTals.map(t => {
+                                    const isOn = editDraft.enabledHeroTalents.includes(t.name);
+                                    const wouldExceed = !isOn && (usedHero + t.points) > MAX_HERO_POINTS;
+                                    return (
+                                      <button key={t.name}
+                                        onMouseEnter={e => handleTalentHover(t, e)}
+                                        onMouseLeave={handleTalentLeave}
+                                        disabled={wouldExceed && !isOn}
+                                        onClick={() => setEditDraft(d => {
+                                          if (!d || (wouldExceed && !isOn)) return d;
+                                          const next = isOn ? d.enabledHeroTalents.filter(n => n !== t.name) : [...d.enabledHeroTalents, t.name];
+                                          return { ...d, enabledHeroTalents: next };
+                                        })}
+                                        style={{
+                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                          color: isOn ? heroClrE : wouldExceed ? C.textDim : C.textMid,
+                                          background: isOn ? heroBgE : C.surface3,
+                                          border: `1px solid ${isOn ? heroBdrE : C.border}`,
+                                          borderRadius: 5, padding: "2px 8px",
+                                          cursor: wouldExceed && !isOn ? "not-allowed" : "pointer",
+                                          opacity: wouldExceed && !isOn ? 0.3 : isOn ? 1 : 0.7,
+                                          transition: "all .15s",
+                                        }}>
+                                        {t.name}·
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Save / Cancel */}
                           <div style={{ display: "flex", gap: 8 }}>
@@ -2142,7 +2227,8 @@ export default function SurvivalHunterSim() {
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                                   {pills.map(t => (
                                     <span key={t.name}
-                                      title={t.desc}
+                                      onMouseEnter={e => handleTalentHover(t, e)}
+                                      onMouseLeave={handleTalentLeave}
                                       style={{
                                         fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
                                         color: PILL_CLR[type],
@@ -2151,7 +2237,7 @@ export default function SurvivalHunterSim() {
                                         borderRadius: 5, padding: "2px 8px",
                                         cursor: "help",
                                       }}>
-                                      {t.name}
+                                      {t.name}{t.points === 2 ? ' ··' : ''}
                                     </span>
                                   ))}
                                 </div>
@@ -2250,13 +2336,16 @@ export default function SurvivalHunterSim() {
                                     </div>
                                     <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                                       {g.pills.map(t => (
-                                        <span key={t.name} title={t.desc} style={{
-                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                          color: PILL_CLR_C[t.type] || heroClrC,
-                                          background: PILL_BG_C[t.type] || heroBgC,
-                                          border: `1px solid ${(PILL_CLR_C[t.type] || heroClrC)}44`,
-                                          borderRadius: 5, padding: "2px 8px", cursor: "help",
-                                        }}>{t.name}</span>
+                                        <span key={t.name}
+                                          onMouseEnter={e => handleTalentHover(t, e)}
+                                          onMouseLeave={handleTalentLeave}
+                                          style={{
+                                            fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                            color: PILL_CLR_C[t.type] || heroClrC,
+                                            background: PILL_BG_C[t.type] || heroBgC,
+                                            border: `1px solid ${(PILL_CLR_C[t.type] || heroClrC)}44`,
+                                            borderRadius: 5, padding: "2px 8px", cursor: "help",
+                                          }}>{t.name}{t.points === 2 ? ' ··' : ''}</span>
                                       ))}
                                     </div>
                                   </div>
@@ -3970,6 +4059,97 @@ export default function SurvivalHunterSim() {
                     ))}
                   </div>
                 )}
+              </>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Talent Pill Tooltip ─────────────────────────────────────── */}
+      {hoveredTalent && (() => {
+        const t = hoveredTalent;
+        const TYPE_CLR: Record<string,string> = {
+          core: '#60a5fa', st: '#4ade80', aoe: '#f97316', hero: '#c084fc', hybrid: '#c084fc',
+        };
+        const TYPE_BG: Record<string,string> = {
+          core: '#0c1a2e', st: '#0f2a1a', aoe: '#1f1000', hero: '#1a0e2e', hybrid: '#1a1033',
+        };
+        const TYPE_LBL: Record<string,string> = {
+          core: 'CORE — ALWAYS ACTIVE', st: 'OPTIONAL — SINGLE TARGET',
+          aoe: 'OPTIONAL — AoE / M+', hero: 'HERO TALENT', hybrid: 'OPTIONAL — HYBRID',
+        };
+        const clr = TYPE_CLR[t.type] || '#94a3b8';
+        const bg  = TYPE_BG[t.type]  || C.surface2;
+        return (
+          <div
+            onMouseEnter={() => { if (talentHideTimer.current) { window.clearTimeout(talentHideTimer.current); talentHideTimer.current = null; } }}
+            onMouseLeave={handleTalentLeave}
+            style={{
+              position: "fixed", zIndex: 9999,
+              left: talentTooltipPos.x, top: talentTooltipPos.y,
+              width: 290,
+              background: "linear-gradient(180deg,#141c2a 0%,#0c1220 100%)",
+              border: `1px solid ${clr}55`,
+              borderRadius: 12, padding: "14px 16px",
+              boxShadow: "0 12px 48px rgba(0,0,0,.85)",
+              fontFamily: "'Rajdhani',sans-serif",
+              pointerEvents: "auto",
+            }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 8, flexShrink: 0,
+                background: bg, border: `2px solid ${clr}66`,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+              }}>
+                {t.type === 'core' ? '🔒' : t.type === 'st' ? '🎯' : t.type === 'aoe' ? '💥' : t.type === 'hero' ? '✨' : '⚔'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: clr, lineHeight: 1.2 }}>
+                  {t.name}
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                  <span style={{
+                    fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5,
+                    color: clr, background: bg, border: `1px solid ${clr}44`,
+                    borderRadius: 4, padding: "1px 7px", fontWeight: 700,
+                  }}>{TYPE_LBL[t.type] ?? t.type.toUpperCase()}</span>
+                  <span style={{
+                    fontFamily: "'IBM Plex Mono',monospace", fontSize: 10,
+                    color: t.points === 2 ? '#fbbf24' : C.textMid,
+                    background: t.points === 2 ? '#2a1f08' : C.surface3,
+                    border: `1px solid ${t.points === 2 ? '#78350f' : C.border}`,
+                    borderRadius: 4, padding: "1px 7px", fontWeight: 700,
+                  }}>{t.points} {t.points === 1 ? 'pt' : 'pts'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ borderTop: `1px solid ${C.borderSub}`, margin: "8px 0" }} />
+
+            {/* Description */}
+            <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5 }}>
+              {t.desc}
+            </div>
+
+            {/* Core badge */}
+            {t.type === 'core' && (
+              <>
+                <div style={{ borderTop: `1px solid ${C.borderSub}`, margin: "8px 0" }} />
+                <div style={{ fontSize: 11, color: '#60a5fa', fontFamily: "'Orbitron',sans-serif", letterSpacing: 1 }}>
+                  🔒 Required — cannot be removed from any build.
+                </div>
+              </>
+            )}
+
+            {/* Point cost note for 2pt */}
+            {t.points === 2 && (
+              <>
+                <div style={{ borderTop: `1px solid ${C.borderSub}`, margin: "8px 0" }} />
+                <div style={{ fontSize: 11, color: '#fbbf24' }}>
+                  ⚠ 2-point talent — costs twice as many talent points. Budget carefully.
+                </div>
               </>
             )}
           </div>
