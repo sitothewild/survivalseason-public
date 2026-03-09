@@ -1058,6 +1058,7 @@ export default function SurvivalHunterSim() {
               ];
 
               return (
+                <>
                 <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 20 }} className="responsive-grid">
                   {/* LEFT — Simulation Summary Table */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
