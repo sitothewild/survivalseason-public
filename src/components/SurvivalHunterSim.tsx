@@ -1012,7 +1012,7 @@ export default function SurvivalHunterSim() {
                 <button className="parse-btn" onClick={handleParse} style={{ marginTop: 10 }}>✦ Parse Character Data</button>
 
                 {parsedChar && (
-                  <div style={{ marginTop: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.greenBdr}`, animation: "fadeUp .3s ease", overflow: "hidden" }}>
+                  <div style={{ marginTop: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.greenBdr}`, overflow: "hidden" }}>
                     <div style={{ background: C.greenBg, padding: "10px 16px", borderBottom: `1px solid rgba(74,222,128,.15)`, display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: C.green, fontSize: 13 }}>✓</span>
                       <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
