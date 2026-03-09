@@ -547,7 +547,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
 // Bumps each stat by a small amount and measures DPS delta
 // ============================================================
 function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
-  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build).totalDps;
+  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
 
   const DELTA = {
     agility: 200,       // +200 agility
