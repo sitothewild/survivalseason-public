@@ -74,8 +74,8 @@ const HUNTER_KEYWORDS = /hunter|survival|hotfix|class.?tuning/i;
 
 async function fetchWowheadNews(): Promise<PatchNote[]> {
   try {
-    // Try Wowhead RSS feed for news (not blue tracker which may be empty)
-    const res = await fetch('https://www.wowhead.com/news/rss/feed', {
+    // Wowhead retail news RSS — covers hotfixes, tuning, patch notes
+    const res = await fetch('https://www.wowhead.com/news/rss/retail', {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SurvivalHunterSim/1.0)' },
     });
     if (!res.ok) { await res.text(); return []; }
@@ -93,10 +93,13 @@ async function fetchWowheadNews(): Promise<PatchNote[]> {
 
       const plainTitle = stripHtml(title);
       const plainDesc = stripHtml(desc);
+      const combined = `${plainTitle} ${plainDesc}`;
 
-      // Match hotfix/tuning/hunter posts
-      if (/hotfix|class.?tuning|hunter|survival|patch.*notes/i.test(plainTitle) || /hotfix|class.?tuning/i.test(plainTitle)) {
-        // Try to extract hunter-specific content
+      // Only include posts that mention hunter/survival or are hotfix/tuning posts
+      const isHunterRelated = /hunter|survival/i.test(combined);
+      const isHotfixTuning = /hotfix|class.?tuning|patch.*notes/i.test(plainTitle);
+
+      if (isHunterRelated || isHotfixTuning) {
         let hunterContent = extractHunterSection(plainDesc);
         if (!hunterContent) hunterContent = plainDesc;
 
@@ -109,7 +112,7 @@ async function fetchWowheadNews(): Promise<PatchNote[]> {
           source: 'Wowhead',
         });
       }
-      if (items.length >= 5) break;
+      if (items.length >= 8) break;
     }
     return items;
   } catch (e) {
