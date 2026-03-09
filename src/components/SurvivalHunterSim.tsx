@@ -668,6 +668,31 @@ export default function SurvivalHunterSim() {
     }, 160);
   }, []);
 
+
+  // Prefetch item tooltip data in batch so hover doesn't trigger expensive fetches
+  useEffect(() => {
+    const itemIds = (parsedChar?.gear || [])
+      .map((g: any) => g.itemId)
+      .filter((id: string | null) => !!id && !itemCacheRef.current[id]);
+    if (!itemIds.length) return;
+
+    (async () => {
+      try {
+        const items = await getItemsBatch(itemIds, armoryRegion || 'us');
+        if (!Array.isArray(items)) return;
+        setItemCache(prev => {
+          const next = { ...prev };
+          items.forEach((item: any) => {
+            if (item?.id) next[String(item.id)] = { ...(next[String(item.id)] || {}), ...item };
+          });
+          return next;
+        });
+      } catch {
+        // Non-blocking: hover fetch will still work as fallback
+      }
+    })();
+  }, [parsedChar?.gear, armoryRegion]);
+
   const getTargets = () => simMode === 'single' ? [1] : simMode === 'cleave' ? [2, 3] : [5, 8, 10];
 
   const handleSim = useCallback(() => {
