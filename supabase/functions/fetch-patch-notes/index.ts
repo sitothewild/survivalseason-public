@@ -193,34 +193,8 @@ async function fetchBlizzardHotfixes(): Promise<PatchNote[]> {
   }
 }
 
-// Curated latest hunter hotfixes/tuning as fallback
-// These are the most recent known changes — update periodically
-const CURATED_NOTES: PatchNote[] = [
-  {
-    title: 'Midnight 12.0 Pre-Season 1 — Hunter Class Tuning',
-    link: 'https://www.wowhead.com/hunter',
-    pubDate: '2026-03-04T00:00:00Z',
-    date: 'Mar 4, 2026',
-    description: 'Survival Hunter: Kill Command damage increased by 5%. Wildfire Bomb damage increased by 8%. Mongoose Bite damage reduced by 3%. Coordinated Assault cooldown reduced to 2 minutes (was 2.5 min). Sentinel owl now resets Wildfire Bomb cooldown when spawning.',
-    source: 'Wowhead',
-  },
-  {
-    title: 'Hotfixes — March 6, 2026',
-    link: 'https://www.wowhead.com/hunter',
-    pubDate: '2026-03-06T00:00:00Z',
-    date: 'Mar 6, 2026',
-    description: 'Hunter — Survival: Fixed an issue where Sentinel owl could proc multiple times from a single Wildfire Bomb cast. Flamefang Pitch second charge now correctly benefits from mastery. Raptor Swipe haste proc now stacks correctly up to 5 times in AoE.',
-    source: 'Wowhead',
-  },
-  {
-    title: 'Midnight Pre-Season 1 — Survival Hunter Talent Rework Summary',
-    link: 'https://www.wowhead.com/hunter',
-    pubDate: '2026-02-28T00:00:00Z',
-    date: 'Feb 28, 2026',
-    description: 'Explosive Shot removed from class tree. Replaced with Keen Eyesight, Unnatural Causes, and Trigger Finger. Mongoose Fury is now baseline. New ability: Flamefang Pitch (60s CD AoE DoT). Raptor Swipe replaces Raptor Strike in AoE, hitting 5 targets.',
-    source: 'Wowhead',
-  },
-];
+// Empty curated notes — rely entirely on live RSS feeds
+const CURATED_NOTES: PatchNote[] = [];
 
 function dedup(notes: PatchNote[]): PatchNote[] {
   const seen = new Set<string>();
