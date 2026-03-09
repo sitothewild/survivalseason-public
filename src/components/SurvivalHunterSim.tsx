@@ -868,6 +868,45 @@ export default function SurvivalHunterSim() {
     return 'Unknown';
   }, [importedTalentString]);
 
+  const userHeroKey = useMemo(() => {
+    if (detectedHeroTalent === 'Sentinel') return 'sentinel';
+    if (detectedHeroTalent === 'Pack Leader') return 'packLeader';
+    return heroTalent;
+  }, [detectedHeroTalent, heroTalent]);
+
+  const primaryTargetCount = useMemo(() => {
+    const targets = getTargets();
+    return targets[0] || 1;
+  }, [simMode]);
+
+  const userBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, userHeroKey), [primaryTargetCount, userHeroKey]);
+  const optimalBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, 'sentinel'), [primaryTargetCount]);
+
+  const talentDiffRows = useMemo(() => {
+    const left = userBuildInfo?.selected || [];
+    const right = optimalBuildInfo?.selected || [];
+    const leftKeys = new Set(left.map((t: any) => t.key));
+    const rightOnly = right.filter((t: any) => !leftKeys.has(t.key));
+    const leftOnly = left.filter((t: any) => !right.some((rt: any) => rt.key === t.key));
+
+    const explain = (from: any, to: any) => {
+      if (to?.aoePriority) return `${to.key.replace(/([A-Z])/g, ' $1')} scales better in cleave/AoE windows.`;
+      if (to?.stPriority) return `${to.key.replace(/([A-Z])/g, ' $1')} provides stronger single-target pressure.`;
+      if (to?.always) return `${to.key.replace(/([A-Z])/g, ' $1')} is a core throughput pick across fights.`;
+      return `${to?.key?.replace(/([A-Z])/g, ' $1') || 'This swap'} provides better current performance.`;
+    };
+
+    const rows = [];
+    const maxRows = Math.max(leftOnly.length, rightOnly.length);
+    for (let i = 0; i < maxRows; i++) {
+      const from = leftOnly[i];
+      const to = rightOnly[i];
+      if (!from || !to) continue;
+      rows.push({ from, to, note: explain(from, to) });
+    }
+    return rows;
+  }, [userBuildInfo, optimalBuildInfo]);
+
   const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
 
