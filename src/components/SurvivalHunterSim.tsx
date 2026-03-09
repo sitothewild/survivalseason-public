@@ -406,6 +406,60 @@ export default function SurvivalHunterSim() {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [upgradeFrom, setUpgradeFrom] = useState(636);
   const [upgradeTo, setUpgradeTo] = useState(645);
+  // SimC GitHub data
+  const [simcLiveData, setSimcLiveData] = useState<any>(null);
+  const [simcSyncStatus, setSimcSyncStatus] = useState<'idle' | 'loading' | 'synced' | 'error'>('idle');
+  const [simcSyncInfo, setSimcSyncInfo] = useState<string>('');
+
+  // Auto-load SimC data on mount
+  useEffect(() => {
+    (async () => {
+      setSimcSyncStatus('loading');
+      setSimcSyncInfo('Loading cached SimC data...');
+      try {
+        // First try reading from cache
+        const { data: cached } = await supabase
+          .from('simc_data_cache')
+          .select('*')
+          .eq('data_key', 'survival_hunter_data')
+          .single();
+        if (cached?.data) {
+          setSimcLiveData(cached.data);
+          const sha = (cached.data as any)?.sha || cached.github_sha || '';
+          setSimcSyncInfo(`SimC data loaded (${sha.slice(0, 7)}) · ${new Date(cached.updated_at).toLocaleDateString()}`);
+          setSimcSyncStatus('synced');
+        } else {
+          // No cached data, trigger a sync
+          await handleSimcSync();
+        }
+      } catch (e) {
+        console.warn('SimC cache load failed, trying sync:', e);
+        try { await handleSimcSync(); } catch (e2) {
+          setSimcSyncStatus('error');
+          setSimcSyncInfo('Using hardcoded data (sync failed)');
+        }
+      }
+    })();
+  }, []);
+
+  const handleSimcSync = useCallback(async (force = false) => {
+    setSimcSyncStatus('loading');
+    setSimcSyncInfo('Syncing from SimC GitHub...');
+    try {
+      const { data, error } = await supabase.functions.invoke('simc-data-sync', {
+        body: { force },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setSimcLiveData(data.data);
+      const status = data.status === 'cached' ? 'Up to date' : 'Updated';
+      setSimcSyncInfo(`${status} (${data.sha?.slice(0, 7)}) · ${new Date().toLocaleDateString()}`);
+      setSimcSyncStatus('synced');
+    } catch (e) {
+      setSimcSyncStatus('error');
+      setSimcSyncInfo(`Sync failed: ${e.message}`);
+    }
+  }, []);
 
   const handleParse = useCallback(() => {
     setParseError(''); const result = parseSimcString(simcInput);
