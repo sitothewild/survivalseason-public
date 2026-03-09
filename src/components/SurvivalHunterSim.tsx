@@ -1551,23 +1551,23 @@ export default function SurvivalHunterSim() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Armory Lookup */}
-              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
-                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 12px' }}>
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 24 }}>
+                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 600, letterSpacing: 1.5, color: 'hsl(var(--foreground))', margin: '0 0 14px' }}>
                   🌐 ARMORY LOOKUP
                 </h3>
-                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#6a5030', marginBottom: 10 }}>
+                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', marginBottom: 14, lineHeight: 1.5 }}>
                   Pull your character directly from the WoW Armory — no addon needed
                 </p>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                   {['us', 'eu', 'kr', 'tw'].map(r => (
                     <button key={r} className={`mode-btn ${armoryRegion === r ? 'active' : ''}`}
                       onClick={() => setArmoryRegion(r)}
-                      style={{ flex: 1, padding: '6px 8px', fontSize: 11, textTransform: 'uppercase' }}>
+                      style={{ flex: 1, padding: '10px 12px', fontSize: 12, textTransform: 'uppercase', fontWeight: 600 }}>
                       {r}
                     </button>
                   ))}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
                   {/* Realm searchable dropdown */}
                   <div ref={realmDropdownRef} style={{ position: 'relative' }}>
                     <input className="input-field" placeholder="Search realm..."
@@ -1578,7 +1578,7 @@ export default function SurvivalHunterSim() {
                         if (!e.target.value) setArmoryRealm('');
                       }}
                       onFocus={() => setShowRealmDropdown(true)}
-                      style={{ width: '100%' }}
+                      style={{ width: '100%', fontSize: 14 }}
                     />
                     {showRealmDropdown && (() => {
                       const realms = REALM_DATA[armoryRegion] || [];
