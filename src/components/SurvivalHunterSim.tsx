@@ -627,6 +627,7 @@ export default function SurvivalHunterSim() {
   const [armoryRealm, setArmoryRealm] = useState('');
   const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
   const [showRealmDropdown, setShowRealmDropdown] = useState(false);
+  const [realmHighlightIdx, setRealmHighlightIdx] = useState(-1);
   const [armoryName, setArmoryName] = useState('');
   const [armoryRegion, setArmoryRegion] = useState('us');
   const [armoryLoading, setArmoryLoading] = useState(false);
