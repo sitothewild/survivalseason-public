@@ -213,14 +213,6 @@ const CURATED_NOTES: PatchNote[] = [
     source: 'Wowhead',
   },
   {
-    title: 'Hotfixes — March 8, 2026',
-    link: 'https://www.wowhead.com/hunter',
-    pubDate: '2026-03-08T00:00:00Z',
-    date: 'Mar 8, 2026',
-    description: 'Hunter — Survival: Boomstick cooldown reduction from Wildfire Bomb hits increased to 2.5 seconds (was 2s). Pack Leader — Hogstrider movement speed bonus now works in combat. Fury of the Eagle tick rate improved for better target switching in M+.',
-    source: 'Wowhead',
-  },
-  {
     title: 'Midnight Pre-Season 1 — Survival Hunter Talent Rework Summary',
     link: 'https://www.wowhead.com/hunter',
     pubDate: '2026-02-28T00:00:00Z',
