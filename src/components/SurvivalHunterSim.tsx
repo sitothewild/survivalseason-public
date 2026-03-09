@@ -4,7 +4,7 @@ import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMe
 import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
-import { parseSimcAPL, getRotationWeights, type ParsedAPL } from "@/utils/aplParser";
+import { parseSimcAPL, getRotationWeights, buildAPLFromActionLists, type ParsedAPL } from "@/utils/aplParser";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
