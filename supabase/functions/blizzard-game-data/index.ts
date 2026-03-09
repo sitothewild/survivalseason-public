@@ -169,8 +169,8 @@ serve(async (req) => {
                 return { id, error: `${resp.status}: ${text}` };
               }
               return await resp.json();
-            } catch (e) {
-              return { id, error: e.message };
+            } catch (e: unknown) {
+              return { id, error: (e as Error).message };
             }
           })
         );
@@ -185,8 +185,8 @@ serve(async (req) => {
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
