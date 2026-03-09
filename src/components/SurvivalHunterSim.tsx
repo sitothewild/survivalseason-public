@@ -1090,8 +1090,8 @@ export default function SurvivalHunterSim() {
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
 
   // Helper components (memoized so inputs don't lose focus on state updates)
-  const LBL = useCallback(({ children }) => (
-    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+   const LBL = useCallback(({ children }) => (
+    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: C.foreground, textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10, fontWeight: 700 }}>
       {children}
       <div style={{ flex: 1, height: 1, background: C.borderSub }} />
     </div>
