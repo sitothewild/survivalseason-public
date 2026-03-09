@@ -317,6 +317,21 @@ function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCou
   return { actionCounts, buffUptimes, strikeAsOneDetails: strikeAsOneExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
 }
 
+/** WoW item quality color based on ilvl relative to the character's average.
+ *  Uses relative thresholds so it works at any level range. */
+function getItemQualityColor(ilvl: number, avgIlvl?: number): string {
+  if (!ilvl || ilvl <= 0) return '#9d9d9d'; // Poor/grey
+  const avg = avgIlvl && avgIlvl > 0 ? avgIlvl : ilvl;
+  const diff = ilvl - avg;
+  // Legendary: 15%+ above avg, Epic: 5%+ above, Rare: within 5%, Uncommon: up to 10% below, Common: lower
+  const pct = avg > 0 ? diff / avg : 0;
+  if (pct >= 0.15) return '#ff8000';  // Legendary orange
+  if (pct >= 0.03) return '#a335ee';  // Epic purple
+  if (pct >= -0.05) return '#0070dd'; // Rare blue
+  if (pct >= -0.12) return '#1eff00'; // Uncommon green
+  return '#ffffff';                    // Common white
+}
+
 function getAbilityCoefficient(ability) {
   const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Mongoose Bite':1.60,'Hatchet Toss':0.95 };
   return c[ability] || 1.0;
@@ -607,33 +622,30 @@ export default function SurvivalHunterSim() {
     } catch (err) { setArmoryError(err.message || 'Failed to look up character.'); setParsedChar(null); } finally { setArmoryLoading(false); }
   }, [armoryRealm, armoryName, armoryRegion]);
 
-  const handleItemHover = useCallback(async (itemId: string, event: any) => {
+  const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
     const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipPos({ x: rect.right + 8, y: rect.top });
-    setHoveredItem(itemId);
-    // Check cache via functional update to avoid dependency on itemCache
-    setItemCache(prev => {
-      if (prev[itemId]) return prev; // Already cached, no fetch needed
-      // Fetch item data asynchronously
-      (async () => {
-        setTooltipLoading(true);
-        try {
-          const [itemData, mediaData] = await Promise.all([
-            getItem(parseInt(itemId), armoryRegion || 'us'),
-            getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
-          ]);
-          const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
-          setItemCache(p => ({ ...p, [itemId]: { ...itemData, _icon: icon } }));
-        } catch (e) {
-          setItemCache(p => ({ ...p, [itemId]: { _error: e.message } }));
-        } finally {
-          setTooltipLoading(false);
-        }
-      })();
-      return prev;
-    });
-  }, [armoryRegion]);
+    const newX = rect.right + 8;
+    const newY = rect.top;
+    // Only update position if it actually changed (avoids re-render)
+    setTooltipPos(prev => (prev.x === newX && prev.y === newY) ? prev : { x: newX, y: newY });
+    setHoveredItem(prev => prev === itemId ? prev : itemId);
+    // Fetch item data if not cached — check synchronously, fetch outside setState
+    if (!itemCache[itemId]) {
+      setTooltipLoading(true);
+      Promise.all([
+        getItem(parseInt(itemId), armoryRegion || 'us'),
+        getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
+      ]).then(([itemData, mediaData]) => {
+        const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
+        setItemCache(p => ({ ...p, [itemId]: { ...itemData, _icon: icon } }));
+      }).catch(e => {
+        setItemCache(p => ({ ...p, [itemId]: { _error: e.message } }));
+      }).finally(() => {
+        setTooltipLoading(false);
+      });
+    }
+  }, [armoryRegion, itemCache]);
 
   const handleItemLeave = useCallback(() => { setHoveredItem(null); }, []);
 
@@ -888,8 +900,8 @@ export default function SurvivalHunterSim() {
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                           {parsedChar.gear.map((g, i) => {
-                            const ilvlColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#94a3b8";
-                            const nameColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#ffffff";
+                            const ilvlColor = getItemQualityColor(g.ilvl, parsedChar.character?.avgIlvl);
+                            const nameColor = ilvlColor;
                             return (
                               <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
                                 onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)} onMouseLeave={handleItemLeave}>
