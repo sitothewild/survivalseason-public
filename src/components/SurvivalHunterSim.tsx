@@ -1923,6 +1923,11 @@ export default function SurvivalHunterSim() {
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.borderSub}` }}>
           <p style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim }}>SURVIVAL HUNTER SIM · MIDNIGHT 12.0 PRE-SEASON 1 · INTERNAL ENGINE</p>
+          {simcSyncStatus === 'synced' && simcSyncInfo && (
+            <p style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim, marginTop: 4 }}>
+              SimC Data: {simcSyncInfo}
+            </p>
+          )}
         </div>
       </div>
 
