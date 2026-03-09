@@ -160,8 +160,6 @@ export const HERO_MIDNIGHT_276: GearProfile = {
 };
 /** Heroic raid = Hero-track max = 276 ilvl. Alias for HERO_MIDNIGHT_276. */
 export const HEROIC_MIDNIGHT_276 = HERO_MIDNIGHT_276;
-/** @deprecated renamed to HEROIC_MIDNIGHT_276 */
-export const HEROIC_MIDNIGHT_639 = HERO_MIDNIGHT_276;
 
 /** Champion-track Rank 6 (263 ilvl) — M0 / Normal Raid / Delves T7. */
 export const CHAMPION_MIDNIGHT_263: GearProfile = {

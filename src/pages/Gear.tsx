@@ -310,7 +310,7 @@ export default function Gear() {
           <Card>
             <SecTitle icon="⚖">Scale Factors (Stat Weights)</SecTitle>
             <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim, marginTop:0, marginBottom:16 }}>
-              DPS per 1 stat rating · Agility = 1.00 reference · 4pc tier active · 276 ilvl baseline
+              DPS per 1 stat rating · Agility = 1.00 reference · 4pc tier active · Hero-track 276 ilvl baseline
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
               {([["🦉 Sentinel", sentWeights, C.sentClr], ["🐾 Pack Leader", plWeights, C.packClr]] as const).map(([label, w, clr]: any) => (

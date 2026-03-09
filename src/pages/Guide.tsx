@@ -306,7 +306,7 @@ export default function Guide() {
             marginTop:0, marginBottom:16, lineHeight:1.6 }}>
             Calculated from raw AP coefficients × Attack Power × stat multipliers × CPM model.
             Built from scratch — not anchored to a fixed number.
-            <strong style={{ color:C.goldLight }}> 276 ilvl Heroic Midnight</strong>, 4pc tier,
+            <strong style={{ color:C.goldLight }}> Hero-track 276 ilvl (Heroic Raid)</strong>, 4pc tier,
             {" "}{isSent ? "Sentinel" : "Pack Leader"} hero, {targets} target{targets>1?"s":""}.
           </p>
           <div style={{ overflowX:"auto" }}>
