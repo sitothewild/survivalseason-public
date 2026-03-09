@@ -717,6 +717,9 @@ export default function SurvivalHunterSim() {
   const [importedTalentString, setImportedTalentString] = useState<string>('');
   const [userSimResult, setUserSimResult] = useState<any>(null);
   const [optimalSimResult, setOptimalSimResult] = useState<any>(null);
+  // APL parser state
+  const [aplData, setAplData] = useState<ParsedAPL | null>(null);
+  const [aplSortMode, setAplSortMode] = useState<'dps' | 'apl'>('dps');
   // Patch notes state
   const [patchNotes, setPatchNotes] = useState<any[]>([]);
   const [patchLoading, setPatchLoading] = useState(false);
