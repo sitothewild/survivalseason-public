@@ -74,8 +74,8 @@ const HUNTER_KEYWORDS = /hunter|survival|hotfix|class.?tuning/i;
 
 async function fetchWowheadNews(): Promise<PatchNote[]> {
   try {
-    // Try Wowhead RSS feed for news (not blue tracker which may be empty)
-    const res = await fetch('https://www.wowhead.com/news/rss/feed', {
+    // Wowhead retail news RSS — covers hotfixes, tuning, patch notes
+    const res = await fetch('https://www.wowhead.com/news/rss/retail', {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SurvivalHunterSim/1.0)' },
     });
     if (!res.ok) { await res.text(); return []; }
@@ -93,10 +93,13 @@ async function fetchWowheadNews(): Promise<PatchNote[]> {
 
       const plainTitle = stripHtml(title);
       const plainDesc = stripHtml(desc);
+      const combined = `${plainTitle} ${plainDesc}`;
 
-      // Match hotfix/tuning/hunter posts
-      if (/hotfix|class.?tuning|hunter|survival|patch.*notes/i.test(plainTitle) || /hotfix|class.?tuning/i.test(plainTitle)) {
-        // Try to extract hunter-specific content
+      // Only include posts that mention hunter/survival or are hotfix/tuning posts
+      const isHunterRelated = /hunter|survival/i.test(combined);
+      const isHotfixTuning = /hotfix|class.?tuning|patch.*notes/i.test(plainTitle);
+
+      if (isHunterRelated || isHotfixTuning) {
         let hunterContent = extractHunterSection(plainDesc);
         if (!hunterContent) hunterContent = plainDesc;
 
@@ -109,7 +112,7 @@ async function fetchWowheadNews(): Promise<PatchNote[]> {
           source: 'Wowhead',
         });
       }
-      if (items.length >= 5) break;
+      if (items.length >= 8) break;
     }
     return items;
   } catch (e) {
@@ -199,43 +202,43 @@ async function fetchBlizzardHotfixes(): Promise<PatchNote[]> {
 const CURATED_NOTES: PatchNote[] = [
   {
     title: 'Midnight 12.0 Pre-Season 1 — Hunter Class Tuning',
-    link: 'https://worldofwarcraft.blizzard.com/en-us/news',
+    link: 'https://www.wowhead.com/news/category=hunter',
     pubDate: '2026-03-04T00:00:00Z',
     date: 'Mar 4, 2026',
     description: 'Survival Hunter: Kill Command damage increased by 5%. Wildfire Bomb damage increased by 8%. Mongoose Bite damage reduced by 3%. Coordinated Assault cooldown reduced to 2 minutes (was 2.5 min). Sentinel owl now resets Wildfire Bomb cooldown when spawning.',
-    source: 'Blizzard',
+    source: 'Wowhead',
   },
   {
     title: 'Hotfixes — March 6, 2026',
-    link: 'https://worldofwarcraft.blizzard.com/en-us/news',
+    link: 'https://www.wowhead.com/news/category=hotfixes',
     pubDate: '2026-03-06T00:00:00Z',
     date: 'Mar 6, 2026',
     description: 'Hunter — Survival: Fixed an issue where Sentinel owl could proc multiple times from a single Wildfire Bomb cast. Flamefang Pitch second charge now correctly benefits from mastery. Raptor Swipe haste proc now stacks correctly up to 5 times in AoE.',
-    source: 'Blizzard',
+    source: 'Wowhead',
   },
   {
     title: 'Hotfixes — March 8, 2026',
-    link: 'https://worldofwarcraft.blizzard.com/en-us/news',
+    link: 'https://www.wowhead.com/news/category=hotfixes',
     pubDate: '2026-03-08T00:00:00Z',
     date: 'Mar 8, 2026',
     description: 'Hunter — Survival: Boomstick cooldown reduction from Wildfire Bomb hits increased to 2.5 seconds (was 2s). Pack Leader — Hogstrider movement speed bonus now works in combat. Fury of the Eagle tick rate improved for better target switching in M+.',
-    source: 'Blizzard',
+    source: 'Wowhead',
   },
   {
     title: 'Midnight Pre-Season 1 — Survival Hunter Talent Rework Summary',
-    link: 'https://worldofwarcraft.blizzard.com/en-us/news',
+    link: 'https://www.wowhead.com/news/category=hunter',
     pubDate: '2026-02-28T00:00:00Z',
     date: 'Feb 28, 2026',
     description: 'Explosive Shot removed from class tree. Replaced with Keen Eyesight, Unnatural Causes, and Trigger Finger. Mongoose Fury is now baseline. New ability: Flamefang Pitch (60s CD AoE DoT). Raptor Swipe replaces Raptor Strike in AoE, hitting 5 targets.',
-    source: 'Blizzard',
+    source: 'Wowhead',
   },
   {
     title: 'Class Tuning Incoming — March 11, 2026',
-    link: 'https://worldofwarcraft.blizzard.com/en-us/news',
+    link: 'https://www.wowhead.com/news/category=class-tuning',
     pubDate: '2026-03-09T00:00:00Z',
     date: 'Mar 9, 2026',
     description: 'Upcoming Hunter changes: Survival — Spearhead bleed damage increased by 10%. Kill Command focus cost reduced to 15 (was 20). Sentinel — Lunar Storm damage increased by 12%. These changes will go live with weekly maintenance.',
-    source: 'Blizzard',
+    source: 'Wowhead',
   },
 ];
 
