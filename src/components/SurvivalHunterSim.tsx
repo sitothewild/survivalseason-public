@@ -1500,37 +1500,37 @@ export default function SurvivalHunterSim() {
       }} />
       <div style={{
         position: 'fixed', bottom: '-10%', right: '20%', width: '35%', height: '40%',
-        background: 'radial-gradient(ellipse, rgba(100,40,10,0.08) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, hsl(var(--accent) / 0.05) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0
       }} />
       {/* Background grid */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: 'linear-gradient(rgba(60,80,139,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(60,80,139,0.03) 1px, transparent 1px)',
-        backgroundSize: '40px 40px'
+        backgroundImage: 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)',
+        backgroundSize: '40px 40px',
+        opacity: 0.3
       }} />
 
       <div className="sim-shell">
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div className="title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+          <div className="title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 12 }}>
             <div style={{ fontSize: 28 }}>🦅</div>
             <h1 className="glow-text" style={{
-              fontFamily: "'Cinzel Decorative', serif", fontSize: 'clamp(20px, 3vw, 32px)',
-              fontWeight: 900, margin: 0, letterSpacing: 4,
-              background: 'linear-gradient(135deg, #e8c88a, #e07030, #c44e00)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+              fontFamily: "'Cinzel Decorative', serif", fontSize: 'clamp(24px, 4vw, 40px)',
+              fontWeight: 900, margin: 0, letterSpacing: 5,
+              color: 'hsl(var(--foreground))'
             }}>
               SURVIVAL HUNTER
             </h1>
             <div style={{ fontSize: 28 }}>🔥</div>
           </div>
-          <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: '#7a6040', margin: 0 }}>
+          <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, color: 'hsl(var(--muted-foreground))', margin: '0 0 16px' }}>
             MIDNIGHT 12.0.1 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
           </p>
           <div className="divider" style={{ margin: '16px auto', maxWidth: 400 }} />
-          <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#8a7050', margin: 0, fontStyle: 'italic' }}>
+          <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 15, color: 'hsl(var(--muted-foreground))', margin: 0, fontStyle: 'italic', lineHeight: 1.6 }}>
             Sources: Azortharion (Trueshot Lodge) · Method.gg (Symex) · Maxroll (heleni) · Wowhead · Raidbots/SimC APL
           </p>
         </div>
