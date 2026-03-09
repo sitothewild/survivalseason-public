@@ -1547,7 +1547,7 @@ export default function SurvivalHunterSim() {
                         </div>
                         <div style={{ marginTop: 10, padding: "8px 12px", background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", borderRadius: 6 }}>
                           <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.red }}>
-                            ⚠ Missed stack = ~{fmt(missedStackDps)} DPS lost per window ({Math.round(missedStackDps / (simResult?.totalDps || 1) * 100 * 10) / 10}% of total)
+                            ⚠ Missed stack = ~{fmt(missedStackDps)} DPS lost per window ({Math.round(missedStackDps / (primary?.totalDps || 1) * 100 * 10) / 10}% of total)
                           </span>
                         </div>
                       </div>
