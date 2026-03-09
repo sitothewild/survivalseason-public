@@ -168,10 +168,122 @@ function parseSimcString(simcText) {
 }
 
 // ============================================================
-// SIMULATION ENGINE (kept exactly from existing)
+// SIMULATION ENGINE — Live SimC APL → DPS Breakdown
 // ============================================================
-const SIMC_BREAKDOWN_PL_ST = { 'Strike as One':0.1883,'Raptor Swipe':0.1471,'Raptor Strike':0.1271,'Boomstick':0.0772,'Auto Attack (MH)':0.0711,'Kill Command':0.0499,'Wildfire Bomb':0.0821,'Auto Attack (OH)':0.0339,'Takedown':0.0331,'Pack Leader Beasts':0.0716,'Pet (Claw)':0.0246,"Kroluk's Warbanner":0.0220,'Pet Melee':0.0200,'Bear (Rend + Melee)':0.0261 };
-const SIMC_BREAKDOWN_SENT_ST = { 'Raptor Strike':0.1400,'Raptor Swipe':0.1350,'Strike as One':0.1200,'Wildfire Bomb':0.1050,'Boomstick':0.0800,'Auto Attack (MH)':0.0650,'Kill Command':0.0500,'Moonlight Chakram':0.0450,'Sentinel Mark + Lunar Storm':0.0700,'Takedown':0.0380,'Auto Attack (OH)':0.0300,'Pet (Claw)':0.0250,'Pet Melee':0.0220,"Kroluk's Warbanner":0.0200 };
+
+// Fallback hardcoded breakdowns (used when live data unavailable)
+const SIMC_BREAKDOWN_PL_ST_DEFAULT = { 'Strike as One':0.1883,'Raptor Swipe':0.1471,'Raptor Strike':0.1271,'Boomstick':0.0772,'Auto Attack (MH)':0.0711,'Kill Command':0.0499,'Wildfire Bomb':0.0821,'Auto Attack (OH)':0.0339,'Takedown':0.0331,'Pack Leader Beasts':0.0716,'Pet (Claw)':0.0246,"Kroluk's Warbanner":0.0220,'Pet Melee':0.0200,'Bear (Rend + Melee)':0.0261 };
+const SIMC_BREAKDOWN_SENT_ST_DEFAULT = { 'Raptor Strike':0.1400,'Raptor Swipe':0.1350,'Strike as One':0.1200,'Wildfire Bomb':0.1050,'Boomstick':0.0800,'Auto Attack (MH)':0.0650,'Kill Command':0.0500,'Moonlight Chakram':0.0450,'Sentinel Mark + Lunar Storm':0.0700,'Takedown':0.0380,'Auto Attack (OH)':0.0300,'Pet (Claw)':0.0250,'Pet Melee':0.0220,"Kroluk's Warbanner":0.0200 };
+
+// Map SimC APL action names → display names used in breakdowns
+const APL_TO_DISPLAY: Record<string, string> = {
+  'raptor_strike': 'Raptor Strike', 'raptor_strike_melee': 'Raptor Strike',
+  'mongoose_bite': 'Raptor Strike', // mongoose_bite replaced by raptor_strike in TWW
+  'kill_command': 'Kill Command', 'kill_command_sv': 'Kill Command',
+  'wildfire_bomb': 'Wildfire Bomb', 'volatile_bomb': 'Wildfire Bomb',
+  'fury_of_the_eagle': 'Boomstick', 'boomstick': 'Boomstick',
+  'flanking_strike': 'Raptor Strike',
+  'coordinated_assault': 'Takedown', 'takedown': 'Takedown',
+  'harpoon': 'Takedown',
+  'butchery': 'Raptor Swipe', 'carve': 'Raptor Swipe', 'raptor_swipe': 'Raptor Swipe',
+  'wildfire_infusion': 'Wildfire Bomb',
+  'flamefang_pitch': 'Flamefang Pitch',
+  'moonfire': 'Sentinel Mark + Lunar Storm',
+  'moonlight_chakram': 'Moonlight Chakram',
+  'steel_trap': 'Wildfire Bomb',
+  'stampede': 'Pack Leader Beasts',
+  'spearhead': 'Takedown',
+  'call_of_the_wild': 'Pack Leader Beasts',
+  'aspect_of_the_eagle': 'Takedown',
+};
+
+// Passive/auto sources not in APL but always present
+const PASSIVE_SOURCES_PL: Record<string, number> = {
+  'Strike as One': 0.16, 'Auto Attack (MH)': 0.07, 'Auto Attack (OH)': 0.035,
+  'Pet (Claw)': 0.025, 'Pet Melee': 0.02, "Kroluk's Warbanner": 0.022,
+  'Pack Leader Beasts': 0.07, 'Bear (Rend + Melee)': 0.026,
+};
+const PASSIVE_SOURCES_SENT: Record<string, number> = {
+  'Strike as One': 0.12, 'Auto Attack (MH)': 0.065, 'Auto Attack (OH)': 0.03,
+  'Pet (Claw)': 0.025, 'Pet Melee': 0.022, "Kroluk's Warbanner": 0.02,
+  'Sentinel Mark + Lunar Storm': 0.07,
+};
+
+// Spell coefficients for weighting APL actions by damage per cast
+const SPELL_WEIGHT: Record<string, number> = {
+  'Raptor Strike': 2.86, 'Kill Command': 1.50, 'Wildfire Bomb': 2.48,
+  'Boomstick': 3.60, 'Takedown': 1.80, 'Raptor Swipe': 1.85,
+  'Flamefang Pitch': 4.20, 'Moonlight Chakram': 4.80,
+  'Sentinel Mark + Lunar Storm': 2.00, 'Pack Leader Beasts': 1.50,
+};
+
+/**
+ * Convert SimC APL action list into DPS breakdown percentages.
+ * Higher-priority actions (earlier in APL) are cast more often.
+ * We combine priority-based frequency with spell coefficients to estimate DPS share.
+ */
+function aplToBreakdown(actionList: string[], isPL: boolean): Record<string, number> {
+  // Count and weight each ability by APL position (earlier = higher cast frequency)
+  const abilityWeight: Record<string, number> = {};
+  const totalActions = actionList.length || 1;
+
+  actionList.forEach((action, idx) => {
+    // Extract the base action name (before any condition like ,if=...)
+    const baseName = action.split(',')[0].split('#')[0].trim().toLowerCase().replace(/\s+/g, '_');
+    const displayName = APL_TO_DISPLAY[baseName];
+    if (!displayName) return;
+
+    // Priority weight: actions earlier in the list are cast more frequently
+    // Use inverse-square decay to model priority queuing
+    const priorityWeight = 1.0 / (1 + idx * 0.15);
+    const spellCoef = SPELL_WEIGHT[displayName] || 1.0;
+    const dpsWeight = priorityWeight * spellCoef;
+
+    abilityWeight[displayName] = (abilityWeight[displayName] || 0) + dpsWeight;
+  });
+
+  // Merge with passive sources
+  const passives = isPL ? PASSIVE_SOURCES_PL : PASSIVE_SOURCES_SENT;
+  const passiveTotal = Object.values(passives).reduce((s, v) => s + v, 0);
+  const activeBudget = 1.0 - passiveTotal;
+
+  // Normalize active abilities to fill the remaining budget
+  const activeSum = Object.values(abilityWeight).reduce((s, v) => s + v, 0) || 1;
+  const breakdown: Record<string, number> = {};
+
+  Object.entries(abilityWeight).forEach(([name, w]) => {
+    breakdown[name] = (w / activeSum) * activeBudget;
+  });
+
+  // Add passive sources
+  Object.entries(passives).forEach(([name, pct]) => {
+    breakdown[name] = (breakdown[name] || 0) + pct;
+  });
+
+  // Normalize to exactly 1.0
+  const total = Object.values(breakdown).reduce((s, v) => s + v, 0) || 1;
+  Object.keys(breakdown).forEach(k => { breakdown[k] /= total; });
+
+  return breakdown;
+}
+
+/**
+ * Build dynamic breakdowns from live SimC data, or fall back to hardcoded defaults.
+ */
+function getBreakdowns(simcLiveData: any): { pl: Record<string, number>; sent: Record<string, number> } {
+  const apl = simcLiveData?.apl?.actionLists;
+  if (!apl) return { pl: SIMC_BREAKDOWN_PL_ST_DEFAULT, sent: SIMC_BREAKDOWN_SENT_ST_DEFAULT };
+
+  // Pack Leader: prefer plst, fall back to default_pl or default
+  const plActions = apl.plst || apl.default_pl || apl.default || [];
+  // Sentinel: prefer sentst, fall back to default_sent or default
+  const sentActions = apl.sentst || apl.default_sent || apl.default || [];
+
+  const plBreakdown = plActions.length > 2 ? aplToBreakdown(plActions, true) : SIMC_BREAKDOWN_PL_ST_DEFAULT;
+  const sentBreakdown = sentActions.length > 2 ? aplToBreakdown(sentActions, false) : SIMC_BREAKDOWN_SENT_ST_DEFAULT;
+
+  return { pl: plBreakdown, sent: sentBreakdown };
+}
 
 function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCount, ap) {
   const isPL = heroTalent === 'packLeader';
