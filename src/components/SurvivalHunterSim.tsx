@@ -1766,32 +1766,32 @@ export default function SurvivalHunterSim() {
                 </div>
 
                 {/* Advanced Options */}
-                <div style={{ marginBottom: 20, border: '1px solid #1a2540', borderRadius: 8, padding: 16, background: '#050810' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}
+                <div style={{ marginBottom: 24, border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 20, background: 'hsl(var(--card))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer' }}
                     onClick={() => setShowAdvanced(!showAdvanced)}>
-                    <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 1, color: '#e8c88a', margin: 0, flex: 1 }}>
+                    <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 1, color: 'hsl(var(--foreground))', margin: 0, flex: 1, fontWeight: 600 }}>
                       ⚙ ADVANCED OPTIONS
                     </h4>
-                    <span style={{ color: '#6a5030', fontSize: 14 }}>{showAdvanced ? '−' : '+'}</span>
+                    <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 16, fontWeight: 600 }}>{showAdvanced ? '−' : '+'}</span>
                   </div>
 
                   {showAdvanced && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 14 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 18 }}>
                       
                       {/* Fight Style */}
                       <div>
-                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 1, color: 'hsl(var(--muted-foreground))', display: 'block', marginBottom: 10, fontWeight: 600 }}>
                           FIGHT STYLE
                         </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           {Object.entries(FIGHT_STYLES).map(([key, style]) => (
                             <button key={key} className={`mode-btn ${fightStyle === key ? 'active' : ''}`}
                               onClick={() => setFightStyle(key)} 
-                              style={{ padding: '8px 10px', fontSize: 10, textAlign: 'left', position: 'relative' }}>
-                              <div style={{ fontWeight: 600, marginBottom: 2 }}>{style.label}</div>
-                              <div style={{ fontSize: 9, opacity: 0.7, lineHeight: 1.2 }}>{style.desc}</div>
+                              style={{ padding: '12px 14px', fontSize: 11, textAlign: 'left', position: 'relative' }}>
+                              <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>{style.label}</div>
+                              <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.3 }}>{style.desc}</div>
                               <span style={{ 
-                                position: 'absolute', right: 6, top: 6, fontSize: 8, 
+                                position: 'absolute', right: 8, top: 8, fontSize: 9, fontWeight: 600,
                                 color: style.mult >= 1 ? '#86efac' : '#fca5a5' 
                               }}>
                                 {style.mult === 1.0 ? '100%' : `${Math.round(style.mult * 100)}%`}
