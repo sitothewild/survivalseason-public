@@ -1390,7 +1390,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* RIGHT COLUMN — Sim Config (sticky) */}
-              <div style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}>
+              <div id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", alignSelf: "flex-start" }}>
                 <CARD>
                   <LBL>⚙ Simulation Config</LBL>
                   <div style={{ marginBottom: 16 }}>
