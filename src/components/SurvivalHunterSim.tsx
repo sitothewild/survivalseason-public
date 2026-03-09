@@ -791,6 +791,15 @@ export default function SurvivalHunterSim() {
   useEffect(() => { fetchPatchNotes(); }, []);
 
   // Auto-load SimC data on mount
+  // Deprecated War Within abilities — if found in cached data, it's stale
+  const DEPRECATED_ABILITIES = ['spearhead', 'flanking_strike', 'mongoose_bite', 'coordinated_assault', 'fury_of_the_eagle', 'butchery', 'raptor_bite'];
+  const isStaleSimcData = (data: any): boolean => {
+    const actionLists = data?.apl?.actionLists;
+    if (!actionLists) return false;
+    const allActions = Object.values(actionLists).flat().join(' ').toLowerCase();
+    return DEPRECATED_ABILITIES.some(a => allActions.includes(a));
+  };
+
   useEffect(() => {
     (async () => {
       setSimcSyncStatus('loading');
@@ -802,7 +811,7 @@ export default function SurvivalHunterSim() {
           .select('*')
           .eq('data_key', 'survival_hunter_data')
           .single();
-        if (cached?.data) {
+        if (cached?.data && !isStaleSimcData(cached.data)) {
           setSimcLiveData(cached.data);
           const sha = (cached.data as any)?.sha || cached.github_sha || '';
           setSimcSyncInfo(`SimC data loaded (${sha.slice(0, 7)}) · ${new Date(cached.updated_at).toLocaleDateString()}`);
@@ -815,12 +824,13 @@ export default function SurvivalHunterSim() {
             }
           } catch (e) { console.warn('APL parse from cache failed:', e); }
         } else {
-          // No cached data, trigger a sync
-          await handleSimcSync();
+          // Stale or no cached data, trigger a sync
+          if (cached?.data) console.warn('Cached SimC data contains deprecated War Within abilities — forcing re-sync');
+          await handleSimcSync(true);
         }
       } catch (e) {
         console.warn('SimC cache load failed, trying sync:', e);
-        try { await handleSimcSync(); } catch (e2) {
+        try { await handleSimcSync(true); } catch (e2) {
           setSimcSyncStatus('error');
           setSimcSyncInfo('Using hardcoded data (sync failed)');
         }
