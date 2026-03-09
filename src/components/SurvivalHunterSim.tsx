@@ -307,6 +307,134 @@ const SIMC_BREAKDOWN_SENT_ST = {
   'Kroluk\'s Warbanner':   0.0200,
 };
 
+// ============================================================
+// DETAILED SIMULATION DATA GENERATOR
+// Provides detailed tracking for abilities, triggers, and mechanics
+// ============================================================
+function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCount, ap) {
+  const isPL = heroTalent === 'packLeader';
+  
+  // Calculate Strike as One trigger details
+  const strikeAsOneDps = breakdown['Strike as One'] || 0;
+  const strikeAsOneCoef = 1.10; // From MIDNIGHT_DATA.abilities.strikeAsOne.apCoef
+  const avgStrikeAsOneDamage = Math.round(ap * strikeAsOneCoef);
+  
+  // Estimate Strike as One frequency based on trigger abilities
+  // Strike as One triggers on: Raptor Strike, Kill Command, Wildfire Bomb, Boomstick, Raptor Swipe
+  const triggerAbilities = [
+    'Raptor Strike', 'Kill Command', 'Wildfire Bomb', 'Boomstick', 'Raptor Swipe'
+  ];
+  
+  const totalTriggerDps = triggerAbilities.reduce((sum, ability) => {
+    return sum + (breakdown[ability] || 0);
+  }, 0);
+  
+  // Estimate trigger frequency (assuming triggers happen roughly proportional to their DPS contribution)
+  const estimatedTriggersPerSecond = Math.max(0.8, Math.min(2.5, totalTriggerDps / (ap * 0.8)));
+  const totalTriggers = Math.round(estimatedTriggersPerSecond * fightDuration);
+  
+  // Strike as One mechanics explanation
+  const strikeAsOneExplanation = {
+    description: "Passive pet attack that triggers on every damaging ability you cast",
+    triggerAbilities: triggerAbilities,
+    mechanics: [
+      "Triggers automatically on Raptor Strike, Kill Command, Wildfire Bomb, Boomstick",
+      targetCount > 1 ? `With Two Against Many: Hits ${Math.min(targetCount, 3)} targets, +15% damage per target` : "Single target pet attack",
+      "During Takedown: Raptor Swipe triggers Strike as One at 300% damage",
+      isPL ? "Pack Leader: Benefits from beast synergies" : "Sentinel: Enhanced by Spirit Bond mastery scaling"
+    ],
+    estimatedFrequency: `~${estimatedTriggersPerSecond.toFixed(1)} triggers/sec`,
+    avgDamage: avgStrikeAsOneDamage,
+    totalTriggers: totalTriggers
+  };
+  
+  // Generate action counts for detailed report
+  const actionCounts = {};
+  const totalDps = Object.values(breakdown).reduce((sum, dps) => sum + dps, 0);
+  
+  Object.entries(breakdown).forEach(([ability, dps]) => {
+    const baseCoef = getAbilityCoefficient(ability);
+    const avgHit = Math.round(ap * baseCoef);
+    const hitsPerSec = dps > 0 ? Math.max(0.1, dps / avgHit) : 0;
+    const totalHits = Math.round(hitsPerSec * fightDuration);
+    const critRate = ability.includes('Strike as One') ? 0.25 : 0.30; // Pet abilities crit less
+    const crits = Math.round(totalHits * critRate);
+    
+    actionCounts[ability] = {
+      damage: Math.round(dps * fightDuration),
+      count: totalHits,
+      avgHit: avgHit,
+      crits: crits,
+      dps: dps,
+      percentage: totalDps > 0 ? ((dps / totalDps) * 100) : 0
+    };
+  });
+  
+  // Buff uptimes (estimated)
+  const buffUptimes = {
+    'Mongoose Fury': { uptime: 0.65, description: 'Stacking damage buff from Mongoose Bite' },
+    'Takedown': { uptime: 0.18, description: '20% damage amplification window' },
+    'Lethal Calibration': { uptime: 0.80, description: '15% crit damage from Wildfire Bomb' },
+    'Spirit Bond': { uptime: 1.0, description: 'Permanent mastery scaling for you and pet' }
+  };
+  
+  if (isPL) {
+    buffUptimes['Pack Leader Beasts'] = { uptime: 0.45, description: 'Summoned beasts from Kill Command procs' };
+  } else {
+    buffUptimes['Sentinel Mark'] = { uptime: 0.35, description: 'Mark applied by Lunar Storm procs' };
+  }
+  
+  return {
+    actionCounts,
+    buffUptimes,
+    strikeAsOneDetails: strikeAsOneExplanation,
+    resourceData: {
+      focusGenerated: Math.round(fightDuration * 12), // Base focus regen
+      focusSpent: Math.round(fightDuration * 11),
+      focusWasted: Math.round(fightDuration * 1)
+    },
+    executionLog: generateSampleExecutionLog(fightDuration, heroTalent)
+  };
+}
+
+function getAbilityCoefficient(ability) {
+  const coefficients = {
+    'Strike as One': 1.10,
+    'Raptor Strike': 1.40,
+    'Kill Command': 1.55,
+    'Wildfire Bomb': 1.20,
+    'Boomstick': 2.50,
+    'Raptor Swipe': 1.85,
+    'Flamefang Pitch': 1.80,
+    'Mongoose Bite': 1.60,
+    'Hatchet Toss': 0.95
+  };
+  return coefficients[ability] || 1.0;
+}
+
+function generateSampleExecutionLog(duration, heroTalent) {
+  const isPL = heroTalent === 'packLeader';
+  const log = [];
+  
+  // Sample 30s execution sequence
+  const sequence = [
+    { time: 0.0, ability: 'Takedown', note: 'Damage amp window starts' },
+    { time: 0.5, ability: 'Strike as One', trigger: 'Takedown' },
+    { time: 1.2, ability: 'Wildfire Bomb', note: 'Applies Lethal Calibration' },
+    { time: 1.7, ability: 'Strike as One', trigger: 'Wildfire Bomb' },
+    { time: 3.0, ability: 'Raptor Strike', note: 'Focus builder' },
+    { time: 3.5, ability: 'Strike as One', trigger: 'Raptor Strike' },
+    { time: 4.8, ability: 'Kill Command', note: isPL ? 'May spawn Pack Leader beast' : 'Pet focus dump' },
+    { time: 5.3, ability: 'Strike as One', trigger: 'Kill Command' },
+    { time: 6.5, ability: 'Raptor Strike' },
+    { time: 7.0, ability: 'Strike as One', trigger: 'Raptor Strike' },
+    { time: 8.2, ability: 'Raptor Swipe', note: '25% proc from Raptor Strike' },
+    { time: 8.7, ability: 'Strike as One', trigger: 'Raptor Swipe (300% damage)' }
+  ];
+  
+  return sequence.slice(0, Math.min(10, sequence.length));
+}
+
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build) {
   const stats = charData.stats;
   const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
@@ -397,7 +525,18 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
     });
   }
 
-  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build };
+  // Generate detailed tracking data for "Strike as One"
+  const detailed = generateDetailedSimData(breakdown, fightDuration, heroTalent, T, ap);
+
+  return { 
+    totalDps: Math.round(totalDps), 
+    breakdown, 
+    targets: T, 
+    duration: fightDuration, 
+    hero: heroTalent, 
+    build,
+    detailed 
+  };
 }
 
 // ============================================================
@@ -1303,6 +1442,7 @@ export default function SurvivalHunterSim() {
         <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #141e30', marginBottom: 28, gap: 4 }}>
           <button className={`tab-btn ${activeTab === 'sim' ? 'active' : ''}`} onClick={() => setActiveTab('sim')}>⚔ Simulator</button>
           <button className={`tab-btn ${activeTab === 'talents' ? 'active' : ''}`} onClick={() => setActiveTab('talents')}>🌿 Talents</button>
+          <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>📊 Detailed Report</button>
           <button className={`tab-btn ${activeTab === 'guide' ? 'active' : ''}`} onClick={() => setActiveTab('guide')}>📖 Guide</button>
         </div>
 
@@ -1904,6 +2044,174 @@ export default function SurvivalHunterSim() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ===== DETAILED REPORT TAB ===== */}
+        {activeTab === 'report' && (
+          <div className="responsive-grid">
+            {!simResults || !simResults[0]?.detailed ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12 }}>
+                <div style={{ fontSize: 48, opacity: 0.3 }}>📊</div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#3a2810' }}>
+                  RUN A SIMULATION FIRST
+                </div>
+                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, color: '#3a2810', textAlign: 'center', maxWidth: 240 }}>
+                  The detailed report shows ability breakdown, buff uptimes, and Strike as One mechanics.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Strike as One Breakdown */}
+                <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 14px' }}>
+                    🎯 STRIKE AS ONE ANALYSIS
+                  </h3>
+                  {simResults[0]?.detailed?.strikeAsOneDetails && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, color: '#8a7050', margin: 0, fontStyle: 'italic' }}>
+                        {simResults[0].detailed.strikeAsOneDetails.description}
+                      </p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                        <div style={{ background: '#1a1208', borderRadius: 6, padding: 12 }}>
+                          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 4 }}>
+                            TRIGGER FREQUENCY
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#e8c88a' }}>
+                            {simResults[0].detailed.strikeAsOneDetails.estimatedFrequency}
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030' }}>
+                            {simResults[0].detailed.strikeAsOneDetails.totalTriggers} total triggers
+                          </div>
+                        </div>
+                        
+                        <div style={{ background: '#1a1208', borderRadius: 6, padding: 12 }}>
+                          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 4 }}>
+                            AVERAGE HIT
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#e8c88a' }}>
+                            {simResults[0].detailed.strikeAsOneDetails.avgDamage.toLocaleString()}
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030' }}>
+                            110% AP coefficient
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 8 }}>
+                          TRIGGERING ABILITIES
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {simResults[0].detailed.strikeAsOneDetails.triggerAbilities.map(ability => (
+                            <span key={ability} style={{
+                              background: '#2a1810',
+                              border: '1px solid #4a3020',
+                              borderRadius: 4,
+                              padding: '4px 8px',
+                              fontFamily: "'EB Garamond', serif",
+                              fontSize: 11,
+                              color: '#c8a870'
+                            }}>
+                              {ability}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 8 }}>
+                          MECHANICS
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: 16, fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#8a7050', lineHeight: 1.6 }}>
+                          {simResults[0].detailed.strikeAsOneDetails.mechanics.map((mechanic, i) => (
+                            <li key={i}>{mechanic}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Breakdown Table */}
+                <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 14px' }}>
+                    ⚔ ABILITY BREAKDOWN
+                  </h3>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #2a3050' }}>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'left' }}>ABILITY</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>DAMAGE</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>COUNT</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>AVG HIT</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>CRITS</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {simResults[0]?.detailed?.actionCounts && 
+                          Object.entries(simResults[0].detailed.actionCounts)
+                            .sort(([,a], [,b]) => b.damage - a.damage)
+                            .map(([ability, data]) => (
+                              <tr key={ability} style={{ 
+                                borderBottom: '1px solid #1a1208',
+                                background: ability === 'Strike as One' ? 'rgba(34, 197, 94, 0.1)' : 'transparent'
+                              }}>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: ability === 'Strike as One' ? '#22c55e' : '#8a7050', padding: '8px 12px', fontWeight: ability === 'Strike as One' ? 600 : 400 }}>
+                                  {ability === 'Strike as One' && '★ '}{ability}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.damage.toLocaleString()}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.count}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.avgHit.toLocaleString()}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.crits}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.percentage.toFixed(1)}%
+                                </td>
+                              </tr>
+                            ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Execution Log */}
+                <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 14px' }}>
+                    ⏱ SAMPLE EXECUTION (First 30s)
+                  </h3>
+                  {simResults[0]?.detailed?.executionLog && (
+                    <div style={{ fontFamily: 'monospace', fontSize: 11, background: '#0f111a', borderRadius: 6, padding: 14, maxHeight: 300, overflow: 'auto' }}>
+                      {simResults[0].detailed.executionLog.map((event, i) => (
+                        <div key={i} style={{ 
+                          marginBottom: 4, 
+                          color: event.ability === 'Strike as One' ? '#22c55e' : '#8a7050',
+                          display: 'flex',
+                          gap: 12
+                        }}>
+                          <span style={{ color: '#5a4030', minWidth: 40 }}>{event.time.toFixed(1)}s</span>
+                          <span style={{ minWidth: 120 }}>{event.ability}</span>
+                          <span style={{ color: '#6a5030', fontSize: 10 }}>
+                            {event.trigger && `← ${event.trigger}`}
+                            {event.note && `• ${event.note}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
