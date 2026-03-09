@@ -995,7 +995,23 @@ interface MiniTalentTreeProps {
   offDot: () => void;
 }
 
-// Look up full description from static TalentPill arrays by label
+// Convert a preset TalentLoadout's pills to selectedKeys for MiniTalentTree
+function loadoutToSpecKeys(talents: TalentPill[]): string[] {
+  return talents
+    .filter(t => t.type !== 'core' && t.type !== 'hero')
+    .map(t => SURVIVAL_SPEC_TREE.find(n => n.label === t.name)?.key)
+    .filter(Boolean) as string[];
+}
+function loadoutToHeroNodeKeys(talents: TalentPill[]): string[] {
+  return talents.filter(t => t.type === 'hero').map(t => {
+    for (const tree of Object.values(HERO_TALENT_TREES)) {
+      const n = tree.find(h => h.label === t.name);
+      if (n) return n.key;
+    }
+    return null;
+  }).filter(Boolean) as string[];
+}
+
 function talentPillDesc(label: string): string {
   const all = [...CORE_TALENTS, ...ST_TALENTS, ...AOE_TALENTS, ...SENTINEL_HERO, ...PACK_LEADER_HERO];
   return all.find(t => t.name === label)?.desc || label;
@@ -2490,82 +2506,53 @@ export default function SurvivalHunterSim() {
                       const heroClr  = heroTalent === 'sentinel' ? C.sentClr : C.packClr;
                       const heroBg   = heroTalent === 'sentinel' ? C.sentBg  : C.packBg;
                       const heroBdr  = heroTalent === 'sentinel' ? C.sentBdr : C.packBdr;
-                      const PILL_CLR: Record<string,string> = {
-                        core:'#60a5fa', st:'#4ade80', aoe:'#f97316', hero: heroClr, hybrid:'#c084fc',
-                      };
-                      const PILL_BG: Record<string,string> = {
-                        core:'#0c1a2e', st:'#0f2a1a', aoe:'#1f1000', hero: heroBg, hybrid:'#1a1033',
-                      };
                       return loadouts.map(loadout => {
                         const isSel = selectedLoadoutId === loadout.id;
-                        const groupOrder: Array<'core'|'st'|'aoe'|'hybrid'|'hero'> = ['core','st','aoe','hybrid','hero'];
-                        const talentGroups = groupOrder.map(g => ({
-                          type: g,
-                          pills: loadout.talents.filter(t => t.type === g),
-                        })).filter(g => g.pills.length > 0);
-                        const GROUP_LABEL: Record<string,string> = {
-                          core: 'ALWAYS', st: 'ST / RAID', aoe: 'AoE / M+', hybrid: 'HYBRID', hero: 'HERO TALENTS',
-                        };
+                        const specKeys = loadoutToSpecKeys(loadout.talents);
+                        const heroNodeKeys = loadoutToHeroNodeKeys(loadout.talents);
                         return (
                           <div key={loadout.id}
                             onClick={() => { setSelectedLoadoutId(loadout.id); setHeroTalent(loadout.heroKey); setSimMode(loadout.simMode); }}
                             style={{
-                              marginBottom: 8, borderRadius: 10, padding: "12px 14px", cursor: "pointer",
+                              marginBottom: 8, borderRadius: 10, padding: "10px 10px 8px", cursor: "pointer",
                               background: isSel ? heroBg : C.surface2,
-                              border: `1px solid ${isSel ? heroBdr : C.border}`,
+                              border: `2px solid ${isSel ? heroBdr : heroBdr + '33'}`,
+                              boxShadow: isSel ? `0 0 14px ${heroClr}22` : undefined,
                               transition: "all .15s",
+                              display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
                             }}>
-                            {/* Row 1: loadout name + scenario + DPS est + copy btn */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isSel ? 12 : 0 }}>
-                              <span style={{ fontSize: 15 }}>{loadout.icon}</span>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, fontWeight: 700,
-                                    color: isSel ? heroClr : C.textSec, letterSpacing: 1.5 }}>
+
+                            {/* Header: icon + name + ACTIVE badge + DPS deltas */}
+                            <div style={{ width: "100%", display: "flex", alignItems: "flex-start", gap: 6 }}>
+                              <span style={{ fontSize: 13, lineHeight: 1 }}>{loadout.icon}</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
+                                    color: isSel ? heroClr : C.textSec, letterSpacing: 1.2 }}>
                                     {loadout.name}
                                   </span>
-                                  {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10,
+                                  {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9,
                                     background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
-                                    borderRadius: 4, padding: "0 6px" }}>ACTIVE</span>}
+                                    borderRadius: 3, padding: "0 5px" }}>ACTIVE</span>}
                                 </div>
-                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 1 }}>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                   {loadout.scenario}
                                 </div>
                               </div>
                               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11,
-                                  color: '#4ade80', fontWeight: 700 }}>ST +{Math.round(loadout.stDelta*100)}%</div>
-                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11,
-                                  color: '#f97316', fontWeight: 700 }}>AoE +{Math.round(loadout.aoeDelta*100)}%</div>
+                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#4ade80', fontWeight: 700 }}>ST +{Math.round(loadout.stDelta*100)}%</div>
+                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#f97316', fontWeight: 700 }}>AoE +{Math.round(loadout.aoeDelta*100)}%</div>
                               </div>
                             </div>
 
-                            {/* Expanded talent pills — only when this loadout is selected */}
-                            {isSel && talentGroups.map(({ type, pills }) => (
-                              <div key={type} style={{ marginBottom: 8 }}>
-                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2,
-                                  color: PILL_CLR[type], marginBottom: 5, opacity: .7 }}>
-                                  {GROUP_LABEL[type]}
-                                </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                  {pills.map(t => (
-                                    <span key={t.name}
-                                      onMouseEnter={e => handleTalentHover(t, e)}
-                                      onMouseLeave={handleTalentLeave}
-                                      style={{
-                                        fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                        color: PILL_CLR[type],
-                                        background: PILL_BG[type],
-                                        border: `1px solid ${PILL_CLR[type]}44`,
-                                        borderRadius: 5, padding: "2px 8px",
-                                        cursor: "help",
-                                      }}>
-                                      {t.name}{t.points === 2 ? ' ··' : ''}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
+                            {/* Compact dot tree — always visible */}
+                            <MiniTalentTree
+                              selectedKeys={specKeys}
+                              heroKey={loadout.heroKey}
+                              heroSelectedKeys={heroNodeKeys}
+                              onDot={(node, e) => handleTalentHover(nodeToPill(node), e)}
+                              offDot={handleTalentLeave}
+                            />
 
                             {/* Copy talent string button */}
                             {isSel && (
