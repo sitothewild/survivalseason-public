@@ -1588,8 +1588,8 @@ export default function SurvivalHunterSim() {
                       return (
                         <div style={{
                           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                          background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: '0 0 6px 6px',
-                          maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                          background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '0 0 8px 8px',
+                          maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 32px hsl(var(--foreground) / 0.2)',
                         }}>
                           {filtered.slice(0, 50).map(realm => (
                             <div key={realm}
@@ -1599,13 +1599,13 @@ export default function SurvivalHunterSim() {
                                 setShowRealmDropdown(false);
                               }}
                               style={{
-                                padding: '6px 10px', cursor: 'pointer', fontSize: 12,
-                                fontFamily: "'EB Garamond', serif", color: '#c8a870',
-                                borderBottom: '1px solid #1a1208',
-                                background: armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent',
+                                padding: '10px 14px', cursor: 'pointer', fontSize: 14,
+                                fontFamily: "'EB Garamond', serif", color: 'hsl(var(--foreground))',
+                                borderBottom: '1px solid hsl(var(--border))',
+                                background: armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? 'hsl(var(--accent) / 0.1)' : 'transparent',
                               }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#1a1a2a')}
-                              onMouseLeave={e => (e.currentTarget.style.background = armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? '#1a2a1a' : 'transparent')}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--accent) / 0.15)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = armoryRealmSearch.toLowerCase() === realm.toLowerCase() ? 'hsl(var(--accent) / 0.1)' : 'transparent')}
                             >
                               {realm}
                             </div>
