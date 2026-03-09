@@ -1346,6 +1346,47 @@ export default function SurvivalHunterSim() {
                       ))}
                     </div>
                   </div>
+
+                  {parsedChar && (
+                    <div style={{ marginBottom: 16, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                        <span className="badge" style={{ background: C.surface, color: C.goldLight, border: `1px solid ${C.gold}` }}>
+                          {importedTalentSource === 'simc' ? 'IMPORTED FROM SIMC' : 'IMPORTED FROM ARMORY'}
+                        </span>
+                        <span
+                          className="badge"
+                          style={{
+                            background: C.surface,
+                            color: detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.textDim,
+                            border: `1px solid ${detectedHeroTalent === 'Sentinel' ? '#38bdf8' : detectedHeroTalent === 'Pack Leader' ? '#c084fc' : C.border}`,
+                          }}
+                        >
+                          Hero talent: {detectedHeroTalent}
+                        </span>
+                      </div>
+
+                      <div
+                        title={importedTalentString || 'No talent string found'}
+                        style={{
+                          fontFamily: "'IBM Plex Mono',monospace",
+                          fontSize: 12,
+                          color: importedTalentString ? C.textSec : C.textDim,
+                          background: C.surface,
+                          border: `1px solid ${C.borderSub}`,
+                          borderRadius: 8,
+                          padding: '8px 10px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {displayedTalentString || 'Talent string unavailable'}
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>SIMULATION MODE</div>
                     <div style={{ display: "flex", gap: 8 }}>
