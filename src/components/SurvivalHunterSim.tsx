@@ -800,6 +800,13 @@ export default function SurvivalHunterSim() {
       const status = data.status === 'cached' ? 'Up to date' : 'Updated';
       setSimcSyncInfo(`${status} (${data.sha?.slice(0, 7)}) · ${new Date().toLocaleDateString()}`);
       setSimcSyncStatus('synced');
+      // Parse APL from synced data
+      try {
+        const rawApl = data.data?.apl?.rawText;
+        if (rawApl) {
+          setAplData(parseSimcAPL(rawApl));
+        }
+      } catch (e) { console.warn('APL parse from sync failed:', e); }
     } catch (e) {
       setSimcSyncStatus('error');
       setSimcSyncInfo(`Sync failed: ${e.message}`);
