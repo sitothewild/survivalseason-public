@@ -1536,7 +1536,7 @@ export default function SurvivalHunterSim() {
         </div>
 
         {/* Tabs */}
-        <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #141e30', marginBottom: 28, gap: 4 }}>
+        <div className="tabs-row" style={{ display: 'flex', borderBottom: '2px solid hsl(var(--border))', marginBottom: 32, gap: 6 }}>
           <button className={`tab-btn ${activeTab === 'sim' ? 'active' : ''}`} onClick={() => setActiveTab('sim')}>⚔ Simulator</button>
           <button className={`tab-btn ${activeTab === 'talents' ? 'active' : ''}`} onClick={() => setActiveTab('talents')}>🌿 Talents</button>
           <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>📊 Detailed Report</button>
