@@ -570,7 +570,7 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   const agiChar = JSON.parse(JSON.stringify(charData));
   agiChar.stats.agility += DELTA.agility;
   agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
-  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build).totalDps;
+  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
   const agiDelta = (agiDps - baseDps) / DELTA.agility; // DPS per 1 agility
   weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
 
