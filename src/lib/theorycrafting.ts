@@ -141,6 +141,7 @@ export interface TalentNode {
   key: keyof TalentConfig;
   label: string;
   row: number;         // 1–7 in the spec tree
+  col: number;         // 0-indexed column position for 2D grid layout (6 columns: 0–5)
   pointCost: number;   // 1 or 2 pts
   prerequisites: (keyof TalentConfig)[];   // must have these to unlock
   gateRow: number;     // unlock requires this many pts spent in earlier rows
@@ -172,62 +173,66 @@ export const ROW_GATES: Record<number, number> = {
   7: 17,  // need 17 pts in rows 1–6
 };
 
+// 2D grid layout: 6 columns (0–5), 7 rows.
+// Column assignments keep prerequisite chains visually aligned:
+//   Left path (col 0–1): ST build — Mongoose Fury → Raptor Swipe → Takedown → Savagery → Vulnerability → Stargazer
+//   Right path (col 2–5): AoE build — Wildfire Bomb → Strike as One → Boomstick → LC → Wildfire Shells → Flamefang/Shrapnel → GJ/WI → Flamebreak
 export const SURVIVAL_SPEC_TREE: TalentNode[] = [
   // ─── ROW 1 — Gate: 0 pts (always accessible) ────────────────────────────
   {
-    key: 'mongooseFury', label: 'Mongoose Fury', row: 1, pointCost: 1,
+    key: 'mongooseFury', label: 'Mongoose Fury', row: 1, col: 0, pointCost: 1,
     prerequisites: [], gateRow: 0, isGateway: false,
     inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
   },
   {
-    key: 'wildfireBomb', label: 'Wildfire Bomb', row: 1, pointCost: 1,
+    key: 'wildfireBomb', label: 'Wildfire Bomb', row: 1, col: 3, pointCost: 1,
     prerequisites: [], gateRow: 0, isGateway: false,
     inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
   },
 
   // ─── ROW 2 — Gate: 2 pts in row 1 ───────────────────────────────────────
   {
-    key: 'raptorSwipe', label: 'Raptor Swipe', row: 2, pointCost: 2,
+    key: 'raptorSwipe', label: 'Raptor Swipe', row: 2, col: 0, pointCost: 2,
     prerequisites: ['mongooseFury'], gateRow: 2, isApex: true, isGateway: false,
     inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
     gatewayNote: 'Apex talent: both points required. Rank 1 = 25% proc; Rank 2 = 100% proc during Takedown. Half-investing (1pt) leaves you at Rank 1 — a significant power gap.',
   },
   {
-    key: 'strikeAsOne', label: 'Strike as One', row: 2, pointCost: 1,
+    key: 'strikeAsOne', label: 'Strike as One', row: 2, col: 3, pointCost: 1,
     prerequisites: ['wildfireBomb'], gateRow: 2, isGateway: false,
     inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
   },
 
   // ─── ROW 3 — Gate: 5 pts in rows 1–2 ────────────────────────────────────
   {
-    key: 'takedown', label: 'Takedown', row: 3, pointCost: 1,
+    key: 'takedown', label: 'Takedown', row: 3, col: 0, pointCost: 1,
     prerequisites: ['raptorSwipe'], gateRow: 5, isGateway: false,
     inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
   },
   {
-    key: 'boomstick', label: 'Boomstick', row: 3, pointCost: 1,
+    key: 'boomstick', label: 'Boomstick', row: 3, col: 2, pointCost: 1,
     prerequisites: ['strikeAsOne'], gateRow: 5, isGateway: false,
     inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
   },
   {
-    key: 'mongooseRounds', label: 'Mongoose Rounds', row: 3, pointCost: 1,
+    key: 'mongooseRounds', label: 'Mongoose Rounds', row: 3, col: 4, pointCost: 1,
     prerequisites: ['boomstick'], gateRow: 5, isGateway: false,
     inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
   },
 
   // ─── ROW 4 — Gate: 8 pts in rows 1–3 ────────────────────────────────────
   {
-    key: 'lethalCalibration', label: 'Lethal Calibration', row: 4, pointCost: 1,
+    key: 'lethalCalibration', label: 'Lethal Calibration', row: 4, col: 2, pointCost: 1,
     prerequisites: ['boomstick'], gateRow: 8, isGateway: false,
     inSTBuild: true, inAoEBuild: true, dpsCategory: 'core',
   },
   {
-    key: 'savagery', label: 'Savagery', row: 4, pointCost: 1,
+    key: 'savagery', label: 'Savagery', row: 4, col: 0, pointCost: 1,
     prerequisites: ['takedown'], gateRow: 8, isGateway: false,
     inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
   },
   {
-    key: 'wildfileShells', label: 'Wildfire Shells', row: 4, pointCost: 1,
+    key: 'wildfileShells', label: 'Wildfire Shells', row: 4, col: 3, pointCost: 1,
     prerequisites: ['lethalCalibration'], gateRow: 8,
     isGateway: true,
     gatewayNote: 'Moderate standalone value. In AoE, taken primarily to unlock Flamefang Pitch (row 5) and the fire damage path. Without it, the entire AoE damage chain — Flamefang → Wildfire Imbuement → Flamebreak — is inaccessible.',
@@ -236,22 +241,22 @@ export const SURVIVAL_SPEC_TREE: TalentNode[] = [
 
   // ─── ROW 5 — Gate: 11 pts in rows 1–4 ───────────────────────────────────
   {
-    key: 'vulnerability', label: 'Vulnerability', row: 5, pointCost: 1,
+    key: 'vulnerability', label: 'Vulnerability', row: 5, col: 1, pointCost: 1,
     prerequisites: ['savagery', 'mongooseRounds'], gateRow: 11, isGateway: false,
     inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
   },
   {
-    key: 'cantMissWontMiss', label: "Can't Miss Won't Miss", row: 5, pointCost: 1,
+    key: 'cantMissWontMiss', label: "Can't Miss Won't Miss", row: 5, col: 0, pointCost: 1,
     prerequisites: ['savagery'], gateRow: 11, isGateway: false,
     inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
   },
   {
-    key: 'flamefangPitch', label: 'Flamefang Pitch', row: 5, pointCost: 1,
+    key: 'flamefangPitch', label: 'Flamefang Pitch', row: 5, col: 3, pointCost: 1,
     prerequisites: ['wildfileShells'], gateRow: 11, isGateway: false,
     inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
   },
   {
-    key: 'shrapnelBomb', label: 'Shrapnel Bomb', row: 5, pointCost: 1,
+    key: 'shrapnelBomb', label: 'Shrapnel Bomb', row: 5, col: 4, pointCost: 1,
     prerequisites: ['wildfileShells'], gateRow: 11,
     isGateway: true,
     gatewayNote: 'Taken as a path filler to unlock Wildfire Imbuement (row 6). Standalone value is real but lower than other AoE picks. Players often take it solely to enable the Wildfire Imbuement → Flamebreak chain.',
@@ -260,30 +265,30 @@ export const SURVIVAL_SPEC_TREE: TalentNode[] = [
 
   // ─── ROW 6 — Gate: 14 pts in rows 1–5 ───────────────────────────────────
   {
-    key: 'stargazer', label: 'Stargazer', row: 6, pointCost: 2,
+    key: 'stargazer', label: 'Stargazer', row: 6, col: 1, pointCost: 2,
     prerequisites: ['vulnerability'], gateRow: 14, isGateway: false,
     inSTBuild: true, inAoEBuild: false, dpsCategory: 'st',
     gatewayNote: '2-point talent: rank 1 alone is weak (+10% crit dmg cap). Both points required to reach the +20% cap at 10 stacks. Never invest only 1pt.',
   },
   {
-    key: 'grenadeJuggler', label: 'Grenade Juggler', row: 6, pointCost: 1,
+    key: 'grenadeJuggler', label: 'Grenade Juggler', row: 6, col: 3, pointCost: 1,
     prerequisites: ['flamefangPitch'], gateRow: 14, isGateway: false,
     inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
   },
   {
-    key: 'wildfireImbuement', label: 'Wildfire Imbuement', row: 6, pointCost: 1,
+    key: 'wildfireImbuement', label: 'Wildfire Imbuement', row: 6, col: 4, pointCost: 1,
     prerequisites: ['flamefangPitch', 'shrapnelBomb'], gateRow: 14, isGateway: false,
     inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
   },
   {
-    key: 'flamebreak', label: 'Flamebreak', row: 6, pointCost: 1,
+    key: 'flamebreak', label: 'Flamebreak', row: 6, col: 5, pointCost: 1,
     prerequisites: ['wildfireImbuement'], gateRow: 14, isGateway: false,
     inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
   },
 
   // ─── ROW 7 — Gate: 17 pts in rows 1–6 ───────────────────────────────────
   {
-    key: 'twoAgainstMany', label: 'Two Against Many', row: 7, pointCost: 2,
+    key: 'twoAgainstMany', label: 'Two Against Many', row: 7, col: 3, pointCost: 2,
     prerequisites: ['strikeAsOne', 'grenadeJuggler'], gateRow: 17, isGateway: false,
     inSTBuild: false, inAoEBuild: true, dpsCategory: 'aoe',
     gatewayNote: '2-point talent: rank 1 hits +1 enemy; rank 2 hits +2 enemies. The AoE value only becomes meaningful at rank 2. Never invest only 1pt here.',
