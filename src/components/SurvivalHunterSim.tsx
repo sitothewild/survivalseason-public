@@ -168,10 +168,122 @@ function parseSimcString(simcText) {
 }
 
 // ============================================================
-// SIMULATION ENGINE (kept exactly from existing)
+// SIMULATION ENGINE — Live SimC APL → DPS Breakdown
 // ============================================================
-const SIMC_BREAKDOWN_PL_ST = { 'Strike as One':0.1883,'Raptor Swipe':0.1471,'Raptor Strike':0.1271,'Boomstick':0.0772,'Auto Attack (MH)':0.0711,'Kill Command':0.0499,'Wildfire Bomb':0.0821,'Auto Attack (OH)':0.0339,'Takedown':0.0331,'Pack Leader Beasts':0.0716,'Pet (Claw)':0.0246,"Kroluk's Warbanner":0.0220,'Pet Melee':0.0200,'Bear (Rend + Melee)':0.0261 };
-const SIMC_BREAKDOWN_SENT_ST = { 'Raptor Strike':0.1400,'Raptor Swipe':0.1350,'Strike as One':0.1200,'Wildfire Bomb':0.1050,'Boomstick':0.0800,'Auto Attack (MH)':0.0650,'Kill Command':0.0500,'Moonlight Chakram':0.0450,'Sentinel Mark + Lunar Storm':0.0700,'Takedown':0.0380,'Auto Attack (OH)':0.0300,'Pet (Claw)':0.0250,'Pet Melee':0.0220,"Kroluk's Warbanner":0.0200 };
+
+// Fallback hardcoded breakdowns (used when live data unavailable)
+const SIMC_BREAKDOWN_PL_ST_DEFAULT = { 'Strike as One':0.1883,'Raptor Swipe':0.1471,'Raptor Strike':0.1271,'Boomstick':0.0772,'Auto Attack (MH)':0.0711,'Kill Command':0.0499,'Wildfire Bomb':0.0821,'Auto Attack (OH)':0.0339,'Takedown':0.0331,'Pack Leader Beasts':0.0716,'Pet (Claw)':0.0246,"Kroluk's Warbanner":0.0220,'Pet Melee':0.0200,'Bear (Rend + Melee)':0.0261 };
+const SIMC_BREAKDOWN_SENT_ST_DEFAULT = { 'Raptor Strike':0.1400,'Raptor Swipe':0.1350,'Strike as One':0.1200,'Wildfire Bomb':0.1050,'Boomstick':0.0800,'Auto Attack (MH)':0.0650,'Kill Command':0.0500,'Moonlight Chakram':0.0450,'Sentinel Mark + Lunar Storm':0.0700,'Takedown':0.0380,'Auto Attack (OH)':0.0300,'Pet (Claw)':0.0250,'Pet Melee':0.0220,"Kroluk's Warbanner":0.0200 };
+
+// Map SimC APL action names → display names used in breakdowns
+const APL_TO_DISPLAY: Record<string, string> = {
+  'raptor_strike': 'Raptor Strike', 'raptor_strike_melee': 'Raptor Strike',
+  'mongoose_bite': 'Raptor Strike', // mongoose_bite replaced by raptor_strike in TWW
+  'kill_command': 'Kill Command', 'kill_command_sv': 'Kill Command',
+  'wildfire_bomb': 'Wildfire Bomb', 'volatile_bomb': 'Wildfire Bomb',
+  'fury_of_the_eagle': 'Boomstick', 'boomstick': 'Boomstick',
+  'flanking_strike': 'Raptor Strike',
+  'coordinated_assault': 'Takedown', 'takedown': 'Takedown',
+  'harpoon': 'Takedown',
+  'butchery': 'Raptor Swipe', 'carve': 'Raptor Swipe', 'raptor_swipe': 'Raptor Swipe',
+  'wildfire_infusion': 'Wildfire Bomb',
+  'flamefang_pitch': 'Flamefang Pitch',
+  'moonfire': 'Sentinel Mark + Lunar Storm',
+  'moonlight_chakram': 'Moonlight Chakram',
+  'steel_trap': 'Wildfire Bomb',
+  'stampede': 'Pack Leader Beasts',
+  'spearhead': 'Takedown',
+  'call_of_the_wild': 'Pack Leader Beasts',
+  'aspect_of_the_eagle': 'Takedown',
+};
+
+// Passive/auto sources not in APL but always present
+const PASSIVE_SOURCES_PL: Record<string, number> = {
+  'Strike as One': 0.16, 'Auto Attack (MH)': 0.07, 'Auto Attack (OH)': 0.035,
+  'Pet (Claw)': 0.025, 'Pet Melee': 0.02, "Kroluk's Warbanner": 0.022,
+  'Pack Leader Beasts': 0.07, 'Bear (Rend + Melee)': 0.026,
+};
+const PASSIVE_SOURCES_SENT: Record<string, number> = {
+  'Strike as One': 0.12, 'Auto Attack (MH)': 0.065, 'Auto Attack (OH)': 0.03,
+  'Pet (Claw)': 0.025, 'Pet Melee': 0.022, "Kroluk's Warbanner": 0.02,
+  'Sentinel Mark + Lunar Storm': 0.07,
+};
+
+// Spell coefficients for weighting APL actions by damage per cast
+const SPELL_WEIGHT: Record<string, number> = {
+  'Raptor Strike': 2.86, 'Kill Command': 1.50, 'Wildfire Bomb': 2.48,
+  'Boomstick': 3.60, 'Takedown': 1.80, 'Raptor Swipe': 1.85,
+  'Flamefang Pitch': 4.20, 'Moonlight Chakram': 4.80,
+  'Sentinel Mark + Lunar Storm': 2.00, 'Pack Leader Beasts': 1.50,
+};
+
+/**
+ * Convert SimC APL action list into DPS breakdown percentages.
+ * Higher-priority actions (earlier in APL) are cast more often.
+ * We combine priority-based frequency with spell coefficients to estimate DPS share.
+ */
+function aplToBreakdown(actionList: string[], isPL: boolean): Record<string, number> {
+  // Count and weight each ability by APL position (earlier = higher cast frequency)
+  const abilityWeight: Record<string, number> = {};
+  const totalActions = actionList.length || 1;
+
+  actionList.forEach((action, idx) => {
+    // Extract the base action name (before any condition like ,if=...)
+    const baseName = action.split(',')[0].split('#')[0].trim().toLowerCase().replace(/\s+/g, '_');
+    const displayName = APL_TO_DISPLAY[baseName];
+    if (!displayName) return;
+
+    // Priority weight: actions earlier in the list are cast more frequently
+    // Use inverse-square decay to model priority queuing
+    const priorityWeight = 1.0 / (1 + idx * 0.15);
+    const spellCoef = SPELL_WEIGHT[displayName] || 1.0;
+    const dpsWeight = priorityWeight * spellCoef;
+
+    abilityWeight[displayName] = (abilityWeight[displayName] || 0) + dpsWeight;
+  });
+
+  // Merge with passive sources
+  const passives = isPL ? PASSIVE_SOURCES_PL : PASSIVE_SOURCES_SENT;
+  const passiveTotal = Object.values(passives).reduce((s, v) => s + v, 0);
+  const activeBudget = 1.0 - passiveTotal;
+
+  // Normalize active abilities to fill the remaining budget
+  const activeSum = Object.values(abilityWeight).reduce((s, v) => s + v, 0) || 1;
+  const breakdown: Record<string, number> = {};
+
+  Object.entries(abilityWeight).forEach(([name, w]) => {
+    breakdown[name] = (w / activeSum) * activeBudget;
+  });
+
+  // Add passive sources
+  Object.entries(passives).forEach(([name, pct]) => {
+    breakdown[name] = (breakdown[name] || 0) + pct;
+  });
+
+  // Normalize to exactly 1.0
+  const total = Object.values(breakdown).reduce((s, v) => s + v, 0) || 1;
+  Object.keys(breakdown).forEach(k => { breakdown[k] /= total; });
+
+  return breakdown;
+}
+
+/**
+ * Build dynamic breakdowns from live SimC data, or fall back to hardcoded defaults.
+ */
+function getBreakdowns(simcLiveData: any): { pl: Record<string, number>; sent: Record<string, number> } {
+  const apl = simcLiveData?.apl?.actionLists;
+  if (!apl) return { pl: SIMC_BREAKDOWN_PL_ST_DEFAULT, sent: SIMC_BREAKDOWN_SENT_ST_DEFAULT };
+
+  // Pack Leader: prefer plst, fall back to default_pl or default
+  const plActions = apl.plst || apl.default_pl || apl.default || [];
+  // Sentinel: prefer sentst, fall back to default_sent or default
+  const sentActions = apl.sentst || apl.default_sent || apl.default || [];
+
+  const plBreakdown = plActions.length > 2 ? aplToBreakdown(plActions, true) : SIMC_BREAKDOWN_PL_ST_DEFAULT;
+  const sentBreakdown = sentActions.length > 2 ? aplToBreakdown(sentActions, false) : SIMC_BREAKDOWN_SENT_ST_DEFAULT;
+
+  return { pl: plBreakdown, sent: sentBreakdown };
+}
 
 function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCount, ap) {
   const isPL = heroTalent === 'packLeader';
@@ -226,7 +338,7 @@ function generateSampleExecutionLog(duration, heroTalent) {
   ];
 }
 
-function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
+function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null) {
   const stats = charData.stats; const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
   const hastePct = stats.haste || 10.58, critPct = stats.crit || 20.13, masteryPct = stats.mastery || 30.16, versPct = stats.versatility || 8.28;
   const ANCHOR_AP = 1635, ANCHOR_DPS = 51024, ANCHOR_CRIT = 20.13, ANCHOR_HASTE = 10.58, ANCHOR_MASTERY = 30.16, ANCHOR_VERS = 8.28;
@@ -240,6 +352,8 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
   const T = targetCount;
   if (T > 1) { const cf = T <= 3 ? 1 + (T - 1) * 0.55 : T <= 5 ? 2.1 + (T - 3) * 0.35 : T <= 8 ? 2.8 + (T - 5) * 0.20 : 3.4 + (T - 8) * 0.12; totalDps *= cf; }
   totalDps *= externalMult;
+  // Use live SimC APL-derived breakdowns when available, otherwise fall back to defaults
+  const { pl: SIMC_BREAKDOWN_PL_ST, sent: SIMC_BREAKDOWN_SENT_ST } = getBreakdowns(simcLiveData);
   const breakdown = {}; const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
   if (build === 'aoe' || T > 2) {
     const aoeTemplate = {}; Object.entries(breakdownTemplate).forEach(([key, pct]) => {
@@ -252,21 +366,21 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
     Object.entries(aoeTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); });
   } else { Object.entries(breakdownTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); }); }
   const detailed = generateDetailedSimData(breakdown, fightDuration, heroTalent, T, ap);
-  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed };
+  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists };
 }
 
-function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0) {
-  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
+function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null) {
+  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
   const DELTA = { agility: 200, haste: 1.5, crit: 1.5, mastery: 1.5, versatility: 1.5 };
   const RATING_PER_PERCENT = { haste: 170, crit: 170, mastery: 170, versatility: 205 };
   const weights = {};
   const agiChar = JSON.parse(JSON.stringify(charData)); agiChar.stats.agility += DELTA.agility; agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
-  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
+  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
   const agiDelta = (agiDps - baseDps) / DELTA.agility;
   weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
   ['haste', 'crit', 'mastery', 'versatility'].forEach(stat => {
     const bumpChar = JSON.parse(JSON.stringify(charData)); bumpChar.stats[stat] = (bumpChar.stats[stat] || 0) + DELTA[stat];
-    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
+    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
     const dpsDelta = bumpDps - baseDps; const ratingBump = DELTA[stat] * RATING_PER_PERCENT[stat];
     const perRating = dpsDelta / ratingBump; const label = stat.charAt(0).toUpperCase() + stat.slice(1);
     weights[label] = { perPoint: perRating, perRating, delta: dpsDelta, bump: `+${DELTA[stat]}%`, ratingBump: Math.round(ratingBump) };
@@ -532,12 +646,12 @@ export default function SurvivalHunterSim() {
     Object.entries(consumables).forEach(([cat, sel]) => { const opt = CONSUMABLES[cat]?.options?.find(o => o.key === sel); if (opt) externalMult *= opt.mult; });
     setTimeout(() => {
       const targets = getTargets();
-      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult));
+      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData));
       const primaryBuild = targets[0] === 1 ? 'st' : 'aoe';
-      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult);
+      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData);
       setStatWeights(sw); setSimResults(results); setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent)); setIsSimming(false);
     }, 1200);
-  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables]);
+  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables, simcLiveData]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
 
