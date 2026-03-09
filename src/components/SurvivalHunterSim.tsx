@@ -1961,11 +1961,14 @@ export default function SurvivalHunterSim() {
             const item = itemCache[hoveredItem];
             const qualityColors = { LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd', UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d' };
             const nameColor = qualityColors[item.quality?.type] || '#a335ee';
+            // Find the actual ilvl from parsed gear
+            const gearPiece = parsedChar?.gear?.find((g: any) => g.itemId === hoveredItem);
+            const displayIlvl = gearPiece?.ilvl || item.preview_item?.level?.value || item.level;
             return (
               <>
                 {item._icon && <img src={item._icon} style={{ width: 36, height: 36, borderRadius: 6, border: `1px solid ${C.border}`, marginRight: 10, float: "left" }} />}
                 <div style={{ fontSize: 15, fontWeight: 700, color: nameColor, marginBottom: 4 }}>{item.name}</div>
-                {item.level && <div style={{ fontSize: 13, color: C.goldLight, marginBottom: 6 }}>Item Level {item.level}</div>}
+                {displayIlvl && <div style={{ fontSize: 13, color: C.goldLight, marginBottom: 6 }}>Item Level {displayIlvl}</div>}
                 {item.item_class?.name && item.item_subclass?.name && (
                   <div style={{ fontSize: 12, color: C.textDim, display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                     <span>{item.item_subclass.name}</span>
