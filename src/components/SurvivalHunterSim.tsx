@@ -2549,7 +2549,7 @@ export default function SurvivalHunterSim() {
                             <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                               ★ OPTIMAL BUILD
                               <span 
-                                title="Optimal build is based on Symex (Method.gg) and SimC APL data for Midnight 12.0 Pre-Season 1. Updated as the meta evolves."
+                                title="Optimal build derived from first-principles AP coefficient math and SimC APL data for Midnight 12.0 Pre-Season 1. Updated as the meta evolves."
                                 style={{ cursor: "help", fontFamily: "sans-serif", fontSize: 11, color: C.textMid, opacity: 0.7 }}
                               >
                                 ℹ
@@ -2810,7 +2810,7 @@ export default function SurvivalHunterSim() {
             {/* ═══ SECTION 1: OPTIMAL BUILDS ═══ */}
             <div>
               <LBL>🌿 Optimal Talent Builds</LBL>
-              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Method.gg & Icy Veins verified · Midnight 12.0.1 Pre-Season</p>
+              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
 
               {/* Legend */}
               <div style={{ display: "flex", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
