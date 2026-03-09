@@ -1,10 +1,16 @@
 // @ts-nocheck
 import { useState, useCallback, useEffect, Fragment, useRef, useMemo } from "react";
 import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMedia } from "@/lib/blizzardApi";
+import { NavLink } from "@/components/NavLink";
 import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
 import { parseSimcAPL, getRotationWeights, buildAPLFromActionLists, type ParsedAPL } from "@/utils/aplParser";
+import {
+  runTheoryCraft, getOptimalTalentConfig, getFullOptimalAnalysis,
+  HEROIC_MIDNIGHT_639, NORMAL_MIDNIGHT_626,
+  type GearProfile, type TierSetConfig,
+} from "@/lib/theorycrafting";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -999,6 +1005,13 @@ export default function SurvivalHunterSim() {
   const userBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, userHeroKey), [primaryTargetCount, userHeroKey]);
   const optimalBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, 'sentinel'), [primaryTargetCount]);
 
+  // First-principles theorycrafting analysis (Heroic Midnight 639 gear, 4pc tier)
+  const theoryAnalysis = useMemo(() => {
+    const heroKey = (userHeroKey === 'packLeader' ? 'packLeader' : 'sentinel') as 'sentinel' | 'packLeader';
+    const tierSet: TierSetConfig = { has2pc: true, has4pc: true };
+    return getFullOptimalAnalysis(heroKey, primaryTargetCount, HEROIC_MIDNIGHT_639, tierSet);
+  }, [userHeroKey, primaryTargetCount]);
+
   const talentDiffRows = useMemo(() => {
     const left = userBuildInfo?.selected || [];
     const right = optimalBuildInfo?.selected || [];
@@ -1143,6 +1156,9 @@ export default function SurvivalHunterSim() {
         *{box-sizing:border-box;}
         .tab-btn{background:transparent;border:none;border-bottom:3px solid transparent;padding:12px 24px;color:#64748b;font-family:"Rajdhani",sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
         .tab-btn.active{color:#fbbf24;border-bottom-color:#d97706;}
+        .site-nav-link{font-family:"Rajdhani",sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;color:#64748b;padding:10px 18px;border-bottom:3px solid transparent;transition:color .2s,border-color .2s;display:inline-block;}
+        .site-nav-link:hover{color:#94a3b8;}
+        .site-nav-link.active{color:#fbbf24;border-bottom-color:#d97706;}
         .tab-btn:hover{color:#94a3b8;}
         .hero-sent{background:#0c1e35;border:2px solid #1a3a5c;border-radius:10px;padding:15px;cursor:pointer;transition:all .2s;text-align:left;width:100%;}
         .hero-sent:hover{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.12);}
@@ -1256,10 +1272,19 @@ export default function SurvivalHunterSim() {
         </div>
       </div>
 
+      {/* ── Site-wide nav bar ── */}
+      <div style={{ background: "#0d1117", borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", paddingLeft: 10, display: "flex" }}>
+          <NavLink to="/"      className="site-nav-link" activeClassName="active" end>⚔ Simulator</NavLink>
+          <NavLink to="/gear"  className="site-nav-link" activeClassName="active">⚗ Gear</NavLink>
+          <NavLink to="/guide" className="site-nav-link" activeClassName="active">📖 Guide</NavLink>
+        </div>
+      </div>
+
       <div className="site-main" style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: 22, gap: 2 }}>
-          {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"], ["guide", "📖 Guide"]].map(([k, l]) => (
+          {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"]].map(([k, l]) => (
             <button key={k} className={`tab-btn ${activeTab === k ? "active" : ""}`} onClick={() => setActiveTab(k)}>{l}</button>
           ))}
         </div>
@@ -3278,164 +3303,6 @@ export default function SurvivalHunterSim() {
             })()}
           </div>
         )}
-
-        {/* ═══ GUIDE TAB ═══ */}
-        {activeTab === "guide" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            {/* How to use */}
-            <CARD>
-              <LBL>📋 How to Use This Simulator</LBL>
-              {[{ step: "1", title: "Get SimulationCraft Addon", desc: "Install from CurseForge or WoWInterface." }, { step: "2", title: "Export Your Character", desc: "In-game: /simc → Enter. A window appears." }, { step: "3", title: "Copy & Paste", desc: "Ctrl+A, Ctrl+C, paste in the Import box." }, { step: "4", title: "Configure & Simulate", desc: "Choose Hero Talent, duration, mode. Click Run." }, { step: "5", title: "Read Results", desc: "DPS breakdown + stat weights + talent export strings." }].map(s => (
-                <div key={s.step} style={{ display: "flex", gap: 12, marginBottom: 14, alignItems: "flex-start" }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 7, background: C.goldBg, border: `1px solid ${C.gold}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron',sans-serif", fontSize: 11, color: C.goldLight, flexShrink: 0 }}>{s.step}</div>
-                  <div>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: C.goldLight, marginBottom: 3, letterSpacing: 1 }}>{s.title}</div>
-                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.5 }}>{s.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </CARD>
-
-            {/* Stat Priority */}
-            <CARD>
-              <LBL>📊 Stat Priority (Midnight 12.0)</LBL>
-              {[{ stat: "Agility", color: C.goldLight, note: "Primary stat. Always highest value per point." }, { stat: "Mastery", color: "#a78bfa", note: "Spirit Bond: increases you and pet damage. Top secondary." }, { stat: "Critical Strike", color: "#f59e0b", note: "Strong with Lethal Calibration (+15% crit dmg)." }, { stat: "Haste", color: "#60a5fa", note: "Reduces GCD, focus regen. Equal to Crit in ST." }, { stat: "Versatility", color: "#34d399", note: "Flat damage + survivability. Lowest priority." }].map((s, i) => (
-                <div key={i} style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center" }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: s.color, fontWeight: 600 }}>{s.stat} <span style={{ color: C.textDim, fontSize: 11 }}>#{i + 1}</span></div>
-                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>{s.note}</div>
-                  </div>
-                </div>
-              ))}
-            </CARD>
-
-            {/* Consumables */}
-            <CARD>
-              <LBL>🧪 Consumables (Midnight 12.0.1)</LBL>
-              {[{ icon: "🧪", label: "Flask", item: "Flask of the Magisters", note: "Best flask for Agility DPS. 30 min duration." }, { icon: "⚗️", label: "Combat Potion", item: "Draught of Rampant Abandon", note: "Use on pull and during Takedown windows." }, { icon: "🗡️", label: "Weapon Oil", item: "Thalassian Phoenix Oil", note: "Fire damage proc. Synergizes with Flamefang Pitch." }, { icon: "🍖", label: "Food", item: "Silvermoon Parade", note: "Agility food buff." }, { icon: "💎", label: "Meta Gem", item: "Eversong Diamond", note: "Agility proc. Socket in helmet." }, { icon: "🔮", label: "Enchants", item: "Authority of Radiant Power", note: "Weapon. Rings: Mastery. Chest: Crystalline Radiance." }].map((c, i) => (
-                <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 14, flexShrink: 0, width: 20, textAlign: "center" }}>{c.icon}</span>
-                  <div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 2 }}>
-                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: C.textDim, letterSpacing: 1 }}>{c.label}</span>
-                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.goldLight, fontWeight: 600 }}>{c.item}</span>
-                    </div>
-                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, lineHeight: 1.5 }}>{c.note}</div>
-                  </div>
-                </div>
-              ))}
-            </CARD>
-
-            {/* M+ Tips */}
-            <CARD>
-              <LBL>🏰 Mythic+ Tips</LBL>
-              {[{ icon: "🎯", tip: "Pull around Takedown cooldown", desc: "Your burst is on a 60-90s cycle. Chain pulls so Takedown is ready." }, { icon: "🔥", tip: "Pre-place Flamefang Pitch", desc: "Drop fire puddle where mobs are being gathered." }, { icon: "💣", tip: "Never cap WFB charges", desc: "Wildfire Bomb is highest AoE priority. Keep charges cycling." }, { icon: "🐾", tip: "Use Misdirection on CD", desc: "MD your tank every 30s." }, { icon: "⚡", tip: "Lunar Storm placement", desc: "Position for full pack coverage." }].map((t, i) => (
-                <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 13, flexShrink: 0, width: 20, textAlign: "center" }}>{t.icon}</span>
-                  <div>
-                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.goldLight, fontWeight: 600, marginBottom: 2 }}>{t.tip}</div>
-                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, lineHeight: 1.5 }}>{t.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </CARD>
-
-            {/* SimC Live APL */}
-            <CARD style={{ gridColumn: "1 / -1" }}>
-              <LBL>🔄 SimC Live Action Priority List</LBL>
-              {simcSyncStatus === 'synced' && simcLiveData?.apl?.actionLists ? (
-                <div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-                    <span className="badge" style={{ background: '#0c1e35', color: '#38bdf8', border: '1px solid rgba(56,189,248,.4)' }}>
-                      SHA: {simcLiveData.sha?.slice(0, 7)}
-                    </span>
-                    <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>
-                      Branch: midnight
-                    </span>
-                    <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>
-                      {simcLiveData.fetchedAt ? new Date(simcLiveData.fetchedAt).toLocaleString() : 'Cached'}
-                    </span>
-                    {aplData ? (
-                      <span className="badge" style={{ background: '#0f2a1a', color: '#4ade80', border: '1px solid rgba(74,222,128,.4)' }}>
-                        ✓ ENGINE USING LIVE APL
-                      </span>
-                    ) : (
-                      <span className="badge" style={{ background: '#2a1f08', color: '#fbbf24', border: '1px solid rgba(251,191,36,.4)' }}>
-                        ⚠ USING FALLBACK WEIGHTS
-                      </span>
-                    )}
-                    {aplData && (
-                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>
-                        Weights from midnight branch SHA: {simcLiveData.sha?.slice(0, 7) || '—'}
-                      </span>
-                    )}
-                    {!aplData && (
-                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>
-                        SimC APL not yet loaded
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    {[
-                      { key: 'sentst', label: 'Sentinel ST', color: C.sentClr },
-                      { key: 'sentcleave', label: 'Sentinel Cleave', color: C.sentClr },
-                      { key: 'plst', label: 'Pack Leader ST', color: C.packClr },
-                      { key: 'plcleave', label: 'Pack Leader Cleave', color: C.packClr },
-                    ].map(({ key, label, color }) => {
-                      const actions = simcLiveData.apl.actionLists[key];
-                      if (!actions || actions.length === 0) return null;
-                      return (
-                        <div key={key} style={{ background: C.surface2, borderRadius: 8, padding: 12, border: `1px solid ${C.border}` }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color, marginBottom: 8, textTransform: "uppercase" }}>{label}</div>
-                          <div style={{ maxHeight: 200, overflowY: "auto" }}>
-                            {actions.slice(0, 15).map((action, i) => {
-                              const parts = action.split('#');
-                              const spell = parts[0].split(',')[0].trim();
-                              return (
-                                <div key={i} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textMid, padding: "2px 0", borderBottom: `1px solid ${C.borderSub}` }}>
-                                  <span style={{ color: C.goldLight }}>{i + 1}.</span> <span style={{ color: C.textSec }}>{spell}</span>
-                                  {parts[1] && <span style={{ color: C.textDim, marginLeft: 6, fontSize: 9 }}>// {parts[1].trim()}</span>}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {simcLiveData.spells?.survival_spells && (
-                    <div style={{ marginTop: 16 }}>
-                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, color: C.textDim, marginBottom: 8, textTransform: "uppercase" }}>Parsed Spell Implementations</div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {Object.entries(simcLiveData.spells.survival_spells).map(([spell, data]: [string, any]) => (
-                          <span key={spell} className="tag tag-core" style={{ fontSize: 11 }}>
-                            {spell.replace(/_/g, ' ')} {data.found ? '✓' : '✗'}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : simcSyncStatus === 'loading' ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.textDim }}>
-                  <span style={{ width: 14, height: 14, border: "2px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />
-                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>Syncing SimC data from GitHub...</span>
-                </div>
-              ) : (
-                <div>
-                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 10 }}>
-                    Click the <strong style={{ color: '#38bdf8' }}>SYNC SIMC</strong> button in the header to pull the latest rotation data from SimulationCraft's GitHub repository.
-                  </p>
-                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
-                    This fetches the Survival Hunter APL (Action Priority List) directly from the midnight branch and caches it for fast loading.
-                  </p>
-                </div>
-              )}
-            </CARD>
-          </div>
-        )}
-
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.borderSub}` }}>
           <p style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim }}>SURVIVAL HUNTER SIM · MIDNIGHT 12.0 PRE-SEASON 1 · INTERNAL ENGINE</p>
