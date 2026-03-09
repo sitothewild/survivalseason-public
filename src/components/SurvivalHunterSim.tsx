@@ -954,85 +954,256 @@ export default function SurvivalHunterSim() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 300, gap: 12 }}>
                 <div style={{ fontSize: 48, opacity: 0.3 }}>📊</div>
                 <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 2, color: C.textDim }}>RUN A SIMULATION FIRST</div>
-                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textMid, textAlign: "center", maxWidth: 260 }}>The detailed report shows ability breakdown, buff uptimes, and Strike as One mechanics.</div>
+                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textMid, textAlign: "center", maxWidth: 260 }}>The detailed report shows ability breakdown, buff uptimes, and a full ability encyclopedia.</div>
               </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {/* Strike as One Analysis */}
-                <CARD>
-                  <LBL>🎯 Strike as One Analysis</LBL>
-                  {simResults[0]?.detailed?.strikeAsOneDetails && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, margin: 0, fontStyle: "italic" }}>{simResults[0].detailed.strikeAsOneDetails.description}</p>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12 }}>
-                        {[["TRIGGER FREQUENCY", simResults[0].detailed.strikeAsOneDetails.estimatedFrequency, `${simResults[0].detailed.strikeAsOneDetails.totalTriggers} total triggers`],
-                          ["AVERAGE HIT", simResults[0].detailed.strikeAsOneDetails.avgDamage.toLocaleString(), "110% AP coefficient"]
-                        ].map(([label, val, sub]) => (
-                          <div key={label} className="stat-chip">
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.goldLight, marginBottom: 4 }}>{label}</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, color: C.textPri }}>{val}</div>
-                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>{sub}</div>
+            ) : (() => {
+              const primary = simResults[0];
+              const detailed = primary.detailed;
+              const actionEntries = Object.entries(detailed.actionCounts).sort((a, b) => b[1].dps - a[1].dps);
+              const totalDps = primary.totalDps;
+              const targetCount = primary.targets || 1;
+
+              const ABILITY_NOTES: Record<string, string> = {
+                "Kill Command": "Spam on cooldown for focus generation",
+                "Raptor Strike": "Primary spender — stack Mongoose Fury first",
+                "Raptor Swipe": "Cleave proc — always let it fire",
+                "Wildfire Bomb": "Never cap charges — highest AoE priority",
+                "Boomstick": "Use on CD — Shellshock amplifies ST damage",
+                "Strike as One": "Passive pet attack — triggers on every ability",
+                "Takedown": "Major CD — pool focus before using",
+                "Flamefang Pitch": "Pre-place puddle for incoming adds",
+                "Moonlight Chakram": "Use on CD for Sentinel builds",
+                "Sentinel Mark + Lunar Storm": "Consumes mark — massive AoE burst",
+                "Auto Attack (MH)": "Passive — ensure 100% uptime",
+                "Auto Attack (OH)": "Passive — ensure melee range",
+                "Pet (Claw)": "Passive pet damage — scales with AP",
+                "Pet Melee": "Passive pet melee — keep pet alive",
+                "Pack Leader Beasts": "Spawns from Kill Command procs",
+                "Bear (Rend + Melee)": "Pack Leader beast — passive damage",
+                "Coord. Assault": "Legacy CD — replaced by Takedown",
+                "Kroluk's Warbanner": "Trinket proc — passive",
+              };
+
+              // Category border colors
+              const CAT_BORDER = { DAMAGE: "#d97706", DOT: "#a78bfa", PET: "#60a5fa", COOLDOWN: "#fb923c", BUFF: "#4ade80" };
+              const CAT_BG = { DAMAGE: "rgba(217,119,6,.12)", DOT: "rgba(167,139,250,.12)", PET: "rgba(96,165,250,.12)", COOLDOWN: "rgba(251,146,60,.12)", BUFF: "rgba(74,222,128,.12)" };
+
+              const ABILITY_ENCYCLOPEDIA = [
+                {
+                  name: "Kill Command", category: "DAMAGE", cd: "None (GCD)", range: "50 yd", cost: "Generates 20 Focus",
+                  description: "Commands your pet to savagely attack the target, dealing Physical damage. This is your primary focus generator — you press it constantly to fuel your Raptor Strike and other spenders. It has no cooldown beyond the GCD, making it spammable.",
+                  whyCast: "Kill Command is your engine. It generates the focus you need to use Raptor Strike and keeps your rotation flowing. In Pack Leader builds, it also triggers beast spawns for extra damage.",
+                  mistake: "Sitting on full focus and still pressing Kill Command — you waste the focus generation. Spend first, then generate.",
+                },
+                {
+                  name: "Raptor Strike", category: "DAMAGE", cd: "None (GCD)", range: "Melee", cost: "30 Focus",
+                  description: "A powerful melee strike that deals heavy Physical damage. Each cast builds a stack of Mongoose Fury, increasing subsequent Raptor Strike damage by 10% for 8 seconds. Stacks overlap and accumulate.",
+                  whyCast: "This is your hardest-hitting single-target ability when Mongoose Fury is stacked. During Takedown, Raptor Swipe procs 100% of the time, making it even more valuable as a combo piece.",
+                  mistake: "Casting Raptor Strike without any Mongoose Fury stacks or when you're about to cap on Wildfire Bomb charges.",
+                },
+                {
+                  name: "Wildfire Bomb", category: "DOT", cd: "18s (charges)", range: "40 yd", cost: "None",
+                  description: "Hurls a bomb that explodes on impact, dealing initial Fire damage and leaving a burning DoT on all targets hit. It has charges that regenerate over time. With Lethal Calibration, it also grants +15% crit damage for 12 seconds.",
+                  whyCast: "Free damage with no focus cost, plus it buffs your crit damage. The DoT component makes it scale well in AoE. Never let both charges sit full — that's wasted DPS.",
+                  mistake: "Capping at 2 charges. You should always have one charge recharging. Treat it like a resource, not a cooldown.",
+                },
+                {
+                  name: "Boomstick", category: "DAMAGE", cd: "60s", range: "12 yd cone", cost: "None",
+                  description: "Replaces Fury of the Eagle. Fires a devastating frontal cone blast dealing massive Physical damage to all enemies. With Shellshock talent, it deals 40% increased damage to a single target (reduced per additional target).",
+                  whyCast: "Your strongest burst ability on a 1-minute cooldown. In single-target, Shellshock makes it hit extremely hard. In AoE, it cleaves everything in front of you. Align with Takedown for maximum impact.",
+                  mistake: "Using Boomstick when targets are behind you or spread out — it's a frontal cone, so positioning matters.",
+                },
+                {
+                  name: "Serpent Sting", category: "DOT", cd: "None", range: "40 yd", cost: "10 Focus",
+                  description: "Applies a Nature damage DoT to the target over 18 seconds. A low-maintenance ability that provides steady ticking damage while you execute your core rotation.",
+                  whyCast: "Cheap, persistent damage that ticks in the background. Apply it once and refresh before it falls off. In multi-target, spreading Serpent Sting adds meaningful passive DPS.",
+                  mistake: "Refreshing too early (before pandemic window) or forgetting to apply it entirely on priority targets.",
+                },
+                {
+                  name: "Flanking Strike", category: "DAMAGE", cd: "30s", range: "Melee", cost: "Generates 30 Focus",
+                  description: "You and your pet strike the target simultaneously, dealing combined Physical damage. Generates a large chunk of focus on use, making it both a damage ability and a powerful focus generator.",
+                  whyCast: "Burst focus generation on a short cooldown. Use it when you need focus quickly — especially before a Takedown window to ensure you can spam Raptor Strikes during the buff.",
+                  mistake: "Holding it too long. It's a 30s cooldown — use it on CD unless you're specifically pooling for a burst window 5 seconds away.",
+                },
+                {
+                  name: "Takedown", category: "COOLDOWN", cd: "90s", range: "Melee", cost: "Generates 50 Focus",
+                  description: "Your major damage cooldown. Deals 180% AP damage on activation and grants a 20% damage amplification buff for 8 seconds. Also generates 50 focus instantly. During Takedown, Raptor Swipe procs 100% from Raptor Strike.",
+                  whyCast: "This is your burst window. Everything you do for 8 seconds hits 20% harder, and you get guaranteed Raptor Swipe procs. Align Boomstick, Wildfire Bomb, and pooled focus into this window.",
+                  mistake: "Popping Takedown with no focus pooled or when Boomstick is on cooldown. You want maximum abilities inside the 8-second buff.",
+                },
+                {
+                  name: "Coordinated Assault", category: "COOLDOWN", cd: "120s", range: "Self", cost: "None",
+                  description: "Legacy 2-minute cooldown that empowers your attacks and your pet's attacks for a duration. In the Midnight expansion, this is largely replaced by Takedown for Survival Hunters running the new talent tree.",
+                  whyCast: "If talented (non-Takedown builds), it provides a sustained damage increase over a longer window. Pairs with trinkets and external buffs for maximum value.",
+                  mistake: "Using it during heavy movement phases where you can't maintain melee uptime for the full duration.",
+                },
+                {
+                  name: "Raptor Swipe", category: "DAMAGE", cd: "Proc-based", range: "8 yd AoE", cost: "Generates 15 Focus",
+                  description: "An Apex talent proc. Each Raptor Strike has a 25% chance to trigger Raptor Swipe (100% during Takedown). It hits up to 5 targets around you and generates focus, making it both a cleave tool and a resource builder.",
+                  whyCast: "Free cleave damage that generates focus. During Takedown, every Raptor Strike guarantees a Raptor Swipe, creating a powerful burst AoE combo. This is why Takedown is so strong in M+.",
+                  mistake: "There's no mistake to make — it's automatic. But you should be in melee range of grouped enemies to maximize its cleave.",
+                },
+                {
+                  name: "Flamefang Pitch", category: "COOLDOWN", cd: "30s", range: "40 yd (ground target)", cost: "None",
+                  description: "Throws a fire bomb at a target location, dealing burst Fire damage on impact and leaving a fire puddle that damages enemies standing in it. With Grenade Juggler, it gains an extra charge.",
+                  whyCast: "Strong AoE cooldown that also does solid single-target damage from the puddle. Pre-place it where mobs are being gathered in M+ for maximum tick value.",
+                  mistake: "Placing it where mobs are about to move away from. Coordinate with your tank's positioning for full puddle uptime.",
+                },
+                {
+                  name: "Pet (Kill Command Procs)", category: "PET", cd: "Passive", range: "Melee (pet)", cost: "None",
+                  description: "Your pet's passive attacks triggered by Kill Command and the Strike as One talent. Every damaging ability you cast causes your pet to attack. In Pack Leader builds, Kill Command also spawns additional beasts (Bear, Wyvern, Boar).",
+                  whyCast: "Passive damage that scales with your Attack Power. Keep your pet alive and on the target. In Pack Leader builds, this becomes a significant portion of your total damage via beast spawns.",
+                  mistake: "Letting your pet die or having it on a different target than your priority target. Pet positioning and survival directly affect your DPS.",
+                },
+              ];
+
+              return (
+                <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 20 }} className="responsive-grid">
+                  {/* LEFT — Simulation Summary Table */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <CARD>
+                      <LBL>📊 Simulation Summary</LBL>
+                      {/* Header chips */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                        {[
+                          { label: "HERO", value: heroTalent === 'sentinel' ? '🦉 Sentinel' : '🐾 Pack Leader', color: heroTalent === 'sentinel' ? C.sentClr : C.packClr },
+                          { label: "DURATION", value: dL(fightDuration), color: C.goldLight },
+                          { label: "TARGETS", value: `${targetCount}T`, color: C.textPri },
+                          { label: "STYLE", value: FIGHT_STYLES[fightStyle]?.label?.replace(/^[^\s]+\s/, '') || 'Patchwerk', color: C.textMid },
+                        ].map(chip => (
+                          <div key={chip.label} className="stat-chip" style={{ padding: "6px 10px", flex: "1 1 auto", minWidth: 80 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{chip.label}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: chip.color, fontWeight: 600 }}>{chip.value}</div>
                           </div>
                         ))}
                       </div>
-                      <div>
-                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>TRIGGERING ABILITIES</div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          {simResults[0].detailed.strikeAsOneDetails.triggerAbilities.map(a => (
-                            <span key={a} className="tag tag-core">{a}</span>
-                          ))}
-                        </div>
+
+                      {/* Ability breakdown table */}
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                              {["Ability", "DPS", "%", "Casts", "Avg/Cast", "Notes"].map(h => (
+                                <th key={h} style={{ padding: "8px 6px", textAlign: h === "Ability" || h === "Notes" ? "left" : "right", fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {actionEntries.map(([ability, data]) => (
+                              <tr key={ability} style={{ borderBottom: `1px solid ${C.borderSub}` }}>
+                                <td style={{ padding: "6px 6px", fontWeight: 600 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: bClr(ability), flexShrink: 0 }} />
+                                    <span style={{ color: C.textSec, whiteSpace: "nowrap" }}>{ability}</span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: "6px 6px", color: C.goldLight, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{fmt(Math.round(data.dps))}</td>
+                                <td style={{ padding: "6px 6px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{data.percentage.toFixed(1)}%</td>
+                                <td style={{ padding: "6px 6px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{data.count}</td>
+                                <td style={{ padding: "6px 6px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{data.avgHit.toLocaleString()}</td>
+                                <td style={{ padding: "6px 6px", color: C.textDim, fontSize: 11, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ABILITY_NOTES[ability] || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr style={{ borderTop: `2px solid ${C.gold}` }}>
+                              <td style={{ padding: "10px 6px", fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1, color: C.goldLight, fontWeight: 700 }}>TOTAL</td>
+                              <td style={{ padding: "10px 6px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, color: C.goldLight, fontWeight: 700, textAlign: "right" }}>{fmt(Math.round(totalDps))}</td>
+                              <td style={{ padding: "10px 6px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.goldLight, textAlign: "right" }}>100%</td>
+                              <td colSpan={3} />
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </CARD>
+
+                    {/* Buff Uptimes — compact */}
+                    <CARD>
+                      <LBL>⏱ Buff Uptimes</LBL>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {Object.entries(detailed.buffUptimes).map(([name, data]) => (
+                          <div key={name}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, fontWeight: 600 }}>{name}</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.goldLight }}>{Math.round(data.uptime * 100)}%</span>
+                            </div>
+                            <div style={{ height: 4, background: C.surface2, borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ height: "100%", borderRadius: 2, width: `${data.uptime * 100}%`, background: C.green, transition: "width .5s ease" }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CARD>
+                  </div>
+
+                  {/* RIGHT — Ability Encyclopedia */}
+                  <div style={{ maxHeight: "calc(100vh - 180px)", overflowY: "auto", paddingRight: 4 }}>
+                    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20 }}>
+                      <LBL>📖 Ability Encyclopedia</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                        Every Survival Hunter ability used in the rotation — explained for beginners and optimizers alike.
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        {ABILITY_ENCYCLOPEDIA.map(ability => {
+                          const catColor = CAT_BORDER[ability.category] || C.textDim;
+                          const catBg = CAT_BG[ability.category] || "transparent";
+                          return (
+                            <div key={ability.name} style={{
+                              background: C.surface2,
+                              border: `1px solid ${C.borderSub}`,
+                              borderLeft: `4px solid ${catColor}`,
+                              borderRadius: "0 10px 10px 0",
+                              padding: "16px 18px",
+                            }}>
+                              {/* Header */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700, color: C.textPri, letterSpacing: 0.5 }}>{ability.name}</span>
+                                <span style={{
+                                  fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, fontWeight: 700,
+                                  padding: "3px 8px", borderRadius: 4,
+                                  background: catBg, color: catColor, border: `1px solid ${catColor}40`,
+                                }}>{ability.category}</span>
+                              </div>
+
+                              {/* Meta row */}
+                              <div style={{ display: "flex", gap: 16, marginBottom: 10, flexWrap: "wrap" }}>
+                                {[
+                                  { label: "CD", value: ability.cd },
+                                  { label: "Range", value: ability.range },
+                                  { label: "Cost", value: ability.cost },
+                                ].map(m => (
+                                  <div key={m.label} style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim }}>{m.label}:</span>
+                                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textMid }}>{m.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Description */}
+                              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.65, margin: "0 0 12px 0" }}>
+                                {ability.description}
+                              </p>
+
+                              {/* Why you cast it */}
+                              <div style={{ background: "rgba(217,119,6,.08)", border: `1px solid rgba(217,119,6,.2)`, borderRadius: 8, padding: "10px 14px", marginBottom: 10 }}>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.goldLight, marginBottom: 5 }}>WHY YOU CAST IT</div>
+                                <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, lineHeight: 1.6, margin: 0 }}>{ability.whyCast}</p>
+                              </div>
+
+                              {/* Common mistake */}
+                              <div style={{ background: "rgba(248,113,113,.06)", border: `1px solid rgba(248,113,113,.15)`, borderRadius: 8, padding: "10px 14px" }}>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.red, marginBottom: 5 }}>COMMON MISTAKE</div>
+                                <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.6, margin: 0 }}>{ability.mistake}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  )}
-                </CARD>
-
-                {/* Buff Uptimes */}
-                <CARD>
-                  <LBL>⏱ Buff Uptimes</LBL>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10 }}>
-                    {Object.entries(simResults[0].detailed.buffUptimes).map(([name, data]) => (
-                      <div key={name} className="stat-chip">
-                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, fontWeight: 600, marginBottom: 4 }}>{name}</div>
-                        <div style={{ height: 5, background: C.surface2, borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
-                          <div style={{ height: "100%", borderRadius: 3, width: `${data.uptime * 100}%`, background: C.green }} />
-                        </div>
-                        <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.goldLight }}>{Math.round(data.uptime * 100)}%</div>
-                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>{data.description}</div>
-                      </div>
-                    ))}
                   </div>
-                </CARD>
-
-                {/* Ability Breakdown Table */}
-                <CARD>
-                  <LBL>📋 Ability Breakdown</LBL>
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                          {["Ability", "DPS", "%", "Hits", "Crits", "Avg Hit"].map(h => (
-                            <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, textTransform: "uppercase" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(simResults[0].detailed.actionCounts).sort((a, b) => b[1].dps - a[1].dps).map(([ability, data]) => (
-                          <tr key={ability} style={{ borderBottom: `1px solid ${C.borderSub}` }}>
-                            <td style={{ padding: "6px 10px", color: C.textSec, fontWeight: 600 }}>{ability}</td>
-                            <td style={{ padding: "6px 10px", color: C.goldLight, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>{fmt(Math.round(data.dps))}</td>
-                            <td style={{ padding: "6px 10px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>{data.percentage.toFixed(1)}%</td>
-                            <td style={{ padding: "6px 10px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>{data.count}</td>
-                            <td style={{ padding: "6px 10px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>{data.crits}</td>
-                            <td style={{ padding: "6px 10px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>{data.avgHit.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CARD>
-              </div>
-            )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
