@@ -1424,6 +1424,7 @@ export default function SurvivalHunterSim() {
                     </CARD>
                   );
                 })()}
+                </>
               );
             })()}
           </div>
