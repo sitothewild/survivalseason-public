@@ -1488,8 +1488,8 @@ export default function SurvivalHunterSim() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Armory Lookup */}
-              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 24 }}>
-                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 600, letterSpacing: 1.5, color: 'hsl(var(--foreground))', margin: '0 0 14px' }}>
+              <div style={{ background: '#141c2a', border: '1px solid #2e3a50', borderRadius: 12, padding: 24 }}>
+                <h3 style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: 3, color: '#64748b', margin: '0 0 14px', textTransform: 'uppercase' }}>
                   🌐 ARMORY LOOKUP
                 </h3>
                 <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', marginBottom: 14, lineHeight: 1.5 }}>
