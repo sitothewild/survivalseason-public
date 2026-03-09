@@ -1006,14 +1006,8 @@ export default function SurvivalHunterSim() {
                 { name: "Pet (Kill Command procs)", category: "PET", cd: "Passive", range: "Pet range", cost: "None", description: "Your pet's auto attacks and special abilities triggered by Kill Command. Pet damage scales with your Attack Power and Mastery (Spirit Bond).", whyCast: "Passive throughput. Keep your pet alive and attacking at all times. Pet damage is 15-20% of your total.", mistake: "Letting your pet die or dismissing it accidentally. Always have Mend Pet ready." },
               ];
 
-              // Section collapse state — using a simple approach with inline state
-              const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
               const toggleSection = (key: string) => setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
               const isOpen = (key: string) => !collapsedSections[key];
-
-              // Upgrade sim state
-              const [upgradeFrom, setUpgradeFrom] = useState(parsedChar?.character?.avgIlvl || 636);
-              const [upgradeTo, setUpgradeTo] = useState((parsedChar?.character?.avgIlvl || 636) + 9);
 
               const dL = (s: number) => { const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; };
 
