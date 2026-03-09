@@ -229,7 +229,7 @@ const CURATED_NOTES: PatchNote[] = [
   },
   {
     title: 'Midnight Pre-Season 1 — Survival Hunter Talent Rework Summary',
-    link: 'https://www.wowhead.com/news/category=hunter',
+    link: 'https://www.wowhead.com/news/hunter',
     pubDate: '2026-02-28T00:00:00Z',
     date: 'Feb 28, 2026',
     description: 'Explosive Shot removed from class tree. Replaced with Keen Eyesight, Unnatural Causes, and Trigger Finger. Mongoose Fury is now baseline. New ability: Flamefang Pitch (60s CD AoE DoT). Raptor Swipe replaces Raptor Strike in AoE, hitting 5 targets.',
