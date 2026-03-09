@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { NavLink } from "@/components/NavLink";
 import {
   computeStatWeights,
@@ -45,7 +45,23 @@ const GRADE_CLR: Record<string,string> = {
 
 export default function Gear() {
   const [hero, setHero] = useState<"sentinel"|"packLeader">("sentinel");
-  const [bisOpen, setBisOpen] = useState(false);
+  const [bisOpen, setBisOpen] = useState(true);   // open by default — tooltips require visibility
+
+  // BiS tooltip state — mirrors sim page hover-tooltip pattern
+  const [hoveredBiS, setHoveredBiS] = useState<string | null>(null);
+  const [bisTooltipPos, setBisTooltipPos] = useState({ x: 0, y: 0 });
+  const bisHideTimer = useRef<number | null>(null);
+
+  const handleBiSHover = useCallback((slot: string, e: React.MouseEvent) => {
+    if (bisHideTimer.current) { window.clearTimeout(bisHideTimer.current); bisHideTimer.current = null; }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setBisTooltipPos({ x: rect.right + 10, y: rect.top });
+    setHoveredBiS(slot);
+  }, []);
+
+  const handleBiSLeave = useCallback(() => {
+    bisHideTimer.current = window.setTimeout(() => setHoveredBiS(null), 160);
+  }, []);
 
   const isSent   = hero === "sentinel";
   const heroClr  = isSent ? C.sentClr  : C.packClr;
@@ -705,21 +721,33 @@ export default function Gear() {
                 fontFamily:"'Rajdhani',sans-serif", fontSize:13 }}>
                 <thead>
                   <tr style={{ borderBottom:`1px solid ${C.border}` }}>
-                    {["Slot","Item","Hero ilvl","Myth ilvl","Key Stats","Notes / Enchant"].map(h => (
+                    {["Slot","Item","Hero ilvl","Myth ilvl","Key Stats"].map(h => (
                       <th key={h} style={{ textAlign:"left", padding:"8px 12px",
                         fontFamily:"'Orbitron',sans-serif", fontSize:8, color:C.textDim,
                         letterSpacing:2, whiteSpace:"nowrap", fontWeight:700 }}>{h}</th>
                     ))}
+                    <th style={{ padding:"8px 12px", fontFamily:"'Orbitron',sans-serif",
+                      fontSize:8, color:C.textDim, letterSpacing:2, fontWeight:700, textAlign:"right" }}>
+                      HOVER FOR DETAILS
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {bisList.map((row, i) => {
-                    const isTier = ["Head","Shoulders","Chest","Hands","Legs"].includes(row.slot);
+                    const isTier    = ["Head","Shoulders","Chest","Hands","Legs"].includes(row.slot);
+                    const isHovered = hoveredBiS === row.slot;
                     return (
-                      <tr key={row.slot} style={{
-                        borderBottom:`1px solid ${C.borderSub}`,
-                        background: isTier ? C.goldBg : i%2===0 ? "transparent" : C.surface2,
-                      }}>
+                      <tr key={row.slot}
+                        onMouseEnter={e => handleBiSHover(row.slot, e)}
+                        onMouseLeave={handleBiSLeave}
+                        style={{
+                          borderBottom:`1px solid ${C.borderSub}`,
+                          background: isHovered
+                            ? (isTier ? "#3d2a06" : heroBg)
+                            : (isTier ? C.goldBg : i%2===0 ? "transparent" : C.surface2),
+                          cursor:"default",
+                          transition:"background .1s",
+                        }}>
                         <td style={{ padding:"8px 12px", color:heroClr,
                           fontWeight:700, whiteSpace:"nowrap" }}>{row.slot}</td>
                         <td style={{ padding:"8px 12px", color:C.textPri, fontWeight:600 }}>
@@ -734,8 +762,11 @@ export default function Gear() {
                           whiteSpace:"nowrap" }}>{row.mythIlvl ?? "—"}</td>
                         <td style={{ padding:"8px 12px", color:C.goldLight,
                           whiteSpace:"nowrap" }}>{row.keyStats}</td>
-                        <td style={{ padding:"8px 12px", color:C.textDim, fontSize:11 }}>
-                          {row.notes}
+                        <td style={{ padding:"8px 12px", textAlign:"right" }}>
+                          <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
+                            color: isHovered ? heroClr : C.textDim, letterSpacing:1 }}>
+                            {isHovered ? "▶ details" : "···"}
+                          </span>
                         </td>
                       </tr>
                     );
@@ -746,6 +777,128 @@ export default function Gear() {
           )}
         </Card>
       </main>
+
+      {/* ── BiS Gear Tooltip ───────────────────────────────────── */}
+      {hoveredBiS && (() => {
+        const row = bisList.find(r => r.slot === hoveredBiS);
+        if (!row) return null;
+        const isTier    = ["Head","Shoulders","Chest","Hands","Legs"].includes(row.slot);
+        const isWeapon  = ["Main Hand","Off Hand"].includes(row.slot);
+        const isJewelry = ["Neck","Ring 1","Ring 2","Trinket 1","Trinket 2"].includes(row.slot);
+        const SLOT_ICONS: Record<string,string> = {
+          "Head":"🪖","Shoulders":"🛡","Chest":"🎽","Wrist":"⌚","Hands":"🧤",
+          "Waist":"🪢","Legs":"🩲","Boots":"🥾","Back":"🧥",
+          "Neck":"📿","Ring 1":"💍","Ring 2":"💍",
+          "Trinket 1":"💎","Trinket 2":"💎",
+          "Main Hand":"⚔","Off Hand":"🗡",
+        };
+        const TRACK_CLR = { hero:"#a855f7", myth:"#fbbf24" };
+        // Parse keyStats into individual coloured pills
+        const stats = row.keyStats.split(/\s*[+/]\s*/).map(s => s.trim()).filter(Boolean);
+        const STAT_CLR: Record<string,string> = {
+          "Mastery":"#4ade80","Crit":"#f87171","Critical Strike":"#f87171",
+          "Haste":"#60a5fa","Versatility":"#94a3b8","Vers":"#94a3b8",
+          "Agility":"#fbbf24","Agility 2H Polearm":"#fbbf24","Agility 1H Axe":"#fbbf24",
+          "Agility 1H Dagger":"#fbbf24","Passive Agi + Stacking proc":"#fbbf24",
+          "On-use Crit +3640":"#f87171","On-use Mastery +3920":"#4ade80",
+        };
+        // Split source at " — " to extract boss name for separate display
+        const sourceParts = row.source.split(" — ");
+        const sourceBase  = sourceParts[0];
+        const sourceBoss  = sourceParts.slice(1).join(" — ");
+
+        const tipX = Math.min(bisTooltipPos.x, window.innerWidth - 348);
+        const tipY = Math.max(8, Math.min(bisTooltipPos.y, window.innerHeight - 360));
+
+        return (
+          <div style={{
+            position:"fixed", zIndex:9999, pointerEvents:"none",
+            left: tipX, top: tipY,
+            width: 320,
+            background:"linear-gradient(180deg,#141c2a,#0c1220)",
+            border:"1px solid #2e4a6a",
+            borderRadius:12, padding:"16px 18px",
+            boxShadow:"0 10px 40px rgba(0,0,0,.75)",
+            fontFamily:"'Rajdhani',sans-serif",
+          }}>
+            {/* Header — slot icon + item name */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+              <div style={{
+                width:38, height:38, borderRadius:8, flexShrink:0,
+                background: isTier ? C.goldBg : isWeapon ? heroBg : isJewelry ? "#1a1033" : C.surface2,
+                border:`1px solid ${isTier ? "#78350f" : isWeapon ? heroBdr : "#3b1a5c"}`,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:20,
+              }}>
+                {SLOT_ICONS[row.slot] ?? "⚙"}
+              </div>
+              <div>
+                <div style={{ fontSize:15, fontWeight:800, color:"#a335ee", lineHeight:1.2 }}>
+                  {isTier && <span style={{ color:C.goldLight }}>🏆 </span>}
+                  {row.itemName}
+                </div>
+                <div style={{ fontSize:11, color:C.textDim, marginTop:2, letterSpacing:.5 }}>
+                  {row.slot.toUpperCase()}
+                </div>
+              </div>
+            </div>
+
+            {/* ilvl track band */}
+            <div style={{ display:"flex", gap:8, marginBottom:12, alignItems:"center" }}>
+              <div style={{
+                fontFamily:"'IBM Plex Mono',monospace", fontSize:12, fontWeight:700,
+                color: TRACK_CLR.hero, background:"#2a1a3a",
+                border:"1px solid #5b21b6", borderRadius:6, padding:"3px 10px",
+              }}>
+                Hero {row.ilvl}
+              </div>
+              <span style={{ color:C.textDim, fontSize:11 }}>→</span>
+              <div style={{
+                fontFamily:"'IBM Plex Mono',monospace", fontSize:12, fontWeight:700,
+                color: TRACK_CLR.myth, background:C.goldBg,
+                border:"1px solid #78350f", borderRadius:6, padding:"3px 10px",
+              }}>
+                Myth {row.mythIlvl ?? "—"}
+              </div>
+            </div>
+
+            {/* Key stats */}
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:9, letterSpacing:2, color:C.textDim,
+                fontFamily:"'Orbitron',sans-serif", marginBottom:5 }}>KEY STATS</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {stats.map(s => (
+                  <span key={s} style={{
+                    fontFamily:"'IBM Plex Mono',monospace", fontSize:12, fontWeight:700,
+                    color: STAT_CLR[s] ?? C.textSec,
+                    background: (STAT_CLR[s] ?? C.textSec) + "18",
+                    border:`1px solid ${(STAT_CLR[s] ?? C.textSec)}44`,
+                    borderRadius:5, padding:"2px 8px",
+                  }}>{s}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Source */}
+            <div style={{ marginBottom:10, borderTop:`1px solid ${C.borderSub}`, paddingTop:8 }}>
+              <div style={{ fontSize:9, letterSpacing:2, color:C.textDim,
+                fontFamily:"'Orbitron',sans-serif", marginBottom:4 }}>SOURCE</div>
+              <div style={{ fontSize:13, color:C.textSec, fontWeight:600 }}>{sourceBase}</div>
+              {sourceBoss && (
+                <div style={{ fontSize:12, color: heroClr, marginTop:2 }}>↳ {sourceBoss}</div>
+              )}
+            </div>
+
+            {/* Notes */}
+            {row.notes && (
+              <div style={{ borderTop:`1px solid ${C.borderSub}`, paddingTop:8 }}>
+                <div style={{ fontSize:9, letterSpacing:2, color:C.textDim,
+                  fontFamily:"'Orbitron',sans-serif", marginBottom:4 }}>NOTES &amp; ENCHANTS</div>
+                <div style={{ fontSize:12, color:C.textMid, lineHeight:1.5 }}>{row.notes}</div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Footer */}
       <footer style={{ textAlign:"center", padding:"24px 28px",
