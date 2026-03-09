@@ -227,17 +227,18 @@ function parseSimcString(simcText) {
 // ============================================================
 
 // Fallback hardcoded breakdowns (used when live data unavailable)
-const SIMC_BREAKDOWN_PL_ST_DEFAULT = { 'Strike as One':0.1883,'Raptor Swipe':0.1471,'Raptor Strike':0.1271,'Boomstick':0.0772,'Auto Attack (MH)':0.0711,'Kill Command':0.0499,'Wildfire Bomb':0.0821,'Auto Attack (OH)':0.0339,'Takedown':0.0331,'Pack Leader Beasts':0.0716,'Pet (Claw)':0.0246,"Kroluk's Warbanner":0.0220,'Pet Melee':0.0200,'Bear (Rend + Melee)':0.0261 };
-const SIMC_BREAKDOWN_SENT_ST_DEFAULT = { 'Raptor Strike':0.1400,'Raptor Swipe':0.1350,'Strike as One':0.1200,'Wildfire Bomb':0.1050,'Boomstick':0.0800,'Auto Attack (MH)':0.0650,'Kill Command':0.0500,'Moonlight Chakram':0.0450,'Sentinel Mark + Lunar Storm':0.0700,'Takedown':0.0380,'Auto Attack (OH)':0.0300,'Pet (Claw)':0.0250,'Pet Melee':0.0220,"Kroluk's Warbanner":0.0200 };
+const SIMC_BREAKDOWN_PL_ST_DEFAULT = { 'Mongoose Bite':0.2800,'Kill Command':0.1300,'Wildfire Bomb':0.1000,'Raptor Swipe':0.0600,'Boomstick':0.0800,'Auto Attack (MH)':0.0700,'Takedown':0.0650,'Pack Leader Beasts':0.0700,'Pet Damage':0.0500,'Auto Attack (OH)':0.0340,'Raptor Bite':0.0510,'Trinket Procs':0.0100 };
+const SIMC_BREAKDOWN_SENT_ST_DEFAULT = { 'Mongoose Bite':0.3000,'Wildfire Bomb':0.2000,'Kill Command':0.1300,'Boomstick':0.0900,'Pet Damage':0.0900,'Takedown':0.0700,'Raptor Bite':0.0500,'Auto Attack (MH)':0.0650,'Serpent Sting':0.0450,'Sentinel Mark + Lunar Storm':0.0400,'Auto Attack (OH)':0.0300,'Trinket Procs':0.0100 };
 
 // Map SimC APL action names → display names used in breakdowns
 const APL_TO_DISPLAY: Record<string, string> = {
-  'raptor_strike': 'Raptor Strike', 'raptor_strike_melee': 'Raptor Strike',
-  'mongoose_bite': 'Raptor Strike', // mongoose_bite replaced by raptor_strike in TWW
+  'raptor_strike': 'Raptor Bite', 'raptor_strike_melee': 'Raptor Bite',
+  'raptor_bite': 'Raptor Bite',
+  'mongoose_bite': 'Mongoose Bite',
   'kill_command': 'Kill Command', 'kill_command_sv': 'Kill Command',
   'wildfire_bomb': 'Wildfire Bomb', 'volatile_bomb': 'Wildfire Bomb',
   'fury_of_the_eagle': 'Boomstick', 'boomstick': 'Boomstick',
-  'flanking_strike': 'Raptor Strike',
+  'flanking_strike': 'Mongoose Bite',
   'coordinated_assault': 'Takedown', 'takedown': 'Takedown',
   'harpoon': 'Takedown',
   'butchery': 'Raptor Swipe', 'carve': 'Raptor Swipe', 'raptor_swipe': 'Raptor Swipe',
@@ -250,26 +251,26 @@ const APL_TO_DISPLAY: Record<string, string> = {
   'spearhead': 'Takedown',
   'call_of_the_wild': 'Pack Leader Beasts',
   'aspect_of_the_eagle': 'Takedown',
+  'serpent_sting': 'Serpent Sting',
 };
 
 // Passive/auto sources not in APL but always present
 const PASSIVE_SOURCES_PL: Record<string, number> = {
-  'Strike as One': 0.16, 'Auto Attack (MH)': 0.07, 'Auto Attack (OH)': 0.035,
-  'Pet (Claw)': 0.025, 'Pet Melee': 0.02, "Kroluk's Warbanner": 0.022,
-  'Pack Leader Beasts': 0.07, 'Bear (Rend + Melee)': 0.026,
+  'Pet Damage': 0.05, 'Auto Attack (MH)': 0.07, 'Auto Attack (OH)': 0.035,
+  'Pack Leader Beasts': 0.07, 'Trinket Procs': 0.01,
 };
 const PASSIVE_SOURCES_SENT: Record<string, number> = {
-  'Strike as One': 0.12, 'Auto Attack (MH)': 0.065, 'Auto Attack (OH)': 0.03,
-  'Pet (Claw)': 0.025, 'Pet Melee': 0.022, "Kroluk's Warbanner": 0.02,
-  'Sentinel Mark + Lunar Storm': 0.07,
+  'Pet Damage': 0.09, 'Auto Attack (MH)': 0.065, 'Auto Attack (OH)': 0.03,
+  'Sentinel Mark + Lunar Storm': 0.04, 'Trinket Procs': 0.01,
 };
 
 // Spell coefficients for weighting APL actions by damage per cast
 const SPELL_WEIGHT: Record<string, number> = {
-  'Raptor Strike': 2.86, 'Kill Command': 1.50, 'Wildfire Bomb': 2.48,
-  'Boomstick': 3.60, 'Takedown': 1.80, 'Raptor Swipe': 1.85,
-  'Flamefang Pitch': 4.20, 'Moonlight Chakram': 4.80,
+  'Mongoose Bite': 3.20, 'Raptor Bite': 1.40, 'Kill Command': 1.50,
+  'Wildfire Bomb': 2.48, 'Boomstick': 3.60, 'Takedown': 1.80,
+  'Raptor Swipe': 1.85, 'Flamefang Pitch': 4.20, 'Moonlight Chakram': 4.80,
   'Sentinel Mark + Lunar Storm': 2.00, 'Pack Leader Beasts': 1.50,
+  'Serpent Sting': 1.20,
 };
 
 /**
@@ -342,34 +343,32 @@ function getBreakdowns(simcLiveData: any): { pl: Record<string, number>; sent: R
 
 function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCount, ap) {
   const isPL = heroTalent === 'packLeader';
-  const strikeAsOneDps = breakdown['Strike as One'] || 0;
-  const avgStrikeAsOneDamage = Math.round(ap * 1.10);
-  const triggerAbilities = ['Raptor Strike','Kill Command','Wildfire Bomb','Boomstick','Raptor Swipe'];
+  const triggerAbilities = ['Mongoose Bite','Raptor Bite','Kill Command','Wildfire Bomb','Boomstick','Raptor Swipe'];
   const totalTriggerDps = triggerAbilities.reduce((sum, a) => sum + (breakdown[a] || 0), 0);
   const estimatedTriggersPerSecond = Math.max(0.8, Math.min(2.5, totalTriggerDps / (ap * 0.8)));
   const totalTriggers = Math.round(estimatedTriggersPerSecond * fightDuration);
-  const strikeAsOneExplanation = {
-    description: "Passive pet attack that triggers on every damaging ability you cast",
+  const petDamageExplanation = {
+    description: "Combined pet damage including Strike as One, Pet Claw, and Pet Melee",
     triggerAbilities, mechanics: [
-      "Triggers automatically on Raptor Strike, Kill Command, Wildfire Bomb, Boomstick",
+      "Strike as One triggers automatically on every damaging ability you cast",
       targetCount > 1 ? `With Two Against Many: Hits ${Math.min(targetCount, 3)} targets` : "Single target pet attack",
       "During Takedown: Raptor Swipe triggers Strike as One at 300% damage",
       isPL ? "Pack Leader: Benefits from beast synergies" : "Sentinel: Enhanced by Spirit Bond mastery scaling"
     ],
     estimatedFrequency: `~${estimatedTriggersPerSecond.toFixed(1)} triggers/sec`,
-    avgDamage: avgStrikeAsOneDamage, totalTriggers
+    avgDamage: Math.round(ap * 1.10), totalTriggers
   };
   const actionCounts = {}; const totalDps = Object.values(breakdown).reduce((sum, dps) => sum + dps, 0);
   Object.entries(breakdown).forEach(([ability, dps]) => {
     const baseCoef = getAbilityCoefficient(ability); const avgHit = Math.round(ap * baseCoef);
     const hitsPerSec = dps > 0 ? Math.max(0.1, dps / avgHit) : 0; const totalHits = Math.round(hitsPerSec * fightDuration);
-    const critRate = ability.includes('Strike as One') ? 0.25 : 0.30; const crits = Math.round(totalHits * critRate);
+    const critRate = ability.includes('Pet') ? 0.25 : 0.30; const crits = Math.round(totalHits * critRate);
     actionCounts[ability] = { damage: Math.round(dps * fightDuration), count: totalHits, avgHit, crits, dps, percentage: totalDps > 0 ? ((dps / totalDps) * 100) : 0 };
   });
   const buffUptimes = { 'Mongoose Fury': { uptime: 0.65, description: 'Stacking damage buff' }, 'Takedown': { uptime: 0.18, description: '20% damage amplification window' }, 'Lethal Calibration': { uptime: 0.80, description: '15% crit damage from WFB' }, 'Spirit Bond': { uptime: 1.0, description: 'Permanent mastery scaling' } };
   if (isPL) buffUptimes['Pack Leader Beasts'] = { uptime: 0.45, description: 'Summoned beasts from KC procs' };
   else buffUptimes['Sentinel Mark'] = { uptime: 0.35, description: 'Mark applied by Lunar Storm procs' };
-  return { actionCounts, buffUptimes, strikeAsOneDetails: strikeAsOneExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
+  return { actionCounts, buffUptimes, petDamageDetails: petDamageExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
 }
 
 const QUALITY_COLORS: Record<string, string> = {
@@ -403,7 +402,7 @@ function formatEnchantLabel(enchant: any): string {
 }
 
 function getAbilityCoefficient(ability) {
-  const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Mongoose Bite':1.60,'Hatchet Toss':0.95 };
+  const c = { 'Mongoose Bite':3.20,'Raptor Bite':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Hatchet Toss':0.95,'Pet Damage':1.10,'Serpent Sting':1.20,'Trinket Procs':1.00 };
   return c[ability] || 1.0;
 }
 
@@ -459,14 +458,21 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
   const breakdown = {}; const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
   if (build === 'aoe' || T > 2) {
     const aoeTemplate = {}; Object.entries(breakdownTemplate).forEach(([key, pct]) => {
-      if (key.includes('Wildfire') || key.includes('Boomstick') || key.includes('Swipe') || key.includes('Flamefang') || key.includes('Beasts') || key.includes('Lunar')) aoeTemplate[key] = pct * 1.4;
-      else if (key.includes('Strike as One')) aoeTemplate[key] = pct * 1.3; else aoeTemplate[key] = pct * 0.7;
+      if (key.includes('Wildfire') || key.includes('Boomstick') || key.includes('Swipe') || key.includes('Flamefang') || key.includes('Beasts') || key.includes('Lunar') || key.includes('Pet')) aoeTemplate[key] = pct * 1.4;
+      else aoeTemplate[key] = pct * 0.7;
     });
     if (!aoeTemplate['Flamefang Pitch']) aoeTemplate['Flamefang Pitch'] = 0.08;
     const aoeSum = Object.values(aoeTemplate).reduce((s, v) => s + v, 0);
     Object.keys(aoeTemplate).forEach(k => { aoeTemplate[k] /= aoeSum; });
     Object.entries(aoeTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); });
-  } else { Object.entries(breakdownTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); }); }
+  } else {
+    Object.entries(breakdownTemplate).forEach(([key, pct]) => {
+      let adjusted = pct;
+      // Sentinel hero bonus: +7% ST to Wildfire Bomb
+      if (!isPL && key === 'Wildfire Bomb') adjusted *= 1.07;
+      breakdown[key] = Math.round(totalDps * adjusted);
+    });
+  }
   const detailed = generateDetailedSimData(breakdown, fightDuration, heroTalent, T, ap);
   return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists, aplDataUsed: !!aplData };
 }
