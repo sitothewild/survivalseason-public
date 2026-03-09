@@ -885,8 +885,8 @@ export default function SurvivalHunterSim() {
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                           {parsedChar.gear.map((g, i) => {
-                            const ilvlColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#94a3b8";
-                            const nameColor = g.ilvl >= 639 ? "#ff8000" : g.ilvl >= 626 ? "#a335ee" : g.ilvl >= 610 ? "#0070dd" : g.ilvl >= 580 ? "#1eff00" : "#ffffff";
+                            const ilvlColor = getItemQualityColor(g.ilvl, parsedChar.character?.avgIlvl);
+                            const nameColor = ilvlColor;
                             return (
                               <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
                                 onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)} onMouseLeave={handleItemLeave}>
