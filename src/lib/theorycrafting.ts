@@ -835,6 +835,97 @@ function buildRotationNotes(
   return notes;
 }
 
+// ── Stat Weights ─────────────────────────────────────────────
+
+export interface StatWeights {
+  /** DPS gained per 1 Agility */
+  agilityDps: number;
+  /** DPS gained per 1 Crit Rating (~170 rating = 1%) */
+  critDps: number;
+  /** DPS gained per 1 Haste Rating (~170 rating = 1%) */
+  hasteDps: number;
+  /** DPS gained per 1 Mastery Rating (~170 rating = 1% Spirit Bond) */
+  masteryDps: number;
+  /** DPS gained per 1 Versatility Rating (~205 rating = 1%) */
+  versDps: number;
+  /** Scale factors relative to Agility = 1.00 */
+  sf: {
+    agility: number;
+    crit: number;
+    haste: number;
+    mastery: number;
+    vers: number;
+  };
+  /** Stat priority order (best → worst per-rating) */
+  priority: Array<{ stat: string; dpsPerRating: number; sf: number }>;
+}
+
+/**
+ * Compute scale factors by re-running the engine with small stat increments.
+ * Uses +1 unit of each stat and measures DPS delta, then normalizes to Agility=1.00.
+ * Rating conversions: crit/haste/mastery ≈ 170 rating per 1%, vers ≈ 205 rating per 1%.
+ */
+export function computeStatWeights(
+  gear: GearProfile,
+  talents: TalentConfig,
+  tierSet: TierSetConfig,
+  heroTalent: 'sentinel' | 'packLeader',
+  targetCount: number,
+): StatWeights {
+  const base = runTheoryCraft(gear, talents, tierSet, targetCount, heroTalent).totalDps;
+
+  // Measure per 1% increment of each secondary
+  const critDelta  = runTheoryCraft({ ...gear, critPct:    gear.critPct    + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
+  const hasteDelta = runTheoryCraft({ ...gear, hastePct:   gear.hastePct   + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
+  const mastDelta  = runTheoryCraft({ ...gear, masteryPct: gear.masteryPct + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
+  const versDelta  = runTheoryCraft({ ...gear, versPct:    gear.versPct    + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
+
+  // Agility: +1 agi adds ~1.05 AP (Survival class aura) + marginal mastery value
+  const agiDelta = runTheoryCraft(
+    { ...gear, agility: gear.agility + 10, attackPower: gear.attackPower + 10 },
+    talents, tierSet, targetCount, heroTalent,
+  ).totalDps - base;
+
+  // Convert percentage deltas → per-rating-point values
+  const CRIT_RATING_PER_PCT    = 170;
+  const HASTE_RATING_PER_PCT   = 170;
+  const MASTERY_RATING_PER_PCT = 170;
+  const VERS_RATING_PER_PCT    = 205;
+
+  const agilityDps = agiDelta / 10;
+  const critDps    = critDelta  / CRIT_RATING_PER_PCT;
+  const hasteDps   = hasteDelta / HASTE_RATING_PER_PCT;
+  const masteryDps = mastDelta  / MASTERY_RATING_PER_PCT;
+  const versDps    = versDelta  / VERS_RATING_PER_PCT;
+
+  // Scale factors vs Agility
+  const sf = {
+    agility: 1.00,
+    crit:    agilityDps > 0 ? parseFloat((critDps    / agilityDps).toFixed(3)) : 0,
+    haste:   agilityDps > 0 ? parseFloat((hasteDps   / agilityDps).toFixed(3)) : 0,
+    mastery: agilityDps > 0 ? parseFloat((masteryDps / agilityDps).toFixed(3)) : 0,
+    vers:    agilityDps > 0 ? parseFloat((versDps    / agilityDps).toFixed(3)) : 0,
+  };
+
+  const priority = [
+    { stat: 'Agility',        dpsPerRating: parseFloat(agilityDps.toFixed(4)), sf: 1.00 },
+    { stat: 'Critical Strike', dpsPerRating: parseFloat(critDps.toFixed(4)),   sf: sf.crit },
+    { stat: 'Haste',          dpsPerRating: parseFloat(hasteDps.toFixed(4)),   sf: sf.haste },
+    { stat: 'Mastery',        dpsPerRating: parseFloat(masteryDps.toFixed(4)), sf: sf.mastery },
+    { stat: 'Versatility',    dpsPerRating: parseFloat(versDps.toFixed(4)),    sf: sf.vers },
+  ].sort((a, b) => b.dpsPerRating - a.dpsPerRating);
+
+  return {
+    agilityDps:  parseFloat(agilityDps.toFixed(4)),
+    critDps:     parseFloat(critDps.toFixed(4)),
+    hasteDps:    parseFloat(hasteDps.toFixed(4)),
+    masteryDps:  parseFloat(masteryDps.toFixed(4)),
+    versDps:     parseFloat(versDps.toFixed(4)),
+    sf,
+    priority,
+  };
+}
+
 // ── Convenience exports ──────────────────────────────────────
 
 export {
