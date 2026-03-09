@@ -629,30 +629,47 @@ export default function SurvivalHunterSim() {
 
   const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
+
+    // Cancel pending hide to avoid flicker when moving between rows
+    if (hoverHideTimeoutRef.current) {
+      window.clearTimeout(hoverHideTimeoutRef.current);
+      hoverHideTimeoutRef.current = null;
+    }
+
     const rect = event.currentTarget.getBoundingClientRect();
     const newX = rect.right + 8;
     const newY = rect.top;
-    // Only update position if it actually changed (avoids re-render)
+
+    // Only update when changed (prevents unnecessary renders)
     setTooltipPos(prev => (prev.x === newX && prev.y === newY) ? prev : { x: newX, y: newY });
     setHoveredItem(prev => prev === itemId ? prev : itemId);
-    // Fetch item data if not cached — check synchronously, fetch outside setState
-    if (!itemCache[itemId]) {
-      setTooltipLoading(true);
-      Promise.all([
-        getItem(parseInt(itemId), armoryRegion || 'us'),
-        getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
-      ]).then(([itemData, mediaData]) => {
-        const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
-        setItemCache(p => ({ ...p, [itemId]: { ...itemData, _icon: icon } }));
-      }).catch(e => {
-        setItemCache(p => ({ ...p, [itemId]: { _error: e.message } }));
-      }).finally(() => {
-        setTooltipLoading(false);
-      });
-    }
-  }, [armoryRegion, itemCache]);
 
-  const handleItemLeave = useCallback(() => { setHoveredItem(null); }, []);
+    // Skip if cached or already being fetched
+    if (itemCacheRef.current[itemId] || pendingItemFetchesRef.current.has(itemId)) return;
+
+    pendingItemFetchesRef.current.add(itemId);
+    setTooltipLoading(true);
+
+    Promise.all([
+      getItem(parseInt(itemId), armoryRegion || 'us'),
+      getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
+    ]).then(([itemData, mediaData]) => {
+      const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
+      setItemCache(prev => ({ ...prev, [itemId]: { ...itemData, _icon: icon } }));
+    }).catch((e) => {
+      setItemCache(prev => ({ ...prev, [itemId]: { _error: e.message } }));
+    }).finally(() => {
+      pendingItemFetchesRef.current.delete(itemId);
+      setTooltipLoading(false);
+    });
+  }, [armoryRegion]);
+
+  const handleItemLeave = useCallback(() => {
+    // Small delay avoids tooltip flicker when crossing small row gaps
+    hoverHideTimeoutRef.current = window.setTimeout(() => {
+      setHoveredItem(null);
+    }, 90);
+  }, []);
 
   const getTargets = () => simMode === 'single' ? [1] : simMode === 'cleave' ? [2, 3] : [5, 8, 10];
 
