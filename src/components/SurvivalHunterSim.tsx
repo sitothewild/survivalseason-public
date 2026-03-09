@@ -1058,6 +1058,7 @@ export default function SurvivalHunterSim() {
               ];
 
               return (
+                <>
                 <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 20 }} className="responsive-grid">
                   {/* LEFT — Simulation Summary Table */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1202,6 +1203,228 @@ export default function SurvivalHunterSim() {
                     </div>
                   </div>
                 </div>
+
+                {/* ═══ SPELL SEQUENCE TIMELINE ═══ */}
+                {(() => {
+                  const ABBREV: Record<string, string> = {
+                    "Kill Command": "KC", "Mongoose Bite": "MB", "Raptor Strike": "MB",
+                    "Wildfire Bomb": "WFB", "Boomstick": "BS", "Serpent Sting": "SS",
+                    "Raptor Swipe": "RS", "Flamefang Pitch": "FP", "Takedown": "TD",
+                    "Coordinated Assault": "CA", "Coord. Assault": "CA",
+                    "Strike as One": "SaO", "Moonlight Chakram": "MC",
+                    "Auto Attack (MH)": "AA", "Auto Attack (OH)": "AA2",
+                  };
+
+                  const isSentinel = heroTalent === 'sentinel';
+
+                  // Generate a theoretical opener sequence based on hero talent
+                  const SEQUENCE = isSentinel ? [
+                    { t: 0.0, ability: "Takedown", reason: "Pop your major CD immediately at pull for the 20% damage amp window." },
+                    { t: 0.0, ability: "Wildfire Bomb", reason: "Free damage + Lethal Calibration crit buff. No focus cost — always first." },
+                    { t: 1.0, ability: "Boomstick", reason: "Heavy burst inside Takedown window. Shellshock amplifies ST damage." },
+                    { t: 2.0, ability: "Kill Command", reason: "Generate focus after spending on opener abilities." },
+                    { t: 3.0, ability: "Raptor Strike", reason: "First Mongoose Fury stack. Triggers guaranteed Raptor Swipe during TD." },
+                    { t: 4.0, ability: "Kill Command", reason: "Refuel focus — keep the engine running." },
+                    { t: 5.0, ability: "Raptor Strike", reason: "Stack #2 Mongoose Fury. Raptor Swipe procs for cleave damage." },
+                    { t: 6.5, ability: "Moonlight Chakram", reason: "Sentinel capstone — bounces between targets for heavy damage." },
+                    { t: 7.5, ability: "Kill Command", reason: "Continue focus generation. Strike as One triggers pet attack." },
+                    { t: 8.5, ability: "Raptor Strike", reason: "Stack #3 Mongoose Fury before Takedown buff expires." },
+                    { t: 10.0, ability: "Wildfire Bomb", reason: "Second charge available. Refresh Lethal Calibration buff." },
+                    { t: 11.0, ability: "Kill Command", reason: "Maintain focus flow. Sentinel Mark may proc from RS." },
+                    { t: 12.0, ability: "Raptor Strike", reason: "Spend focus — Mongoose Fury still active from earlier stacks." },
+                    { t: 13.5, ability: "Kill Command", reason: "Focus generator — keep above 30 for next RS." },
+                    { t: 14.5, ability: "Serpent Sting", reason: "Apply DoT now that opener burst is done. Cheap, persistent damage." },
+                    { t: 16.0, ability: "Kill Command", reason: "Standard rotation — KC is your bread and butter." },
+                    { t: 17.0, ability: "Raptor Strike", reason: "Refresh Mongoose Fury stacks. Maintain the 10% buff." },
+                    { t: 18.5, ability: "Kill Command", reason: "Focus generation. Pet attacks via Strike as One." },
+                    { t: 19.5, ability: "Wildfire Bomb", reason: "Charge available again — never cap charges." },
+                    { t: 20.5, ability: "Kill Command", reason: "Sustain focus for upcoming RS." },
+                    { t: 21.5, ability: "Raptor Strike", reason: "Maintain Mongoose Fury uptime." },
+                    { t: 23.0, ability: "Kill Command", reason: "Standard filler — generates focus and triggers pet." },
+                    { t: 24.0, ability: "Raptor Strike", reason: "Spend focus. Mongoose Fury stacks high now." },
+                    { t: 25.5, ability: "Kill Command", reason: "Focus builder before Flamefang Pitch." },
+                    { t: 26.5, ability: "Flamefang Pitch", reason: "30s CD now available. Place puddle on target." },
+                    { t: 28.0, ability: "Kill Command", reason: "Keep generating focus." },
+                    { t: 29.0, ability: "Raptor Strike", reason: "Spend focus. Mongoose Fury rolling strong." },
+                  ] : [
+                    { t: 0.0, ability: "Takedown", reason: "Pop your major CD at pull — 20% amp + 50 focus + guaranteed RS procs." },
+                    { t: 0.0, ability: "Kill Command", reason: "Immediately trigger Pack Leader beast spawn on pull." },
+                    { t: 1.0, ability: "Wildfire Bomb", reason: "Free damage — starts Lethal Calibration crit buff." },
+                    { t: 2.0, ability: "Boomstick", reason: "Heavy burst inside Takedown. Mongoose Rounds: each hit = 1 MF stack." },
+                    { t: 3.0, ability: "Raptor Strike", reason: "Guaranteed Raptor Swipe during Takedown. Stacks Mongoose Fury." },
+                    { t: 4.0, ability: "Kill Command", reason: "Generate focus + trigger another beast spawn." },
+                    { t: 5.0, ability: "Raptor Strike", reason: "Stack #2 MF. Raptor Swipe cleaves nearby targets." },
+                    { t: 6.5, ability: "Kill Command", reason: "Focus generation. Lethal Barbs: auto attacks generate 2 Focus each." },
+                    { t: 7.5, ability: "Raptor Strike", reason: "Stack #3 MF. Takedown buff still active." },
+                    { t: 8.5, ability: "Kill Command", reason: "Refuel — Takedown buff fading. Maximize casts inside window." },
+                    { t: 10.0, ability: "Wildfire Bomb", reason: "Second charge ready — maintain Lethal Calibration." },
+                    { t: 11.0, ability: "Kill Command", reason: "Standard focus gen. Beast spawn cooldown cycling." },
+                    { t: 12.0, ability: "Raptor Strike", reason: "Spend focus. Mongoose Fury stacking." },
+                    { t: 13.5, ability: "Kill Command", reason: "Keep focus above 30 for spenders." },
+                    { t: 14.5, ability: "Serpent Sting", reason: "Apply DoT during downtime between burst windows." },
+                    { t: 16.0, ability: "Kill Command", reason: "Bread and butter — triggers pet attacks." },
+                    { t: 17.0, ability: "Raptor Strike", reason: "Maintain Mongoose Fury. RS procs possible." },
+                    { t: 18.5, ability: "Kill Command", reason: "Focus gen. Pack Leader beasts attacking." },
+                    { t: 19.5, ability: "Wildfire Bomb", reason: "Never cap charges." },
+                    { t: 20.5, ability: "Kill Command", reason: "Sustain rotation." },
+                    { t: 21.5, ability: "Raptor Strike", reason: "Mongoose Fury maintenance." },
+                    { t: 23.0, ability: "Kill Command", reason: "Filler — focus gen + pet trigger." },
+                    { t: 24.0, ability: "Raptor Strike", reason: "High MF stacks now — big hits." },
+                    { t: 25.5, ability: "Kill Command", reason: "Fuel for upcoming Flamefang Pitch window." },
+                    { t: 26.5, ability: "Flamefang Pitch", reason: "30s CD ready. Fire puddle on target." },
+                    { t: 28.0, ability: "Kill Command", reason: "Keep generating." },
+                    { t: 29.0, ability: "Raptor Strike", reason: "Spend focus. MF rolling." },
+                  ];
+
+                  // Collect unique abilities for swim lanes
+                  const uniqueAbilities = [...new Set(SEQUENCE.map(s => s.ability))];
+
+                  // Cooldown periods (ability -> array of {start, end})
+                  const CD_DURATIONS: Record<string, number> = {
+                    "Takedown": 90, "Boomstick": 60, "Flamefang Pitch": 30,
+                    "Wildfire Bomb": 18, "Moonlight Chakram": 90,
+                    "Coordinated Assault": 120, "Coord. Assault": 120,
+                  };
+
+                  // Calculate cooldown bars from sequence
+                  const cdBars: Record<string, Array<{ start: number; end: number }>> = {};
+                  SEQUENCE.forEach(cast => {
+                    const cdDur = CD_DURATIONS[cast.ability];
+                    if (cdDur) {
+                      if (!cdBars[cast.ability]) cdBars[cast.ability] = [];
+                      cdBars[cast.ability].push({ start: cast.t, end: Math.min(30, cast.t + cdDur) });
+                    }
+                  });
+
+                  const TIMELINE_WIDTH = 1800; // px for 30 seconds
+                  const LANE_HEIGHT = 28;
+                  const PILL_HEIGHT = 20;
+
+                  return (
+                    <CARD style={{ marginTop: 20 }}>
+                      <LBL>⏱ Spell Sequence Timeline — First 30 Seconds</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>
+                        {isSentinel ? "🦉 Sentinel" : "🐾 Pack Leader"} opener rotation · Theoretical optimal cast sequence
+                      </p>
+
+                      {/* Timeline visualization */}
+                      <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                        <div style={{ position: "relative", width: TIMELINE_WIDTH, minHeight: uniqueAbilities.length * LANE_HEIGHT + 30, background: "#0d1117", padding: "8px 0 0 0" }}>
+                          {/* Time ticks */}
+                          {Array.from({ length: 31 }, (_, i) => (
+                            <div key={i} style={{
+                              position: "absolute", left: `${(i / 30) * 100}%`, top: 0, bottom: 0,
+                              borderLeft: i === 0 ? "none" : `1px solid ${i % 5 === 0 ? '#2e3a50' : '#1a2236'}`,
+                              zIndex: 0,
+                            }}>
+                              {i % 5 === 0 && (
+                                <span style={{
+                                  position: "absolute", bottom: 4, left: 4,
+                                  fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim,
+                                }}>{i}s</span>
+                              )}
+                            </div>
+                          ))}
+
+                          {/* Swim lanes */}
+                          {uniqueAbilities.map((ability, laneIdx) => {
+                            const color = bClr(ability);
+                            const abbrev = ABBREV[ability] || ability.slice(0, 3).toUpperCase();
+                            const laneCasts = SEQUENCE.filter(s => s.ability === ability);
+                            const cdBarList = cdBars[ability] || [];
+
+                            return (
+                              <div key={ability} style={{ position: "relative", height: LANE_HEIGHT, marginLeft: 0 }}>
+                                {/* Cooldown bars */}
+                                {cdBarList.map((cd, ci) => (
+                                  <div key={ci} style={{
+                                    position: "absolute",
+                                    left: `${(cd.start / 30) * 100}%`,
+                                    width: `${((cd.end - cd.start) / 30) * 100}%`,
+                                    top: PILL_HEIGHT + 2,
+                                    height: 4,
+                                    background: "rgba(90,106,130,.25)",
+                                    borderRadius: 2,
+                                    zIndex: 1,
+                                  }} />
+                                ))}
+
+                                {/* Ability pills */}
+                                {laneCasts.map((cast, ci) => (
+                                  <div key={ci} style={{
+                                    position: "absolute",
+                                    left: `${(cast.t / 30) * 100}%`,
+                                    top: 2,
+                                    height: PILL_HEIGHT,
+                                    minWidth: 36,
+                                    padding: "0 8px",
+                                    background: color,
+                                    borderRadius: 6,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    zIndex: 2,
+                                    boxShadow: `0 2px 6px ${color}40`,
+                                  }}>
+                                    <span style={{
+                                      fontFamily: "'Orbitron',sans-serif",
+                                      fontSize: 8,
+                                      fontWeight: 700,
+                                      color: "#fff",
+                                      letterSpacing: 0.5,
+                                      whiteSpace: "nowrap",
+                                    }}>{abbrev}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Sequence Notes — first 12 casts */}
+                      <div style={{ marginTop: 20 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>OPENING SEQUENCE — FIRST 12 CASTS</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {SEQUENCE.slice(0, 12).map((cast, i) => {
+                            const mins = Math.floor(cast.t / 60);
+                            const secs = (cast.t % 60).toFixed(cast.t % 1 === 0 ? 0 : 1).padStart(cast.t % 1 === 0 ? 2 : 4, '0');
+                            const ts = `${mins}:${secs}`;
+                            const color = bClr(cast.ability);
+                            return (
+                              <div key={i} style={{
+                                display: "grid",
+                                gridTemplateColumns: "48px 10px 160px 1fr",
+                                gap: 10,
+                                padding: "8px 10px",
+                                borderRadius: 6,
+                                background: i % 2 === 0 ? "transparent" : C.borderSub,
+                                alignItems: "center",
+                              }}>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.textDim, textAlign: "right" }}>{ts}</span>
+                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color, fontWeight: 700 }}>{cast.ability}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.4 }}>→ {cast.reason}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Disclaimer */}
+                      <div style={{
+                        marginTop: 16, padding: "12px 16px",
+                        background: "rgba(251,191,36,.06)", border: `1px solid rgba(217,119,6,.2)`,
+                        borderRadius: 8,
+                      }}>
+                        <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, margin: 0, lineHeight: 1.6 }}>
+                          ⚠ This is a theoretical optimal sequence. Real combat varies based on movement, proc timing, Focus availability, and fight mechanics. Use this as a mental model, not a rigid script.
+                        </p>
+                      </div>
+                    </CARD>
+                  );
+                })()}
+                </>
               );
             })()}
           </div>
