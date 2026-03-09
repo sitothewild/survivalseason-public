@@ -3,20 +3,16 @@
 // for the Survival Hunter simulation engine.
 
 const SIMC_TO_ENGINE: Record<string, string> = {
-  wildfire_bomb: "wildfireBomb",
+  // Midnight 12.0 abilities
   kill_command: "killCommand",
-  mongoose_bite: "mongooseBite",
-  raptor_bite: "raptorBite",
+  wildfire_bomb: "wildfireBomb",
+  raptor_strike: "raptorStrike",
   raptor_swipe: "raptorSwipe",
-  flanking_strike: "flankingStrike",
-  fury_of_the_eagle: "furyOfTheEagle",
-  coordinated_assault: "coordinatedAssault",
-  explosive_shot: "explosiveShot",
-  serpent_sting: "serpentSting",
-  butchery: "butchery",
-  wildfire_infusion: "wildfireInfusion",
-  spearhead: "spearhead",
-  steel_trap: "steelTrap",
+  takedown: "takedown",
+  flamefang_pitch: "flamefangPitch",
+  boomstick: "boomstick",
+  moonlight_chakram: "moonlightChakram",
+  hatchet_toss: "hatchetToss",
 };
 
 export interface RotationData {
