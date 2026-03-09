@@ -842,6 +842,8 @@ export default function SurvivalHunterSim() {
     } catch (err) {
       setArmoryError(err.message || 'Failed to look up character.');
       setParsedChar(null);
+      setImportedTalentSource(null);
+      setImportedTalentString('');
     } finally {
       setArmoryLoading(false);
     }
