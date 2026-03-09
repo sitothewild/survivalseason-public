@@ -2257,11 +2257,15 @@ export default function SurvivalHunterSim() {
             {/* ═══ SECTION 3: KEY MIDNIGHT 12.0 CHANGES ═══ */}
             <div>
               <LBL>⚡ Key Midnight 12.0 Changes</LBL>
-              <div
-                onWheel={e => {
-                  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-                  e.currentTarget.scrollLeft += e.deltaY;
-                  e.preventDefault();
+               <div
+                ref={el => {
+                  if (!el) return;
+                  const handler = (ev: WheelEvent) => {
+                    if (Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) return;
+                    ev.preventDefault();
+                    el.scrollLeft += ev.deltaY;
+                  };
+                  el.onwheel = handler;
                 }}
                 style={{ overflowX: 'auto', display: 'flex', gap: 12, paddingBottom: 8, cursor: 'grab' }}
               >
