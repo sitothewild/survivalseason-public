@@ -920,13 +920,13 @@ export default function SurvivalHunterSim() {
                     {parsedChar.gear.length > 0 && (
                       <div style={{ padding: "12px 16px" }}>
                         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>GEAR ({parsedChar.gear.length} PIECES)</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }} onMouseLeave={handleItemLeave}>
                           {parsedChar.gear.map((g, i) => {
                             const ilvlColor = getItemQualityColor(g.ilvl, parsedChar.character?.avgIlvl);
                             const nameColor = ilvlColor;
                             return (
                               <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
-                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)} onMouseLeave={handleItemLeave}>
+                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
                                 <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: nameColor, fontWeight: 600, textAlign: "center" }}>{g.name || `Item`}</span>
                                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: ilvlColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
