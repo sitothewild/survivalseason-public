@@ -350,6 +350,8 @@ function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCou
   
   // Generate action counts for detailed report
   const actionCounts = {};
+  const totalDps = Object.values(breakdown).reduce((sum, dps) => sum + dps, 0);
+  
   Object.entries(breakdown).forEach(([ability, dps]) => {
     const baseCoef = getAbilityCoefficient(ability);
     const avgHit = Math.round(ap * baseCoef);
@@ -359,12 +361,12 @@ function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCou
     const crits = Math.round(totalHits * critRate);
     
     actionCounts[ability] = {
-      damage: dps * fightDuration,
+      damage: Math.round(dps * fightDuration),
       count: totalHits,
       avgHit: avgHit,
       crits: crits,
       dps: dps,
-      percentage: breakdown['Strike as One'] ? ((dps / Object.values(breakdown).reduce((s, v) => s + v, 0)) * 100) : 0
+      percentage: totalDps > 0 ? ((dps / totalDps) * 100) : 0
     };
   });
   
