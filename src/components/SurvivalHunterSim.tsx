@@ -1285,7 +1285,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* ═══ MIDDLE COLUMN — Permanent Character Box (1fr) ═══ */}
-              <div className="sim-mid-col" style={{ alignSelf: "stretch" }}>
+              <div className="sim-mid-col" style={{ height: "100%" }}>
                 <div style={{
                   background: C.surface,
                   border: `1px solid ${C.border}`,
