@@ -4,6 +4,7 @@ import { getFullCharacter, equipmentToSimData, getItemsBatch, getItem, getItemMe
 import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
+import { parseSimcAPL, getRotationWeights, type ParsedAPL } from "@/utils/aplParser";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -422,7 +423,7 @@ function generateSampleExecutionLog(duration, heroTalent) {
   ];
 }
 
-function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null) {
+function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null, aplData = null) {
   const stats = charData.stats; const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
   const hastePct = stats.haste || 10.58, critPct = stats.crit || 20.13, masteryPct = stats.mastery || 30.16, versPct = stats.versatility || 8.28;
   const ANCHOR_AP = 1635, ANCHOR_DPS = 51024, ANCHOR_CRIT = 20.13, ANCHOR_HASTE = 10.58, ANCHOR_MASTERY = 30.16, ANCHOR_VERS = 8.28;
@@ -436,6 +437,23 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
   const T = targetCount;
   if (T > 1) { const cf = T <= 3 ? 1 + (T - 1) * 0.55 : T <= 5 ? 2.1 + (T - 3) * 0.35 : T <= 8 ? 2.8 + (T - 5) * 0.20 : 3.4 + (T - 8) * 0.12; totalDps *= cf; }
   totalDps *= externalMult;
+
+  // Determine rotation weights from APL parser if available
+  let aplWeights: Record<string, number> | null = null;
+  if (aplData) {
+    const heroKey = heroTalent === 'packLeader' ? 'packLeader' : 'sentinel';
+    const mode = (build === 'aoe' || T > 2) ? 'aoe' : 'st';
+    aplWeights = getRotationWeights(aplData, heroKey, mode);
+    if (aplWeights && Object.keys(aplWeights).length > 0) {
+      console.log("Using SimC APL weights:", aplWeights);
+    } else {
+      aplWeights = null;
+      console.log("Using fallback rotation weights");
+    }
+  } else {
+    console.log("Using fallback rotation weights");
+  }
+
   // Use live SimC APL-derived breakdowns when available, otherwise fall back to defaults
   const { pl: SIMC_BREAKDOWN_PL_ST, sent: SIMC_BREAKDOWN_SENT_ST } = getBreakdowns(simcLiveData);
   const breakdown = {}; const breakdownTemplate = isPL ? SIMC_BREAKDOWN_PL_ST : SIMC_BREAKDOWN_SENT_ST;
@@ -450,21 +468,21 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
     Object.entries(aoeTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); });
   } else { Object.entries(breakdownTemplate).forEach(([key, pct]) => { breakdown[key] = Math.round(totalDps * pct); }); }
   const detailed = generateDetailedSimData(breakdown, fightDuration, heroTalent, T, ap);
-  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists };
+  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build, detailed, liveDataUsed: !!simcLiveData?.apl?.actionLists, aplDataUsed: !!aplData };
 }
 
-function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null) {
-  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
+function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null, aplData = null) {
+  const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData, aplData).totalDps;
   const DELTA = { agility: 200, haste: 1.5, crit: 1.5, mastery: 1.5, versatility: 1.5 };
   const RATING_PER_PERCENT = { haste: 170, crit: 170, mastery: 170, versatility: 205 };
   const weights = {};
   const agiChar = JSON.parse(JSON.stringify(charData)); agiChar.stats.agility += DELTA.agility; agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
-  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
+  const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData, aplData).totalDps;
   const agiDelta = (agiDps - baseDps) / DELTA.agility;
   weights['Agility'] = { perPoint: agiDelta, perRating: agiDelta, delta: agiDps - baseDps, bump: `+${DELTA.agility}` };
   ['haste', 'crit', 'mastery', 'versatility'].forEach(stat => {
     const bumpChar = JSON.parse(JSON.stringify(charData)); bumpChar.stats[stat] = (bumpChar.stats[stat] || 0) + DELTA[stat];
-    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData).totalDps;
+    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData, aplData).totalDps;
     const dpsDelta = bumpDps - baseDps; const ratingBump = DELTA[stat] * RATING_PER_PERCENT[stat];
     const perRating = dpsDelta / ratingBump; const label = stat.charAt(0).toUpperCase() + stat.slice(1);
     weights[label] = { perPoint: perRating, perRating, delta: dpsDelta, bump: `+${DELTA[stat]}%`, ratingBump: Math.round(ratingBump) };
@@ -716,6 +734,9 @@ export default function SurvivalHunterSim() {
   const [importedTalentString, setImportedTalentString] = useState<string>('');
   const [userSimResult, setUserSimResult] = useState<any>(null);
   const [optimalSimResult, setOptimalSimResult] = useState<any>(null);
+  // APL parser state
+  const [aplData, setAplData] = useState<ParsedAPL | null>(null);
+  const [aplSortMode, setAplSortMode] = useState<'dps' | 'apl'>('dps');
   // Patch notes state
   const [patchNotes, setPatchNotes] = useState<any[]>([]);
   const [patchLoading, setPatchLoading] = useState(false);
@@ -762,6 +783,13 @@ export default function SurvivalHunterSim() {
           const sha = (cached.data as any)?.sha || cached.github_sha || '';
           setSimcSyncInfo(`SimC data loaded (${sha.slice(0, 7)}) · ${new Date(cached.updated_at).toLocaleDateString()}`);
           setSimcSyncStatus('synced');
+          // Parse APL from cached data
+          try {
+            const rawApl = (cached.data as any)?.apl?.rawText;
+            if (rawApl) {
+              setAplData(parseSimcAPL(rawApl));
+            }
+          } catch (e) { console.warn('APL parse from cache failed:', e); }
         } else {
           // No cached data, trigger a sync
           await handleSimcSync();
@@ -789,6 +817,13 @@ export default function SurvivalHunterSim() {
       const status = data.status === 'cached' ? 'Up to date' : 'Updated';
       setSimcSyncInfo(`${status} (${data.sha?.slice(0, 7)}) · ${new Date().toLocaleDateString()}`);
       setSimcSyncStatus('synced');
+      // Parse APL from synced data
+      try {
+        const rawApl = data.data?.apl?.rawText;
+        if (rawApl) {
+          setAplData(parseSimcAPL(rawApl));
+        }
+      } catch (e) { console.warn('APL parse from sync failed:', e); }
     } catch (e) {
       setSimcSyncStatus('error');
       setSimcSyncInfo(`Sync failed: ${e.message}`);
@@ -1035,13 +1070,13 @@ export default function SurvivalHunterSim() {
       const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
 
       // Run main results (all targets, user's selected hero)
-      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData));
-      const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData);
+      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData, aplData));
+      const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
 
       // Run user vs optimal single-target comparison
       const uHeroKey = detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent;
-      const userResult = runSimulation(parsedChar, primaryTarget, fightDuration, uHeroKey, primaryBuild, externalMult, simcLiveData);
-      const optResult = runSimulation(parsedChar, primaryTarget, fightDuration, 'sentinel', primaryBuild, externalMult, simcLiveData);
+      const userResult = runSimulation(parsedChar, primaryTarget, fightDuration, uHeroKey, primaryBuild, externalMult, simcLiveData, aplData);
+      const optResult = runSimulation(parsedChar, primaryTarget, fightDuration, 'sentinel', primaryBuild, externalMult, simcLiveData, aplData);
 
       setStatWeights(sw);
       setSimResults(results);
@@ -1050,7 +1085,7 @@ export default function SurvivalHunterSim() {
       setOptimalSimResult(optResult);
       setIsSimming(false);
     }, 1200);
-  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables, simcLiveData, detectedHeroTalent]);
+  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables, simcLiveData, detectedHeroTalent, aplData]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
 
@@ -1796,9 +1831,33 @@ export default function SurvivalHunterSim() {
                     )}
 
                     {/* DPS Results */}
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 4 }}>
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, alignSelf: 'center', marginRight: 4 }}>SORT BY:</span>
+                      {(['dps', 'apl'] as const).map(mode => (
+                        <button key={mode} onClick={() => setAplSortMode(mode)}
+                          style={{
+                            background: aplSortMode === mode ? C.surface3 : C.surface2,
+                            border: `1px solid ${aplSortMode === mode ? C.gold : C.border}`,
+                            borderRadius: 6, padding: '4px 10px', cursor: 'pointer',
+                            fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1,
+                            color: aplSortMode === mode ? C.goldLight : C.textMid,
+                            transition: 'all .2s', textTransform: 'uppercase',
+                          }}>{mode === 'dps' ? 'DPS' : 'APL Order'}</button>
+                      ))}
+                    </div>
                     <div style={{ display: "grid", gridTemplateColumns: simResults.length > 1 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: 16 }}>
                       {simResults.map((res, ri) => {
-                        const sorted = Object.entries(res.breakdown).sort((a, b) => b[1] - a[1]); const maxVal = sorted[0][1];
+                        const aplOrderedNames = aplData ? (getRotationWeights(aplData, res.hero === 'packLeader' ? 'packLeader' : 'sentinel', res.build === 'aoe' ? 'aoe' : 'st') ? aplData[res.hero === 'packLeader' ? 'packLeader' : 'sentinel'][res.build === 'aoe' ? 'aoe' : 'st']?.ordered : null) : null;
+                        const entries = Object.entries(res.breakdown);
+                        const sorted = aplSortMode === 'apl' && aplOrderedNames
+                          ? entries.sort((a, b) => {
+                              const aIdx = aplOrderedNames.indexOf(a[0]) >= 0 ? aplOrderedNames.indexOf(a[0]) : 9999;
+                              const bIdx = aplOrderedNames.indexOf(b[0]) >= 0 ? aplOrderedNames.indexOf(b[0]) : 9999;
+                              return aIdx - bIdx || (b[1] as number) - (a[1] as number);
+                            })
+                          : entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+                        const maxVal = Math.max(...entries.map(e => e[1] as number));
+                        const h = MIDNIGHT_DATA.talents.hero[res.hero];
                         const h = MIDNIGHT_DATA.talents.hero[res.hero];
                         return (
                           <div key={ri} className="result-anim" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animationDelay: `${ri * .1}s` }}>
@@ -3246,6 +3305,25 @@ export default function SurvivalHunterSim() {
                     <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>
                       {simcLiveData.fetchedAt ? new Date(simcLiveData.fetchedAt).toLocaleString() : 'Cached'}
                     </span>
+                    {aplData ? (
+                      <span className="badge" style={{ background: '#0f2a1a', color: '#4ade80', border: '1px solid rgba(74,222,128,.4)' }}>
+                        ✓ ENGINE USING LIVE APL
+                      </span>
+                    ) : (
+                      <span className="badge" style={{ background: '#2a1f08', color: '#fbbf24', border: '1px solid rgba(251,191,36,.4)' }}>
+                        ⚠ USING FALLBACK WEIGHTS
+                      </span>
+                    )}
+                    {aplData && (
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>
+                        Weights from midnight branch SHA: {simcLiveData.sha?.slice(0, 7) || '—'}
+                      </span>
+                    )}
+                    {!aplData && (
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>
+                        SimC APL not yet loaded
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     {[
