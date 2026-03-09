@@ -767,11 +767,20 @@ export default function SurvivalHunterSim() {
 
   const handleParse = useCallback(() => {
     setParseError(''); const result = parseSimcString(simcInput);
-    if (result.valid) { setParsedChar(result); } else { setParseError(result.errors.join(' ')); setParsedChar(null); }
+    if (result.valid) {
+      setParsedChar(result);
+      setImportedTalentSource('simc');
+      setImportedTalentString(result.talents || '');
+    } else {
+      setParseError(result.errors.join(' '));
+      setParsedChar(null);
+      setImportedTalentSource(null);
+      setImportedTalentString('');
+    }
     setSimResults(null);
   }, [simcInput]);
 
-  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); };
+  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); };
 
   const handleArmoryLookup = useCallback(async () => {
     const realmSlug = armoryRealm || resolvedRealmSlug;
