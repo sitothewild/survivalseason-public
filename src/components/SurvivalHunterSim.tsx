@@ -607,33 +607,30 @@ export default function SurvivalHunterSim() {
     } catch (err) { setArmoryError(err.message || 'Failed to look up character.'); setParsedChar(null); } finally { setArmoryLoading(false); }
   }, [armoryRealm, armoryName, armoryRegion]);
 
-  const handleItemHover = useCallback(async (itemId: string, event: any) => {
+  const handleItemHover = useCallback((itemId: string, event: any) => {
     if (!itemId) return;
     const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipPos({ x: rect.right + 8, y: rect.top });
-    setHoveredItem(itemId);
-    // Check cache via functional update to avoid dependency on itemCache
-    setItemCache(prev => {
-      if (prev[itemId]) return prev; // Already cached, no fetch needed
-      // Fetch item data asynchronously
-      (async () => {
-        setTooltipLoading(true);
-        try {
-          const [itemData, mediaData] = await Promise.all([
-            getItem(parseInt(itemId), armoryRegion || 'us'),
-            getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
-          ]);
-          const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
-          setItemCache(p => ({ ...p, [itemId]: { ...itemData, _icon: icon } }));
-        } catch (e) {
-          setItemCache(p => ({ ...p, [itemId]: { _error: e.message } }));
-        } finally {
-          setTooltipLoading(false);
-        }
-      })();
-      return prev;
-    });
-  }, [armoryRegion]);
+    const newX = rect.right + 8;
+    const newY = rect.top;
+    // Only update position if it actually changed (avoids re-render)
+    setTooltipPos(prev => (prev.x === newX && prev.y === newY) ? prev : { x: newX, y: newY });
+    setHoveredItem(prev => prev === itemId ? prev : itemId);
+    // Fetch item data if not cached — check synchronously, fetch outside setState
+    if (!itemCache[itemId]) {
+      setTooltipLoading(true);
+      Promise.all([
+        getItem(parseInt(itemId), armoryRegion || 'us'),
+        getItemMedia(parseInt(itemId), armoryRegion || 'us').catch(() => null)
+      ]).then(([itemData, mediaData]) => {
+        const icon = mediaData?.assets?.find((a: any) => a.key === 'icon')?.value || null;
+        setItemCache(p => ({ ...p, [itemId]: { ...itemData, _icon: icon } }));
+      }).catch(e => {
+        setItemCache(p => ({ ...p, [itemId]: { _error: e.message } }));
+      }).finally(() => {
+        setTooltipLoading(false);
+      });
+    }
+  }, [armoryRegion, itemCache]);
 
   const handleItemLeave = useCallback(() => { setHoveredItem(null); }, []);
 
