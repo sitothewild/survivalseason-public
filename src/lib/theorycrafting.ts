@@ -641,7 +641,7 @@ function calcTalentDeltas(
   for (const t of talentsToTest) {
     // Toggle the talent off and recompute
     const modTalents = { ...baseTalents, [t.key]: !baseTalents[t.key] };
-    const modTotal = runTheoryCraft(gear, modTalents, tierSet, targetCount, heroTalent).totalDps;
+    const modTotal = computeDpsOnly(gear, modTalents, tierSet, targetCount, heroTalent);
     const dpsDelta = baseResult.totalDps - modTotal;
     const pct = baseResult.totalDps > 0 ? (dpsDelta / baseResult.totalDps) * 100 : 0;
     deltas.push({
@@ -667,9 +667,9 @@ function calcTierSetValue(
   heroTalent: 'sentinel' | 'packLeader',
 ): TierSetValue {
   const notes: string[] = [];
-  const base = runTheoryCraft(gear, talents, { has2pc: false, has4pc: false }, targetCount, heroTalent).totalDps;
-  const with2pc = runTheoryCraft(gear, talents, { has2pc: true, has4pc: false }, targetCount, heroTalent).totalDps;
-  const with4pc = runTheoryCraft(gear, talents, { has2pc: true, has4pc: true }, targetCount, heroTalent).totalDps;
+  const base = computeDpsOnly(gear, talents, { has2pc: false, has4pc: false }, targetCount, heroTalent);
+  const with2pc = computeDpsOnly(gear, talents, { has2pc: true, has4pc: false }, targetCount, heroTalent);
+  const with4pc = computeDpsOnly(gear, talents, { has2pc: true, has4pc: true }, targetCount, heroTalent);
 
   const dps2pc = with2pc - base;
   const dps4pc = with4pc - with2pc;
@@ -765,6 +765,27 @@ function buildVsMethodGg(
       },
     ],
   };
+}
+
+// ── Leaf DPS-only computation (no recursion) ─────────────────
+
+/**
+ * Computes total DPS by summing ability contributions only.
+ * Does NOT call calcTalentDeltas, calcTierSetValue, or computeStatWeights.
+ * Used by those functions to avoid infinite mutual recursion.
+ */
+function computeDpsOnly(
+  gear: GearProfile,
+  talents: TalentConfig,
+  tierSet: TierSetConfig,
+  targetCount: number,
+  heroTalent: 'sentinel' | 'packLeader',
+): number {
+  let total = 0;
+  for (const [key, spell] of Object.entries(SPELLS)) {
+    total += computeAbilityDps(key, spell, gear, talents, tierSet, targetCount, heroTalent).dps;
+  }
+  return total;
 }
 
 // ── Main entry point ─────────────────────────────────────────
@@ -872,19 +893,19 @@ export function computeStatWeights(
   heroTalent: 'sentinel' | 'packLeader',
   targetCount: number,
 ): StatWeights {
-  const base = runTheoryCraft(gear, talents, tierSet, targetCount, heroTalent).totalDps;
+  const base = computeDpsOnly(gear, talents, tierSet, targetCount, heroTalent);
 
   // Measure per 1% increment of each secondary
-  const critDelta  = runTheoryCraft({ ...gear, critPct:    gear.critPct    + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
-  const hasteDelta = runTheoryCraft({ ...gear, hastePct:   gear.hastePct   + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
-  const mastDelta  = runTheoryCraft({ ...gear, masteryPct: gear.masteryPct + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
-  const versDelta  = runTheoryCraft({ ...gear, versPct:    gear.versPct    + 1 }, talents, tierSet, targetCount, heroTalent).totalDps - base;
+  const critDelta  = computeDpsOnly({ ...gear, critPct:    gear.critPct    + 1 }, talents, tierSet, targetCount, heroTalent) - base;
+  const hasteDelta = computeDpsOnly({ ...gear, hastePct:   gear.hastePct   + 1 }, talents, tierSet, targetCount, heroTalent) - base;
+  const mastDelta  = computeDpsOnly({ ...gear, masteryPct: gear.masteryPct + 1 }, talents, tierSet, targetCount, heroTalent) - base;
+  const versDelta  = computeDpsOnly({ ...gear, versPct:    gear.versPct    + 1 }, talents, tierSet, targetCount, heroTalent) - base;
 
   // Agility: +1 agi adds ~1.05 AP (Survival class aura) + marginal mastery value
-  const agiDelta = runTheoryCraft(
+  const agiDelta = computeDpsOnly(
     { ...gear, agility: gear.agility + 10, attackPower: gear.attackPower + 10 },
     talents, tierSet, targetCount, heroTalent,
-  ).totalDps - base;
+  ) - base;
 
   // Convert percentage deltas → per-rating-point values
   const CRIT_RATING_PER_PCT    = 170;
