@@ -636,10 +636,12 @@ export default function SurvivalHunterSim() {
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
 
   const realmDropdownRef = useRef<HTMLDivElement | null>(null);
+  const realmInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (realmDropdownRef.current && !realmDropdownRef.current.contains(e.target as Node)) {
         setShowRealmDropdown(false);
+        setRealmHighlightIdx(-1);
       }
     };
     document.addEventListener('mousedown', handler);
