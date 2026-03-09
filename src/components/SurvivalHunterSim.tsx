@@ -1662,7 +1662,7 @@ export default function SurvivalHunterSim() {
                               const color = TRIGGER_COLORS[cast.trigger] || "#64748b";
                               const abbrevMap = { "Raptor Strike": "RS", "Kill Command": "KC", "Wildfire Bomb": "WFB", "Boomstick": "BS", "Raptor Swipe": "RSw" };
                               return (
-                                <React.Fragment key={i}>
+                                <Fragment key={i}>
                                   {/* Trigger ability */}
                                   <div style={{
                                     position: "absolute",
