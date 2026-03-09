@@ -1098,32 +1098,33 @@ export default function SurvivalHunterSim() {
   const sentinelSelected = heroTalent === 'sentinel';
 
   return (
-    <div className="sim-root" style={{
-      minHeight: '100vh', background: 'linear-gradient(180deg, #06080f 0%, #0a0e1a 30%, #0d1020 60%, #080c18 100%)', color: '#e8dcc8',
-      fontFamily: "'Cinzel Decorative', 'Palatino Linotype', serif",
+    <div className="sim-root dark" style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, hsl(222 25% 8%), hsl(222 22% 12%), hsl(220 25% 10%))',
+      color: 'hsl(220 20% 92%)',
+      fontFamily: "'Rajdhani', 'Segoe UI', sans-serif",
       position: 'relative', overflow: 'hidden'
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
         
         * { box-sizing: border-box; }
         
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f111a; }
-        ::-webkit-scrollbar-thumb { background: #8b5e3c; border-radius: 3px; }
+        .sim-root ::-webkit-scrollbar { width: 5px; }
+        .sim-root ::-webkit-scrollbar-track { background: #141c2a; }
+        .sim-root ::-webkit-scrollbar-thumb { background: #2e3a50; border-radius: 3px; }
 
         @keyframes float {
           0%, 100% { transform: translateY(0px) translateX(0px); opacity: var(--op); }
           50% { transform: translateY(-30px) translateX(10px); opacity: calc(var(--op) * 0.4); }
         }
         @keyframes fireGlow {
-          0%, 100% { box-shadow: 0 0 20px #c45e0044, 0 0 40px #8b2a0022; }
-          50% { box-shadow: 0 0 35px #e07030aa, 0 0 70px #c45e0044; }
+          0%, 100% { box-shadow: 0 0 20px hsl(var(--sim-gold) / 0.25), 0 0 40px hsl(var(--sim-gold) / 0.1); }
+          50% { box-shadow: 0 0 35px hsl(var(--sim-gold) / 0.5), 0 0 70px hsl(var(--sim-gold) / 0.2); }
         }
         @keyframes simPulse {
-          0% { transform: scale(1); box-shadow: 0 0 0 0 #e07030aa; }
-          50% { transform: scale(1.02); box-shadow: 0 0 0 12px #e0703000; }
-          100% { transform: scale(1); box-shadow: 0 0 0 0 #e0703000; }
+          0% { transform: scale(1); box-shadow: 0 0 0 0 hsl(var(--sim-gold) / 0.5); }
+          50% { transform: scale(1.02); box-shadow: 0 0 0 12px hsl(var(--sim-gold) / 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 hsl(var(--sim-gold) / 0); }
         }
         @keyframes scanLine {
           0% { top: 0; }
@@ -1137,410 +1138,346 @@ export default function SurvivalHunterSim() {
           from { width: 0; }
         }
         @keyframes resultFlash {
-          0% { background: rgba(224,112,48,0.3); }
+          0% { background: hsl(var(--sim-gold) / 0.2); }
           100% { background: transparent; }
         }
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        @keyframes goldPulse {
+          0%, 100% { box-shadow: 0 4px 16px hsl(var(--sim-gold) / 0.35); }
+          50% { box-shadow: 0 4px 28px hsl(var(--sim-gold-light) / 0.55); }
+        }
+        @keyframes iconGlow {
+          0%, 100% { box-shadow: 0 0 16px hsl(var(--sim-green) / 0.2), 0 0 40px hsl(var(--sim-green) / 0.08); }
+          50% { box-shadow: 0 0 28px hsl(var(--sim-green) / 0.38), 0 0 60px hsl(var(--sim-green) / 0.16); }
+        }
+        @keyframes counterUp {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
 
-        .hero-btn {
-          background: linear-gradient(135deg, #0c0e1a, #141828);
-          border: 1px solid #2a3050;
-          border-radius: 6px;
-          padding: 14px 18px;
+        .sim-root .hero-btn {
+          background: #141c2a;
+          border: 1px solid #2e3a50;
+          border-radius: 8px;
+          padding: 16px;
           cursor: pointer;
           transition: all 0.2s;
           text-align: left;
         }
-        .hero-btn:hover { border-color: #4a5a80; transform: translateY(-1px); }
-        .hero-btn.selected {
-          border-color: #e07030;
-          background: linear-gradient(135deg, #1a1008, #201810);
-          box-shadow: 0 0 16px #e0703044, inset 0 0 30px rgba(224,112,48,0.05);
+        .sim-root .hero-btn:hover { border-color: #4a5a7a; transform: translateY(-1px); }
+        .sim-root .hero-btn.selected {
+          border-color: hsl(var(--sim-gold));
+          background: #1a2030;
+          box-shadow: 0 0 16px hsl(var(--sim-gold) / 0.15), inset 0 0 30px hsl(var(--sim-gold) / 0.04);
         }
         
-        .sim-btn {
-          background: linear-gradient(135deg, #c44e00, #8b2a00);
-          border: 1px solid #e07030;
-          border-radius: 8px;
+        .sim-root .sim-btn {
+          background: linear-gradient(135deg, hsl(var(--sim-gold)), hsl(35 85% 42%));
+          border: none;
+          border-radius: 10px;
           padding: 16px 32px;
-          color: #fff8f0;
-          font-family: 'Cinzel', serif;
-          font-size: 14px;
+          color: #fffbeb;
+          font-family: 'Orbitron', sans-serif;
+          font-size: 12px;
           font-weight: 700;
           letter-spacing: 2px;
           text-transform: uppercase;
           cursor: pointer;
           transition: all 0.2s;
-          animation: fireGlow 2s ease-in-out infinite;
+          animation: goldPulse 2.5s ease-in-out infinite;
         }
-        .sim-btn:hover:not(:disabled) { background: linear-gradient(135deg, #e05800, #b03800); transform: translateY(-2px); }
-        .sim-btn:disabled { opacity: 0.5; cursor: not-allowed; animation: none; }
+        .sim-root .sim-btn:hover:not(:disabled) { background: linear-gradient(135deg, hsl(42 95% 60%), hsl(var(--sim-gold))); transform: translateY(-1px); }
+        .sim-root .sim-btn:disabled { opacity: 0.4; cursor: not-allowed; animation: none; }
 
-        .tab-btn {
+        .sim-root .tab-btn {
           background: transparent;
           border: none;
-          border-bottom: 2px solid transparent;
-          padding: 10px 24px;
-          color: #7a6040;
-          font-family: 'Cinzel', serif;
-          font-size: 12px;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .tab-btn.active { color: #e8c88a; border-bottom-color: #e07030; }
-        .tab-btn:hover { color: #c8a870; }
-
-        .mode-btn {
-          background: #0a0d18;
-          border: 1px solid #1e2a40;
-          border-radius: 6px;
-          padding: 10px 18px;
-          color: #7a8aaa;
-          font-family: 'Cinzel', serif;
-          font-size: 11px;
+          border-bottom: 3px solid transparent;
+          padding: 14px 24px;
+          color: #64748b;
+          font-family: 'Rajdhani', sans-serif;
+          font-size: 16px;
+          font-weight: 700;
           letter-spacing: 1px;
           cursor: pointer;
           transition: all 0.2s;
+          text-transform: uppercase;
         }
-        .mode-btn.active {
-          background: #141020;
-          border-color: #e07030;
-          color: #e8c88a;
-        }
+        .sim-root .tab-btn.active { color: #fbbf24; border-bottom-color: hsl(var(--sim-gold)); }
+        .sim-root .tab-btn:hover { color: #94a3b8; }
 
-        .input-field {
-          background: #0a0d18;
-          border: 1px solid #1e2a40;
-          border-radius: 6px;
-          color: #c8b890;
-          font-family: 'EB Garamond', serif;
+        .sim-root .hero-sent { background: #0c1e35; border: 2px solid #1a3a5c; border-radius: 10px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: left; width: 100%; }
+        .sim-root .hero-sent:hover { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,.12); }
+        .sim-root .hero-sent.sel { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,.2), inset 0 0 24px rgba(56,189,248,.06); }
+        .sim-root .hero-pack { background: #1a0e2e; border: 2px solid #3b1a5c; border-radius: 10px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: left; width: 100%; }
+        .sim-root .hero-pack:hover { border-color: #c084fc; box-shadow: 0 0 0 3px rgba(192,132,252,.12); }
+        .sim-root .hero-pack.sel { border-color: #c084fc; box-shadow: 0 0 0 3px rgba(192,132,252,.2), inset 0 0 24px rgba(192,132,252,.06); }
+
+        .sim-root .mode-btn {
+          background: #141c2a;
+          border: 1px solid #2e3a50;
+          border-radius: 8px;
+          padding: 12px 16px;
+          color: #94a3b8;
+          font-family: 'Orbitron', sans-serif;
+          font-size: 10px;
+          letter-spacing: 1px;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-transform: uppercase;
+        }
+        .sim-root .mode-btn.sel, .sim-root .mode-btn.active { background: #1e2a3a; border-color: hsl(var(--sim-gold)); color: #fbbf24; }
+        .sim-root .mode-btn:hover { border-color: #3d4f6a; color: #cbd5e1; }
+
+        .sim-root .input-field {
+          background: #141c2a;
+          border: 1px solid #2e3a50;
+          border-radius: 8px;
+          color: #cbd5e1;
+          font-family: 'IBM Plex Mono', monospace;
           font-size: 13px;
-          padding: 10px 14px;
-          transition: border-color 0.2s;
+          padding: 12px 16px;
+          transition: border-color 0.2s, box-shadow 0.2s;
           outline: none;
           width: 100%;
         }
-        .input-field:focus { border-color: #4a5a80; }
+        .sim-root .input-field:focus { border-color: hsl(var(--sim-gold)); box-shadow: 0 0 0 2px hsl(var(--sim-gold) / 0.15); }
+        .sim-root .input-field::placeholder { color: #3d4f6a; }
 
-        .result-card { animation: fadeIn 0.4s ease forwards; }
-        .bar-fill { animation: barGrow 0.8s ease forwards; }
-        .talent-tag {
-          background: #1a1208;
-          border: 1px solid #3a2810;
-          border-radius: 4px;
-          padding: 4px 10px;
-          font-family: 'EB Garamond', serif;
+        .sim-root .result-card { animation: fadeIn 0.4s ease forwards; }
+        .sim-root .bar-fill { animation: barGrow 0.8s ease forwards; }
+        .sim-root .talent-tag {
+          background: #1e2a3a;
+          border: 1px solid #2e4a6a;
+          border-radius: 6px;
+          padding: 5px 12px;
+          font-family: 'Rajdhani', sans-serif;
           font-size: 13px;
-          color: #c8a870;
+          font-weight: 600;
+          color: #bfdbfe;
           margin: 3px;
           display: inline-block;
           transition: all 0.2s;
         }
-        .talent-tag.core { border-color: #e07030; color: #f0c880; }
-        .talent-tag.aoe { border-color: #22c55e66; color: #86efac; }
-        .talent-tag.st { border-color: #60a5fa66; color: #93c5fd; }
-        .talent-tag:hover { transform: scale(1.04); }
+        .sim-root .talent-tag.core { border-color: hsl(var(--sim-gold) / 0.5); color: #fde68a; }
+        .sim-root .talent-tag.aoe { border-color: hsl(var(--sim-green) / 0.4); color: #86efac; }
+        .sim-root .talent-tag.st { border-color: #818cf8; color: #c4b5fd; }
+        .sim-root .talent-tag:hover { transform: scale(1.04); }
         
-        .divider {
+        .sim-root .divider {
           height: 1px;
-          background: linear-gradient(90deg, transparent, #1e2a40, #3a5070, #1e2a40, transparent);
-          margin: 24px 0;
+          background: linear-gradient(90deg, transparent, #2e3a50, transparent);
+          margin: 18px 0;
         }
         
-        .glow-text {
-          text-shadow: 0 0 20px #e0703066, 0 0 40px #c44e0033;
+        .sim-root .glow-text {
+          text-shadow: 0 0 20px hsl(var(--sim-gold) / 0.4), 0 0 40px hsl(var(--sim-gold) / 0.15);
         }
         
-        .sentinel-badge { color: #f0a830; text-shadow: 0 0 12px #e0703066, 0 0 24px #c44e0033; }
-        .pack-badge { color: #e8b840; text-shadow: 0 0 12px #d4940066, 0 0 24px #b8780033; }
-        
-        .loading-ring {
+        .sim-root .loading-ring {
           width: 48px; height: 48px;
-          border: 3px solid #2a1808;
-          border-top-color: #e07030;
+          border: 3px solid #2e3a50;
+          border-top-color: hsl(var(--sim-gold));
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
           margin: 0 auto;
         }
 
-        .sim-root {
-          width: 100%;
-          overflow-x: hidden;
-        }
-
-        .sim-shell {
+        .sim-root .sim-shell {
           position: relative;
           z-index: 1;
           width: 100%;
-          max-width: 1280px;
+          max-width: 1300px;
           margin: 0 auto;
-          padding: 24px 20px;
+          padding: 20px 20px 48px;
         }
 
-        .tabs-row {
+        .sim-root .tabs-row {
           display: flex;
-          border-bottom: 1px solid #141e30;
-          margin-bottom: 28px;
-          gap: 4px;
+          border-bottom: 1px solid #2e3a50;
+          margin-bottom: 24px;
+          gap: 2px;
         }
 
-        .sim-mode-grid {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .responsive-grid {
+        .sim-root .responsive-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: minmax(340px, 420px) 1fr;
           gap: 24px;
         }
 
-        .hero-grid {
+        .sim-root .hero-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
         }
 
-        .stats-grid {
+        .sim-root .stats-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 6px;
-        }
-
-        .result-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 14px;
-          gap: 10px;
-        }
-
-        .breakdown-head {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 3px;
           gap: 8px;
         }
 
-        .breakdown-label {
-          min-width: 0;
-          overflow-wrap: anywhere;
+        .sim-root .parse-btn {
+          background: #141c2a;
+          border: 1px solid #2e3a50;
+          border-radius: 8px;
+          padding: 12px;
+          color: #94a3b8;
+          font-family: 'Orbitron', sans-serif;
+          font-size: 10px;
+          letter-spacing: 2px;
+          cursor: pointer;
+          transition: all 0.2s;
+          width: 100%;
+          text-transform: uppercase;
         }
+        .sim-root .parse-btn:hover { border-color: #3d4f6a; color: #cbd5e1; }
 
-        .breakdown-value {
+        .sim-root .adv-toggle {
+          background: none;
+          border: none;
+          color: #5a6a82;
+          font-family: 'Orbitron', sans-serif;
+          font-size: 9px;
+          letter-spacing: 2px;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          text-transform: uppercase;
+          transition: color 0.2s;
+        }
+        .sim-root .adv-toggle:hover { color: #94a3b8; }
+
+        .sim-root .badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-family: 'Orbitron', sans-serif;
+          font-size: 9px;
+          letter-spacing: 1px;
+          font-weight: 600;
           white-space: nowrap;
         }
 
-        @media (max-width: 768px) {
-          .sim-shell {
-            padding: 16px 12px;
-          }
+        .sim-root .copy-btn {
+          background: #141c2a;
+          border: 1px solid #2e3a50;
+          border-radius: 6px;
+          color: #94a3b8;
+          font-size: 13px;
+          padding: 6px 14px;
+          cursor: pointer;
+          font-family: 'Rajdhani', sans-serif;
+          font-weight: 600;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+        .sim-root .copy-btn:hover { border-color: hsl(var(--sim-gold)); color: #fbbf24; }
+        .sim-root .copy-btn.done { border-color: hsl(var(--sim-green)); color: #4ade80; background: #0f2a1a; }
 
-          .responsive-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-
-          .hero-grid,
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .tabs-row {
-            flex-wrap: wrap;
-            gap: 2px;
-          }
-
-          .tab-btn {
-            flex: 1 1 calc(50% - 2px);
-            min-width: 0;
-            text-align: center;
-            padding: 10px 8px;
-            font-size: 10px;
-            letter-spacing: 1px;
-          }
-
-          .mode-btn {
-            flex: 1 1 100% !important;
-            padding: 8px 10px;
-            font-size: 10px;
-          }
-
-          .hero-btn {
-            padding: 12px 14px;
-          }
-
-          .sim-btn {
-            padding: 14px 16px;
-            font-size: 12px;
-            letter-spacing: 1px;
-            width: 100%;
-          }
-
-          .title-row {
-            gap: 8px;
-            flex-wrap: wrap;
-          }
-
-          .glow-text {
-            letter-spacing: 2px !important;
-          }
-
-          .subtitle-line {
-            letter-spacing: 2px !important;
-            font-size: 10px !important;
-          }
-
-          .result-card {
-            padding: 14px !important;
-          }
-
-          .result-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 6px;
-          }
-
-          .breakdown-value {
-            font-size: 11px !important;
-          }
+        .sim-root .gear-row {
+          cursor: pointer;
+          transition: background 0.15s;
+          border-radius: 6px;
+        }
+        .sim-root .gear-row:hover {
+          background: #1a2535 !important;
         }
 
-        .item-tooltip {
+        .sim-root .item-tooltip {
           position: fixed;
           z-index: 9999;
-          background: linear-gradient(180deg, #1a0e2e, #0c0816);
-          border: 1px solid #4a3080;
-          border-radius: 8px;
+          background: linear-gradient(180deg, #141c2a, #0c1220);
+          border: 1px solid #2e4a6a;
+          border-radius: 10px;
           padding: 14px 16px;
           min-width: 260px;
           max-width: 320px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 20px rgba(100,60,180,0.2);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(56,130,220,0.1);
           pointer-events: none;
           animation: fadeIn 0.15s ease;
-          font-family: 'EB Garamond', serif;
+          font-family: 'Rajdhani', sans-serif;
         }
-        .item-tooltip-name {
-          font-family: 'Cinzel', serif;
-          font-size: 14px;
-          font-weight: 700;
-          margin-bottom: 4px;
-        }
-        .item-tooltip-ilvl {
-          font-size: 12px;
-          color: #f0c880;
-          margin-bottom: 6px;
-        }
-        .item-tooltip-stat {
-          font-size: 12px;
-          color: #c8b890;
-          padding: 1px 0;
-        }
-        .item-tooltip-stat b {
-          color: #e8dcc8;
-        }
-        .item-tooltip-binding {
-          font-size: 11px;
-          color: #7a6040;
-          margin-bottom: 2px;
-        }
-        .item-tooltip-type {
-          font-size: 11px;
-          color: #8a7050;
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 4px;
-        }
-        .item-tooltip-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 4px;
-          border: 1px solid #4a3080;
-          margin-right: 10px;
-          float: left;
-        }
-        .item-tooltip-loading {
-          color: #7a6040;
-          font-size: 11px;
-          font-style: italic;
-        }
-        .gear-row {
-          cursor: pointer;
-          transition: background 0.15s;
-        }
-        .gear-row:hover {
-          background: #1a1a10 !important;
+        .sim-root .item-tooltip-name { font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .sim-root .item-tooltip-ilvl { font-size: 13px; color: #fbbf24; margin-bottom: 6px; }
+        .sim-root .item-tooltip-stat { font-size: 13px; color: #cbd5e1; padding: 1px 0; }
+        .sim-root .item-tooltip-stat b { color: #e2e8f0; }
+        .sim-root .item-tooltip-binding { font-size: 12px; color: #64748b; margin-bottom: 2px; }
+        .sim-root .item-tooltip-type { font-size: 12px; color: #64748b; display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .sim-root .item-tooltip-icon { width: 36px; height: 36px; border-radius: 6px; border: 1px solid #2e4a6a; margin-right: 10px; float: left; }
+        .sim-root .item-tooltip-loading { color: #64748b; font-size: 12px; font-style: italic; }
+
+        @media (max-width: 900px) {
+          .sim-root .responsive-grid { grid-template-columns: 1fr; gap: 16px; }
+          .sim-root .hero-grid, .sim-root .stats-grid { grid-template-columns: 1fr; }
+          .sim-root .tabs-row { flex-wrap: wrap; gap: 2px; }
+          .sim-root .tab-btn { flex: 1 1 calc(50% - 2px); min-width: 0; text-align: center; padding: 10px 8px; font-size: 13px; }
+          .sim-root .mode-btn { flex: 1 1 100% !important; }
+          .sim-root .sim-shell { padding: 12px 10px 32px; }
         }
       `}</style>
 
-      {/* Background particles — midnight + ember mix */}
+      {/* Background particles — subtle navy/blue mix */}
       {particles.map(p => (
         <div key={p.id} style={{
           position: 'fixed', left: `${p.x}%`, top: `${p.y}%`,
           width: p.size, height: p.size, borderRadius: '50%',
-          background: p.id % 3 === 0 ? '#4a6aaf' : p.id % 3 === 1 ? '#e07030' : '#8090c0',
-          opacity: p.opacity * (p.id % 3 === 0 ? 0.6 : 1),
+          background: p.id % 3 === 0 ? '#38bdf8' : p.id % 3 === 1 ? '#fbbf24' : '#64748b',
+          opacity: p.opacity * 0.35,
           animation: `float ${p.speed}s ease-in-out infinite`,
           animationDelay: `${p.delay}s`,
           '--op': p.opacity, pointerEvents: 'none', zIndex: 0
-        }} />
+        } as any} />
       ))}
 
-      {/* Midnight ambient glow */}
+      {/* Ambient glows */}
       <div style={{
         position: 'fixed', top: '-20%', left: '30%', width: '40%', height: '50%',
-        background: 'radial-gradient(ellipse, rgba(30,50,120,0.12) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, rgba(56,130,220,0.06) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0
       }} />
       <div style={{
         position: 'fixed', bottom: '-10%', right: '20%', width: '35%', height: '40%',
-        background: 'radial-gradient(ellipse, hsl(var(--accent) / 0.05) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, rgba(251,191,36,0.03) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0
       }} />
-      {/* Background grid */}
-      <div style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)',
-        backgroundSize: '40px 40px',
-        opacity: 0.3
-      }} />
+
+      {/* ── HEADER ── */}
+      <div style={{ background: 'linear-gradient(135deg, #0d1117, #141c2a, #0f1a2e)', padding: '18px 28px', borderBottom: '1px solid #2e3a50', marginBottom: 0 }}>
+        <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ fontSize: 28 }}>🦅</div>
+            <div>
+              <h1 className="glow-text" style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 'clamp(14px, 2vw, 22px)', fontWeight: 900, letterSpacing: 4, color: '#e2e8f0', margin: 0, lineHeight: 1 }}>
+                SURVIVAL HUNTER
+              </h1>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 9, letterSpacing: 3, color: '#64748b', marginTop: 5 }}>
+                MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span className="badge" style={{ background: 'hsl(40 50% 15%)', color: '#fbbf24', border: '1px solid hsl(40 60% 30%)' }}>★ PRE-SEASON 1</span>
+            <span className="badge" style={{ background: '#1e2a3a', color: '#94a3b8', border: '1px solid #2e3a50' }}>PATCH 12.0.1</span>
+            <span className="badge" style={{ background: '#0f2a1a', color: '#4ade80', border: '1px solid rgba(74,222,128,.22)' }}>🦉 SENTINEL META</span>
+          </div>
+        </div>
+      </div>
 
       <div className="sim-shell">
 
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div className="title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 12 }}>
-            <div style={{ fontSize: 28 }}>🦅</div>
-            <h1 className="glow-text" style={{
-              fontFamily: "'Cinzel Decorative', serif", fontSize: 'clamp(24px, 4vw, 40px)',
-              fontWeight: 900, margin: 0, letterSpacing: 5,
-              color: 'hsl(var(--foreground))'
-            }}>
-              SURVIVAL HUNTER
-            </h1>
-            <div style={{ fontSize: 28 }}>🔥</div>
-          </div>
-          <p className="subtitle-line" style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, color: 'hsl(var(--muted-foreground))', margin: '0 0 16px' }}>
-            MIDNIGHT 12.0.1 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR
-          </p>
-          <div className="divider" style={{ margin: '16px auto', maxWidth: 400 }} />
-          <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 15, color: 'hsl(var(--muted-foreground))', margin: 0, fontStyle: 'italic', lineHeight: 1.6 }}>
-            Sources: Azortharion (Trueshot Lodge) · Method.gg (Symex) · Maxroll (heleni) · Wowhead · Raidbots/SimC APL
-          </p>
-        </div>
-
         {/* Tabs */}
-        <div className="tabs-row" style={{ display: 'flex', borderBottom: '2px solid hsl(var(--border))', marginBottom: 32, gap: 6 }}>
-          <button className={`tab-btn ${activeTab === 'sim' ? 'active' : ''}`} onClick={() => setActiveTab('sim')}>⚔ Simulator</button>
-          <button className={`tab-btn ${activeTab === 'talents' ? 'active' : ''}`} onClick={() => setActiveTab('talents')}>🌿 Talents</button>
-          <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>📊 Detailed Report</button>
-          <button className={`tab-btn ${activeTab === 'guide' ? 'active' : ''}`} onClick={() => setActiveTab('guide')}>📖 Guide</button>
+        <div className="tabs-row" style={{ display: 'flex', borderBottom: '1px solid #2e3a50', marginBottom: 24, gap: 2 }}>
+          {[['sim', '⚔ Simulator'], ['talents', '🌿 Talents'], ['report', '📊 Report'], ['guide', '📖 Guide']].map(([k, l]) => (
+            <button key={k} className={`tab-btn ${activeTab === k ? 'active' : ''}`} onClick={() => setActiveTab(k as any)}>{l}</button>
+          ))}
         </div>
 
         {/* ===== SIM TAB ===== */}
@@ -1551,11 +1488,11 @@ export default function SurvivalHunterSim() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Armory Lookup */}
-              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 24 }}>
-                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 600, letterSpacing: 1.5, color: 'hsl(var(--foreground))', margin: '0 0 14px' }}>
+              <div style={{ background: '#141c2a', border: '1px solid #2e3a50', borderRadius: 12, padding: 24 }}>
+                <h3 style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: 3, color: '#64748b', margin: '0 0 14px', textTransform: 'uppercase' }}>
                   🌐 ARMORY LOOKUP
                 </h3>
-                <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: 'hsl(var(--muted-foreground))', marginBottom: 14, lineHeight: 1.5 }}>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: '#94a3b8', marginBottom: 14, lineHeight: 1.5 }}>
                   Pull your character directly from the WoW Armory — no addon needed
                 </p>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -1867,8 +1804,8 @@ export default function SurvivalHunterSim() {
                 </div>
 
               {/* Sim Config */}
-              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
-                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
+               <div style={{ background: '#141c2a', border: '1px solid #2e3a50', borderRadius: 10, padding: 20 }}>
+                <h3 style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 10, letterSpacing: 3, color: '#64748b', margin: '0 0 16px', textTransform: 'uppercase' }}>
                   ⚙ SIMULATION CONFIG
                 </h3>
 
