@@ -99,7 +99,7 @@ async function fetchWowheadNews(): Promise<PatchNote[]> {
       const plainDesc = stripHtml(desc);
 
       // Include hotfixes, class tuning, patch notes, and any hunter/survival mentions
-      const isRelevant = /hotfix|class.?tuning|patch.*notes?|hunter|survival|balance.*changes?|nerf|buff/i.test(plainTitle);
+      const isRelevant = /hotfix|class.?tuning|patch.*notes?|hunter|survival|balance.*update/i.test(plainTitle);
 
       if (isRelevant) {
         items.push({
