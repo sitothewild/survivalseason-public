@@ -1126,7 +1126,7 @@ export default function SurvivalHunterSim() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1300, margin: "0 auto", padding: "20px 20px 48px" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: 22, gap: 2 }}>
           {[["sim", "⚔ Simulator"], ["talents", "🌿 Talents"], ["report", "📊 Report"], ["guide", "📖 Guide"]].map(([k, l]) => (
@@ -1138,7 +1138,7 @@ export default function SurvivalHunterSim() {
         {activeTab === "sim" && (
           <>
             {/* 3-COLUMN GRID */}
-            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "280px 1fr 320px", gap: 16, alignItems: "start" }}>
+            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "280px 1fr 320px", gap: 16, alignItems: "stretch" }}>
 
               {/* ═══ LEFT COLUMN — Inputs Only (280px) ═══ */}
               <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", width: 280 }}>
@@ -1285,7 +1285,7 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* ═══ MIDDLE COLUMN — Permanent Character Box (1fr) ═══ */}
-              <div className="sim-mid-col" style={{ alignSelf: "stretch" }}>
+              <div className="sim-mid-col" style={{ height: "100%" }}>
                 <div style={{
                   background: C.surface,
                   border: `1px solid ${C.border}`,
@@ -1379,7 +1379,7 @@ export default function SurvivalHunterSim() {
                   </div>
 
                   {/* Gear list */}
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, overflowY: "auto" }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>
                       {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
                     </div>
@@ -1444,8 +1444,8 @@ export default function SurvivalHunterSim() {
               </div>
 
               {/* ═══ RIGHT COLUMN — Simulation Config (320px, sticky) ═══ */}
-              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", alignSelf: "flex-start", width: 320 }}>
-                <CARD>
+              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", width: 320, height: "100%" }}>
+                <CARD style={{ height: "100%", display: "flex", flexDirection: "column" }}>
                   <LBL>⚙ Simulation Config</LBL>
 
                   {/* Current Talents — visible after character loaded */}
@@ -1572,6 +1572,7 @@ export default function SurvivalHunterSim() {
                   </div>
 
                   {/* Run Simulation button */}
+                  <div style={{ flex: 1 }} />
                   <button 
                     className="sim-btn" 
                     onClick={handleSim} 
