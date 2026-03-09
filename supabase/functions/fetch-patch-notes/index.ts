@@ -99,11 +99,10 @@ async function fetchWowheadNews(): Promise<PatchNote[]> {
       const plainDesc = stripHtml(desc);
       const combined = `${plainTitle} ${plainDesc}`;
 
-      // Only include posts that mention hunter/survival or are hotfix/tuning posts
+      // Only include posts that explicitly mention hunter or survival
       const isHunterRelated = /hunter|survival/i.test(combined);
-      const isHotfixTuning = /hotfix|class.?tuning|patch.*notes/i.test(plainTitle);
 
-      if (isHunterRelated || isHotfixTuning) {
+      if (isHunterRelated) {
         let hunterContent = extractHunterSection(plainDesc);
         if (!hunterContent) hunterContent = plainDesc;
 
