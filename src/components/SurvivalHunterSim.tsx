@@ -2093,7 +2093,7 @@ export default function SurvivalHunterSim() {
           left: Math.min(tooltipPos.x, typeof window !== 'undefined' ? window.innerWidth - 340 : tooltipPos.x),
           top: Math.max(8, Math.min(tooltipPos.y, typeof window !== 'undefined' ? window.innerHeight - 300 : tooltipPos.y)),
         }}>
-          {tooltipLoading && !itemCache[hoveredItem] ? (
+          {pendingItemFetchesRef.current.has(hoveredItem) && !itemCache[hoveredItem] ? (
             <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>Loading item data...</div>
           ) : itemCache[hoveredItem]?._error ? (
             <div style={{ color: C.textDim, fontSize: 12 }}>Could not load item data</div>
