@@ -974,6 +974,128 @@ function TalentTreeGrid({ selectedKeys, usedPts, maxPts, onToggle, onNodeHover, 
 }
 
 // ============================================================
+// MINI TALENT TREE — compact dot-tree for loadout card previews
+// Pure SVG circles + lines, no text labels, tooltip on hover.
+// ============================================================
+const MINI_CW = 24;  // px per column
+const MINI_CH = 18;  // px per row
+const MINI_R  = 4.5; // dot radius
+const MINI_PAD = 6;
+const MINI_W = MINI_PAD * 2 + 6 * MINI_CW; // 108px spec tree
+const MINI_H = MINI_PAD * 2 + 7 * MINI_CH; // 138px
+
+function miniCX(col: number) { return MINI_PAD + col * MINI_CW + MINI_CW / 2; }
+function miniCY(row: number) { return MINI_PAD + (row - 1) * MINI_CH + MINI_CH / 2; }
+
+interface MiniTalentTreeProps {
+  selectedKeys: string[];
+  heroKey: 'sentinel' | 'packLeader';
+  heroSelectedKeys: string[];
+  onDot: (node: TalentNode, e: React.MouseEvent) => void;
+  offDot: () => void;
+}
+
+// Look up full description from static TalentPill arrays by label
+function talentPillDesc(label: string): string {
+  const all = [...CORE_TALENTS, ...ST_TALENTS, ...AOE_TALENTS, ...SENTINEL_HERO, ...PACK_LEADER_HERO];
+  return all.find(t => t.name === label)?.desc || label;
+}
+function nodeToPill(node: TalentNode): TalentPill {
+  return {
+    name: node.label,
+    type: (node.dpsCategory === 'gateway' ? 'aoe' : node.dpsCategory) as TalentPill['type'],
+    points: node.pointCost,
+    desc: talentPillDesc(node.label),
+  };
+}
+
+function MiniTalentTree({ selectedKeys, heroKey, heroSelectedKeys, onDot, offDot }: MiniTalentTreeProps) {
+  const heroTree  = HERO_TALENT_TREES[heroKey];
+  const heroClr   = heroKey === 'sentinel' ? '#818cf8' : '#fb923c';
+  const heroH     = 22; // extra height for hero chain below
+  const totalH    = MINI_H + heroH + 6;
+  const heroY     = MINI_H + 8;
+  const heroSpacing = MINI_W / (heroTree.length + 1);
+
+  return (
+    <svg width={MINI_W} height={totalH} style={{ display: 'block', overflow: 'visible' }}>
+      {/* Spec tree connection lines */}
+      {SURVIVAL_SPEC_TREE.flatMap(node =>
+        node.prerequisites.map(prereqKey => {
+          const pn = SURVIVAL_SPEC_TREE.find(n => n.key === prereqKey);
+          if (!pn) return null;
+          const prereqOn = pn.dpsCategory === 'core' || selectedKeys.includes(prereqKey);
+          const nodeOn   = node.dpsCategory === 'core' || selectedKeys.includes(node.key);
+          return (
+            <line key={`${prereqKey}→${node.key}`}
+              x1={miniCX(pn.col)} y1={miniCY(pn.row)}
+              x2={miniCX(node.col)} y2={miniCY(node.row)}
+              stroke={prereqOn && nodeOn ? '#fbbf2455' : '#1a2535'}
+              strokeWidth={prereqOn && nodeOn ? 1.5 : 1}
+            />
+          );
+        })
+      )}
+
+      {/* Spec tree dots */}
+      {SURVIVAL_SPEC_TREE.map(node => {
+        const isCore = node.dpsCategory === 'core';
+        const isOn   = isCore || selectedKeys.includes(node.key);
+        const fill   = isOn
+          ? (isCore ? '#60a5fa'
+           : node.dpsCategory === 'st'      ? '#4ade80'
+           : node.dpsCategory === 'aoe'     ? '#f97316'
+           : '#c084fc')
+          : '#0d1520';
+        const stroke = isOn
+          ? (isCore ? '#60a5fa66' : fill + '88')
+          : '#1e2d3d';
+        const r = node.pointCost === 2 ? MINI_R + 1.5 : MINI_R;
+        return (
+          <circle key={node.key}
+            cx={miniCX(node.col)} cy={miniCY(node.row)} r={r}
+            fill={fill} stroke={stroke} strokeWidth={isOn ? 0 : 1}
+            style={{ cursor: 'help', transition: 'fill .1s' }}
+            onMouseEnter={e => onDot(node, e)}
+            onMouseLeave={offDot}
+          />
+        );
+      })}
+
+      {/* Hero talent chain — 3 dots below spec tree */}
+      {heroTree.map((hn, idx) => {
+        const isOn = heroSelectedKeys.includes(hn.key);
+        const hx   = heroSpacing * (idx + 1);
+        return (
+          <g key={hn.key}>
+            {idx > 0 && (
+              <line
+                x1={heroSpacing * idx} y1={heroY}
+                x2={hx} y2={heroY}
+                stroke={isOn ? heroClr + '55' : '#1a2535'} strokeWidth={1}
+              />
+            )}
+            <circle cx={hx} cy={heroY} r={MINI_R + 0.5}
+              fill={isOn ? heroClr : '#0d1520'}
+              stroke={isOn ? heroClr + '88' : '#1e2d3d'} strokeWidth={isOn ? 0 : 1}
+              style={{ cursor: 'help' }}
+              onMouseEnter={e => onDot({
+                key: hn.key as any, label: hn.label, row: 0, col: idx,
+                pointCost: 1, prerequisites: [], gateRow: 0,
+                isGateway: false, inSTBuild: true, inAoEBuild: true,
+                dpsCategory: 'core' as any,
+                gatewayNote: hn.desc,
+              }, e)}
+              onMouseLeave={offDot}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ============================================================
 // MAIN COMPONENT — V8 Off-White + Charcoal Navy Design
 // ============================================================
 export default function SurvivalHunterSim() {
@@ -2036,63 +2158,79 @@ export default function SurvivalHunterSim() {
                         const slotHeroClr = slot ? (slot.heroKey === 'sentinel' ? C.sentClr : C.packClr) : C.textDim;
                         const slotHeroBg  = slot ? (slot.heroKey === 'sentinel' ? C.sentBg  : C.packBg)  : C.surface2;
                         const slotHeroBdr = slot ? (slot.heroKey === 'sentinel' ? C.sentBdr : C.packBdr) : C.border;
+                        const isActive = selectedLoadoutId === `custom-${slotIdx}`;
                         return (
                           <div key={slotIdx} style={{ flex: 1 }}>
                             {slot ? (
+                              /* ── Filled slot: mini tree card ── */
                               <div
                                 onClick={() => {
-                                  setEditingSlot(slotIdx);
-                                  setEditDraft({ ...slot });
                                   setSelectedLoadoutId(`custom-${slotIdx}`);
                                   setHeroTalent(slot.heroKey);
                                   setSimMode(slot.simMode);
                                 }}
                                 style={{
-                                  borderRadius: 8, padding: "8px 10px", cursor: "pointer",
-                                  background: selectedLoadoutId === `custom-${slotIdx}` ? slotHeroBg : C.surface2,
-                                  border: `1px solid ${selectedLoadoutId === `custom-${slotIdx}` ? slotHeroBdr : C.border}`,
-                                  display: "flex", alignItems: "center", gap: 6,
+                                  borderRadius: 10,
+                                  padding: "10px 8px 8px",
+                                  cursor: "pointer",
+                                  background: isActive ? slotHeroBg : C.surface2,
+                                  border: `2px solid ${isActive ? slotHeroBdr : slotHeroBdr + '44'}`,
+                                  boxShadow: isActive ? `0 0 12px ${slotHeroClr}22` : undefined,
+                                  transition: "all .15s",
+                                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
                                 }}>
-                                <span style={{ fontSize: 14 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700, color: slotHeroClr, letterSpacing: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{slot.name}</div>
-                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, marginTop: 1 }}>{slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}</div>
+                                {/* Name + mode row */}
+                                <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                  <div>
+                                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7.5, fontWeight: 700, color: slotHeroClr, letterSpacing: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{slot.name}</div>
+                                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: C.textDim, marginTop: 1 }}>
+                                      {slot.heroKey === 'sentinel' ? '🌙 Sentinel' : '🐺 Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
+                                      title="Edit loadout"
+                                      style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✏</button>
+                                    <button
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
+                                        if (isActive) setSelectedLoadoutId('sentinel-st');
+                                        if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
+                                      }}
+                                      title="Remove loadout"
+                                      style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✕</button>
+                                  </div>
                                 </div>
-                                <div style={{ display: "flex", gap: 4 }}>
-                                  <button
-                                    onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
-                                    title="Edit loadout"
-                                    style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>
-                                    ✏
-                                  </button>
-                                  <button
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
-                                      if (selectedLoadoutId === `custom-${slotIdx}`) setSelectedLoadoutId('sentinel-st');
-                                      if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
-                                    }}
-                                    title="Remove loadout"
-                                    style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>
-                                    ✕
-                                  </button>
-                                </div>
+                                {/* Mini tree */}
+                                <MiniTalentTree
+                                  selectedKeys={slot.enabledTalents}
+                                  heroKey={slot.heroKey}
+                                  heroSelectedKeys={slot.enabledHeroTalents}
+                                  onDot={(node, e) => handleTalentHover(nodeToPill(node), e)}
+                                  offDot={handleTalentLeave}
+                                />
+                                {isActive && (
+                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: slotHeroClr, letterSpacing: 1, opacity: .8 }}>● ACTIVE</div>
+                                )}
                               </div>
                             ) : (
+                              /* ── Empty slot ── */
                               <button
                                 onClick={() => {
                                   setEditingSlot(slotIdx);
                                   setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [] });
                                 }}
                                 style={{
-                                  width: "100%", borderRadius: 8, padding: "10px 8px", cursor: "pointer",
+                                  width: "100%", minHeight: 200, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
                                   background: isEditing ? C.surface3 : C.surface2,
-                                  border: `1px dashed ${isEditing ? C.textMid : C.border}`,
+                                  border: `2px dashed ${isEditing ? C.textMid : C.border}`,
                                   color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
-                                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
                                 }}>
-                                <span style={{ fontSize: 16, opacity: .6 }}>➕</span>
-                                <span>Custom Slot {slotIdx + 1}</span>
+                                <span style={{ fontSize: 22, opacity: .35 }}>+</span>
+                                <span style={{ fontSize: 10, letterSpacing: 1, fontFamily: "'Orbitron',sans-serif", opacity: .5 }}>ADD CUSTOM{'\n'}LOADOUT</span>
                               </button>
                             )}
                           </div>
