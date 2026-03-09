@@ -169,8 +169,8 @@ serve(async (req) => {
                 return { id, error: `${resp.status}: ${text}` };
               }
               return await resp.json();
-            } catch (e) {
-              return { id, error: e.message };
+            } catch (e: unknown) {
+              return { id, error: (e as Error).message };
             }
           })
         );
