@@ -869,10 +869,21 @@ export default function SurvivalHunterSim() {
     const raw = (importedTalentString || '').trim();
     if (!raw) return 'Unknown';
 
-    // Requested pattern detection
-    if (raw.startsWith('C8PAAA') && raw.includes('MWg')) return 'Sentinel';
-    if (raw.startsWith('C8PAAA') && raw.includes('Mgx')) return 'Pack Leader';
+    // WoW talent loadout codes encode hero talent choice
+    // Pack Leader markers: 'Mgx', 'cMgx', 'MG' patterns in the encoded string
+    // Sentinel markers: 'MWg', 'cMWg', 'MW' patterns
+    // Also check for keyword patterns from SimC talent comments
+    const lowerRaw = raw.toLowerCase();
+    
+    // Check for Pack Leader indicators
+    if (raw.includes('Mgx') || raw.includes('cMgx') || raw.includes('mgx')) return 'Pack Leader';
+    if (lowerRaw.includes('pack_leader') || lowerRaw.includes('packleader')) return 'Pack Leader';
+    
+    // Check for Sentinel indicators  
+    if (raw.includes('MWg') || raw.includes('cMWg') || raw.includes('mwg')) return 'Sentinel';
+    if (lowerRaw.includes('sentinel')) return 'Sentinel';
 
+    // Fallback: if talent string exists but we can't detect, return Unknown
     return 'Unknown';
   }, [importedTalentString]);
 
