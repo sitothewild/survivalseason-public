@@ -1804,8 +1804,8 @@ export default function SurvivalHunterSim() {
                 </div>
 
               {/* Sim Config */}
-              <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
-                <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 16px' }}>
+               <div style={{ background: '#141c2a', border: '1px solid #2e3a50', borderRadius: 10, padding: 20 }}>
+                <h3 style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 10, letterSpacing: 3, color: '#64748b', margin: '0 0 16px', textTransform: 'uppercase' }}>
                   ⚙ SIMULATION CONFIG
                 </h3>
 
