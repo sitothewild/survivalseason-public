@@ -528,9 +528,14 @@ export default function SurvivalHunterSim() {
   }, []);
   // Item tooltips
   const [itemCache, setItemCache] = useState<Record<string, any>>({});
+  const itemCacheRef = useRef<Record<string, any>>({});
+  const pendingItemFetchesRef = useRef<Set<string>>(new Set());
+  const hoverHideTimeoutRef = useRef<number | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [tooltipLoading, setTooltipLoading] = useState(false);
+  useEffect(() => { itemCacheRef.current = itemCache; }, [itemCache]);
+  useEffect(() => () => { if (hoverHideTimeoutRef.current) window.clearTimeout(hoverHideTimeoutRef.current); }, []);
   // Report tab state
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [upgradeFrom, setUpgradeFrom] = useState(636);
