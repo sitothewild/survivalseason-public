@@ -1752,7 +1752,108 @@ export default function SurvivalHunterSim() {
                     )}
                   </div>
                 )}
-              </div>
+                </div>
+
+                {/* Advanced Options */}
+                <div style={{ marginBottom: 20, border: '1px solid #1a2540', borderRadius: 8, padding: 16, background: '#050810' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}
+                    onClick={() => setShowAdvanced(!showAdvanced)}>
+                    <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 1, color: '#e8c88a', margin: 0, flex: 1 }}>
+                      ⚙ ADVANCED OPTIONS
+                    </h4>
+                    <span style={{ color: '#6a5030', fontSize: 14 }}>{showAdvanced ? '−' : '+'}</span>
+                  </div>
+
+                  {showAdvanced && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 14 }}>
+                      
+                      {/* Fight Style */}
+                      <div>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                          FIGHT STYLE
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          {Object.entries(FIGHT_STYLES).map(([key, style]) => (
+                            <button key={key} className={`mode-btn ${fightStyle === key ? 'active' : ''}`}
+                              onClick={() => setFightStyle(key)} 
+                              style={{ padding: '8px 10px', fontSize: 10, textAlign: 'left', position: 'relative' }}>
+                              <div style={{ fontWeight: 600, marginBottom: 2 }}>{style.label}</div>
+                              <div style={{ fontSize: 9, opacity: 0.7, lineHeight: 1.2 }}>{style.desc}</div>
+                              <span style={{ 
+                                position: 'absolute', right: 6, top: 6, fontSize: 8, 
+                                color: style.mult >= 1 ? '#86efac' : '#fca5a5' 
+                              }}>
+                                {style.mult === 1.0 ? '100%' : `${Math.round(style.mult * 100)}%`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Raid Buffs */}
+                      <div>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                          RAID BUFFS
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                          {Object.entries(RAID_BUFFS).map(([key, buff]) => (
+                            <div key={key} style={{ 
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                              background: raidBuffs[key] ? '#0a1a0a' : '#1a0a0a',
+                              border: `1px solid ${raidBuffs[key] ? '#2a3a2a' : '#2a1a1a'}`,
+                              borderRadius: 4, cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onClick={() => setRaidBuffs(prev => ({ ...prev, [key]: !prev[key] }))}>
+                              <input type="checkbox" checked={raidBuffs[key] || false} readOnly 
+                                style={{ accentColor: '#e07030', cursor: 'pointer' }} />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#c8a870', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span>{buff.icon}</span>
+                                  <span>{buff.label}</span>
+                                </div>
+                                <div style={{ fontSize: 9, color: '#6a5030', lineHeight: 1.2 }}>{buff.stat}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Consumables */}
+                      <div>
+                        <label style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', display: 'block', marginBottom: 8 }}>
+                          CONSUMABLES
+                        </label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {Object.entries(CONSUMABLES).map(([category, data]) => (
+                            <div key={category} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ 
+                                fontFamily: "'EB Garamond', serif", fontSize: 10, color: '#8a7050',
+                                minWidth: 80, textAlign: 'right' 
+                              }}>
+                                {data.label}:
+                              </span>
+                              <select 
+                                value={consumables[category] || 'none'}
+                                onChange={e => setConsumables(prev => ({ ...prev, [category]: e.target.value }))}
+                                style={{
+                                  flex: 1, background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 4,
+                                  color: '#c8a870', fontSize: 10, padding: '4px 8px',
+                                  fontFamily: "'EB Garamond', serif"
+                                }}>
+                                {data.options.map(opt => (
+                                  <option key={opt.key} value={opt.key}>
+                                    {opt.label} {opt.mult !== 1.0 && `(+${Math.round((opt.mult - 1) * 100)}%)`}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
               {/* Sim Config */}
               <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
