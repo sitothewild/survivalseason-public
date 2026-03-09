@@ -1079,6 +1079,10 @@ export default function SurvivalHunterSim() {
         @keyframes iconGlow{0%,100%{box-shadow:0 0 16px rgba(74,222,128,.2),0 0 40px rgba(34,197,94,.08);}50%{box-shadow:0 0 28px rgba(74,222,128,.38),0 0 60px rgba(34,197,94,.16);}}
         @keyframes counterUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes waitPulse{0%,100%{border-color:#2e3a50;}50%{border-color:#3a4a60;}}
+        @keyframes staggerFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+        @media(max-width:1024px){.sim-3col{grid-template-columns:280px 1fr !important;}.sim-right-col{grid-column:1 / -1 !important;}}
+        @media(max-width:768px){.sim-3col{grid-template-columns:1fr !important;}.sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}}
         @media(max-width:900px){.responsive-grid{grid-template-columns:1fr !important;}.tab-btn{flex:1 1 calc(50% - 2px);min-width:0;text-align:center;padding:10px 8px;font-size:13px;}}
       `}</style>
 
