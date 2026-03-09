@@ -2257,7 +2257,14 @@ export default function SurvivalHunterSim() {
             {/* ═══ SECTION 3: KEY MIDNIGHT 12.0 CHANGES ═══ */}
             <div>
               <LBL>⚡ Key Midnight 12.0 Changes</LBL>
-              <div style={{ overflowX: 'auto', display: 'flex', gap: 12, paddingBottom: 8 }}>
+              <div
+                onWheel={e => {
+                  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+                  e.currentTarget.scrollLeft += e.deltaY;
+                  e.preventDefault();
+                }}
+                style={{ overflowX: 'auto', display: 'flex', gap: 12, paddingBottom: 8, cursor: 'grab' }}
+              >
                 {MIDNIGHT_CHANGES.map((change, i) => (
                   <div key={i} style={{
                     minWidth: 240, flexShrink: 0, background: C.surface, border: `1px solid ${C.border}`,
