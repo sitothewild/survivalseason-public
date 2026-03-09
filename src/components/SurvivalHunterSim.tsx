@@ -1091,7 +1091,7 @@ export default function SurvivalHunterSim() {
 
   // Helper components (memoized so inputs don't lose focus on state updates)
    const LBL = useCallback(({ children }) => (
-    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: C.foreground, textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10, fontWeight: 700 }}>
+    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10, fontWeight: 700 }}>
       {children}
       <div style={{ flex: 1, height: 1, background: C.borderSub }} />
     </div>
