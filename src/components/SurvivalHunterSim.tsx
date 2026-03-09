@@ -369,19 +369,24 @@ function generateDetailedSimData(breakdown, fightDuration, heroTalent, targetCou
   return { actionCounts, buffUptimes, strikeAsOneDetails: strikeAsOneExplanation, resourceData: { focusGenerated: Math.round(fightDuration * 12), focusSpent: Math.round(fightDuration * 11), focusWasted: Math.round(fightDuration * 1) }, executionLog: generateSampleExecutionLog(fightDuration, heroTalent) };
 }
 
-/** WoW item quality color based on ilvl relative to the character's average.
- *  Uses relative thresholds so it works at any level range. */
-function getItemQualityColor(ilvl: number, avgIlvl?: number): string {
-  if (!ilvl || ilvl <= 0) return '#9d9d9d'; // Poor/grey
+const QUALITY_COLORS: Record<string, string> = {
+  LEGENDARY: '#ff8000', EPIC: '#a335ee', RARE: '#0070dd',
+  UNCOMMON: '#1eff00', COMMON: '#ffffff', POOR: '#9d9d9d',
+  ARTIFACT: '#e6cc80', HEIRLOOM: '#00ccff',
+};
+
+/** WoW item quality color — uses actual quality type from API when available,
+ *  falls back to ilvl-relative estimation. */
+function getItemQualityColor(quality?: string, ilvl?: number, avgIlvl?: number): string {
+  if (quality && QUALITY_COLORS[quality]) return QUALITY_COLORS[quality];
+  if (!ilvl || ilvl <= 0) return '#9d9d9d';
   const avg = avgIlvl && avgIlvl > 0 ? avgIlvl : ilvl;
-  const diff = ilvl - avg;
-  // Legendary: 15%+ above avg, Epic: 5%+ above, Rare: within 5%, Uncommon: up to 10% below, Common: lower
-  const pct = avg > 0 ? diff / avg : 0;
-  if (pct >= 0.15) return '#ff8000';  // Legendary orange
-  if (pct >= 0.03) return '#a335ee';  // Epic purple
-  if (pct >= -0.05) return '#0070dd'; // Rare blue
-  if (pct >= -0.12) return '#1eff00'; // Uncommon green
-  return '#ffffff';                    // Common white
+  const pct = avg > 0 ? (ilvl - avg) / avg : 0;
+  if (pct >= 0.15) return '#ff8000';
+  if (pct >= 0.03) return '#a335ee';
+  if (pct >= -0.05) return '#0070dd';
+  if (pct >= -0.12) return '#1eff00';
+  return '#ffffff';
 }
 
 function getAbilityCoefficient(ability) {
