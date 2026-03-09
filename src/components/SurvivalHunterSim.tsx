@@ -646,9 +646,9 @@ export default function SurvivalHunterSim() {
     Object.entries(consumables).forEach(([cat, sel]) => { const opt = CONSUMABLES[cat]?.options?.find(o => o.key === sel); if (opt) externalMult *= opt.mult; });
     setTimeout(() => {
       const targets = getTargets();
-      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult));
+      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData));
       const primaryBuild = targets[0] === 1 ? 'st' : 'aoe';
-      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult);
+      const sw = calcStatWeights(parsedChar, targets[0], fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData);
       setStatWeights(sw); setSimResults(results); setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent)); setIsSimming(false);
     }, 1200);
   }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables]);
