@@ -1151,8 +1151,8 @@ export default function SurvivalHunterSim() {
             {/* 3-COLUMN GRID */}
             <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "260px minmax(340px, 1fr) 420px", gap: 20, alignItems: "stretch" }}>
 
-              {/* ═══ LEFT COLUMN — Inputs Only (280px) ═══ */}
-              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", width: 280 }}>
+              {/* ═══ LEFT COLUMN — Inputs Only (260px) ═══ */}
+              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%" }}>
                 {/* Armory Lookup */}
                 <CARD>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
