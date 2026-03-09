@@ -1379,7 +1379,7 @@ export default function SurvivalHunterSim() {
                   </div>
 
                   {/* Gear list */}
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, overflowY: "auto" }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>
                       {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
                     </div>
