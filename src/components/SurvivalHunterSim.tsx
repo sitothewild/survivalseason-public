@@ -578,7 +578,7 @@ function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build
   ['haste', 'crit', 'mastery', 'versatility'].forEach(stat => {
     const bumpChar = JSON.parse(JSON.stringify(charData));
     bumpChar.stats[stat] = (bumpChar.stats[stat] || 0) + DELTA[stat];
-    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build).totalDps;
+    const bumpDps = runSimulation(bumpChar, targetCount, fightDuration, heroTalent, build, externalMult).totalDps;
     const dpsDelta = bumpDps - baseDps;
     const ratingBump = DELTA[stat] * RATING_PER_PERCENT[stat]; // equivalent rating
     const perRating = dpsDelta / ratingBump;
