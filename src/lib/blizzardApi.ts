@@ -65,7 +65,7 @@ export async function getFullCharacter(realmSlug: string, characterName: string,
 // ===================== HELPERS =====================
 
 /** Convert Blizzard API equipment response to sim-compatible format */
-export function equipmentToSimData(fullData: any) {
+export function equipmentToSimData(fullData: any, region = "us") {
   const { profile, equipment, stats: charStats } = fullData;
   
   const gear = (equipment?.equipped_items || []).map((item: any) => {
@@ -112,7 +112,6 @@ export function equipmentToSimData(fullData: any) {
   // The API may return stats in different structures depending on the endpoint version
   // Try multiple paths to ensure we get the most accurate values
   const agility = charStats?.agility?.effective ?? charStats?.agility?.base ?? (charStats?.agility || 0);
-  const stamina = charStats?.stamina?.effective ?? charStats?.stamina?.base ?? 0;
   const rawAP = charStats?.attack_power?.effective ?? (typeof charStats?.attack_power === 'number' ? charStats.attack_power : 0);
   const attackPower = rawAP || Math.round((typeof agility === 'number' ? agility : 0) * 1.05);
 
@@ -169,7 +168,7 @@ export function equipmentToSimData(fullData: any) {
       raceId: profile?.race?.id || null,
       gender: profile?.gender?.type || "MALE",
       realm: profile?.realm?.name || "",
-      region: "us",
+      region,
       avgIlvl: profile?.equipped_item_level || avgIlvl,
       class: profile?.character_class?.name || "",
       spec: profile?.active_spec?.name || "",
@@ -177,21 +176,34 @@ export function equipmentToSimData(fullData: any) {
     stats: simStats,
     gear,
     talents: (() => {
-      // Try multiple paths for talent loadout code from Blizzard API
+      // The Blizzard /specializations endpoint returns:
+      // { active_specialization: { id, name, ... }, specializations: [ { specialization: { id }, loadouts: [ { is_active, talent_loadout_code } ] } ] }
+      // active_specialization does NOT have loadouts — we must find the matching spec in specializations[].
       const specs = fullData?.specializations;
-      const activSpec = specs?.active_specialization;
-      const loadoutCode = activSpec?.loadouts?.[0]?.talent_loadout_code;
-      if (loadoutCode) return loadoutCode;
-      // Alternate: specializations array with loadouts
-      if (Array.isArray(specs?.specializations)) {
-        for (const s of specs.specializations) {
-          if (s?.loadouts?.[0]?.talent_loadout_code) return s.loadouts[0].talent_loadout_code;
+      const activeSpecId = specs?.active_specialization?.id;
+
+      // Primary path: find the active spec entry and prefer its active loadout
+      if (Array.isArray(specs?.specializations) && activeSpecId) {
+        const activeEntry = specs.specializations.find((s: any) => s?.specialization?.id === activeSpecId);
+        if (activeEntry?.loadouts?.length) {
+          const activeLd = activeEntry.loadouts.find((l: any) => l.is_active);
+          const code = activeLd?.talent_loadout_code ?? activeEntry.loadouts[0]?.talent_loadout_code;
+          if (code) return code;
         }
       }
-      // Alternate: direct loadouts on active spec
-      if (activSpec?.talent_loadout_code) return activSpec.talent_loadout_code;
-      // Alternate: top-level talent_loadout_code
+
+      // Fallback: any spec entry that has a loadout code
+      if (Array.isArray(specs?.specializations)) {
+        for (const s of specs.specializations) {
+          const activeLd = s?.loadouts?.find((l: any) => l.is_active);
+          const code = activeLd?.talent_loadout_code ?? s?.loadouts?.[0]?.talent_loadout_code;
+          if (code) return code;
+        }
+      }
+
+      // Last resort: top-level talent_loadout_code (some older response shapes)
       if (specs?.talent_loadout_code) return specs.talent_loadout_code;
+
       console.warn('[Armory Talent Debug] Could not find talent_loadout_code in:', JSON.stringify(specs, null, 2)?.slice(0, 500));
       return null;
     })(),

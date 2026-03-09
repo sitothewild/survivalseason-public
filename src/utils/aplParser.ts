@@ -50,13 +50,6 @@ const FALLBACK_WEIGHTS: ParsedAPL = {
 
 // ─── Section header detection ──────────────────────────────
 
-const SECTION_PATTERNS: { key: string; hero: "sentinel" | "packLeader"; mode: "st" | "aoe" }[] = [
-  { key: "SENTINEL", hero: "sentinel", mode: "st" },
-  { key: "SENTINEL", hero: "sentinel", mode: "aoe" },
-  { key: "PACK LEADER", hero: "packLeader", mode: "st" },
-  { key: "PACK LEADER", hero: "packLeader", mode: "aoe" },
-];
-
 function detectSection(line: string): { hero: "sentinel" | "packLeader"; mode: "st" | "aoe" } | null {
   const upper = line.toUpperCase();
   if (!upper.includes("//")) return null;
@@ -199,7 +192,11 @@ export function buildAPLFromActionLists(actionLists: Record<string, string[]>): 
   const extract = (key: string): string[] => {
     const actions = actionLists[key];
     if (!actions || actions.length === 0) return [];
-    return actions.map(extractAbilityName).filter(a => a && !['auto_attack', 'call_action_list', 'variable', 'summon_pet', 'snapshot_stats'].includes(a));
+    return actions.map(extractAbilityName).filter(a => a && ![
+      'auto_attack', 'call_action_list', 'variable', 'summon_pet', 'snapshot_stats',
+      'use_item', 'potion', 'use_trinket', 'blood_fury', 'berserking', 'arcane_torrent',
+      'lights_judgment', 'bag_of_tricks', 'fireblood', 'ancestral_call', 'invoke_external_buff',
+    ].includes(a));
   };
 
   const plst = extract('plst');

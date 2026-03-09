@@ -36,13 +36,19 @@ async function fetchRawFile(path: string): Promise<string> {
 // ─── APL Parser ────────────────────────────────────────────
 
 function parseSurvivalAPL(aplSource: string) {
-  // Extract just the survival section
-  const svStart = aplSource.indexOf("//survival_ptr_apl_start");
-  const svEnd = aplSource.indexOf("//survival_ptr_apl_end");
-  // Fall back to non-ptr if ptr not found
-  const start = svStart >= 0 ? svStart : aplSource.indexOf("//survival_apl_start");
-  const end = svEnd >= 0 ? svEnd : aplSource.indexOf("//survival_apl_end");
-  
+  // Extract just the survival section — use matching pairs to avoid mixing ptr/non-ptr markers.
+  const ptrStart = aplSource.indexOf("//survival_ptr_apl_start");
+  const ptrEnd   = aplSource.indexOf("//survival_ptr_apl_end");
+  const stdStart = aplSource.indexOf("//survival_apl_start");
+  const stdEnd   = aplSource.indexOf("//survival_apl_end");
+
+  let start = -1, end = -1;
+  if (ptrStart >= 0 && ptrEnd > ptrStart) {
+    start = ptrStart; end = ptrEnd;         // ptr pair takes priority
+  } else if (stdStart >= 0 && stdEnd > stdStart) {
+    start = stdStart; end = stdEnd;          // fall back to standard pair
+  }
+
   if (start < 0 || end < 0) return { error: "Could not find survival APL section" };
   
   const section = aplSource.slice(start, end);
@@ -74,76 +80,67 @@ function parseSurvivalSpellData(hunterSource: string) {
   // Parse Tip of the Spear values
   const totsMatch = hunterSource.match(/tip_of_the_spear.*?effectN\s*\(\s*(\d+)\s*\).*?percent/g);
   if (totsMatch) spellData.tip_of_the_spear_refs = totsMatch.length;
-  
-  // Parse Coordinated Assault damage amp
-  const caMatch = hunterSource.match(/coordinated_assault.*?effectN\s*\(\s*(\d+)\s*\)/g);
-  if (caMatch) spellData.coordinated_assault_refs = caMatch.length;
-  
+
   // Parse Spirit Bond mastery scaling
   const sbMatch = hunterSource.match(/spirit_bond.*?mastery_value/g);
   if (sbMatch) spellData.spirit_bond_mastery_refs = sbMatch.length;
-  
-  // Parse Mongoose Fury stacking
-  const mfMatch = hunterSource.match(/mongoose_fury/g);
-  spellData.mongoose_fury_refs = mfMatch ? mfMatch.length : 0;
-  
+
+  // Parse Takedown references (Midnight replacement for Coordinated Assault)
+  const takedownMatch = hunterSource.match(/takedown/g);
+  spellData.takedown_refs = takedownMatch ? takedownMatch.length : 0;
+
   // Extract hardcoded multiplier values (e.g., *= 1.xxx patterns near survival spells)
-  const multiplierPattern = /\/\/.*?(?:survival|sv|raptor|mongoose|wildfire|kill_command|coordinated).*?\n.*?\*=\s*([0-9.]+)/gi;
+  const multiplierPattern = /\/\/.*?(?:survival|sv|raptor|wildfire|kill_command|boomstick|takedown).*?\n.*?\*=\s*([0-9.]+)/gi;
   const multipliers: { context: string; value: number }[] = [];
   let mMatch;
   while ((mMatch = multiplierPattern.exec(hunterSource)) !== null) {
     multipliers.push({ context: mMatch[0].trim().slice(0, 120), value: parseFloat(mMatch[1]) });
   }
   spellData.hardcoded_multipliers = multipliers;
-  
-  // Extract key spell implementations for Survival
+
+  // Extract key Midnight Survival spell implementations
   const survivalSpells: Record<string, any> = {};
-  
-  // Raptor Strike / Mongoose Bite
+
   const rsSection = extractSpellSection(hunterSource, "raptor_strike");
   if (rsSection) survivalSpells.raptor_strike = { found: true, length: rsSection.length };
-  
-  const mbSection = extractSpellSection(hunterSource, "mongoose_bite");
-  if (mbSection) survivalSpells.mongoose_bite = { found: true, length: mbSection.length };
-  
+
   const kcSection = extractSpellSection(hunterSource, "kill_command_sv");
   if (kcSection) survivalSpells.kill_command = { found: true, length: kcSection.length };
-  
+
   const wfbSection = extractSpellSection(hunterSource, "wildfire_bomb");
   if (wfbSection) survivalSpells.wildfire_bomb = { found: true, length: wfbSection.length };
-  
-  const foteSection = extractSpellSection(hunterSource, "fury_of_the_eagle");
-  if (foteSection) survivalSpells.fury_of_the_eagle = { found: true, length: foteSection.length };
-  
-  const caSection = extractSpellSection(hunterSource, "coordinated_assault");
-  if (caSection) survivalSpells.coordinated_assault = { found: true, length: caSection.length };
-  
-  const fsSection = extractSpellSection(hunterSource, "flanking_strike");
-  if (fsSection) survivalSpells.flanking_strike = { found: true, length: fsSection.length };
-  
+
+  const boomstickSection = extractSpellSection(hunterSource, "boomstick");
+  if (boomstickSection) survivalSpells.boomstick = { found: true, length: boomstickSection.length };
+
+  const takedownSection = extractSpellSection(hunterSource, "takedown");
+  if (takedownSection) survivalSpells.takedown = { found: true, length: takedownSection.length };
+
+  const chakramSection = extractSpellSection(hunterSource, "moonlight_chakram");
+  if (chakramSection) survivalSpells.moonlight_chakram = { found: true, length: chakramSection.length };
+
   spellData.survival_spells = survivalSpells;
-  
-  // Extract buff durations and values from create_buffs section
-  const buffsSection = hunterSource.slice(
-    hunterSource.indexOf("void hunter_t::create_buffs()"),
-    hunterSource.indexOf("void hunter_t::init_gains()")
-  );
-  
+
+  // Extract buff data from create_buffs section
+  const createBuffsIdx = hunterSource.indexOf("void hunter_t::create_buffs()");
+  const initGainsIdx = hunterSource.indexOf("void hunter_t::init_gains()");
+  const buffsSection = (createBuffsIdx >= 0 && initGainsIdx > createBuffsIdx)
+    ? hunterSource.slice(createBuffsIdx, initGainsIdx)
+    : "";
+
   const buffData: Record<string, any> = {};
-  
-  // Mongoose Fury buff
-  const mfBuff = buffsSection.match(/mongoose_fury.*?default_value\s*\(\s*([0-9.]+)/);
-  if (mfBuff) buffData.mongoose_fury_default_value = parseFloat(mfBuff[1]);
-  
-  // Coordinated Assault buff  
-  const caBuff = buffsSection.match(/coordinated_assault.*?default_value\s*\(\s*([0-9.]+)/);
-  if (caBuff) buffData.coordinated_assault_default_value = parseFloat(caBuff[1]);
-  
+
+  const takedownBuff = buffsSection.match(/takedown.*?default_value\s*\(\s*([0-9.]+)/);
+  if (takedownBuff) buffData.takedown_default_value = parseFloat(takedownBuff[1]);
+
+  const spiritBondBuff = buffsSection.match(/spirit_bond.*?default_value\s*\(\s*([0-9.]+)/);
+  if (spiritBondBuff) buffData.spirit_bond_default_value = parseFloat(spiritBondBuff[1]);
+
   spellData.buff_data = buffData;
-  
-  // Extract tier set bonus info
+
+  // Extract Midnight tier set bonus info
   const tierPatterns = [
-    /tww_s\d+_sv_\dpc/g,
+    /midnight_sv_\dpc/g,
     /winning_streak/g,
     /strike_it_rich/g,
   ];

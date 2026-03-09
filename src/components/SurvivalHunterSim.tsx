@@ -427,7 +427,7 @@ function formatEnchantLabel(enchant: any): string {
 }
 
 function getAbilityCoefficient(ability) {
-  const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Mongoose Bite':1.60,'Hatchet Toss':0.95 };
+  const c = { 'Strike as One':1.10,'Raptor Strike':1.40,'Kill Command':1.55,'Wildfire Bomb':1.20,'Boomstick':2.50,'Raptor Swipe':1.85,'Flamefang Pitch':1.80,'Hatchet Toss':0.95,'Moonlight Chakram':2.40,'Takedown':1.80 };
   return c[ability] || 1.0;
 }
 
@@ -557,15 +557,14 @@ const C = {
 };
 
 const BAR_COLORS = {
-  "Kill Command":"#60a5fa","Mongoose Bite":"#818cf8","Wildfire Bomb":"#f59e0b",
+  "Kill Command":"#60a5fa","Wildfire Bomb":"#f59e0b",
   "Boomstick":"#fb923c","Raptor Swipe":"#34d399","Flamefang Pitch":"#22d3ee",
-  "Raptor Strike":"#ef4444","Strike as One":"#22c55e","Serpent Sting":"#a78bfa",
-  "Pet (KC procs)":"#94a3b8","Tip of the Spear":"#7dd3fc","Takedown":"#93c5fd",
-  "Takedown (CD)":"#93c5fd","Sentinel (hero)":"#38bdf8","Pack Leader (hero)":"#c084fc",
+  "Raptor Strike":"#ef4444","Strike as One":"#22c55e","Hatchet Toss":"#a78bfa",
+  "Takedown":"#93c5fd","Takedown (CD)":"#93c5fd",
   "Sentinel Mark + Lunar Storm":"#38bdf8","Moonlight Chakram":"#818cf8",
   "Pack Leader Beasts":"#a78bfa","Auto Attack (MH)":"#94a3b8","Auto Attack (OH)":"#64748b",
   "Pet (Claw)":"#a3e635","Pet Melee":"#86efac","Bear (Rend + Melee)":"#fb923c",
-  "Coord. Assault":"#e879f9","Kroluk's Warbanner":"#fbbf24",
+  "Kroluk's Warbanner":"#fbbf24",
 };
 const bClr = k => BAR_COLORS[k] || "#64748b";
 const fmt = n => n >= 1000000 ? `${(n / 1000000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
@@ -860,7 +859,7 @@ export default function SurvivalHunterSim() {
       } catch (e) { console.warn('APL build from sync failed:', e); }
     } catch (e) {
       setSimcSyncStatus('error');
-      setSimcSyncInfo(`Sync failed: ${e.message}`);
+      setSimcSyncInfo(`Sync failed: ${e?.message || String(e)}`);
     }
   }, []);
 
@@ -909,7 +908,7 @@ export default function SurvivalHunterSim() {
         armoryRegion,
       );
       if (fullData.profile?.error) throw new Error(fullData.profile.error);
-      const simData = equipmentToSimData(fullData);
+      const simData = equipmentToSimData(fullData, armoryRegion);
       if (simData.character.spec && simData.character.spec.toLowerCase() !== 'survival') {
         setArmoryError(`Warning: ${simData.character.name} is specced as ${simData.character.spec}, not Survival.`);
       }
