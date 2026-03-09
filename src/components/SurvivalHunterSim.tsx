@@ -3336,7 +3336,7 @@ export default function SurvivalHunterSim() {
                       SHA: {simcLiveData.sha?.slice(0, 7)}
                     </span>
                     <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>
-                      Branch: {simcLiveData.branch || 'midnight'}
+                      Branch: midnight
                     </span>
                     <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>
                       {simcLiveData.fetchedAt ? new Date(simcLiveData.fetchedAt).toLocaleString() : 'Cached'}
