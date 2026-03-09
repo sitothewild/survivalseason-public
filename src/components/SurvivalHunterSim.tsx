@@ -2045,6 +2045,174 @@ export default function SurvivalHunterSim() {
           </div>
         )}
 
+        {/* ===== DETAILED REPORT TAB ===== */}
+        {activeTab === 'report' && (
+          <div className="responsive-grid">
+            {!simResults || !simResults[0]?.detailed ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12 }}>
+                <div style={{ fontSize: 48, opacity: 0.3 }}>📊</div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 2, color: '#3a2810' }}>
+                  RUN A SIMULATION FIRST
+                </div>
+                <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, color: '#3a2810', textAlign: 'center', maxWidth: 240 }}>
+                  The detailed report shows ability breakdown, buff uptimes, and Strike as One mechanics.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Strike as One Breakdown */}
+                <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 14px' }}>
+                    🎯 STRIKE AS ONE ANALYSIS
+                  </h3>
+                  {simResults[0]?.detailed?.strikeAsOneDetails && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <p style={{ fontFamily: "'EB Garamond', serif", fontSize: 13, color: '#8a7050', margin: 0, fontStyle: 'italic' }}>
+                        {simResults[0].detailed.strikeAsOneDetails.description}
+                      </p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                        <div style={{ background: '#1a1208', borderRadius: 6, padding: 12 }}>
+                          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 4 }}>
+                            TRIGGER FREQUENCY
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#e8c88a' }}>
+                            {simResults[0].detailed.strikeAsOneDetails.estimatedFrequency}
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030' }}>
+                            {simResults[0].detailed.strikeAsOneDetails.totalTriggers} total triggers
+                          </div>
+                        </div>
+                        
+                        <div style={{ background: '#1a1208', borderRadius: 6, padding: 12 }}>
+                          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 4 }}>
+                            AVERAGE HIT
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#e8c88a' }}>
+                            {simResults[0].detailed.strikeAsOneDetails.avgDamage.toLocaleString()}
+                          </div>
+                          <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 11, color: '#6a5030' }}>
+                            110% AP coefficient
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 8 }}>
+                          TRIGGERING ABILITIES
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {simResults[0].detailed.strikeAsOneDetails.triggerAbilities.map(ability => (
+                            <span key={ability} style={{
+                              background: '#2a1810',
+                              border: '1px solid #4a3020',
+                              borderRadius: 4,
+                              padding: '4px 8px',
+                              fontFamily: "'EB Garamond', serif",
+                              fontSize: 11,
+                              color: '#c8a870'
+                            }}>
+                              {ability}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#f0a830', marginBottom: 8 }}>
+                          MECHANICS
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: 16, fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#8a7050', lineHeight: 1.6 }}>
+                          {simResults[0].detailed.strikeAsOneDetails.mechanics.map((mechanic, i) => (
+                            <li key={i}>{mechanic}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Breakdown Table */}
+                <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 14px' }}>
+                    ⚔ ABILITY BREAKDOWN
+                  </h3>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #2a3050' }}>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'left' }}>ABILITY</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>DAMAGE</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>COUNT</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>AVG HIT</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>CRITS</th>
+                          <th style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 1, color: '#7a6040', padding: '8px 12px', textAlign: 'right' }}>%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {simResults[0]?.detailed?.actionCounts && 
+                          Object.entries(simResults[0].detailed.actionCounts)
+                            .sort(([,a], [,b]) => b.damage - a.damage)
+                            .map(([ability, data]) => (
+                              <tr key={ability} style={{ 
+                                borderBottom: '1px solid #1a1208',
+                                background: ability === 'Strike as One' ? 'rgba(34, 197, 94, 0.1)' : 'transparent'
+                              }}>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: ability === 'Strike as One' ? '#22c55e' : '#8a7050', padding: '8px 12px', fontWeight: ability === 'Strike as One' ? 600 : 400 }}>
+                                  {ability === 'Strike as One' && '★ '}{ability}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.damage.toLocaleString()}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.count}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.avgHit.toLocaleString()}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.crits}
+                                </td>
+                                <td style={{ fontFamily: "'EB Garamond', serif", fontSize: 12, color: '#c8a870', padding: '8px 12px', textAlign: 'right' }}>
+                                  {data.percentage.toFixed(1)}%
+                                </td>
+                              </tr>
+                            ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Execution Log */}
+                <div style={{ background: '#0a0e1a', border: '1px solid #1a2540', borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 2, color: '#e8c88a', margin: '0 0 14px' }}>
+                    ⏱ SAMPLE EXECUTION (First 30s)
+                  </h3>
+                  {simResults[0]?.detailed?.executionLog && (
+                    <div style={{ fontFamily: 'monospace', fontSize: 11, background: '#0f111a', borderRadius: 6, padding: 14, maxHeight: 300, overflow: 'auto' }}>
+                      {simResults[0].detailed.executionLog.map((event, i) => (
+                        <div key={i} style={{ 
+                          marginBottom: 4, 
+                          color: event.ability === 'Strike as One' ? '#22c55e' : '#8a7050',
+                          display: 'flex',
+                          gap: 12
+                        }}>
+                          <span style={{ color: '#5a4030', minWidth: 40 }}>{event.time.toFixed(1)}s</span>
+                          <span style={{ minWidth: 120 }}>{event.ability}</span>
+                          <span style={{ color: '#6a5030', fontSize: 10 }}>
+                            {event.trigger && `← ${event.trigger}`}
+                            {event.note && `• ${event.note}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== GUIDE TAB ===== */}
         {activeTab === 'guide' && (
           <div className="responsive-grid">
