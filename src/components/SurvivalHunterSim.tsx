@@ -3305,6 +3305,25 @@ export default function SurvivalHunterSim() {
                     <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>
                       {simcLiveData.fetchedAt ? new Date(simcLiveData.fetchedAt).toLocaleString() : 'Cached'}
                     </span>
+                    {aplData ? (
+                      <span className="badge" style={{ background: '#0f2a1a', color: '#4ade80', border: '1px solid rgba(74,222,128,.4)' }}>
+                        ✓ ENGINE USING LIVE APL
+                      </span>
+                    ) : (
+                      <span className="badge" style={{ background: '#2a1f08', color: '#fbbf24', border: '1px solid rgba(251,191,36,.4)' }}>
+                        ⚠ USING FALLBACK WEIGHTS
+                      </span>
+                    )}
+                    {aplData && (
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>
+                        Weights from midnight branch SHA: {simcLiveData.sha?.slice(0, 7) || '—'}
+                      </span>
+                    )}
+                    {!aplData && (
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>
+                        SimC APL not yet loaded
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     {[
