@@ -397,7 +397,18 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build) 
     });
   }
 
-  return { totalDps: Math.round(totalDps), breakdown, targets: T, duration: fightDuration, hero: heroTalent, build };
+  // Generate detailed tracking data for "Strike as One"
+  const detailed = generateDetailedSimData(breakdown, fightDuration, heroTalent, T, ap);
+
+  return { 
+    totalDps: Math.round(totalDps), 
+    breakdown, 
+    targets: T, 
+    duration: fightDuration, 
+    hero: heroTalent, 
+    build,
+    detailed 
+  };
 }
 
 // ============================================================
