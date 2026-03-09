@@ -5,6 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import WowModelViewer from "@/components/WowModelViewer";
 import survivalIconImg from "@/assets/survival-icon.png";
 import { parseSimcAPL, getRotationWeights, buildAPLFromActionLists, type ParsedAPL } from "@/utils/aplParser";
+import {
+  runTheoryCraft, getOptimalTalentConfig, getFullOptimalAnalysis,
+  HEROIC_MIDNIGHT_639, NORMAL_MIDNIGHT_626,
+  type GearProfile, type TierSetConfig,
+} from "@/lib/theorycrafting";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -998,6 +1003,13 @@ export default function SurvivalHunterSim() {
 
   const userBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, userHeroKey), [primaryTargetCount, userHeroKey]);
   const optimalBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, 'sentinel'), [primaryTargetCount]);
+
+  // First-principles theorycrafting analysis (Heroic Midnight 639 gear, 4pc tier)
+  const theoryAnalysis = useMemo(() => {
+    const heroKey = (userHeroKey === 'packLeader' ? 'packLeader' : 'sentinel') as 'sentinel' | 'packLeader';
+    const tierSet: TierSetConfig = { has2pc: true, has4pc: true };
+    return getFullOptimalAnalysis(heroKey, primaryTargetCount, HEROIC_MIDNIGHT_639, tierSet);
+  }, [userHeroKey, primaryTargetCount]);
 
   const talentDiffRows = useMemo(() => {
     const left = userBuildInfo?.selected || [];
@@ -3339,6 +3351,190 @@ export default function SurvivalHunterSim() {
                   </div>
                 </div>
               ))}
+            </CARD>
+
+            {/* ── THEORYCRAFTING: Ability DPS Breakdown ── */}
+            <CARD style={{ gridColumn: "1 / -1" }}>
+              <LBL>⚗️ First-Principles Ability DPS Breakdown — Heroic 639 / 4pc Tier</LBL>
+              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginBottom: 14, lineHeight: 1.6 }}>
+                Calculated from raw AP coefficients × Attack Power × stat multipliers × CPM model. Not anchored to a fixed DPS value — built from scratch.
+                Assuming <strong style={{ color: C.goldLight }}>639 ilvl Heroic Midnight</strong>, 4pc tier, Sentinel hero, optimal stats.
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                      {["Ability", "DPS", "% of Total", "CPM", "Dmg/Cast", "Notes"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1, color: C.textDim, fontWeight: 400 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {theoryAnalysis.abilities.filter(a => a.dps > 0).map((a, i) => {
+                      const pct = a.pctOfTotal;
+                      const barColor = i === 0 ? C.goldLight : i < 3 ? C.sentClr : C.textMid;
+                      return (
+                        <tr key={a.key} style={{ borderBottom: `1px solid ${C.borderSub}`, background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.015)' }}>
+                          <td style={{ padding: "7px 10px", color: C.textSec, fontWeight: 600 }}>{a.label}</td>
+                          <td style={{ padding: "7px 10px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ width: 60, height: 6, borderRadius: 3, background: C.surface3, overflow: "hidden" }}>
+                                <div style={{ width: `${Math.min(100, pct * 3)}%`, height: "100%", background: barColor, borderRadius: 3 }} />
+                              </div>
+                              <span style={{ color: barColor, fontWeight: 600 }}>{a.dps.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: "7px 10px", color: C.goldLight }}>{pct.toFixed(1)}%</td>
+                          <td style={{ padding: "7px 10px", color: C.textMid }}>{a.cpm.toFixed(1)}</td>
+                          <td style={{ padding: "7px 10px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11 }}>{Math.round(a.dpsCast).toLocaleString()}</td>
+                          <td style={{ padding: "7px 10px", color: C.textDim, fontSize: 11, maxWidth: 260 }}>
+                            {a.notes.slice(0, 2).join(' · ')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>
+                  Total: {theoryAnalysis.totalDps.toLocaleString()} DPS
+                </span>
+                <span className="badge" style={{ background: C.sentBg, color: C.sentClr, border: `1px solid ${C.sentBdr}` }}>
+                  Sentinel {primaryTargetCount}T
+                </span>
+                <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>
+                  639 ilvl · 2pc+4pc tier
+                </span>
+              </div>
+            </CARD>
+
+            {/* ── THEORYCRAFTING: Tier Set Value ── */}
+            <CARD style={{ gridColumn: "1 / -1" }}>
+              <LBL>🏆 Midnight Tier Set Value — 2pc + 4pc Math</LBL>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+                {[
+                  { label: "2pc DPS Gain", val: `+${theoryAnalysis.tierSetValue.twoPcDps.toLocaleString()}`, sub: "KC crits → WFB CD reduction", color: C.sentClr },
+                  { label: "4pc DPS Gain", val: `+${theoryAnalysis.tierSetValue.fourPcDps.toLocaleString()}`, sub: "WFB 20% → Boomstick reset", color: C.goldLight },
+                  { label: "Combined Gain", val: `+${theoryAnalysis.tierSetValue.totalDps.toLocaleString()}`, sub: `+${theoryAnalysis.totalDps > 0 ? ((theoryAnalysis.tierSetValue.totalDps / (theoryAnalysis.totalDps - theoryAnalysis.tierSetValue.totalDps)) * 100).toFixed(1) : 0}% total DPS`, color: C.green },
+                ].map(s => (
+                  <div key={s.label} style={{ background: C.surface2, borderRadius: 8, padding: 14, border: `1px solid ${C.border}`, textAlign: "center" }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: C.textDim, letterSpacing: 1, marginBottom: 6 }}>{s.label}</div>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 18, color: s.color, marginBottom: 4 }}>{s.val}</div>
+                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: C.surface2, borderRadius: 8, padding: 12, border: `1px solid ${C.border}` }}>
+                {theoryAnalysis.tierSetValue.notes.map((n, i) => (
+                  <div key={i} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, padding: "4px 0", borderBottom: i < theoryAnalysis.tierSetValue.notes.length - 1 ? `1px solid ${C.borderSub}` : "none" }}>
+                    <span style={{ color: C.goldLight, marginRight: 6 }}>▸</span>{n}
+                  </div>
+                ))}
+              </div>
+            </CARD>
+
+            {/* ── THEORYCRAFTING: Talent Delta Table ── */}
+            <CARD style={{ gridColumn: "1 / -1" }}>
+              <LBL>🧮 Talent DPS Delta — Our Math vs Method.gg Rankings</LBL>
+              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginBottom: 14, lineHeight: 1.6 }}>
+                Each row shows DPS lost if that talent is removed from the optimal build.
+                <span style={{ color: C.green, marginLeft: 8 }}>✓ We agree</span> /
+                <span style={{ color: "#f59e0b", marginLeft: 8 }}>⚡ We differ</span> from method.gg ranking.
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                      {["Talent", "DPS Loss if Removed", "% Impact", "Method.gg", "Our Rank", "Reasoning"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1, color: C.textDim, fontWeight: 400 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {theoryAnalysis.talentDeltas.map((t, i) => {
+                      const agrees = t.methodGgRanks === t.ourRanks;
+                      const isHighlight = !agrees;
+                      return (
+                        <tr key={t.key} style={{
+                          borderBottom: `1px solid ${C.borderSub}`,
+                          background: isHighlight ? 'rgba(245,158,11,.05)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.015)',
+                        }}>
+                          <td style={{ padding: "7px 10px", color: isHighlight ? "#fbbf24" : C.textSec, fontWeight: 600 }}>
+                            {isHighlight && <span style={{ marginRight: 6 }}>⚡</span>}
+                            {t.label}
+                          </td>
+                          <td style={{ padding: "7px 10px" }}>
+                            <span style={{ color: t.dpsDelta > 0 ? C.red : C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>
+                              {t.dpsDelta > 0 ? `-${t.dpsDelta.toLocaleString()}` : 'N/A'}
+                            </span>
+                          </td>
+                          <td style={{ padding: "7px 10px", color: t.dpsDelta > 0 ? C.red : C.textDim }}>
+                            {t.pctIncrease > 0 ? `-${t.pctIncrease.toFixed(2)}%` : '—'}
+                          </td>
+                          <td style={{ padding: "7px 10px" }}>
+                            <span style={{ color: t.methodGgRanks ? C.green : C.textDim, fontSize: 12 }}>
+                              {t.methodGgRanks ? '✓ Ranked' : '✗ Skip'}
+                            </span>
+                          </td>
+                          <td style={{ padding: "7px 10px" }}>
+                            <span style={{ color: C.green, fontSize: 12 }}>✓ Core</span>
+                          </td>
+                          <td style={{ padding: "7px 10px", color: C.textDim, fontSize: 11, maxWidth: 300 }}>{t.reasoning}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CARD>
+
+            {/* ── THEORYCRAFTING: vs Method.gg ── */}
+            <CARD style={{ gridColumn: "1 / -1" }}>
+              <LBL>🆚 Our Build vs Method.gg — Where We Differ</LBL>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 1, marginBottom: 8 }}>✓ AGREEMENTS</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {theoryAnalysis.vsMethodGg.agreements.map((a, i) => (
+                    <span key={i} className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 11, maxWidth: 300, whiteSpace: "normal", lineHeight: 1.4 }}>
+                      ✓ {a}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: "#f59e0b", letterSpacing: 1, marginBottom: 10 }}>⚡ KEY DIFFERENCES</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {theoryAnalysis.vsMethodGg.differences.map((d, i) => (
+                  <div key={i} style={{ background: C.surface2, borderRadius: 8, padding: 14, border: `1px solid rgba(245,158,11,.2)` }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: "#fbbf24", letterSpacing: 1, marginBottom: 8 }}>{d.topic}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: C.textDim, letterSpacing: 1, marginBottom: 4 }}>METHOD.GG</div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid, lineHeight: 1.5 }}>{d.methodGg}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: C.sentClr, letterSpacing: 1, marginBottom: 4 }}>OUR ANALYSIS</div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textSec, lineHeight: 1.5 }}>{d.ourView}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.goldLight, background: C.goldBg, borderRadius: 5, padding: "4px 8px", display: "inline-block" }}>
+                      DPS delta: {d.delta}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CARD>
+
+            {/* ── THEORYCRAFTING: Rotation Priority Notes ── */}
+            <CARD style={{ gridColumn: "1 / -1" }}>
+              <LBL>🔄 Optimal Rotation Notes — Our APL vs Common Advice</LBL>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {theoryAnalysis.rotationNotes.map((n, i) => (
+                  <div key={i} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, padding: "8px 12px", background: C.surface2, borderRadius: 6, border: `1px solid ${C.border}`, lineHeight: 1.5 }}>
+                    <span style={{ color: C.sentClr, marginRight: 8 }}>→</span>{n}
+                  </div>
+                ))}
+              </div>
             </CARD>
 
             {/* SimC Live APL */}
