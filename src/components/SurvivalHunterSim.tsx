@@ -633,6 +633,7 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+
   const realmDropdownRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -643,6 +644,54 @@ export default function SurvivalHunterSim() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const normalizeRealmSlug = useCallback((name: string) => {
+    return name.trim().toLowerCase().replace(/[' ]/g, "-");
+  }, []);
+
+  const realmSuggestions = useMemo(() => {
+    const realms = REALM_DATA[armoryRegion] || [];
+    const q = armoryRealmSearch.trim().toLowerCase();
+    if (!q) return realms.slice(0, 8);
+    return realms.filter((r) => r.toLowerCase().includes(q)).slice(0, 8);
+  }, [armoryRegion, armoryRealmSearch]);
+
+  const resolvedRealmSlug = useMemo(() => {
+    const qRaw = armoryRealmSearch.trim();
+    if (!qRaw) return "";
+
+    const realms = REALM_DATA[armoryRegion] || [];
+
+    // Exact match by display name
+    const exactByName = realms.find((r) => r.toLowerCase() === qRaw.toLowerCase());
+    if (exactByName) return normalizeRealmSlug(exactByName);
+
+    // Exact match by slug (lets users paste a realm slug too)
+    const qSlug = normalizeRealmSlug(qRaw);
+    const exactBySlug = realms.find((r) => normalizeRealmSlug(r) === qSlug);
+    return exactBySlug ? normalizeRealmSlug(exactBySlug) : "";
+  }, [armoryRegion, armoryRealmSearch, normalizeRealmSlug]);
+
+  // Keep armoryRealm in sync once the user fully types a valid realm name/slug (debounced)
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const hasText = armoryRealmSearch.trim().length > 0;
+
+      if (!hasText) {
+        if (armoryRealm) setArmoryRealm("");
+        return;
+      }
+
+      if (resolvedRealmSlug) {
+        if (armoryRealm !== resolvedRealmSlug) setArmoryRealm(resolvedRealmSlug);
+      } else {
+        if (armoryRealm) setArmoryRealm("");
+      }
+    }, 150);
+
+    return () => window.clearTimeout(t);
+  }, [armoryRealmSearch, armoryRegion, resolvedRealmSlug, armoryRealm]);
+
   // Item tooltips
   const [itemCache, setItemCache] = useState<Record<string, any>>({});
   const itemCacheRef = useRef<Record<string, any>>({});
