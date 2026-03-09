@@ -176,7 +176,25 @@ export function equipmentToSimData(fullData: any) {
     },
     stats: simStats,
     gear,
-    talents: fullData?.specializations?.active_specialization?.loadouts?.[0]?.talent_loadout_code || null,
+    talents: (() => {
+      // Try multiple paths for talent loadout code from Blizzard API
+      const specs = fullData?.specializations;
+      const activSpec = specs?.active_specialization;
+      const loadoutCode = activSpec?.loadouts?.[0]?.talent_loadout_code;
+      if (loadoutCode) return loadoutCode;
+      // Alternate: specializations array with loadouts
+      if (Array.isArray(specs?.specializations)) {
+        for (const s of specs.specializations) {
+          if (s?.loadouts?.[0]?.talent_loadout_code) return s.loadouts[0].talent_loadout_code;
+        }
+      }
+      // Alternate: direct loadouts on active spec
+      if (activSpec?.talent_loadout_code) return activSpec.talent_loadout_code;
+      // Alternate: top-level talent_loadout_code
+      if (specs?.talent_loadout_code) return specs.talent_loadout_code;
+      console.warn('[Armory Talent Debug] Could not find talent_loadout_code in:', JSON.stringify(specs, null, 2)?.slice(0, 500));
+      return null;
+    })(),
     valid: true,
     errors: [],
     media: fullData.media,
