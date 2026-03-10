@@ -109,17 +109,17 @@ export default function TalentOptimizer() {
           Talent Optimizer
         </h1>
 
-        {/* Outer lighter panel */}
+        {/* Outer darker panel */}
         <div style={{
-          background:"linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)",
-          border:`1px solid #2e3a50`,
+          background:"linear-gradient(160deg,#0d1117 0%,#121a28 50%,#0f1520 100%)",
+          border:`1px solid #1a2236`,
           borderRadius:14,
           padding:"20px 16px 24px",
         }}>
-          {/* Inner darker panel with the talent tree */}
+          {/* Inner lighter panel with the talent tree */}
           <div style={{
-            background:"linear-gradient(160deg,#0d1117 0%,#121a28 50%,#0f1520 100%)",
-            border:`1px solid #1a2236`,
+            background:"linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)",
+            border:`1px solid #2e3a50`,
             borderRadius:10,
             padding:"24px 16px 32px",
             overflow:"visible",
