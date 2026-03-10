@@ -249,6 +249,9 @@ function InteractiveTalentNode({
         desc: marker,
         spellId: null,
         pts, maxPts: node.maxPts, state: nodeState,
+        choiceASpellId: node.choiceA?.spellId,
+        choiceBSpellId: node.choiceB?.spellId,
+        choiceSide: choiceSide,
       }, e.clientX, e.clientY);
     } else {
       onHover({
