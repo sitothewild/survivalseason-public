@@ -648,9 +648,9 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginTop: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-          letterSpacing: 2, color: GOLD, textTransform: "uppercase" }}>APEX</span>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700,
+          letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>APEX</span>
         <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700,
           color: apexPts > 0 ? GOLD : "#666" }}>
           {apexPts} / 4
