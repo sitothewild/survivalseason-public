@@ -2902,9 +2902,9 @@ export default function SurvivalHunterSim() {
                   { label: 'Single Target', dot: '#d8b4fe', bg: '#1e1040', sup: 'ST' },
                   { label: 'Multi-Target', dot: '#6ee7b7', bg: '#0f2a1a', sup: 'AoE' },
                 ].map(l => (
-                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
+                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Rajdhani',sans-serif", fontSize: 15, fontWeight: 700, color: C.textDim }}>
                     {l.sup ? (
-                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: l.dot, background: l.bg, padding: '2px 5px', borderRadius: 3, fontWeight: 700 }}>{l.sup}</span>
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: l.dot, background: l.bg, padding: '2px 6px', borderRadius: 3, fontWeight: 700 }}>{l.sup}</span>
                     ) : (
                       <span style={{ color: l.dot, fontSize: 14 }}>●</span>
                     )}
