@@ -978,6 +978,10 @@ export default function SurvivalHunterSim() {
   const [customSlots, setCustomSlots] = useState<(CustomLoadout | null)[]>([null, null]);
   const [editingSlot, setEditingSlot] = useState<0 | 1 | null>(null);
   const [editDraft, setEditDraft] = useState<CustomLoadout | null>(null);
+  // Modal talent tree scaling
+  const modalTreeContainerRef = useRef<HTMLDivElement>(null);
+  const modalTreeInnerRef = useRef<HTMLDivElement>(null);
+  const [modalTreeScale, setModalTreeScale] = useState(1);
   // Armory
   const [armoryRealm, setArmoryRealm] = useState('');
   const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
