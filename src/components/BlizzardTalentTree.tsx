@@ -525,6 +525,18 @@ export function BlizzardTalentTree({
 
   const [specTotalPts, setSpecTotalPts] = useState(0);
 
+  // Global tooltip state — all trees feed into this, rendered below Apex
+  const [globalTooltip, setGlobalTooltip] = useState<TooltipInfo | null>(null);
+  const globalTipTimer = useRef<number>();
+  const handleGlobalHover = useCallback((info: TooltipInfo | null) => {
+    clearTimeout(globalTipTimer.current);
+    if (!info) {
+      globalTipTimer.current = window.setTimeout(() => setGlobalTooltip(null), 120);
+    } else {
+      setGlobalTooltip(info);
+    }
+  }, []);
+
   const heroNodes = activeHeroKey === "sentinel" ? SENTINEL_NODES : PACK_LEADER_NODES;
   const heroGateMet = true; // Hero tree always unlocked
 
