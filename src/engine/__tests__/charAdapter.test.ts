@@ -117,6 +117,44 @@ describe("simResultToLegacy", () => {
   });
 });
 
+describe("Timeline capture", () => {
+  it("captures timeline events when captureTimeline is true", () => {
+    const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 120, FULL_RAID_OPTIONS, { captureTimeline: true, iterations: 10 });
+    expect(input.config.captureTimeline).toBe(true);
+
+    const result = runSimulation(input);
+    expect(result.timeline).toBeDefined();
+    expect(result.timeline!.length).toBeGreaterThan(0);
+
+    // Should have cast events in the first 30s
+    const casts = result.timeline!.filter(e => e.type === "cast" && e.tMs <= 30_000);
+    expect(casts.length).toBeGreaterThan(5);
+
+    // Each event has required fields
+    for (const e of casts.slice(0, 5)) {
+      expect(e.tMs).toBeGreaterThanOrEqual(0);
+      expect(e.ability).toBeDefined();
+    }
+  });
+
+  it("passes timeline through simResultToLegacy", () => {
+    const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 120, FULL_RAID_OPTIONS, { captureTimeline: true, iterations: 10 });
+    const result = runSimulation(input);
+    const legacy = simResultToLegacy(result, "sentinel", 1, 120);
+
+    expect(legacy.timeline).toBeDefined();
+    expect(legacy.timeline!.length).toBeGreaterThan(0);
+  });
+
+  it("does not capture timeline when captureTimeline is false", () => {
+    const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 120, FULL_RAID_OPTIONS);
+    expect(input.config.captureTimeline).toBe(false);
+
+    const result = runSimulation(input);
+    expect(result.timeline).toBeUndefined();
+  });
+});
+
 describe("End-to-end: charToSimInput → SimLoop → simResultToLegacy", () => {
   it("produces reasonable DPS from sample character", () => {
     const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);

@@ -1532,14 +1532,16 @@ export default function SurvivalHunterSim() {
 
     try {
       // Build SimInput for each target count and run via WorkerPool
+      // Capture timeline on the primary target count (first entry) for Report tab
       const engineResults = await Promise.all(
-        targets.map(async (t) => {
+        targets.map(async (t, idx) => {
           const input = charToSimInput(
             parsedChar,
             heroTalent as HeroTree,
             t,
             fightDuration,
             currentSimOptions,
+            idx === 0 ? { captureTimeline: true } : undefined,
           );
           const result = await pool.runSim(input);
           return simResultToLegacy(result, heroTalent as HeroTree, t, fightDuration);
@@ -3896,150 +3898,159 @@ export default function SurvivalHunterSim() {
                 )}
 
                 {/* ═══ SECTION: SPELL SEQUENCE ═══ */}
-                <SectionDivider id="sequence" label="SPELL SEQUENCE TIMELINE" icon="⏱" />
+                <SectionDivider id="sequence" label="SIMULATION TIMELINE" icon="⏱" />
                 {isOpen("sequence") && (() => {
                   const ABBREV: Record<string, string> = {
-                    "Kill Command": "KC", "Mongoose Bite": "MB", "Raptor Strike": "MB",
+                    "Kill Command": "KC", "Mongoose Bite": "MB", "Raptor Strike": "RS",
                     "Wildfire Bomb": "WFB", "Boomstick": "BS", "Serpent Sting": "SS",
-                    "Raptor Swipe": "RS", "Flamefang Pitch": "FP", "Takedown": "TD",
-                    "Coordinated Assault": "CA", "Coord. Assault": "CA",
-                    "Strike as One": "SaO", "Moonlight Chakram": "MC",
-                    "Auto Attack (MH)": "AA", "Auto Attack (OH)": "AA2",
+                    "Raptor Swipe": "RSw", "Flamefang Pitch": "FP", "Takedown": "TD",
+                    "Coordinated Assault": "CA", "Strike as One": "SaO",
+                    "Moonlight Chakram": "MC", "Lunar Storm": "LS",
+                    "Auto Attack": "AA", "Flanking Strike": "FS",
+                    "Fury of the Eagle": "FE", "Butchery": "BT", "Carve": "CV",
+                    "Sentinel Owl": "Owl", "Pack Leader Beasts": "PLB",
+                    "Vicious Wound": "VW",
                   };
 
                   const isSentinel = heroTalent === 'sentinel';
+                  const rawTimeline = primary?.timeline;
 
-                  const SEQUENCE = isSentinel ? [
-                    { t: 0.0, ability: "Coordinated Assault", reason: "Pop major CD immediately for opening burst" },
-                    { t: 0.0, ability: "Takedown", reason: "Pair with CA — 20% damage amp for 8s" },
-                    { t: 0.5, ability: "Strike as One", reason: "Auto-triggered by Takedown" },
-                    { t: 1.0, ability: "Wildfire Bomb", reason: "Applies Lethal Calibration (+15% crit dmg)" },
-                    { t: 1.5, ability: "Strike as One", reason: "Auto-triggered by WFB" },
-                    { t: 2.0, ability: "Boomstick", reason: "Shellshock amplified during TD window" },
-                    { t: 2.5, ability: "Strike as One", reason: "Auto-triggered by Boomstick" },
-                    { t: 3.5, ability: "Kill Command", reason: "Builds Mongoose Fury via crits" },
-                    { t: 4.0, ability: "Strike as One", reason: "Auto-triggered by KC" },
-                    { t: 4.5, ability: "Raptor Strike", reason: "Spender — stacks Mongoose Fury" },
-                    { t: 5.0, ability: "Strike as One", reason: "Auto-triggered by Raptor Strike" },
-                    { t: 5.5, ability: "Raptor Swipe", reason: "100% proc during Takedown" },
-                    { t: 6.5, ability: "Kill Command", reason: "Keep pressing for focus + fury stacks" },
-                    { t: 7.5, ability: "Raptor Strike", reason: "Spend at high fury stacks" },
-                    { t: 8.5, ability: "Wildfire Bomb", reason: "2nd charge — maintain Lethal Calibration" },
-                    { t: 9.5, ability: "Kill Command", reason: "Focus generator" },
-                    { t: 10.5, ability: "Raptor Strike", reason: "Mongoose Fury window" },
-                    { t: 12.0, ability: "Kill Command", reason: "Maintain rotation flow" },
-                    { t: 13.0, ability: "Raptor Strike", reason: "Spend before fury expires" },
-                    { t: 14.5, ability: "Kill Command", reason: "Refill focus" },
-                    { t: 15.5, ability: "Flamefang Pitch", reason: "Off CD — free damage" },
-                    { t: 17.0, ability: "Kill Command", reason: "Continue rotation" },
-                    { t: 18.0, ability: "Raptor Strike", reason: "Primary spender" },
-                    { t: 19.0, ability: "Wildfire Bomb", reason: "Charge available — keep cycling" },
-                    { t: 20.0, ability: "Kill Command", reason: "Focus generation" },
-                    { t: 21.5, ability: "Raptor Strike", reason: "Spend focus" },
-                    { t: 23.0, ability: "Kill Command", reason: "Rotation filler" },
-                    { t: 24.5, ability: "Raptor Strike", reason: "Continue spending" },
-                    { t: 26.0, ability: "Kill Command", reason: "Build resources" },
-                    { t: 27.5, ability: "Wildfire Bomb", reason: "Charge reset" },
-                    { t: 29.0, ability: "Raptor Strike", reason: "Maintain damage flow" },
-                  ] : [
-                    { t: 0.0, ability: "Coordinated Assault", reason: "Pop major CD at pull" },
-                    { t: 0.0, ability: "Takedown", reason: "Pair with CA for burst" },
-                    { t: 0.5, ability: "Strike as One", reason: "Auto-triggered by Takedown" },
-                    { t: 1.0, ability: "Wildfire Bomb", reason: "Lethal Calibration" },
-                    { t: 1.5, ability: "Strike as One", reason: "Auto-triggered by WFB" },
-                    { t: 2.0, ability: "Boomstick", reason: "Shellshock burst" },
-                    { t: 3.0, ability: "Kill Command", reason: "May spawn Pack Leader beast" },
-                    { t: 4.0, ability: "Raptor Strike", reason: "Spender — builds Fury" },
-                    { t: 5.0, ability: "Raptor Swipe", reason: "100% proc during Takedown" },
-                    { t: 6.0, ability: "Kill Command", reason: "Focus + Fury stacks" },
-                    { t: 7.0, ability: "Raptor Strike", reason: "Spend at high stacks" },
-                    { t: 8.5, ability: "Wildfire Bomb", reason: "2nd charge" },
-                    { t: 9.5, ability: "Kill Command", reason: "Focus gen" },
-                    { t: 10.5, ability: "Raptor Strike", reason: "Mongoose Fury window" },
-                    { t: 12.0, ability: "Kill Command", reason: "Maintain flow" },
-                    { t: 13.5, ability: "Raptor Strike", reason: "Spend before expiry" },
-                    { t: 15.0, ability: "Flamefang Pitch", reason: "Off CD" },
-                    { t: 16.5, ability: "Kill Command", reason: "Rotation" },
-                    { t: 18.0, ability: "Wildfire Bomb", reason: "Charge cycle" },
-                    { t: 19.5, ability: "Raptor Strike", reason: "Spender" },
-                    { t: 21.0, ability: "Kill Command", reason: "Focus" },
-                    { t: 22.5, ability: "Raptor Strike", reason: "Spend" },
-                    { t: 24.0, ability: "Kill Command", reason: "Build" },
-                    { t: 25.5, ability: "Wildfire Bomb", reason: "Reset" },
-                    { t: 27.0, ability: "Raptor Strike", reason: "Maintain" },
-                    { t: 29.0, ability: "Kill Command", reason: "Continue" },
-                  ];
+                  // Filter to first 30s of cast events (skip auto/dot for lane view)
+                  const MAX_TIME_S = 30;
+                  const castEvents = rawTimeline
+                    ? rawTimeline
+                        .filter(e => e.type === "cast" && e.tMs <= MAX_TIME_S * 1000)
+                        .map(e => ({
+                          t: e.tMs / 1000,
+                          ability: e.ability ?? "unknown",
+                          damage: e.damage ?? 0,
+                        }))
+                    : [];
 
-                  const cdMap = { "Coordinated Assault": 120, "Takedown": 90, "Wildfire Bomb": 18, "Boomstick": 60, "Flamefang Pitch": 30, "Moonlight Chakram": 90 };
-                  const cdBars: Record<string, { start: number; end: number }[]> = {};
-                  SEQUENCE.forEach(s => {
-                    const cd = cdMap[s.ability]; if (!cd) return;
-                    if (!cdBars[s.ability]) cdBars[s.ability] = [];
-                    cdBars[s.ability].push({ start: s.t, end: Math.min(s.t + cd, 30) });
-                  });
+                  // DPS-over-time curve: bucket damage into 1s windows
+                  const allEvents = rawTimeline
+                    ? rawTimeline.filter(e => e.tMs <= MAX_TIME_S * 1000)
+                    : [];
+                  const dpsBuckets: number[] = Array(MAX_TIME_S).fill(0);
+                  for (const e of allEvents) {
+                    const bucket = Math.min(Math.floor(e.tMs / 1000), MAX_TIME_S - 1);
+                    dpsBuckets[bucket] += (e.damage ?? 0);
+                  }
+                  const maxBucketDps = Math.max(...dpsBuckets, 1);
 
-                  const uniqueAbilities = [...new Set(SEQUENCE.map(s => s.ability))];
+                  // Ability label from SpellDB key
+                  const abilityLabel = (key: string): string => {
+                    return key.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+                  };
+
+                  const uniqueAbilities = [...new Set(castEvents.map(s => abilityLabel(s.ability)))];
                   const TIMELINE_WIDTH = 1800;
                   const LANE_HEIGHT = 28;
                   const PILL_HEIGHT = 20;
+                  const DPS_CHART_HEIGHT = 60;
+
+                  const hasCapturedData = castEvents.length > 0;
 
                   return (
                     <CARD>
-                      <LBL>⏱ Spell Sequence Timeline — First 30 Seconds</LBL>
+                      <LBL>⏱ Simulation Timeline — First {MAX_TIME_S} Seconds</LBL>
                       <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>
-                        {isSentinel ? "🦉 Sentinel" : "🐾 Pack Leader"} opener rotation · Theoretical optimal cast sequence
+                        {isSentinel ? "🦉 Sentinel" : "🐾 Pack Leader"} {hasCapturedData ? "· Captured from first iteration of the sim engine" : "· Run a simulation to see the real timeline"}
                       </p>
-                      <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${C.border}` }}>
-                        <div style={{ position: "relative", width: TIMELINE_WIDTH, minHeight: uniqueAbilities.length * LANE_HEIGHT + 30, background: "#0d1117", padding: "8px 0 0 0" }}>
-                          {Array.from({ length: 31 }, (_, i) => (
-                            <div key={i} style={{ position: "absolute", left: `${(i / 30) * 100}%`, top: 0, bottom: 0, borderLeft: i === 0 ? "none" : `1px solid ${i % 5 === 0 ? '#2e3a50' : '#1a2236'}`, zIndex: 0 }}>
-                              {i % 5 === 0 && <span style={{ position: "absolute", bottom: 4, left: 4, fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>{i}s</span>}
+
+                      {!hasCapturedData ? (
+                        <div style={{ padding: 30, textAlign: "center", color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 14 }}>
+                          No timeline data captured. Click "Run Simulation" to generate a real timeline.
+                        </div>
+                      ) : (
+                        <>
+                          {/* DPS-over-time spark chart */}
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>DAMAGE PER SECOND (1s BUCKETS)</div>
+                            <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: DPS_CHART_HEIGHT, background: "#0d1117", borderRadius: 6, padding: "4px 2px", border: `1px solid ${C.border}` }}>
+                              {dpsBuckets.map((dps, i) => (
+                                <div key={i} style={{
+                                  flex: 1,
+                                  height: `${Math.max(2, (dps / maxBucketDps) * 100)}%`,
+                                  background: dps > maxBucketDps * 0.7 ? C.goldLight : dps > maxBucketDps * 0.4 ? C.gold : '#2e3a50',
+                                  borderRadius: 2,
+                                  transition: "height .3s ease",
+                                }}
+                                  title={`${i}s: ${fmt(dps)} dmg`}
+                                />
+                              ))}
                             </div>
-                          ))}
-                          {uniqueAbilities.map((ability) => {
-                            const color = bClr(ability);
-                            const abbrev = ABBREV[ability] || ability.slice(0, 3).toUpperCase();
-                            const laneCasts = SEQUENCE.filter(s => s.ability === ability);
-                            const cdBarList = cdBars[ability] || [];
-                            return (
-                              <div key={ability} style={{ position: "relative", height: LANE_HEIGHT, marginLeft: 0 }}>
-                                {cdBarList.map((cd, ci) => (
-                                  <div key={ci} style={{ position: "absolute", left: `${(cd.start / 30) * 100}%`, width: `${((cd.end - cd.start) / 30) * 100}%`, top: PILL_HEIGHT + 2, height: 4, background: "rgba(90,106,130,.25)", borderRadius: 2, zIndex: 1 }} />
-                                ))}
-                                {laneCasts.map((cast, ci) => (
-                                  <div key={ci} style={{ position: "absolute", left: `${(cast.t / 30) * 100}%`, top: 2, height: PILL_HEIGHT, minWidth: 36, padding: "0 8px", background: color, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxShadow: `0 2px 6px ${color}40` }}>
-                                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700, color: "#fff", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{abbrev}</span>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim, marginTop: 2 }}>
+                              <span>0s</span>
+                              <span>{MAX_TIME_S / 2}s</span>
+                              <span>{MAX_TIME_S}s</span>
+                            </div>
+                          </div>
+
+                          {/* Lane-based spell timeline */}
+                          <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                            <div style={{ position: "relative", width: TIMELINE_WIDTH, minHeight: uniqueAbilities.length * LANE_HEIGHT + 30, background: "#0d1117", padding: "8px 0 0 0" }}>
+                              {/* Time gridlines */}
+                              {Array.from({ length: MAX_TIME_S + 1 }, (_, i) => (
+                                <div key={i} style={{ position: "absolute", left: `${(i / MAX_TIME_S) * 100}%`, top: 0, bottom: 0, borderLeft: i === 0 ? "none" : `1px solid ${i % 5 === 0 ? '#2e3a50' : '#1a2236'}`, zIndex: 0 }}>
+                                  {i % 5 === 0 && <span style={{ position: "absolute", bottom: 4, left: 4, fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim }}>{i}s</span>}
+                                </div>
+                              ))}
+                              {/* Ability lanes */}
+                              {uniqueAbilities.map((label) => {
+                                const color = bClr(label);
+                                const abbrev = ABBREV[label] || label.slice(0, 3).toUpperCase();
+                                const laneCasts = castEvents.filter(s => abilityLabel(s.ability) === label);
+                                return (
+                                  <div key={label} style={{ position: "relative", height: LANE_HEIGHT, marginLeft: 0 }}>
+                                    {laneCasts.map((cast, ci) => (
+                                      <div key={ci}
+                                        title={`${cast.t.toFixed(1)}s — ${label} — ${fmt(cast.damage)} dmg`}
+                                        style={{
+                                          position: "absolute", left: `${(cast.t / MAX_TIME_S) * 100}%`, top: 2,
+                                          height: PILL_HEIGHT, minWidth: 36, padding: "0 8px",
+                                          background: color, borderRadius: 6,
+                                          display: "flex", alignItems: "center", justifyContent: "center",
+                                          zIndex: 2, boxShadow: `0 2px 6px ${color}40`, cursor: "default",
+                                        }}>
+                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700, color: "#fff", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{abbrev}</span>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <div style={{ marginTop: 20 }}>
-                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>OPENING SEQUENCE — FIRST 12 CASTS</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                          {SEQUENCE.slice(0, 12).map((cast, i) => {
-                            const mins = Math.floor(cast.t / 60);
-                            const secs = (cast.t % 60).toFixed(cast.t % 1 === 0 ? 0 : 1).padStart(cast.t % 1 === 0 ? 2 : 4, '0');
-                            const ts = `${mins}:${secs}`;
-                            const color = bClr(cast.ability);
-                            return (
-                              <div key={i} style={{ display: "grid", gridTemplateColumns: "48px 10px 160px 1fr", gap: 10, padding: "8px 10px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, alignItems: "center" }}>
-                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.textDim, textAlign: "right" }}>{ts}</span>
-                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color, fontWeight: 700 }}>{cast.ability}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.4 }}>→ {cast.reason}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(251,191,36,.06)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 8 }}>
-                        <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, margin: 0, lineHeight: 1.6 }}>
-                          ⚠ This is a theoretical optimal sequence. Real combat varies based on movement, proc timing, Focus availability, and fight mechanics. Use this as a mental model, not a rigid script.
-                        </p>
-                      </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Cast log table */}
+                          <div style={{ marginTop: 20 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>CAST LOG — FIRST 20 EVENTS</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                              {castEvents.slice(0, 20).map((cast, i) => {
+                                const mins = Math.floor(cast.t / 60);
+                                const secs = (cast.t % 60).toFixed(1).padStart(4, '0');
+                                const ts = `${mins}:${secs}`;
+                                const label = abilityLabel(cast.ability);
+                                const color = bClr(label);
+                                return (
+                                  <div key={i} style={{ display: "grid", gridTemplateColumns: "48px 10px 160px 1fr", gap: 10, padding: "8px 10px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, alignItems: "center" }}>
+                                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.textDim, textAlign: "right" }}>{ts}</span>
+                                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color, fontWeight: 700 }}>{label}</span>
+                                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.textMid }}>{cast.damage > 0 ? fmt(cast.damage) + " dmg" : ""}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(251,191,36,.06)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 8 }}>
+                            <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, margin: 0, lineHeight: 1.6 }}>
+                              This timeline is captured from the engine's first simulation iteration. Each run produces a different sequence due to proc RNG. The lane chart shows cast timing, the spark chart shows instantaneous damage output per second.
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </CARD>
                   );
                 })()}
