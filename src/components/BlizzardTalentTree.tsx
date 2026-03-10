@@ -100,6 +100,9 @@ interface TooltipInfo {
   maxPts: number;
   state: NodeState;
   ptsNeeded?: number;
+  choiceASpellId?: number;
+  choiceBSpellId?: number;
+  choiceSide?: 0 | 1;
 }
 
 function TalentTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number }) {
