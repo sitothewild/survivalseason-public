@@ -42,7 +42,7 @@ const FALLBACK_SENTINEL_NODES: BzTalentNode[] = [
     { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253751, name: "Stargazer" }, description: "Raptor Strike extends Sentinel Mark by 2 sec." } },
     { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253807, name: "Open Fire" }, description: "Kill Command reduces Sentinel cooldown by 5 sec." } },
   ] },
-  { id: 95004, display_row: 3, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94960 }, { id: 94973 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253830, name: "Sentinel's Mark" }, description: "Sentinel Mark application improved." } }] },
+  { id: 95004, display_row: 3, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94973 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253830, name: "Sentinel's Mark" }, description: "Sentinel Mark application improved." } }] },
   { id: 94971, display_row: 3, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95002 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450379, name: "Stargazer" }, description: "Sentinel Marks have near-permanent uptime." } }] },
   { id: 110028, display_row: 3, display_col: 7, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 95003 }], entries: [
     { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264904, name: "Twilight Requiem" }, description: "When Sentinel expires, deals Arcane damage to all marked targets." } },
