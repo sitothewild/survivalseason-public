@@ -583,8 +583,8 @@ export function BlizzardTalentTree({
   }, [fightStyle, activeHeroKey]);
 
   return (
-    <div style={{ userSelect: "none" }}>
-      <div style={{ overflowX: "auto", overflowY: "visible" }}>
+    <div style={{ userSelect: "none", position: "relative" }}>
+      <div style={{ overflowX: "auto", overflow: "clip visible" }}>
         <div style={{
           display: "flex", gap: 16, alignItems: "flex-start",
           justifyContent: "center",
@@ -600,7 +600,7 @@ export function BlizzardTalentTree({
           />
 
           {/* HERO TREE + APEX (center) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* Hero switcher — single large circle toggle */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12 }}>
               <button
@@ -655,16 +655,19 @@ export function BlizzardTalentTree({
 
             {/* APEX TALENT (under hero tree) */}
             <ApexSection tree={specTree} onGlobalHover={handleGlobalHover} />
-
-            {/* Floating tooltip panel — positioned absolutely so it doesn't affect layout */}
-            <div style={{ position: "absolute", bottom: -110, left: "50%", transform: "translateX(-50%)", zIndex: 50, pointerEvents: "none" }}>
-              <StaticTooltipPanel info={globalTooltip} />
-            </div>
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
           <SpecTreeSection tree={specTree} onGlobalHover={handleGlobalHover} />
         </div>
+      </div>
+
+      {/* Floating tooltip — fixed to bottom-center of the tree, outside flow */}
+      <div style={{
+        position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+        zIndex: 100, pointerEvents: "none",
+      }}>
+        <StaticTooltipPanel info={globalTooltip} />
       </div>
 
       <style>{`
