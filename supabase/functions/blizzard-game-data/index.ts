@@ -369,7 +369,7 @@ serve(async (req) => {
         }
 
         // Batch-fetch all spell media icons in parallel (limit to 50 to avoid timeout)
-        const limitedSpellIds = spellIds.slice(0, 50);
+        const limitedSpellIds = spellIds.slice(0, 80);
         const mediaResults = await Promise.allSettled(
           limitedSpellIds.map((id) =>
             blizzardGet(`/data/wow/media/spell/${id}`, region, "static")
