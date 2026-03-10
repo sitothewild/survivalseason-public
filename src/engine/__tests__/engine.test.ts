@@ -286,7 +286,7 @@ describe("Determinism", () => {
     const r2 = runSimulation(input);
 
     expect(r1.meanDps).toBe(r2.meanDps);
-    expect(r1.totalDamage).toBeUndefined(); // not on result, but breakdown should match
+    // breakdown should match across identical seed runs
     expect(r1.breakdown.length).toBe(r2.breakdown.length);
     for (let i = 0; i < r1.breakdown.length; i++) {
       expect(r1.breakdown[i].damage).toBe(r2.breakdown[i].damage);

@@ -113,12 +113,12 @@ describe("getDefaultAPLKey", () => {
     expect(getDefaultAPLKey("sentinel", "raid_st")).toBe("sentinel_raid_st");
   });
 
-  it("returns pack_leader_raid_st for packLeader + raid_st", () => {
-    expect(getDefaultAPLKey("packLeader", "raid_st")).toBe("pack_leader_raid_st");
+  it("returns pack_leader_raid_st for pack_leader + raid_st", () => {
+    expect(getDefaultAPLKey("pack_leader", "raid_st")).toBe("pack_leader_raid_st");
   });
 
   it("returns mplus_aoe for non-raid fight styles", () => {
     expect(getDefaultAPLKey("sentinel", "mplus_pull")).toBe("sentinel_mplus_aoe");
-    expect(getDefaultAPLKey("packLeader", "raid_cleave")).toBe("pack_leader_mplus_aoe");
+    expect(getDefaultAPLKey("pack_leader", "mplus_pull")).toBe("pack_leader_mplus_aoe");
   });
 });

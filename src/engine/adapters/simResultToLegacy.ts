@@ -80,7 +80,7 @@ export function simResultToLegacy(
   }
 
   // Build buff uptimes from hero counters
-  const isPL = hero === "packLeader";
+  const isPL = hero === "pack_leader";
   const buffUptimes: Record<string, { uptime: number; description: string }> = {
     "Mongoose Fury": { uptime: 0.65, description: "Stacking damage buff" },
     "Takedown": { uptime: 0.18, description: "20% damage amplification window" },

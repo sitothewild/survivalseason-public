@@ -108,9 +108,9 @@ describe("simResultToLegacy", () => {
   });
 
   it("has correct buffUptimes for hero tree", () => {
-    const input = charToSimInput(SAMPLE_CHAR, "packLeader", 1, 300, FULL_RAID_OPTIONS);
+    const input = charToSimInput(SAMPLE_CHAR, "pack_leader", 1, 300, FULL_RAID_OPTIONS);
     const engineResult = runSimulation(input);
-    const legacy = simResultToLegacy(engineResult, "packLeader", 1, 300);
+    const legacy = simResultToLegacy(engineResult, "pack_leader", 1, 300);
 
     expect(legacy.detailed.buffUptimes["Pack Leader Beasts"]).toBeDefined();
     expect(legacy.detailed.buffUptimes["Sentinel Mark"]).toBeUndefined();
