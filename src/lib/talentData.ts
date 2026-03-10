@@ -8,7 +8,7 @@
 export interface TalentNodeDef {
   id: string;
   /** Blizzard API talent-tree node ID (e.g. 102381). Required for export string generation. */
-  apiNodeId: number;
+  apiNodeId?: number;
   spellId: number | null;
   name: string;
   type: 'active' | 'passive' | 'choice' | 'apex';
