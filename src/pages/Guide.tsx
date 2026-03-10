@@ -555,38 +555,8 @@ export default function Guide() {
                 })}
               </div>
 
-              {/* ── Hero talent tree path ────────────────────── */}
-              <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
-                color: heroClrL, marginBottom:10 }}>
-                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT TREE (10 pts · WoWHead-verified)
-              </div>
-              {/* 4-row × 4-col grid matching actual WoWHead tree layout */}
-              <div style={{
-                display:"grid", gridTemplateColumns:"repeat(4, 1fr)",
-                gridTemplateRows:"repeat(4, auto)", gap:8, marginBottom:14
-              }}>
-                {heroTree.map((node) => {
-                  const isCapstone = node.row === 4;
-                  return (
-                    <div key={node.key} style={{
-                      gridColumn: node.col + 1,
-                      gridRow: node.row,
-                      borderRadius:8, padding:"10px 12px",
-                      background: isCapstone ? heroBgL : C.surface2,
-                      border:`1px solid ${isCapstone ? heroClrL : heroBdrL}`,
-                    }}>
-                      <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
-                        color: isCapstone ? heroClrL : C.textDim, letterSpacing:1.5, marginBottom:3 }}>
-                        {isCapstone ? 'CAPSTONE' : `ROW ${node.row}`} · 1pt
-                      </div>
-                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
-                        fontWeight:700, color:heroClrL, marginBottom:4 }}>{node.label}</div>
-                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
-                        color:C.textMid, lineHeight:1.4 }}>{node.desc}</div>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* ── Interactive Hero Talent Tree ────────────── */}
+              <HeroTalentTree heroKey={hero} />
 
               {/* ── Gateway talent callout ───────────────────── */}
               <div style={{ background:'#1c1505', border:'1px solid #f59e0b55',
