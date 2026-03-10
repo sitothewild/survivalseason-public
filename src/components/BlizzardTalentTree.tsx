@@ -1048,28 +1048,6 @@ export function BlizzardTalentTree({
     }
   }, [heroTrees, onHeroChange]);
 
-  // Compact mode: measure inner content and scale to fit container
-  const compactRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [compactScale, setCompactScale] = useState(0.45);
-  const [compactHeight, setCompactHeight] = useState<number>(400);
-
-  useEffect(() => {
-    if (!compact) return;
-    // Delay measurement to allow tree to fully render
-    const timer = setTimeout(() => {
-      if (!compactRef.current || !innerRef.current) return;
-      const containerW = compactRef.current.clientWidth;
-      const innerW = innerRef.current.scrollWidth;
-      const innerH = innerRef.current.scrollHeight;
-      if (innerW > 0 && containerW > 0) {
-        const s = Math.min(1, containerW / innerW);
-        setCompactScale(s);
-        if (innerH > 0) setCompactHeight(innerH * s);
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [compact, treeData]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (isLoading) return <TreeSkeleton />;
