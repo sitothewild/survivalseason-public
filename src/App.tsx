@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Gear from "./pages/Gear";
 import Guide from "./pages/Guide";
 import Calculator from "./pages/Calculator";
+import TalentOptimizer from "./pages/TalentOptimizer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
