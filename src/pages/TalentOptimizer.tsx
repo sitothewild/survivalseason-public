@@ -125,7 +125,10 @@ export default function TalentOptimizer() {
             borderRadius:10,
             padding:"24px 16px 32px",
             overflow:"visible",
+            position:"relative",
           }}>
+            {/* Fight style toggle — top right */}
+            <FightStyleToggle />
             <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
               <div
                 ref={innerRef}
