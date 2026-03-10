@@ -108,6 +108,21 @@ export interface TalentConfig {
   clawFrenzy: boolean;           // node 109802, spell 1264775 — col 3 (pet atk spd per bleed)
   // Row 4 capstone
   packAssault: boolean;          // node 94966, spell 472741 — capstone (Takedown → Pack Assault burst)
+  // ─ Hunter class tree — DPS-relevant nodes ─
+  alphaPredator: boolean;        // Kill Command deals 15% increased damage
+  keenEyesight: boolean;         // Critical strike chance increased by 2%
+  masterMarksman: boolean;       // Critical hits with special shots deal 7% increased damage (2pt)
+  serratedShots: boolean;        // Serpent Sting and bleed effects deal 10% increased damage
+  deathChakram: boolean;         // Throw a chakram that bounces, dealing damage + generating Focus
+  killerInstinct: boolean;       // Kill Command deals 50% increased damage against targets below 35% HP
+  steelTrap: boolean;            // Steel Trap: immobilize + bleed
+  hydrasBite: boolean;           // Serpent Sting spreads to 2 additional nearby enemies
+  spittingCobra: boolean;        // Summon a Spitting Cobra for 20 sec
+  barrage: boolean;              // Rapid fire AoE (choice A)
+  volley: boolean;               // Raining arrows AoE (choice B)
+  bloodshed: boolean;            // Pet bleeds target (choice A)
+  murderOfCrows: boolean;        // Bird swarm DoT (choice B)
+  wailingArrow: boolean;         // Devastating arrow that silences enemies in an area
 }
 
 export interface AbilityDpsResult {
@@ -678,6 +693,49 @@ const SPELLS: Record<string, SpellDef> = {
     isPet: false, isFire: false, isBleed: false, aoeTargetCap: 1,
     hasteScalesCPM: true, bonusCritMult: 0,
   },
+  // ─ Hunter class tree abilities ─
+  deathChakram: {
+    label: 'Death Chakram', apCoef: 1.40, baseCPM: 1.5,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 4,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'deathChakram',
+  },
+  spittingCobra: {
+    label: 'Spitting Cobra', apCoef: 0.35, baseCPM: 3.0,
+    isPet: true, isFire: false, isBleed: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'spittingCobra',
+  },
+  barrage: {
+    label: 'Barrage', apCoef: 0.65, baseCPM: 1.0,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 8,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'barrage',
+  },
+  volley: {
+    label: 'Volley', apCoef: 0.55, baseCPM: 1.2,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 8,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'volley',
+  },
+  bloodshedBleed: {
+    label: 'Bloodshed', apCoef: 2.00, baseCPM: 0.75,
+    isPet: true, isFire: false, isBleed: true, aoeTargetCap: 1,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'bloodshed',
+  },
+  murderOfCrows: {
+    label: 'A Murder of Crows', apCoef: 1.80, baseCPM: 0.67,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'murderOfCrows',
+  },
+  wailingArrow: {
+    label: 'Wailing Arrow', apCoef: 2.20, baseCPM: 0.5,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'wailingArrow',
+  },
 };
 
 // ── Core computation ─────────────────────────────────────────
@@ -742,6 +800,38 @@ function computeAbilityDps(
   if (key === 'raptorStrike' || key === 'raptorSwipe') {
     // +20% damage during Takedown window
     dmgPerCast *= 1 + takedownUptime * 0.20;
+  }
+
+  // ── Class talent: Alpha Predator ──
+  if (key === 'killCommand' && talents.alphaPredator) {
+    dmgPerCast *= 1.15;
+    notes.push('Alpha Predator: KC +15% dmg');
+  }
+
+  // ── Class talent: Keen Eyesight (global crit bonus handled via critPct already; note it) ──
+  // Keen Eyesight adds +2% crit chance — modeled as already baked into gear critPct
+
+  // ── Class talent: Master Marksman ──
+  if (talents.masterMarksman) {
+    critMult += 0.07;
+    // Already applied via critScalar above? No — critScalar was computed earlier.
+    // Re-apply: we need to recompute. For simplicity, apply as flat bonus.
+    dmgPerCast *= 1 + (critFrac * 0.07);
+    notes.push('Master Marksman: +7% crit dmg');
+  }
+
+  // ── Class talent: Serrated Shots ──
+  if (spell.isBleed && talents.serratedShots) {
+    dmgPerCast *= 1.10;
+    notes.push('Serrated Shots: bleed +10% dmg');
+  }
+
+  // ── Class talent: Killer Instinct ──
+  // KC deals 50% increased damage against targets below 35% HP
+  // Model as ~17.5% average bonus (35% × 50%)
+  if (key === 'killCommand' && talents.killerInstinct) {
+    dmgPerCast *= 1.175;
+    notes.push('Killer Instinct: KC +17.5% avg (35% HP threshold)');
   }
 
   // ── Flanker's Advantage: Kill Command damage bonus ──
@@ -900,6 +990,11 @@ function buildSentinelST(): TalentConfig {
     ursineFury: false, sharpenedClaws: false, wildAttacks: false, corneredPrey: false, frenziedTear: false,
     goForTheThroat: false, furiousAssault: false, scatteredPrey: false, wyvernGaze: false, clawFrenzy: false,
     packAssault: false,
+    // ── Hunter class tree (DPS-relevant, common across builds) ──
+    alphaPredator: true, keenEyesight: true, masterMarksman: true, serratedShots: true,
+    deathChakram: true, killerInstinct: true, steelTrap: false, hydrasBite: false,
+    spittingCobra: false, barrage: false, volley: false, bloodshed: false, murderOfCrows: false,
+    wailingArrow: false,
   };
 }
 
@@ -931,6 +1026,11 @@ function buildSentinelAoE(): TalentConfig {
     ursineFury: false, sharpenedClaws: false, wildAttacks: false, corneredPrey: false, frenziedTear: false,
     goForTheThroat: false, furiousAssault: false, scatteredPrey: false, wyvernGaze: false, clawFrenzy: false,
     packAssault: false,
+    // ── Hunter class tree ──
+    alphaPredator: true, keenEyesight: true, masterMarksman: true, serratedShots: true,
+    deathChakram: true, killerInstinct: true, steelTrap: false, hydrasBite: true,
+    spittingCobra: false, barrage: false, volley: true, bloodshed: false, murderOfCrows: false,
+    wailingArrow: false,
   };
 }
 
@@ -962,6 +1062,11 @@ function buildPackLeaderST(): TalentConfig {
     ursineFury: true, sharpenedClaws: false, wildAttacks: true, corneredPrey: true, frenziedTear: true,
     goForTheThroat: true, furiousAssault: true, scatteredPrey: true, wyvernGaze: false, clawFrenzy: true,
     packAssault: true,
+    // ── Hunter class tree ──
+    alphaPredator: true, keenEyesight: true, masterMarksman: true, serratedShots: true,
+    deathChakram: true, killerInstinct: true, steelTrap: false, hydrasBite: false,
+    spittingCobra: false, barrage: false, volley: false, bloodshed: true, murderOfCrows: false,
+    wailingArrow: false,
   };
 }
 
@@ -993,6 +1098,11 @@ function buildPackLeaderAoE(): TalentConfig {
     ursineFury: true, sharpenedClaws: false, wildAttacks: true, corneredPrey: true, frenziedTear: true,
     goForTheThroat: true, furiousAssault: true, scatteredPrey: true, wyvernGaze: false, clawFrenzy: true,
     packAssault: true,
+    // ── Hunter class tree ──
+    alphaPredator: true, keenEyesight: true, masterMarksman: true, serratedShots: true,
+    deathChakram: true, killerInstinct: true, steelTrap: false, hydrasBite: true,
+    spittingCobra: false, barrage: true, volley: false, bloodshed: false, murderOfCrows: true,
+    wailingArrow: true,
   };
 }
 

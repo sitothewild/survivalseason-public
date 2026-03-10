@@ -574,6 +574,7 @@ interface CustomLoadout {
   simMode: 'single' | 'cleave' | 'multi';
   enabledTalents: string[];     // keys of toggled-on optional spec talents (from TalentNode.key)
   enabledHeroTalents: string[]; // keys of toggled-on hero sub-talents
+  enabledClassTalents: string[]; // keys of toggled-on class tree talents
 }
 
 // Spec tree optional budget: 4 variable nodes across the 4 WoWHead builds.
@@ -1993,7 +1994,7 @@ export default function SurvivalHunterSim() {
                               <button
                                 onClick={() => {
                                   setEditingSlot(slotIdx);
-                                  setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [] });
+                                  setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [], enabledClassTalents: [] });
                                 }}
                                 style={{
                                   width: "100%", height: "100%", minHeight: 80, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
@@ -2020,7 +2021,7 @@ export default function SurvivalHunterSim() {
                       // Point counters (25 core spec talents are always active; 3 core class talents always taken)
                       const specTotalSelected = editDraft.enabledTalents.length + 25;
                       const heroTotalSelected = editDraft.enabledHeroTalents.length;
-                      const classTotalSelected = 3;
+                      const classTotalSelected = (editDraft.enabledClassTalents?.length ?? 0) + 3;
                       const specBudget = 31;
                       const heroBudgetVal = 10;
                       const classBudget = 31;
@@ -2204,6 +2205,17 @@ export default function SurvivalHunterSim() {
                                         return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
                                       } else {
                                         return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
+                                      }
+                                    });
+                                  }}
+                                  classSelectedKeys={editDraft.enabledClassTalents}
+                                  onClassToggle={(key, selected) => {
+                                    setEditDraft(d => {
+                                      if (!d) return d;
+                                      if (selected) {
+                                        return { ...d, enabledClassTalents: [...d.enabledClassTalents, key] };
+                                      } else {
+                                        return { ...d, enabledClassTalents: d.enabledClassTalents.filter(k => k !== key) };
                                       }
                                     });
                                   }}

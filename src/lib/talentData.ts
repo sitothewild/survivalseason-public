@@ -470,10 +470,25 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
 // ── SIM SYNC KEYS ────────────────────────────────────────────
 // Maps node IDs to the simulation engine's talent flags
 export const SIM_TALENT_MAP: Record<string, string> = {
+  // Spec tree
   'lethal_barbs': 'lethal_barbs',
   'grenade_juggler': 'grenade_juggler',
   'mongoose_fury': 'mongoose_fury',
   'takedown': 'takedown',
+  // Hero tree
   'lunar_storm': 'hero_sentinel',
   'vicious_hunt': 'hero_pack_leader',
+  // Class tree
+  'h_alpha_predator': 'alphaPredator',
+  'h_keen_eyesight': 'keenEyesight',
+  'h_master_marksman': 'masterMarksman',
+  'h_serrated_shots': 'serratedShots',
+  'h_death_chakram': 'deathChakram',
+  'h_killer_instinct': 'killerInstinct',
+  'h_steel_trap': 'steelTrap',
+  'h_hydras_bite': 'hydrasBite',
+  'h_spitting_cobra': 'spittingCobra',
+  'h_row8_choice_l': 'barrage_or_volley',  // resolved by choice side
+  'h_row8_choice_r': 'bloodshed_or_crows', // resolved by choice side
+  'h_wailing_arrow': 'wailingArrow',
 };
