@@ -169,6 +169,9 @@ function TalentNodeCircle({
   selectedKeys, selectedChoices, canSelect, isCore,
   onClick, onChoiceClick, onHover,
 }: TalentNodeCircleProps) {
+  // Guard: skip nodes with missing data
+  if (!node.entries?.length || !node.node_type) return null;
+
   const isChoice = node.node_type.type === "SELECTION";
   const { cx, cy } = nodeCenter(node, minRow, minCol);
   const left = cx - NODE_D / 2;
@@ -458,7 +461,7 @@ function TalentSection({
     return nodes.reduce((sum, n) => {
       const key = nodeTalentKey(n);
       if (!key || coreKeys.has(key)) return sum;
-      return sum + (selectedKeys.has(key) ? (n.entries[0]?.max_rank ?? 1) : 0);
+      return sum + (selectedKeys.has(key) ? (n.entries?.[0]?.max_rank ?? 1) : 0);
     }, 0);
   }, [nodes, selectedKeys, coreKeys]);
 
@@ -556,7 +559,7 @@ function HeroToggle({ heroTrees, activeHeroId, mediaMap, onSwitch }: HeroToggleP
           const isActive = ht.id === activeHeroId;
           // Grab first node's first entry icon as the hero's "face" icon
           const heroNodes = ht.spec_talent_nodes ?? ht.hero_talent_nodes ?? ht.class_talent_nodes ?? [];
-          const firstSpellId = heroNodes[0]?.entries[0]?.spell_tooltip?.spell?.id;
+          const firstSpellId = heroNodes[0]?.entries?.[0]?.spell_tooltip?.spell?.id;
           const iconUrl = firstSpellId ? (mediaMap[firstSpellId] ?? FALLBACK_ICON) : FALLBACK_ICON;
           return (
             <div
