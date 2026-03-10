@@ -111,8 +111,8 @@ export default function TalentOptimizer() {
 
         {/* Dark panel wrapping the talent tree — matches Custom Loadout style */}
         <div style={{
-          background:"linear-gradient(160deg,#2a2d32 0%,#343840 50%,#2e3138 100%)",
-          border:`1px solid #44484f`,
+          background:"linear-gradient(160deg,#0d1117 0%,#151d2b 50%,#0f1a2e 100%)",
+          border:`1px solid #2e3a50`,
           borderRadius:12,
           padding:"24px 16px 32px",
           overflow:"visible",

@@ -216,7 +216,7 @@ function InteractiveTalentNode({
   const fillColor = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') ? NODE_FILL_SEL : NODE_FILL;
   const glow = nodeState === 'SELECTED'
     ? `0 0 0 2px ${GOLD_GLOW}, 0 0 14px 3px ${GOLD_GLOW}` : undefined;
-  const brightness = nodeState === 'SELECTED' ? 1 : nodeState === 'PARTIAL' ? 0.7 : nodeState === 'AVAILABLE' ? 0.5 : 0.2;
+  const imgFilter = nodeState === 'SELECTED' ? 'none' : nodeState === 'PARTIAL' ? 'saturate(0.5)' : nodeState === 'AVAILABLE' ? 'grayscale(1) brightness(0.7)' : 'grayscale(1) brightness(0.35)';
   const cursor = nodeState === 'LOCKED' ? 'not-allowed'
     : (nodeState === 'AVAILABLE' || nodeState === 'PARTIAL') ? 'pointer'
     : 'pointer'; // SELECTED can be right-clicked
@@ -250,8 +250,8 @@ function InteractiveTalentNode({
   if (isChoice) {
     const iconA = resolveIcon(node.choiceA?.spellId);
     const iconB = resolveIcon(node.choiceB?.spellId);
-    const brightA = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 0 ? 1 : brightness * 0.6;
-    const brightB = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 1 ? 1 : brightness * 0.6;
+    const filterA = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 0 ? 'none' : 'grayscale(1) brightness(0.5)';
+    const filterB = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 1 ? 'none' : 'grayscale(1) brightness(0.5)';
 
     return (
       <div
@@ -272,7 +272,7 @@ function InteractiveTalentNode({
           <img src={iconA} alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
             style={{ width: sz, height: sz, objectFit: "cover", position: "absolute", left: 0, top: 0,
-              filter: `brightness(${brightA})`, transition: "filter .15s" }} />
+              filter: filterA, transition: "filter .15s" }} />
         </div>
         {/* Right half */}
         <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(1); }}
@@ -280,7 +280,7 @@ function InteractiveTalentNode({
           <img src={iconB} alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
             style={{ width: sz, height: sz, objectFit: "cover", position: "absolute", left: -(sz / 2), top: 0,
-              filter: `brightness(${brightB})`, transition: "filter .15s" }} />
+              filter: filterB, transition: "filter .15s" }} />
         </div>
         {/* Dashed divider */}
         <div style={{
@@ -324,7 +324,7 @@ function InteractiveTalentNode({
       <img src={iconUrl} alt="" loading="lazy" draggable={false}
         onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
         style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
-          filter: `brightness(${brightness})`, transition: "filter .15s" }} />
+          filter: imgFilter, transition: "filter .15s" }} />
       {/* Inner ring */}
       <div style={{ position: "absolute", inset: isApex ? 6 : 4, borderRadius: "50%",
         border: `1px solid #3a2a08`, pointerEvents: "none" }} />
