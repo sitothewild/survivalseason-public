@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel — Hero Talent Tree</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital@0;1&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(ellipse at 50% 30%, #2a1505 0%, #120802 50%, #080402 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    padding: 30px 20px;
+  }
+  .talent-window {
+    background: linear-gradient(180deg, rgba(22,12,4,0.97) 0%, rgba(10,5,2,0.99) 100%);
+    border: 1px solid #5a3a10;
+    border-top: 2px solid #C8A84B;
+    border-radius: 6px;
+    padding: 20px 30px 28px;
+    box-shadow: 0 0 60px rgba(200,168,75,0.08), 0 0 120px rgba(0,0,0,0.8), inset 0 1px 0 rgba(200,168,75,0.15);
+    position: relative;
+  }
+  .tree-header {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 2px 0 10px;
+  }
+  .tree-name {
+    color: #C8A84B; font-size: 13px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  svg.tree { display: block; }
+</style>
+</head>
+<body>
+<div class="talent-window">
+  <div class="tree-header">
+    <span class="tree-name">SENTINEL</span>
+  </div>
+  <div id="treeContainer"></div>
+</div>
+
+<script>
+const GOLD     = '#C8A84B';
+const GOLD_DIM = '#7a5a20';
+const NODE_FILL= '#110a03';
+const LINE_DIM = '#3a2a08';
+const R        = 18;
+const CW       = 50;
+const RH       = 52;
+const PAD      = 30;
+
+const nodes = [
+  { id: 'sn_hero', c: 1.5, r: 0, hero: true },
+  { id: 'sn_gate', c: 1.5, r: 0.85, mini: true },
+  // 1 → 4 → 4 → 4 → 1
+  { id: 'sn0', c: 1.5, r: 2 },
+  { id: 'sn1', c: 0, r: 3 }, { id: 'sn2', c: 1, r: 3 }, { id: 'sn3', c: 2, r: 3 }, { id: 'sn4', c: 3, r: 3 },
+  { id: 'sn5', c: 0, r: 4 }, { id: 'sn6', c: 1, r: 4 }, { id: 'sn7', c: 2, r: 4 }, { id: 'sn8', c: 3, r: 4 },
+  { id: 'sn9', c: 0, r: 5 }, { id: 'sn10', c: 1, r: 5 }, { id: 'sn11', c: 2, r: 5 }, { id: 'sn12', c: 3, r: 5 },
+  { id: 'sn13', c: 1.5, r: 6 },
+];
+
+function px(node) {
+  return { x: PAD + node.c * CW, y: PAD + node.r * RH };
+}
+
+const maxC = Math.max(...nodes.map(n => n.c));
+const maxR = Math.max(...nodes.map(n => n.r));
+const W = (maxC + 1) * CW + PAD * 2 - CW * 0.3;
+const H = (maxR + 1) * RH + PAD * 2;
+
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(NS, 'svg');
+svg.setAttribute('width', W); svg.setAttribute('height', H);
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+svg.classList.add('tree');
+
+function el(tag, attrs) {
+  const e = document.createElementNS(NS, tag);
+  Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+  return e;
+}
+
+const defs = el('defs', {});
+const filter = el('filter', {id:'glow', x:'-50%', y:'-50%', width:'200%', height:'200%'});
+filter.appendChild(el('feGaussianBlur', {stdDeviation:'2.5', result:'blur'}));
+const merge = el('feMerge', {});
+merge.appendChild(el('feMergeNode', {in:'blur'}));
+merge.appendChild(el('feMergeNode', {in:'SourceGraphic'}));
+filter.appendChild(merge);
+defs.appendChild(filter);
+svg.appendChild(defs);
+
+nodes.forEach(node => {
+  const p = px(node);
+  const g = document.createElementNS(NS, 'g');
+  g.style.cursor = 'pointer';
+
+  if (node.hero) {
+    g.appendChild(el('circle', {cx:p.x, cy:p.y, r:30, fill:'#1a0d04', stroke:GOLD, 'stroke-width':'3', filter:'url(#glow)'}));
+    g.appendChild(el('circle', {cx:p.x, cy:p.y, r:24, fill:'none', stroke:GOLD_DIM, 'stroke-width':'1', 'stroke-dasharray':'4 4'}));
+  } else if (node.mini) {
+    g.appendChild(el('circle', {cx:p.x, cy:p.y, r:5, fill:GOLD_DIM, stroke:'none'}));
+  } else {
+    g.appendChild(el('circle', {cx:p.x, cy:p.y, r:R, fill:NODE_FILL, stroke:GOLD_DIM, 'stroke-width':'1.5'}));
+    g.appendChild(el('circle', {cx:p.x, cy:p.y, r:R-5, fill:'none', stroke:LINE_DIM, 'stroke-width':'0.8'}));
+  }
+
+  g.addEventListener('mouseenter', () => {
+    const c = g.querySelector('circle');
+    if (!node.mini) { c.setAttribute('stroke', GOLD); c.setAttribute('stroke-width', node.hero?'3.5':'2.5'); }
+  });
+  g.addEventListener('mouseleave', () => {
+    const c = g.querySelector('circle');
+    if (!node.mini) { c.setAttribute('stroke', node.hero?GOLD:GOLD_DIM); c.setAttribute('stroke-width', node.hero?'3':'1.5'); }
+  });
+
+  svg.appendChild(g);
+});
+
+document.getElementById('treeContainer').appendChild(svg);
+</script>
+</body>
+</html>
