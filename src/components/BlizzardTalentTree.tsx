@@ -507,6 +507,7 @@ function TalentNodeGrid({ node, mediaMap, selectedKeys, selectedChoices, canSele
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => onHover(null, 0, 0)}
       style={{
+        position: "relative",
         width: NODE_D, height: NODE_D, borderRadius: "50%",
         border: `2px solid ${borderColor}`, boxShadow: glowShadow,
         overflow: "hidden", cursor: isCore ? "default" : isLocked ? "not-allowed" : "pointer",
