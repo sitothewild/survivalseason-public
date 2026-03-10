@@ -683,6 +683,7 @@ function TalentSection({
                 style={{
                   gridRow:    rowMap.get(node.display_row) ?? 1,
                   gridColumn: colMap.get(node.display_col) ?? 1,
+                  position: "relative",
                 }}
               >
                 <TalentNodeGrid
