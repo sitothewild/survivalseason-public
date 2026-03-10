@@ -1132,7 +1132,7 @@ export default function SurvivalHunterSim() {
   const [fightStyle, setFightStyle] = useState('patchwerk');
   const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({ battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true });
   const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered' });
-  const [showAdv, setShowAdv] = useState(true);
+  const [showAdv, setShowAdv] = useState(false);
   const [copied, setCopied] = useState('');
   const [copiedLoadoutId, setCopiedLoadoutId] = useState<string|null>(null);
   // Custom talent loadout slots
@@ -2575,10 +2575,14 @@ export default function SurvivalHunterSim() {
                     <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>1 min</span><span>5 min</span><span>10 min</span></div>
                   </div>
 
-                  {/* Advanced Options — content renders above toggle so it collapses upward */}
+                  {/* Advanced Options — collapses downward, collapsed by default */}
                   <div style={{ marginBottom: 16 }}>
+                    <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
+                      <span style={{ fontSize: 10 }}>{showAdv ? "▲" : "▼"}</span>
+                      {showAdv ? "COLLAPSE" : "ADVANCED OPTIONS"} {!showAdv && <span style={{ color: C.textDim }}>(Buffs / Consumables / Fight Style)</span>}
+                    </button>
                     {showAdv && (
-                      <div style={{ marginBottom: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
+                      <div style={{ marginTop: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT STYLE</div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -2654,11 +2658,6 @@ export default function SurvivalHunterSim() {
                         </div>
                       </div>
                     )}
-                    {/* Toggle sits at the bottom — content collapses upward */}
-                    <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
-                      <span style={{ fontSize: 10 }}>{showAdv ? "▲" : "▼"}</span>
-                      {showAdv ? "COLLAPSE" : "ADVANCED OPTIONS"} {!showAdv && <span style={{ color: C.textDim }}>(Buffs / Consumables / Fight Style)</span>}
-                    </button>
                   </div>
 
                   {/* Run Simulation button */}
