@@ -961,7 +961,7 @@ export function BlizzardTalentTree({
           {/* CLASS TREE */}
           <TalentSection
             label="HUNTER"
-            nodes={classNodes} mediaMap={mediaMap}
+            nodes={classNodesFinal} mediaMap={mediaMap}
             pointBudget={classBudget}
             selectedKeys={selectedKeys} selectedChoices={selectedChoices}
             coreKeys={classCoreKeys}
