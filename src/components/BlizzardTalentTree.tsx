@@ -326,13 +326,6 @@ function InteractiveTalentNode({
             pointerEvents: "none",
           }} />
         </div>
-        {/* Inner hex ring */}
-        <div style={{
-          position: "absolute", inset: 4,
-          clipPath: hexInset,
-          border: `1px solid #3a2a08`,
-          pointerEvents: "none",
-        }} />
       </div>
     );
   }
