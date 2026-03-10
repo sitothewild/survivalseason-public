@@ -441,7 +441,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   1264781: "/icons/talents/ability_druid_mangle.jpg",
   472660: "/icons/talents/ability_druid_ferociousbite.jpg",
   472707: "/icons/talents/ability_hunter_rapidregeneration.jpg",
-  1264797: "/icons/talents/ability_hunter_multishot_placeholder.jpg",
+  1264797: "/icons/talents/ability_hunter_beastwithin_hoof.jpg",
   1264792: "/icons/talents/ability_creature_poison_06.jpg",
   1264775: "/icons/talents/ability_druid_rake.jpg",
   472741: "/icons/talents/ability_hunter_sickem.jpg",
