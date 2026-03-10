@@ -381,7 +381,8 @@ function TreeSection({
   compact?: boolean;
   tree?: UseTalentTreeReturn;
 }) {
-  const tree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
+  const internalTree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
+  const tree = externalTree ?? internalTree;
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(nodes, compact), [nodes, compact]);
 
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
