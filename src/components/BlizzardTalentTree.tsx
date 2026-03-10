@@ -216,7 +216,7 @@ function InteractiveTalentNode({
   const fillColor = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') ? NODE_FILL_SEL : NODE_FILL;
   const glow = nodeState === 'SELECTED'
     ? `0 0 0 2px ${GOLD_GLOW}, 0 0 14px 3px ${GOLD_GLOW}` : undefined;
-  const brightness = nodeState === 'SELECTED' ? 1 : nodeState === 'PARTIAL' ? 0.7 : nodeState === 'AVAILABLE' ? 0.5 : 0.2;
+  const imgFilter = nodeState === 'SELECTED' ? 'none' : nodeState === 'PARTIAL' ? 'saturate(0.5)' : nodeState === 'AVAILABLE' ? 'grayscale(1) brightness(0.7)' : 'grayscale(1) brightness(0.35)';
   const cursor = nodeState === 'LOCKED' ? 'not-allowed'
     : (nodeState === 'AVAILABLE' || nodeState === 'PARTIAL') ? 'pointer'
     : 'pointer'; // SELECTED can be right-clicked
