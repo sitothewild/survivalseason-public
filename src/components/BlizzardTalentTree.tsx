@@ -443,17 +443,16 @@ function TalentSection({
   onHover: (info: TooltipInfo | null, x: number, y: number) => void;
   showPointCounter?: boolean;
 }) {
-  const validNodes = useMemo(() => nodes.filter((n) => n.entries?.length > 0 && n.entries[0]?.spell_tooltip?.spell?.name), [nodes]);
-  const { minRow, minCol, maxCol, w, h } = useMemo(() => gridLayout(validNodes), [validNodes]);
-  const nodeMap = useMemo(() => buildNodeMap(validNodes), [validNodes]);
+  const { minRow, minCol, maxCol, w, h } = useMemo(() => gridLayout(nodes), [nodes]);
+  const nodeMap = useMemo(() => buildNodeMap(nodes), [nodes]);
 
-  const usedPts = useMemo(() => validNodes.reduce((sum, n) => {
+  const usedPts = useMemo(() => nodes.reduce((sum, n) => {
     const k = nodeTalentKey(n);
     if (!k || coreKeys.has(k)) return sum;
     return sum + (selectedKeys.has(k) ? (n.entries?.[0]?.max_rank ?? 1) : 0);
-  }, 0), [validNodes, selectedKeys, coreKeys]);
+  }, 0), [nodes, selectedKeys, coreKeys]);
 
-  if (!validNodes.length) return null;
+  if (!nodes.length) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: w }}>
@@ -481,13 +480,13 @@ function TalentSection({
         boxShadow: `0 0 40px rgba(200,168,75,0.05), inset 0 1px 0 ${GOLD_DIM}20`,
       }}>
         <ConnectionLines
-          nodes={validNodes} nodeMap={nodeMap}
+          nodes={nodes} nodeMap={nodeMap}
           minRow={minRow} minCol={minCol}
           w={w} h={h}
           selectedKeys={selectedKeys} coreKeys={coreKeys}
         />
 
-        {validNodes.map((node) => {
+        {nodes.map((node) => {
           const key = nodeTalentKey(node);
           const isCore = !!(key && coreKeys.has(key));
           const prereqsMet = (node.prerequisite_nodes ?? []).every((p) => {
@@ -871,11 +870,10 @@ export function BlizzardTalentTree({
   }
   const rawSpecNodes = (specTree.spec_talent_nodes ?? []).filter((n: BzTalentNode) => !heroNodeIdSet.has(n.id));
 
-  // Remove spatially isolated outlier nodes by keeping only the largest connected component
+  // Keep only the largest connected component to remove stray hero nodes that leaked into spec list
   let specNodes = rawSpecNodes;
   if (rawSpecNodes.length >= 3) {
     const idSet = new Set(rawSpecNodes.map((n) => n.id));
-    // Build adjacency from prerequisite links
     const adj = new Map<number, Set<number>>();
     rawSpecNodes.forEach((n) => {
       if (!adj.has(n.id)) adj.set(n.id, new Set());
@@ -887,7 +885,6 @@ export function BlizzardTalentTree({
         }
       });
     });
-    // BFS to find connected components
     const visited = new Set<number>();
     const components: number[][] = [];
     rawSpecNodes.forEach((n) => {
@@ -903,10 +900,44 @@ export function BlizzardTalentTree({
       }
       components.push(comp);
     });
-    // Keep only the largest component
     const largest = components.reduce((a, b) => a.length >= b.length ? a : b, []);
     const largestSet = new Set(largest);
     specNodes = rawSpecNodes.filter((n) => largestSet.has(n.id));
+  }
+
+  // Same connectivity filter for class nodes
+  let classNodesFinal = classNodes;
+  if (classNodes.length >= 3) {
+    const idSet = new Set(classNodes.map((n: BzTalentNode) => n.id));
+    const adj = new Map<number, Set<number>>();
+    classNodes.forEach((n: BzTalentNode) => {
+      if (!adj.has(n.id)) adj.set(n.id, new Set());
+      (n.prerequisite_nodes ?? []).forEach((p: any) => {
+        if (idSet.has(p.id)) {
+          adj.get(n.id)!.add(p.id);
+          if (!adj.has(p.id)) adj.set(p.id, new Set());
+          adj.get(p.id)!.add(n.id);
+        }
+      });
+    });
+    const visited = new Set<number>();
+    const components: number[][] = [];
+    classNodes.forEach((n: BzTalentNode) => {
+      if (visited.has(n.id)) return;
+      const comp: number[] = [];
+      const queue = [n.id];
+      while (queue.length) {
+        const cur = queue.pop()!;
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        comp.push(cur);
+        adj.get(cur)?.forEach((nb) => { if (!visited.has(nb)) queue.push(nb); });
+      }
+      components.push(comp);
+    });
+    const largest = components.reduce((a, b) => a.length >= b.length ? a : b, []);
+    const largestSet = new Set(largest);
+    classNodesFinal = classNodes.filter((n: BzTalentNode) => largestSet.has(n.id));
   }
 
   const classBudget = specTree.talent_point_budget?.class_points ?? 31;
@@ -930,7 +961,7 @@ export function BlizzardTalentTree({
           {/* CLASS TREE */}
           <TalentSection
             label="HUNTER"
-            nodes={classNodes} mediaMap={mediaMap}
+            nodes={classNodesFinal} mediaMap={mediaMap}
             pointBudget={classBudget}
             selectedKeys={selectedKeys} selectedChoices={selectedChoices}
             coreKeys={classCoreKeys}
