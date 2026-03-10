@@ -4,7 +4,7 @@
 // existing React components render correctly.
 // ─────────────────────────────────────────────────────────────
 
-import type { SimResult, HeroTree } from "../types";
+import type { SimResult, HeroTree, TimelineEvent } from "../types";
 
 /** Shape the UI expects from the legacy runSimulation() */
 export interface LegacySimResult {
@@ -17,6 +17,7 @@ export interface LegacySimResult {
   detailed: LegacyDetailedData;
   liveDataUsed: boolean;
   aplDataUsed: boolean;
+  timeline?: TimelineEvent[];
 }
 
 interface LegacyActionCount {
@@ -128,5 +129,6 @@ export function simResultToLegacy(
     },
     liveDataUsed: false,
     aplDataUsed: true,
+    timeline: result.timeline,
   };
 }

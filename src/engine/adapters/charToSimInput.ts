@@ -88,6 +88,7 @@ function resolveTrinkets(
  * @param targets    Number of targets
  * @param durationS  Fight duration in seconds
  * @param simOptions Advanced sim options (buffs, consumables, gems, enchants)
+ * @param opts       Additional config overrides (captureTimeline, iterations)
  */
 export function charToSimInput(
   char: ParsedCharData,
@@ -95,6 +96,7 @@ export function charToSimInput(
   targets: number,
   durationS: number,
   simOptions?: SimOptions,
+  opts?: { captureTimeline?: boolean; iterations?: number; customAPL?: string },
 ): SimInput {
   const s = char.stats;
 
@@ -136,18 +138,18 @@ export function charToSimInput(
   );
 
   const aplKey = getDefaultAPLKey(hero, fightStyle);
-  const apl = DEFAULT_APLS[aplKey] ?? "";
+  const apl = opts?.customAPL ?? DEFAULT_APLS[aplKey] ?? "";
 
   const config: SimConfig = {
     durationMs: durationS * 1000,
-    iterations: 500,   // Balance speed vs accuracy for UI
+    iterations: opts?.iterations ?? 500,
     fightStyle,
     targets,
     bossLevelDelta: 3,
     seed: Date.now(),
     hero,
     apl,
-    captureTimeline: false,
+    captureTimeline: opts?.captureTimeline ?? false,
     timelineDurationMs: 30_000,
     features: {
       prd: true,

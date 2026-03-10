@@ -156,20 +156,27 @@ export function runSimulation(input: SimInput): SimResult {
   const breakdown: AbilityBreakdown[] = [];
   const totalDmg = dpsAccum.mean * durationSec;
 
+  // Build trinket label map for human-readable breakdown names
+  const trinketLabels = new Map<string, string>();
+  for (const t of input.trinkets) {
+    if (t) trinketLabels.set(`trinket_${t.id}`, t.name);
+  }
+
   for (const [key, data] of totalBreakdown) {
     const avgDmg = data.damage / iters;
     const avgCasts = data.casts / iters;
     const dps = avgDmg / durationSec;
     const spell = SPELL_DB[key];
+    const isTrinket = trinketLabels.has(key);
     breakdown.push({
       key,
-      label: spell?.label ?? key,
+      label: trinketLabels.get(key) ?? spell?.label ?? key,
       damage: Math.round(avgDmg),
       dps: Math.round(dps),
       casts: Math.round(avgCasts * 10) / 10,
       avgHit: avgCasts > 0 ? Math.round(avgDmg / avgCasts) : 0,
       pctOfTotal: totalDmg > 0 ? Math.round((avgDmg / totalDmg) * 1000) / 10 : 0,
-      category: spell?.isPet ? "pet" : "player",
+      category: isTrinket ? "trinket" : spell?.isPet ? "pet" : "player",
     });
   }
   breakdown.sort((a, b) => b.dps - a.dps);
@@ -233,6 +240,35 @@ function runIteration(
     // Track potion for second use: cooldown = 5 min, aligned with burst
     state.cooldowns.init("potion", 1, 300_000);
     state.cooldowns.use("potion", 0);
+  }
+
+  // Initialize trinket cooldowns and apply equip trinkets
+  for (const trinket of input.trinkets) {
+    if (!trinket) continue;
+    const cdKey = `trinket_${trinket.id}`;
+    switch (trinket.type) {
+      case "on_use": {
+        const cdMs = (trinket.onUseCD ?? 120) * 1000;
+        state.cooldowns.init(cdKey, 1, cdMs);
+        break;
+      }
+      case "proc": {
+        // ICD tracking: procICD defaults to 0 (no ICD)
+        const icdMs = (trinket.procICD ?? 0) * 1000;
+        if (icdMs > 0) {
+          state.cooldowns.init(cdKey, 1, icdMs);
+        }
+        break;
+      }
+      case "equip": {
+        // Passive stat trinket — add primary agi as a permanent aura
+        if (trinket.primaryAgi > 0) {
+          state.applyAura(cdKey, endMs + 10_000, 1, { agi: trinket.primaryAgi });
+        }
+        break;
+      }
+      // damage_proc: no CD init needed, CPM-based
+    }
   }
 
   // Main event loop
@@ -798,45 +834,79 @@ function processTrinkets(
 ): void {
   for (const trinket of input.trinkets) {
     if (!trinket) continue;
+    const cdKey = `trinket_${trinket.id}`;
 
     switch (trinket.type) {
-      case "on_use":
-        if (eventType === "gcd_ready" && state.cooldowns.isReady(`trinket_${trinket.id}`, state.nowMs)) {
-          // Burst alignment
-          if (trinket.burstAlignable && !state.takedownActive) break;
+      case "on_use": {
+        if (eventType !== "gcd_ready") break;
+        if (!state.cooldowns.isReady(cdKey, state.nowMs)) break;
 
-          const stat = trinket.onUseStat;
-          const amount = trinket.onUseAmount ?? trinket.onUseAgi ?? 0;
-          if (stat && amount > 0) {
+        // Burst alignment: on-use trinkets wait for Takedown or Coordinated Assault
+        if (trinket.burstAlignable) {
+          if (!state.takedownActive && !state.coordinatedAssaultActive) break;
+        }
+
+        const stat = trinket.onUseStat;
+        const amount = trinket.onUseAmount ?? trinket.onUseAgi ?? 0;
+        if (stat && amount > 0) {
+          const buffKey = stat === "agi" ? "agi" : stat;
+          state.applyAura(cdKey, (trinket.onUseDuration ?? 20) * 1000, 1, { [buffKey]: amount });
+        }
+        state.cooldowns.use(cdKey, state.nowMs);
+        break;
+      }
+
+      case "proc": {
+        if (eventType !== "auto_attack" && eventType !== "gcd_ready") break;
+
+        // ICD check: if trinket has an ICD, respect it
+        const hasICD = trinket.procICD && trinket.procICD > 0;
+        if (hasICD && !state.cooldowns.isReady(cdKey, state.nowMs)) break;
+
+        // Proc chance per event derived from target uptime:
+        // uptime = procChance * buffDur / (procChance * buffDur + meanTimeBetweenProcs)
+        // Simplified: if target uptime = 0.45, buff dur = 10s, we want ~0.45 uptime.
+        // Average events/sec ≈ 1.8 (auto + GCD), so procChance = uptime * eventRate / buffDurSec
+        // We approximate: procChance = uptime * 0.18 per event
+        const uptime = trinket.procUptime ?? 0;
+        const procChance = Math.min(0.95, uptime * 0.18);
+
+        if (rng.roll() < procChance) {
+          const stat = trinket.procStat;
+          if (stat && trinket.procAmount) {
             const buffKey = stat === "agi" ? "agi" : stat;
-            state.applyAura(`trinket_${trinket.id}`, (trinket.onUseDuration ?? 20) * 1000, 1, { [buffKey]: amount });
+            state.applyAura(cdKey, 10_000, 1, { [buffKey]: trinket.procAmount });
           }
-          state.cooldowns.use(`trinket_${trinket.id}`, state.nowMs);
+          // If ICD exists, put it on cooldown
+          if (hasICD) {
+            state.cooldowns.use(cdKey, state.nowMs);
+          }
         }
         break;
+      }
 
-      case "proc":
-        if (eventType === "auto_attack" || eventType === "gcd_ready") {
-          if (trinket.procUptime && rng.roll() < (trinket.procUptime * 0.1)) {
-            const stat = trinket.procStat;
-            if (stat && trinket.procAmount) {
-              state.applyAura(`trinket_${trinket.id}`, 10000, 1, { [stat]: trinket.procAmount });
-            }
-          }
-        }
-        break;
+      case "damage_proc": {
+        // Damage procs fire on auto attacks and ability casts
+        if (eventType !== "auto_attack" && eventType !== "gcd_ready") break;
+        if (!trinket.dmgApCoef || !trinket.dmgCPM) break;
 
-      case "damage_proc":
-        if (eventType === "auto_attack" && trinket.dmgApCoef && trinket.dmgCPM) {
-          const hasteMult = 1 + state.currentHastePct / 100;
-          const autoSpeed = MELEE_SWING_MS / hasteMult / 1000;
-          const chancePerAttack = (trinket.dmgCPM / 60) * autoSpeed;
-          if (rng.roll() < chancePerAttack) {
-            const dmg = state.currentAP * trinket.dmgApCoef;
-            state.recordDamage(`trinket_${trinket.id}`, dmg, false, 0);
-          }
+        // CPM-based proc chance: procsPerMin / eventsPerMin
+        const hasteMult = 1 + state.currentHastePct / 100;
+        const eventsPerSec = eventType === "auto_attack"
+          ? 1000 / (MELEE_SWING_MS / hasteMult)
+          : 0.7 * hasteMult;  // ~0.7 GCDs/sec at 0% haste
+        const chancePerEvent = (trinket.dmgCPM / 60) / eventsPerSec;
+
+        if (rng.roll() < chancePerEvent) {
+          const dmg = state.currentAP * trinket.dmgApCoef;
+          const isCrit = rng.roll() < (state.currentCritPct / 100);
+          const finalDmg = isCrit ? dmg * 2 : dmg;
+          state.recordDamage(cdKey, finalDmg, isCrit, 0);
         }
         break;
+      }
+
+      // "equip" type handled at sim start (permanent aura)
     }
   }
 }

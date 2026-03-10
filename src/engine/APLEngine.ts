@@ -286,3 +286,68 @@ export function getDefaultAPLKey(hero: HeroTree, fightStyle: string): string {
   if (fightStyle === "raid_st") return `${heroKey}_raid_st`;
   return `${heroKey}_mplus_aoe`;
 }
+
+// ── APL Validation ──────────────────────────────────────────
+
+export interface APLValidationResult {
+  valid: boolean;
+  actionCount: number;
+  warnings: string[];
+  errors: string[];
+}
+
+/**
+ * Validate an APL string without running a sim.
+ * Returns action count, warnings for unknown abilities, and errors for malformed lines.
+ */
+export function validateAPL(aplText: string): APLValidationResult {
+  const lines = aplText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  const warnings: string[] = [];
+  const errors: string[] = [];
+  let actionCount = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Skip comment lines
+    if (line.startsWith("#") || line.startsWith("//")) continue;
+
+    const match = line.match(/^actions(?:\+)?=\/?([a-z_]+)(?:,if=(.+))?$/i);
+    if (!match) {
+      errors.push(`Line ${i + 1}: malformed — "${line.slice(0, 50)}"`);
+      continue;
+    }
+
+    const ability = match[1].toLowerCase();
+    actionCount++;
+
+    // Check if ability exists in SpellDB
+    if (ability !== "auto_attack" && !SPELL_DB[ability]) {
+      warnings.push(`Line ${i + 1}: unknown ability "${ability}"`);
+    }
+
+    // Validate conditions syntax
+    const condStr = match[2] ?? "";
+    if (condStr) {
+      const parts = condStr.split("&");
+      for (const part of parts) {
+        const p = part.trim();
+        // Basic syntax check: should match known condition patterns
+        const knownPattern = /^(!?)(focus|cooldown\.|buff\.|dot\.|spell_targets)/;
+        if (!knownPattern.test(p)) {
+          warnings.push(`Line ${i + 1}: condition "${p}" may not be recognized`);
+        }
+      }
+    }
+  }
+
+  if (actionCount === 0) {
+    errors.push("APL has no valid action lines");
+  }
+
+  return {
+    valid: errors.length === 0,
+    actionCount,
+    warnings,
+    errors,
+  };
+}
