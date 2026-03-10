@@ -995,6 +995,7 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+  const [professions, setProfessions] = useState<any[] | null>(null);
 
   // Talent pill tooltip
   const [hoveredTalent, setHoveredTalent] = useState<TalentPill | null>(null);
