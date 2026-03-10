@@ -3,6 +3,7 @@ import { useRef, useState, useEffect } from "react";
 import { NavLink } from "@/components/NavLink";
 import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 import survivalIconImg from "@/assets/survival-icon.png";
+import talentOptimizerBg from "@/assets/talent-optimizer-bg.png";
 
 const C = {
   pageBg:"#d4dae2", surface:"#1c2333", surface2:"#242d3f", surface3:"#2c3750",
@@ -43,7 +44,7 @@ export default function TalentOptimizer() {
   }, []);
 
   return (
-    <div style={{ minHeight:"100vh", background:C.pageBg, color:C.textPri,
+    <div style={{ minHeight:"100vh", background:`url(${talentOptimizerBg}) center/cover fixed, ${C.pageBg}`, color:C.textPri,
       fontFamily:"'Rajdhani','Segoe UI',sans-serif" }}>
 
       <style>{`
