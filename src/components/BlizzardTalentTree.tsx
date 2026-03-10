@@ -443,11 +443,11 @@ function TreeSection({
       }}>
         <ConnectionLines
           nodes={nodes} minRow={minRow} minCol={minCol}
-          w={w} h={h} pointsMap={tree.state.points}
+          w={w} h={h} pointsMap={tree.state.points} compact={compact}
         />
 
         {nodes.map(node => {
-          const pos = nodePos(node, minRow, minCol);
+          const pos = nodePos(node, minRow, minCol, compact);
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
