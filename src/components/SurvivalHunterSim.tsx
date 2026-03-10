@@ -1244,7 +1244,7 @@ export default function SurvivalHunterSim() {
     setSimResults(null);
   }, [simcInput]);
 
-  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); };
+  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); setProfessions(null); };
 
   const handleArmoryLookup = useCallback(async () => {
     const realmSlug = armoryRealm || resolvedRealmSlug;
