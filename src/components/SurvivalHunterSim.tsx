@@ -2208,6 +2208,17 @@ export default function SurvivalHunterSim() {
                                       }
                                     });
                                   }}
+                                  classSelectedKeys={editDraft.enabledClassTalents}
+                                  onClassToggle={(key, selected) => {
+                                    setEditDraft(d => {
+                                      if (!d) return d;
+                                      if (selected) {
+                                        return { ...d, enabledClassTalents: [...d.enabledClassTalents, key] };
+                                      } else {
+                                        return { ...d, enabledClassTalents: d.enabledClassTalents.filter(k => k !== key) };
+                                      }
+                                    });
+                                  }}
                                 />
                               </div>
                             </div>
