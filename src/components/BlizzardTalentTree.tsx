@@ -175,6 +175,12 @@ const CORE_CLASS = new Set(["Keen Eyesight","Unnatural Causes","Trigger Finger"]
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Resolve icon URL: mediaMap (Blizzard API) → Wowhead fallback → blank fallback */
+function resolveIcon(spellId: number | undefined, mediaMap: Record<number, string>): string {
+  if (!spellId) return FALLBACK_ICON;
+  return mediaMap[spellId] ?? WOWHEAD_ICON_FALLBACKS[spellId] ?? FALLBACK_ICON;
+}
+
 function nodeSpellName(node: BzTalentNode): string | null {
   return node.entries?.[0]?.spell_tooltip?.spell?.name ?? null;
 }
