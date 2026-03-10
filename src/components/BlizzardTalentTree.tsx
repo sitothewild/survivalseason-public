@@ -49,25 +49,40 @@ function pointColor(pts: number, max: number): string {
 }
 
 // ── Grid layout calculation ──────────────────────────────────
-const CW = 42;  // col step (was 52)
-const RH = 48;  // row step (was 56)
-const PAD = 20;  // padding (was 30)
-const NODE_R = 18; // node radius (was 20)
+// Standard size (Hunter class + Survival spec)
+const CW = 52;  // col step
+const RH = 56;  // row step
+const PAD = 30;
+const NODE_R = 20;
 
-function gridBounds(nodes: TalentNodeDef[]) {
+// Compact size (Hero trees + Apex)
+const CW_C = 42;
+const RH_C = 48;
+const PAD_C = 20;
+const NODE_R_C = 18;
+
+function gridBounds(nodes: TalentNodeDef[], compact = false) {
+  const cw = compact ? CW_C : CW;
+  const rh = compact ? RH_C : RH;
+  const pad = compact ? PAD_C : PAD;
+  const nr = compact ? NODE_R_C : NODE_R;
   const rows = nodes.map(n => n.row);
   const cols = nodes.map(n => n.col);
   const minRow = Math.min(...rows), maxRow = Math.max(...rows);
   const minCol = Math.min(...cols), maxCol = Math.max(...cols);
-  const w = (maxCol - minCol) * CW + NODE_R * 2 + PAD * 2;
-  const h = (maxRow - minRow) * RH + NODE_R * 2 + PAD * 2;
+  const w = (maxCol - minCol) * cw + nr * 2 + pad * 2;
+  const h = (maxRow - minRow) * rh + nr * 2 + pad * 2;
   return { minRow, maxRow, minCol, maxCol, w, h };
 }
 
-function nodePos(node: TalentNodeDef, minRow: number, minCol: number) {
+function nodePos(node: TalentNodeDef, minRow: number, minCol: number, compact = false) {
+  const cw = compact ? CW_C : CW;
+  const rh = compact ? RH_C : RH;
+  const pad = compact ? PAD_C : PAD;
+  const nr = compact ? NODE_R_C : NODE_R;
   return {
-    x: PAD + (node.col - minCol) * CW + NODE_R,
-    y: PAD + (node.row - minRow) * RH + NODE_R,
+    x: pad + (node.col - minCol) * cw + nr,
+    y: pad + (node.row - minRow) * rh + nr,
   };
 }
 
