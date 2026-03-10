@@ -171,20 +171,21 @@ export function useTalentTreeData(
         choices: initChoices([...mapped.sentinelNodes, ...mapped.packLeaderNodes]),
       });
 
-      // Parse gate/restriction lines
+      // Parse gate/restriction lines — use raw API display_row values directly
       if (response.restriction_lines) {
         const gates = getGateRows(response.restriction_lines);
-        // Convert API restricted_row → afterRow (the gate sits between rows)
+        // restricted_row IS the first locked display_row.
+        // afterRow = the display_row just before the gate (max displayRow < restricted_row)
         setClassGates(
           gates.classGates.map((g) => ({
             points: g.points,
-            afterRow: apiRowToGridRow(g.row, mapped.classNodes),
+            afterRow: g.row, // This is the restricted_row from API — nodes with displayRow >= this are locked
           }))
         );
         setSpecGates(
           gates.specGates.map((g) => ({
             points: g.points,
-            afterRow: apiRowToGridRow(g.row, mapped.specNodes),
+            afterRow: g.row,
           }))
         );
       }
