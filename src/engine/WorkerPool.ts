@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { runSimulation } from "./SimLoop";
-import type { SimInput, SimResult, StatWeightResult, HeroTree, FightStyle } from "./types";
+import type { SimInput, SimResult, SimOptions, StatWeightResult, HeroTree, FightStyle } from "./types";
 import { buildSimInput, addStatRating, addPrimaryStat } from "./buildSimInput";
 import type { WorkerMessage, WorkerResponse } from "./SimWorker";
 
@@ -90,8 +90,9 @@ export class WorkerPool {
   async computeSimStatWeights(
     hero: HeroTree,
     fightStyle: FightStyle,
+    simOptions?: SimOptions,
   ): Promise<StatWeightResult> {
-    const baseInput = buildSimInput(hero, fightStyle, { iterations: 1000 });
+    const baseInput = buildSimInput(hero, fightStyle, { iterations: 1000 }, simOptions);
     const baseDps = (await this.runSim(baseInput)).meanDps;
 
     const stats = ["crit", "haste", "mastery", "vers"] as const;

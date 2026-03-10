@@ -230,8 +230,9 @@ function runIteration(
   if (input.potionAura) {
     const { stat, amount, durationMs } = input.potionAura;
     state.applyAura("potion", durationMs, 1, { [stat]: amount });
-    // Second use at ~50% fight or during burst — schedule cooldown
-    state.cooldowns.init("potion", 1, endMs); // single charge, CD = fight length (only 1 use modeled)
+    // Track potion for second use: cooldown = 5 min, aligned with burst
+    state.cooldowns.init("potion", 1, 300_000);
+    state.cooldowns.use("potion", 0);
   }
 
   // Main event loop
@@ -383,6 +384,13 @@ function executeAbility(
   if (spell.key === "takedown") {
     state.takedownActive = true;
     state.takedownExpiresMs = state.nowMs + TAKEDOWN_DURATION_MS;
+
+    // Second potion use: align with Takedown when potion CD is ready
+    if (input.potionAura && state.cooldowns.isReady("potion", state.nowMs) && state.nowMs > 0) {
+      const { stat, amount, durationMs } = input.potionAura;
+      state.applyAura("potion", durationMs, 1, { [stat]: amount });
+      state.cooldowns.use("potion", state.nowMs);
+    }
   }
 
   // Coordinated Assault
