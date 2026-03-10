@@ -639,11 +639,11 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
       <div style={{ position: "relative", width: w, height: h, background: "transparent" }}>
         <ConnectionLines
           nodes={APEX_NODES} minRow={minRow} minCol={minCol}
-          w={w} h={h} pointsMap={tree.state.points}
+          w={w} h={h} pointsMap={tree.state.points} compact
         />
 
         {APEX_NODES.map(node => {
-          const pos = nodePos(node, minRow, minCol);
+          const pos = nodePos(node, minRow, minCol, true);
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const isApex = node.type === 'apex';
