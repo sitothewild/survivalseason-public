@@ -280,7 +280,7 @@ function InteractiveTalentNode({
           <img src={iconB} alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
             style={{ width: sz, height: sz, objectFit: "cover", position: "absolute", left: -(sz / 2), top: 0,
-              filter: `brightness(${brightB})`, transition: "filter .15s" }} />
+              filter: filterB, transition: "filter .15s" }} />
         </div>
         {/* Dashed divider */}
         <div style={{
