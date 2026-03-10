@@ -69,6 +69,9 @@ const COL_STEP    = 74;   // horizontal spacing (center to center)
 const ROW_STEP    = 74;   // vertical spacing
 const PAD         = 20;   // padding inside each section
 const SECTION_GAP = 36;   // gap between class / hero / spec columns
+const CELL        = NODE_D; // grid cell size
+const STEP        = NODE_D + 22; // grid step (cell + gap)
+const GAP         = 22;   // gap between grid cells
 
 const GOLD = "#fbbf24";
 const GOLD_DIM = "#92620d";
