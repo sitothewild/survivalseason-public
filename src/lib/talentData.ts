@@ -26,7 +26,7 @@ export type NodeState = 'LOCKED' | 'AVAILABLE' | 'SELECTED' | 'PARTIAL';
 // ── ROW GATE THRESHOLDS ──────────────────────────────────────
 
 export const SPEC_ROW_GATES: Record<number, number> = {
-  1: 0, 2: 1, 3: 2, 4: 4, 5: 6, 6: 8, 7: 10, 8: 14, 9: 20, 10: 26, 12: 30,
+  1: 0, 2: 1, 3: 2, 4: 4, 5: 6, 6: 8, 7: 10, 8: 14, 9: 20, 10: 26,
 };
 
 export const CLASS_ROW_GATES: Record<number, number> = {
