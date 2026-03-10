@@ -446,13 +446,13 @@ function TalentSection({
   const { minRow, minCol, maxCol, w, h } = useMemo(() => gridLayout(nodes), [nodes]);
   const nodeMap = useMemo(() => buildNodeMap(nodes), [nodes]);
 
-  const usedPts = useMemo(() => validNodes.reduce((sum, n) => {
+  const usedPts = useMemo(() => nodes.reduce((sum, n) => {
     const k = nodeTalentKey(n);
     if (!k || coreKeys.has(k)) return sum;
     return sum + (selectedKeys.has(k) ? (n.entries?.[0]?.max_rank ?? 1) : 0);
-  }, 0), [validNodes, selectedKeys, coreKeys]);
+  }, 0), [nodes, selectedKeys, coreKeys]);
 
-  if (!validNodes.length) return null;
+  if (!nodes.length) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: w }}>
