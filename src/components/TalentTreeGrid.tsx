@@ -1,7 +1,8 @@
 // ─────────────────────────────────────────────────────────────
 // components/TalentTreeGrid.tsx
-// Renders a full talent tree section using CSS Grid with proper
-// row/col positioning from Blizzard's display_row/display_col.
+// Renders a full talent tree section using CSS Grid with
+// display_row / display_col from the Blizzard API as the
+// authoritative grid positions.
 // ─────────────────────────────────────────────────────────────
 
 import { useMemo } from "react";
@@ -15,7 +16,7 @@ interface TalentTreeGridProps {
   nodes: MappedTalentNode[];
   talentState: Record<number, number>;
   choiceState: Record<number, number | null>;
-  gates?: { points: number; afterRow: number }[];
+  gates?: { points: number; afterRow: number }[]; // afterRow = API restricted_row (display_row)
   totalPointsSpent: number;
   maxPoints?: number;
   onPointChange: (nodeId: number, delta: number) => void;
@@ -37,36 +38,25 @@ export default function TalentTreeGrid({
   onChoiceSelect,
   onReset,
 }: TalentTreeGridProps) {
-  // Compute grid bounds from actual display positions
-  const { minCol, numCols, gateDisplayRows } = useMemo(() => {
-    if (nodes.length === 0) return { minCol: 0, numCols: 1, gateDisplayRows: new Map<number, number>() };
-
+  // Compute grid bounds from API display positions
+  const { minCol, numCols } = useMemo(() => {
+    if (nodes.length === 0) return { minCol: 0, numCols: 1 };
     let mnC = Infinity, mxC = -Infinity;
     for (const n of nodes) {
       if (n.displayCol < mnC) mnC = n.displayCol;
       if (n.displayCol > mxC) mxC = n.displayCol;
     }
+    return { minCol: mnC, numCols: mxC - mnC + 1 };
+  }, [nodes]);
 
-    // Map gates (in gridRow space) to displayRow space
-    const sortedDisplayRows = [...new Set(nodes.map(n => n.displayRow))].sort((a, b) => a - b);
-    const gateMap = new Map<number, number>();
-    for (const gate of gates) {
-      const gatedGridRow = gate.afterRow + 1;
-      if (gatedGridRow < sortedDisplayRows.length) {
-        gateMap.set(sortedDisplayRows[gatedGridRow], gate.points);
-      }
-    }
-
-    return { minCol: mnC, numCols: mxC - mnC + 1, gateDisplayRows: gateMap };
-  }, [nodes, gates]);
-
-  // Build locked set
+  // Build locked set using displayRow — gates.afterRow is now the API restricted_row
+  // Nodes with displayRow >= afterRow are locked when points < gate.points
   const lockedNodeIds = useMemo(() => {
     const locked = new Set<number>();
     for (const gate of gates) {
       if (totalPointsSpent < gate.points) {
         for (const node of nodes) {
-          if (node.gridRow > gate.afterRow) locked.add(node.nodeId);
+          if (node.displayRow >= gate.afterRow) locked.add(node.nodeId);
         }
       }
     }
@@ -86,6 +76,15 @@ export default function TalentTreeGrid({
     }
     return map;
   }, [nodes]);
+
+  // Map gates to the displayRow they appear before
+  const gateAtDisplayRow = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const gate of gates) {
+      map.set(gate.afterRow, gate.points);
+    }
+    return map;
+  }, [gates]);
 
   return (
     <div className="flex flex-col items-center">
@@ -120,7 +119,7 @@ export default function TalentTreeGrid({
       >
         {sortedDisplayRows.map((displayRow) => {
           const rowNodes = nodesByDisplayRow.get(displayRow)!;
-          const gatePoints = gateDisplayRows.get(displayRow);
+          const gatePoints = gateAtDisplayRow.get(displayRow);
 
           return (
             <div key={displayRow}>

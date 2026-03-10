@@ -12,12 +12,6 @@ import type {
 import {
   HUNTER_TREE_ID,
   SURVIVAL_SPEC_ID,
-  SENTINEL_HERO_ID,
-  PACK_LEADER_HERO_ID,
-  HUNTER_CLASS_ROW_COUNTS,
-  SURVIVAL_SPEC_ROW_COUNTS,
-  SENTINEL_HERO_ROW_COUNTS,
-  PACK_LEADER_HERO_ROW_COUNTS,
 } from "../types/talentTreeTypes";
 import {
   mapTalentTree,
@@ -171,20 +165,21 @@ export function useTalentTreeData(
         choices: initChoices([...mapped.sentinelNodes, ...mapped.packLeaderNodes]),
       });
 
-      // Parse gate/restriction lines
+      // Parse gate/restriction lines — use raw API display_row values directly
       if (response.restriction_lines) {
         const gates = getGateRows(response.restriction_lines);
-        // Convert API restricted_row → afterRow (the gate sits between rows)
+        // restricted_row IS the first locked display_row.
+        // afterRow = the display_row just before the gate (max displayRow < restricted_row)
         setClassGates(
           gates.classGates.map((g) => ({
             points: g.points,
-            afterRow: apiRowToGridRow(g.row, mapped.classNodes),
+            afterRow: g.row, // This is the restricted_row from API — nodes with displayRow >= this are locked
           }))
         );
         setSpecGates(
           gates.specGates.map((g) => ({
             points: g.points,
-            afterRow: apiRowToGridRow(g.row, mapped.specNodes),
+            afterRow: g.row,
           }))
         );
       }
@@ -403,17 +398,4 @@ function initChoices(nodes: MappedTalentNode[]): Record<number, number | null> {
   return state;
 }
 
-/** Convert a Blizzard API restriction row number to our 0-indexed grid row.
- *  Finds the closest mapped node with that displayRow and returns its gridRow. */
-function apiRowToGridRow(apiRow: number, nodes: MappedTalentNode[]): number {
-  // The restriction row marks the FIRST locked row.
-  // So the gate sits AFTER the row before it.
-  // Find the highest gridRow that is still BELOW the restricted apiRow.
-  let bestGridRow = 0;
-  for (const node of nodes) {
-    if (node.displayRow < apiRow && node.gridRow > bestGridRow) {
-      bestGridRow = node.gridRow;
-    }
-  }
-  return bestGridRow;
-}
+// No more apiRowToGridRow needed — we use display_row values directly
