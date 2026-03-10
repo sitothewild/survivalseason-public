@@ -963,22 +963,25 @@ export function BlizzardTalentTree({
   const compactRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [compactScale, setCompactScale] = useState(1);
+  const [compactHeight, setCompactHeight] = useState<number | null>(null);
 
   useEffect(() => {
     if (!compact || !compactRef.current || !innerRef.current) return;
-    const observer = new ResizeObserver(() => {
+    const measure = () => {
       const containerW = compactRef.current?.clientWidth ?? 0;
       const innerW = innerRef.current?.scrollWidth ?? 0;
+      const innerH = innerRef.current?.scrollHeight ?? 0;
       if (innerW > 0 && containerW > 0) {
-        setCompactScale(Math.min(1, containerW / innerW));
+        const s = Math.min(1, containerW / innerW);
+        setCompactScale(s);
+        setCompactHeight(innerH * s);
       }
-    });
+    };
+    const observer = new ResizeObserver(measure);
     observer.observe(compactRef.current);
-    const containerW = compactRef.current?.clientWidth ?? 0;
-    const innerW = innerRef.current?.scrollWidth ?? 0;
-    if (innerW > 0 && containerW > 0) {
-      setCompactScale(Math.min(1, containerW / innerW));
-    }
+    observer.observe(innerRef.current);
+    // Measure after a short delay to allow nodes to render
+    requestAnimationFrame(measure);
     return () => observer.disconnect();
   }, [compact, treeData]);
 
