@@ -373,6 +373,7 @@ function InteractiveTalentNode({
 function TreeSection({
   label, nodes, maxPts, rowGates, externalGateMet = true,
   onTalentChange, compact = false, tree: externalTree,
+  onGlobalHover,
 }: {
   label: string;
   nodes: TalentNodeDef[];
@@ -382,20 +383,19 @@ function TreeSection({
   onTalentChange?: (nodeId: string, pts: number, choiceSide?: 0 | 1) => void;
   compact?: boolean;
   tree?: UseTalentTreeReturn;
+  onGlobalHover?: (info: TooltipInfo | null) => void;
 }) {
   const internalTree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
   const tree = externalTree ?? internalTree;
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(nodes, compact), [nodes, compact]);
 
-  const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
 
-  const handleHover = useCallback((info: TooltipInfo | null, x: number, y: number) => {
+  const handleHover = useCallback((info: TooltipInfo | null, _x: number, _y: number) => {
     clearTimeout(tipTimer.current);
     if (!info) {
-      tipTimer.current = window.setTimeout(() => setTooltip(null), 80);
+      tipTimer.current = window.setTimeout(() => onGlobalHover?.(null), 80);
     } else {
-      // Calculate ptsNeeded for locked nodes
       if (info.state === 'LOCKED') {
         const node = nodes.find(n => n.name === info.name);
         if (node) {
@@ -403,15 +403,14 @@ function TreeSection({
           info.ptsNeeded = Math.max(0, gate - tree.totalPoints);
         }
       }
-      setTooltip({ info, x, y });
+      onGlobalHover?.(info);
     }
-  }, [nodes, rowGates, tree.totalPoints]);
+  }, [nodes, rowGates, tree.totalPoints, onGlobalHover]);
 
   const handleRightClick = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.preventDefault();
     const node = nodes.find(n => n.id === nodeId);
     if (node?.type === 'choice') {
-      // Choice nodes: deselect via selectChoice(-1) to clear both choice and point
       tree.selectChoice(nodeId, -1);
       onTalentChange?.(nodeId, 0);
     } else {
@@ -495,8 +494,6 @@ function TreeSection({
           );
         })}
       </div>
-
-      {tooltip && <TalentTooltip info={tooltip.info} x={tooltip.x} y={tooltip.y} />}
     </div>
   );
 }
