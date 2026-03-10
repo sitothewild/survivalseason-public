@@ -6,7 +6,7 @@
 
 import { useMemo } from "react";
 import TalentNode from "./TalentNode";
-import type { MappedTalentNode } from "../types/talentTreeTypes";
+import type { MappedTalentNode } from "@/types/talentTreeTypes";
 
 // ─── PROPS ──────────────────────────────────────────────────
 

@@ -12,7 +12,7 @@ import type {
   MappedTalentNode,
   ChoiceOption,
   TreeSection,
-} from "./talentTreeTypes";
+} from "@/types/talentTreeTypes";
 
 import {
   HUNTER_TREE_ID,
@@ -23,7 +23,7 @@ import {
   SURVIVAL_SPEC_ROW_COUNTS,
   SENTINEL_HERO_ROW_COUNTS,
   PACK_LEADER_HERO_ROW_COUNTS,
-} from "./talentTreeTypes";
+} from "@/types/talentTreeTypes";
 
 // ─── BLIZZARD API CLIENT PATCH ──────────────────────────────
 

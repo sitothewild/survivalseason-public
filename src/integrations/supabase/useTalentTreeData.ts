@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import type {
   BlizzardTalentTreeResponse,
   MappedTalentNode,
-} from "../types/talentTreeTypes";
+} from "@/types/talentTreeTypes";
 import {
   HUNTER_TREE_ID,
   SURVIVAL_SPEC_ID,
@@ -18,12 +18,12 @@ import {
   SURVIVAL_SPEC_ROW_COUNTS,
   SENTINEL_HERO_ROW_COUNTS,
   PACK_LEADER_HERO_ROW_COUNTS,
-} from "../types/talentTreeTypes";
+} from "@/types/talentTreeTypes";
 import {
   mapTalentTree,
   getGateRows,
   debugPrintTree,
-} from "../utils/talentTreeMapper";
+} from "@/utils/talentTreeMapper";
 
 // ─── TYPES ──────────────────────────────────────────────────
 
