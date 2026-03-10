@@ -654,7 +654,10 @@ export function BlizzardTalentTree({
             />
 
             {/* APEX TALENT (under hero tree) */}
-            <ApexSection tree={specTree} />
+            <ApexSection tree={specTree} onGlobalHover={handleGlobalHover} />
+
+            {/* Static tooltip panel — shows hovered talent from any tree */}
+            <StaticTooltipPanel info={globalTooltip} />
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
