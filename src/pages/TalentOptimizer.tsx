@@ -178,8 +178,8 @@ export default function TalentOptimizer() {
             }} />
             {/* Content layer */}
             <div style={{ position:"relative", zIndex:1 }}>
-            {/* Fight style toggle + Copy SimC — top right */}
-            <div style={{ position:"absolute", top:10, right:14, zIndex:10, display:"flex", gap:8, alignItems:"center" }}>
+            {/* Fight style toggle + Copy SimC — top right, stacked */}
+            <div style={{ position:"absolute", top:10, right:14, zIndex:10, display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
               <FightStyleToggle active={fightStyle} onChange={setFightStyle} />
               <button
                 onClick={handleCopySimc}
