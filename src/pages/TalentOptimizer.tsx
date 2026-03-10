@@ -26,6 +26,7 @@ export default function TalentOptimizer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [treeScale, setTreeScale] = useState(1);
+  const [isHovering, setIsHovering] = useState(false);
   const [fightStyle, setFightStyle] = useState<FightStyle>("st");
 
   useEffect(() => {
