@@ -612,46 +612,6 @@ function TalentSection({
             );
           })}
         </div>
-          nodes={nodes}
-          nodeMap={nodeMap}
-          minRow={minRow}
-          minCol={minCol}
-          selectedKeys={selectedKeys}
-          selectedChoices={selectedChoices}
-        />
-
-        {/* Nodes */}
-        {nodes.map((node) => {
-          const key = nodeTalentKey(node);
-          const isCore = !!(key && coreKeys.has(key));
-          // Can select if prereqs met and under budget
-          const prereqsMet = (node.prerequisite_nodes ?? []).every((p) => {
-            const pNode = nodeMap.get(p.id);
-            if (!pNode) return true;
-            const pk = nodeTalentKey(pNode);
-            return pk ? (coreKeys.has(pk) || selectedKeys.has(pk)) : false;
-          });
-          const canSelect = prereqsMet && (
-            isCore || (selectedKeys.has(key ?? "") ? true : usedPts < pointBudget)
-          );
-
-          return (
-            <TalentNodeCircle
-              key={node.id}
-              node={node}
-              minRow={minRow}
-              minCol={minCol}
-              mediaMap={mediaMap}
-              selectedKeys={selectedKeys}
-              selectedChoices={selectedChoices}
-              canSelect={canSelect}
-              isCore={isCore}
-              onClick={() => onToggle(node)}
-              onChoiceClick={(idx) => onChoiceSelect(node, idx)}
-              onHover={onHover}
-            />
-          );
-        })}
       </div>
     </div>
   );
