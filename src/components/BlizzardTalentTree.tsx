@@ -156,12 +156,15 @@ function nodeTalentKey(node: BzTalentNode): string | null {
   return name ? (NAME_TO_KEY[name] ?? null) : null;
 }
 
-/** Pixel center of a node within a tree panel's SVG (excludes PAD, which is applied by SVG position). */
-function nodeCenterPx(node: BzTalentNode, minRow: number, minCol: number) {
-  return {
-    x: (node.display_col - minCol) * STEP + CELL / 2,
-    y: (node.display_row - minRow) * STEP + CELL / 2,
-  };
+/** Pixel center of a node in the tree SVG, using compact row/col maps. */
+function nodeCenterPx(
+  node: BzTalentNode,
+  rowMap: Map<number, number>,
+  colMap: Map<number, number>,
+) {
+  const r = (rowMap.get(node.display_row) ?? 1) - 1;
+  const c = (colMap.get(node.display_col) ?? 1) - 1;
+  return { x: c * STEP + CELL / 2, y: r * STEP + CELL / 2 };
 }
 
 function buildNodeMap(nodes: BzTalentNode[]) {
@@ -170,20 +173,26 @@ function buildNodeMap(nodes: BzTalentNode[]) {
   return m;
 }
 
+/**
+ * Computes a compact grid layout: only columns and rows that actually have at
+ * least one node are included, eliminating empty "gap" columns that cause the
+ * large blank areas on either side of each tree panel.
+ */
 function gridDimensions(nodes: BzTalentNode[]) {
-  if (!nodes.length) return { numRows: 0, numCols: 0, minRow: 0, minCol: 0, w: 0, h: 0 };
-  const rows = nodes.map((n) => n.display_row);
-  const cols = nodes.map((n) => n.display_col);
-  const minRow = Math.min(...rows);
-  const maxRow = Math.max(...rows);
-  const minCol = Math.min(...cols);
-  const maxCol = Math.max(...cols);
-  const numRows = maxRow - minRow + 1;
-  const numCols = maxCol - minCol + 1;
+  if (!nodes.length) {
+    return { numRows: 0, numCols: 0, w: 0, h: 0, rowMap: new Map<number, number>(), colMap: new Map<number, number>() };
+  }
+  const uniqueRows = [...new Set(nodes.map((n) => n.display_row))].sort((a, b) => a - b);
+  const uniqueCols = [...new Set(nodes.map((n) => n.display_col))].sort((a, b) => a - b);
+  const rowMap = new Map(uniqueRows.map((r, i) => [r, i + 1]));
+  const colMap = new Map(uniqueCols.map((c, i) => [c, i + 1]));
+  const numRows = uniqueRows.length;
+  const numCols = uniqueCols.length;
   return {
-    numRows, numCols, minRow, minCol,
-    w: numCols * STEP - GAP,   // exact pixel span of grid content
+    numRows, numCols,
+    w: numCols * STEP - GAP,
     h: numRows * STEP - GAP,
+    rowMap, colMap,
   };
 }
 
@@ -470,15 +479,15 @@ function ChoiceHalf({ entry, mediaMap, active, brightness, side }: any) {
 interface ConnectionLinesProps {
   nodes: BzTalentNode[];
   nodeMap: Map<number, BzTalentNode>;
-  minRow: number;
-  minCol: number;
+  rowMap: Map<number, number>;
+  colMap: Map<number, number>;
   w: number;
   h: number;
   selectedKeys: Set<string>;
   coreKeys: Set<string>;
 }
 
-function ConnectionLines({ nodes, nodeMap, minRow, minCol, w, h, selectedKeys, coreKeys }: ConnectionLinesProps) {
+function ConnectionLines({ nodes, nodeMap, rowMap, colMap, w, h, selectedKeys, coreKeys }: ConnectionLinesProps) {
   const lines = useMemo(() => {
     const result: Array<{
       key: string; x1: number; y1: number; x2: number; y2: number; active: boolean;
@@ -488,8 +497,8 @@ function ConnectionLines({ nodes, nodeMap, minRow, minCol, w, h, selectedKeys, c
       for (const prereq of node.prerequisite_nodes ?? []) {
         const prereqNode = nodeMap.get(prereq.id);
         if (!prereqNode) continue;
-        const from = nodeCenterPx(prereqNode, minRow, minCol);
-        const to   = nodeCenterPx(node, minRow, minCol);
+        const from = nodeCenterPx(prereqNode, rowMap, colMap);
+        const to   = nodeCenterPx(node, rowMap, colMap);
         const pk = nodeTalentKey(prereqNode);
         const nk = nodeTalentKey(node);
         const prereqOn = pk ? (coreKeys.has(pk) || selectedKeys.has(pk)) : false;
@@ -503,7 +512,7 @@ function ConnectionLines({ nodes, nodeMap, minRow, minCol, w, h, selectedKeys, c
       }
     }
     return result;
-  }, [nodes, nodeMap, minRow, minCol, selectedKeys, coreKeys]);
+  }, [nodes, nodeMap, rowMap, colMap, selectedKeys, coreKeys]);
 
   return (
     <svg
@@ -599,7 +608,7 @@ function TalentSection({
   selectedKeys, selectedChoices, coreKeys,
   onToggle, onChoiceSelect, onHover,
 }: TalentSectionProps) {
-  const { numRows, numCols, minRow, minCol, w, h } = useMemo(
+  const { numRows, numCols, w, h, rowMap, colMap } = useMemo(
     () => gridDimensions(nodes), [nodes],
   );
   const nodeMap = useMemo(() => buildNodeMap(nodes), [nodes]);
@@ -638,7 +647,7 @@ function TalentSection({
         {/* Connection lines (SVG offset by PAD to align with grid content) */}
         <ConnectionLines
           nodes={nodes} nodeMap={nodeMap}
-          minRow={minRow} minCol={minCol}
+          rowMap={rowMap} colMap={colMap}
           w={w} h={h}
           selectedKeys={selectedKeys} coreKeys={coreKeys}
         />
@@ -670,8 +679,8 @@ function TalentSection({
               <div
                 key={node.id}
                 style={{
-                  gridRow:    node.display_row - minRow + 1,
-                  gridColumn: node.display_col - minCol + 1,
+                  gridRow:    rowMap.get(node.display_row) ?? 1,
+                  gridColumn: colMap.get(node.display_col) ?? 1,
                 }}
               >
                 <TalentNode
