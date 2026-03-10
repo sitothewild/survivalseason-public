@@ -276,7 +276,7 @@ function InteractiveTalentNode({
           width: sz, height: sz, borderRadius: "50%",
           border: `2.5px solid ${ringColor}`, boxShadow: glow,
           overflow: "hidden", cursor, position: "relative",
-          background: "transparent", display: "flex",
+          background: NODE_FILL, display: "flex",
         }}
         onMouseEnter={handleEnter}
         onMouseMove={(e) => handleEnter(e)}
@@ -285,20 +285,24 @@ function InteractiveTalentNode({
       >
         {/* Left half */}
         <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(0); }}
-          style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative", flexShrink: 0 }}>
-          <img src={iconA} alt="" loading="lazy" draggable={false}
-            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
-            style={{ width: sz, height: sz, objectFit: "cover", position: "absolute", left: 0, top: 0,
-              filter: filterA, transition: "filter .15s" }} />
-        </div>
+          style={{
+            width: "50%", height: "100%", flexShrink: 0,
+            backgroundImage: `url(${iconA})`,
+            backgroundSize: `${sz}px ${sz}px`,
+            backgroundPosition: "left center",
+            backgroundRepeat: "no-repeat",
+            filter: filterA, transition: "filter .15s",
+          }} />
         {/* Right half */}
         <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(1); }}
-          style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative", flexShrink: 0 }}>
-          <img src={iconB} alt="" loading="lazy" draggable={false}
-            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
-            style={{ width: sz, height: sz, objectFit: "cover", position: "absolute", left: -(sz / 2), top: 0,
-              filter: filterB, transition: "filter .15s" }} />
-        </div>
+          style={{
+            width: "50%", height: "100%", flexShrink: 0,
+            backgroundImage: `url(${iconB})`,
+            backgroundSize: `${sz}px ${sz}px`,
+            backgroundPosition: "right center",
+            backgroundRepeat: "no-repeat",
+            filter: filterB, transition: "filter .15s",
+          }} />
         {/* Dashed divider */}
         <div style={{
           position: "absolute", left: "50%", top: 4, bottom: 4, width: 1,
