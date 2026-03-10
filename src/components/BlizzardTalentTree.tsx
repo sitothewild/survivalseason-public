@@ -736,7 +736,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
       `}</style>
     </div>
   );
-}
+});
 
 // Apex section rendered under the Hero tree
 function ApexSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void }) {
