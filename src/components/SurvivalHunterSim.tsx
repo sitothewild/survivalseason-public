@@ -167,9 +167,11 @@ function parseSimcString(simcText) {
   };
 
   const slotLabels: Record<string, string> = {
-    head:'Head',neck:'Neck',shoulders:'Shoulders',back:'Back',chest:'Chest',wrist:'Wrist',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',
+    head:'Head',neck:'Neck',shoulders:'Shoulders',shoulder:'Shoulders',back:'Back',chest:'Chest',wrist:'Wrist',wrists:'Wrist',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',
     finger1:'Ring 1',finger2:'Ring 2',trinket1:'Trinket 1',trinket2:'Trinket 2',main_hand:'Main Hand',off_hand:'Off Hand',tabard:'Tabard',shirt:'Shirt'
   };
+  // Canonical slot keys used for display grid mapping
+  const SLOT_ALIASES: Record<string, string> = { shoulder: 'shoulders', wrists: 'wrist' };
   const gearSlotNames = Object.keys(slotLabels).join('|');
   const gearSlotPattern = new RegExp(`^(${gearSlotNames})=`);
   const bagSectionIdx = lines.findIndex(l => /gear from bags/i.test(l));
@@ -179,7 +181,7 @@ function parseSimcString(simcText) {
     if (!gearSlotPattern.test(line)) return;
     const slotMatch = line.match(/^(\w+)=/); if (!slotMatch) return;
     const rawSlot = slotMatch[1];
-    const slotKey = rawSlot.replace(/^shoulder$/, 'shoulders').replace(/^wrists$/, 'wrist');
+    const slotKey = SLOT_ALIASES[rawSlot] || rawSlot;
     if (slotKey === 'tabard' || slotKey === 'shirt') return;
     const idMatch = line.match(/,id=(\d+)/);
     let itemName = slotLabels[slotKey] || slotKey; let ilvl = 0;
@@ -1772,36 +1774,25 @@ export default function SurvivalHunterSim() {
                     {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
                   </div>
                   {parsedChar && parsedChar.gear.length > 0 ? (
-                    (() => {
-                      const SLOT_ORDER_L = ['head','neck','shoulders','back','chest','wrist','hands','waist'];
-                      const SLOT_ORDER_R = ['legs','feet','finger1','finger2','trinket1','trinket2','main_hand','off_hand'];
-                      const SLOT_LABELS_L = ['Head','Neck','Shoulders','Back','Chest','Wrist','Hands','Waist'];
-                      const SLOT_LABELS_R = ['Legs','Feet','Ring 1','Ring 2','Trinket 1','Trinket 2','Main Hand','Off Hand'];
-                      const gearMap: Record<string, any> = {};
-                      parsedChar.gear.forEach((g: any) => { gearMap[g.slot] = g; });
-                      const cols = [
-                        SLOT_ORDER_L.map((slot, i) => ({ slot, label: SLOT_LABELS_L[i], gear: gearMap[slot] })),
-                        SLOT_ORDER_R.map((slot, i) => ({ slot, label: SLOT_LABELS_R[i], gear: gearMap[slot] })),
-                      ];
-                      return (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
-                          {cols.map((col, ci) => (
-                            <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
-                              {col.map(({ slot, label, gear: g }, i) => {
-                                const qualityColor = g ? getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl) : "#2e3a50";
-                                return (
-                                  <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g?.itemId ? "pointer" : "default" }}
-                                    onMouseEnter={e => g?.itemId && handleItemHover(g.itemId, e)}>
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 48, flexShrink: 0 }}>{g?.slotLabel || label}</span>
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 2 }}>{g?.name || "—"}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ))}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
+                      {[
+                        parsedChar.gear.filter((g: any) => ['head','neck','shoulders','back','chest','wrist','hands','waist'].includes(g.slot)),
+                        parsedChar.gear.filter((g: any) => ['legs','feet','finger1','finger2','trinket1','trinket2','main_hand','off_hand'].includes(g.slot)),
+                      ].map((col, ci) => (
+                        <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                          {col.map((g, i) => {
+                            const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
+                            return (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
+                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 48, flexShrink: 0 }}>{g.slotLabel}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 2 }}>{g.name || "—"}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })()
+                      ))}
+                    </div>
                   ) : (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }}>
                       {[
