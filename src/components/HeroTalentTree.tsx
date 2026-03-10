@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 
 // ── Types ─────────────────────────────────────────────────────
 interface HeroTalentChoice {
@@ -15,9 +15,7 @@ interface HeroTalentNodeDef {
   label: string;
   spellId: number;
   desc: string;
-  /** If present, this is a choice node — pick A or B */
   choiceB?: HeroTalentChoice;
-  /** Prerequisite node IDs that must be selected first */
   requires?: number[];
 }
 
@@ -25,22 +23,17 @@ interface HeroTreeDef {
   name: string;
   icon: string;
   maxPoints: number;
-  /** Points needed in earlier rows to unlock each row */
-  tierGates: Record<number, number>; // row -> min points spent in rows < row
+  tierGates: Record<number, number>;
   nodes: HeroTalentNodeDef[];
 }
 
 // ── Data ─────────────────────────────────────────────────────
-// Blizzard API node IDs & spell IDs from talent-tree/774/playable-specialization/255
-// Midnight 12.0.1 (live)
-
 const SENTINEL_TREE: HeroTreeDef = {
   name: "Sentinel",
   icon: "🦉",
   maxPoints: 10,
   tierGates: { 1: 0, 2: 2, 3: 5, 4: 8 },
   nodes: [
-    // ─── Row 1 ─────────────────────────────────────
     { nodeId: 94973, row: 1, col: 1, label: "Lunar Inspiration", spellId: 1253825,
       desc: "Your Sentinel abilities deal increased Arcane damage." },
     { nodeId: 94958, row: 1, col: 0, label: "Stargazer", spellId: 1253751,
@@ -53,23 +46,20 @@ const SENTINEL_TREE: HeroTreeDef = {
       desc: "When Sentinel expires, it deals Arcane damage to all marked targets.",
       choiceB: { key: "stalkAndStrike", label: "Stalk and Strike", spellId: 1266069,
         desc: "Mongoose Bite / Raptor Strike damage increased for each active Sentinel Mark." } },
-    // ─── Row 2 ─────────────────────────────────────
     { nodeId: 94960, row: 2, col: 0, label: "Don't Look Back", spellId: 450373,
       desc: "Harpoon gains Sentinel Mark application on impact.", requires: [94958] },
     { nodeId: 94959, row: 2, col: 1, label: "Catch Out", spellId: 450376,
       desc: "Kill Command has a chance to apply an additional Sentinel Mark.", requires: [94973, 94971] },
     { nodeId: 94957, row: 2, col: 2, label: "Invigorating Pulse", spellId: 450380,
       desc: "Sentinel Mark consumption heals you for a small amount.", requires: [94971, 110028] },
-    // ─── Row 3 ─────────────────────────────────────
     { nodeId: 94970, row: 3, col: 0, label: "Eyes Closed", spellId: 1253846,
       desc: "Sentinel Mark damage is increased by 10%.", requires: [94960] },
     { nodeId: 94956, row: 3, col: 1, label: "Lunar Calling", spellId: 450378,
       desc: "Sentinel Mark consumption damage is increased and can critically strike.", requires: [94959] },
     { nodeId: 109805, row: 3, col: 3, label: "Release and Reload", spellId: 1264903,
       desc: "Sentinel's cooldown is reduced when you consume Sentinel Marks.", requires: [94957] },
-    // ─── Row 4 (Capstone) ──────────────────────────
     { nodeId: 94955, row: 4, col: 1, label: "Lunar Storm", spellId: 450384,
-      desc: "Capstone: Sentinel Mark consumption triggers a devastating Lunar Storm AoE. Your strongest burst AoE event.",
+      desc: "Capstone: Sentinel Mark consumption triggers a devastating Lunar Storm AoE.",
       requires: [94970, 94956, 109805] },
   ],
 };
@@ -80,7 +70,6 @@ const PACK_LEADER_TREE: HeroTreeDef = {
   maxPoints: 10,
   tierGates: { 1: 0, 2: 2, 3: 5, 4: 8 },
   nodes: [
-    // ─── Row 1 ─────────────────────────────────────
     { nodeId: 94985, row: 1, col: 0, label: "Vicious Hunt", spellId: 472358,
       desc: "Kill Command has a chance to summon a dire beast to attack your target." },
     { nodeId: 94962, row: 1, col: 2, label: "Pack Coordination", spellId: 472357,
@@ -89,7 +78,6 @@ const PACK_LEADER_TREE: HeroTreeDef = {
       desc: "Your pet's Basic Attack generates Focus for you.",
       choiceB: { key: "slickedShoes_unused", label: "Den Recovery", spellId: 472720,
         desc: "Aspect of the Turtle also heals your pet to full." } },
-    // ─── Row 2 ─────────────────────────────────────
     { nodeId: 94972, row: 2, col: 0, label: "Ursine Fury", spellId: 472476,
       desc: "Kill Command deals increased damage and has a chance to reset its cooldown.",
       choiceB: { key: "sharpenedClaws", label: "Sharpened Claws", spellId: 472524,
@@ -101,7 +89,6 @@ const PACK_LEADER_TREE: HeroTreeDef = {
       desc: "Kill Command damage is increased on targets below 20% health.", requires: [94962, 94979] },
     { nodeId: 109803, row: 2, col: 3, label: "Frenzied Tear", spellId: 1264781,
       desc: "Your pet enters a frenzy after Kill Command, increasing attack speed.", requires: [94979] },
-    // ─── Row 3 ─────────────────────────────────────
     { nodeId: 94969, row: 3, col: 0, label: "Go for the Throat", spellId: 472660,
       desc: "Kill Command generates additional Focus.", requires: [94972] },
     { nodeId: 94967, row: 3, col: 1, label: "Furious Assault", spellId: 472707,
@@ -113,9 +100,8 @@ const PACK_LEADER_TREE: HeroTreeDef = {
       requires: [94988] },
     { nodeId: 109802, row: 3, col: 3, label: "Claw Frenzy", spellId: 1264775,
       desc: "Your pet's attack speed is increased for each active bleed on the target.", requires: [109803] },
-    // ─── Row 4 (Capstone) ──────────────────────────
     { nodeId: 94966, row: 4, col: 1, label: "Pack Assault", spellId: 472741,
-      desc: "Capstone: Takedown triggers a Pack Assault — all beasts attack simultaneously for massive burst.",
+      desc: "Capstone: Takedown triggers a Pack Assault — all beasts attack simultaneously.",
       requires: [94969, 94967, 109804, 109802] },
   ],
 };
@@ -137,9 +123,7 @@ interface Props {
 }
 
 interface SelectedState {
-  /** Set of nodeIds that are selected */
   selected: Set<number>;
-  /** For choice nodes: nodeId -> 'a' | 'b' */
   choices: Record<number, "a" | "b">;
 }
 
@@ -147,7 +131,6 @@ export default function HeroTalentTree({ heroKey }: Props) {
   const tree = heroKey === "sentinel" ? SENTINEL_TREE : PACK_LEADER_TREE;
   const pal = heroKey === "sentinel" ? COLORS.sentinel : COLORS.packLeader;
 
-  // Initialize: all nodes selected (hero trees typically have all 10 taken), choice A default
   const [state, setState] = useState<SelectedState>(() => {
     const selected = new Set(tree.nodes.map(n => n.nodeId));
     const choices: Record<number, "a" | "b"> = {};
@@ -158,45 +141,37 @@ export default function HeroTalentTree({ heroKey }: Props) {
   const pointsSpent = state.selected.size;
   const rows = [1, 2, 3, 4];
 
-  // Points spent in rows before a given row
   const pointsBeforeRow = useCallback((row: number) => {
     return tree.nodes.filter(n => n.row < row && state.selected.has(n.nodeId)).length;
   }, [tree.nodes, state.selected]);
 
-  // Check if a row is unlocked
   const isRowUnlocked = useCallback((row: number) => {
     const gate = tree.tierGates[row] ?? 0;
     return pointsBeforeRow(row) >= gate;
   }, [tree.tierGates, pointsBeforeRow]);
 
-  // Check if a node's prerequisites are met
   const prereqsMet = useCallback((node: HeroTalentNodeDef) => {
     if (!node.requires?.length) return true;
     return node.requires.some(reqId => state.selected.has(reqId));
   }, [state.selected]);
 
-  // Check if node can be selected
   const canSelect = useCallback((node: HeroTalentNodeDef) => {
-    if (state.selected.has(node.nodeId)) return true; // already selected
+    if (state.selected.has(node.nodeId)) return true;
     if (pointsSpent >= tree.maxPoints) return false;
     if (!isRowUnlocked(node.row)) return false;
     if (!prereqsMet(node)) return false;
     return true;
   }, [state.selected, pointsSpent, tree.maxPoints, isRowUnlocked, prereqsMet]);
 
-  // Check if deselecting a node would orphan downstream nodes
   const canDeselect = useCallback((node: HeroTalentNodeDef) => {
     if (!state.selected.has(node.nodeId)) return false;
-    // Check if removing this node would break any selected node's prereqs
     const hypothetical = new Set(state.selected);
     hypothetical.delete(node.nodeId);
     for (const n of tree.nodes) {
       if (!hypothetical.has(n.nodeId)) continue;
       if (!n.requires?.length) continue;
-      // At least one prereq must still be met
       if (!n.requires.some(r => hypothetical.has(r))) return false;
     }
-    // Check tier gates still hold
     for (const n of tree.nodes) {
       if (!hypothetical.has(n.nodeId)) continue;
       const ptsBefore = tree.nodes.filter(x => x.row < n.row && hypothetical.has(x.nodeId)).length;
@@ -209,10 +184,8 @@ export default function HeroTalentTree({ heroKey }: Props) {
     setState(prev => {
       const next = { selected: new Set(prev.selected), choices: { ...prev.choices } };
       if (next.selected.has(node.nodeId)) {
-        // Try deselect
         const hypothetical = new Set(next.selected);
         hypothetical.delete(node.nodeId);
-        // Validate
         let valid = true;
         for (const n of tree.nodes) {
           if (!hypothetical.has(n.nodeId)) continue;
@@ -250,16 +223,58 @@ export default function HeroTalentTree({ heroKey }: Props) {
     setState({ selected: new Set(), choices });
   }, [tree]);
 
-  // Get max columns for the tree
   const maxCol = useMemo(() => Math.max(...tree.nodes.map(n => n.col)), [tree.nodes]);
-
-  // Hover state for tooltip
   const [hovered, setHovered] = useState<number | null>(null);
+
+  // ── SVG connection lines ───────────────────────────────────
+  const gridRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [lines, setLines] = useState<{ x1: number; y1: number; x2: number; y2: number; active: boolean }[]>([]);
+
+  const computeLines = useCallback(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const gridRect = grid.getBoundingClientRect();
+    const newLines: typeof lines = [];
+
+    for (const node of tree.nodes) {
+      if (!node.requires?.length) continue;
+      const childEl = nodeRefs.current[node.nodeId];
+      if (!childEl) continue;
+      const childRect = childEl.getBoundingClientRect();
+      const cx = childRect.left + childRect.width / 2 - gridRect.left;
+      const cy = childRect.top - gridRect.top;
+
+      for (const reqId of node.requires) {
+        const parentEl = nodeRefs.current[reqId];
+        if (!parentEl) continue;
+        const parentRect = parentEl.getBoundingClientRect();
+        const px = parentRect.left + parentRect.width / 2 - gridRect.left;
+        const py = parentRect.top + parentRect.height - gridRect.top;
+
+        const bothSelected = state.selected.has(node.nodeId) && state.selected.has(reqId);
+        newLines.push({ x1: px, y1: py, x2: cx, y2: cy, active: bothSelected });
+      }
+    }
+    setLines(newLines);
+  }, [tree.nodes, state.selected]);
+
+  useEffect(() => {
+    computeLines();
+    window.addEventListener("resize", computeLines);
+    return () => window.removeEventListener("resize", computeLines);
+  }, [computeLines]);
+
+  // Recompute after initial render
+  useEffect(() => {
+    const t = setTimeout(computeLines, 50);
+    return () => clearTimeout(t);
+  }, [computeLines, heroKey]);
 
   return (
     <div style={{ background: COLORS.surface, borderRadius: 14, padding: 24, border: `1px solid ${COLORS.border}` }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <div>
           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3,
             color: pal.clr, textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
@@ -267,11 +282,10 @@ export default function HeroTalentTree({ heroKey }: Props) {
             <div style={{ flex: 1, height: 1, background: pal.bdr, minWidth: 40 }} />
           </div>
           <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: COLORS.textMid }}>
-            Click nodes to select/deselect. Choice nodes have a swap button. Tier gates enforce row unlocking.
+            Click nodes to select/deselect · Choice nodes have a swap button · Tier gates enforce row unlocking
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Point counter */}
           <div style={{
             padding: "6px 14px", borderRadius: 8,
             background: pointsSpent === tree.maxPoints ? COLORS.greenBg : COLORS.goldBg,
@@ -294,197 +308,205 @@ export default function HeroTalentTree({ heroKey }: Props) {
         </div>
       </div>
 
-      {/* Tree grid */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {rows.map(row => {
-          const rowNodes = tree.nodes.filter(n => n.row === row);
-          const unlocked = isRowUnlocked(row);
-          const gate = tree.tierGates[row] ?? 0;
-          const isCapstone = row === 4;
+      {/* Tree grid with SVG overlay */}
+      <div ref={gridRef} style={{ position: "relative" }}>
+        {/* SVG lines layer */}
+        <svg
+          style={{
+            position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
+            pointerEvents: "none", zIndex: 1,
+          }}
+        >
+          <defs>
+            <linearGradient id={`line-active-${heroKey}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={pal.clr} stopOpacity="0.9" />
+              <stop offset="100%" stopColor={pal.clr} stopOpacity="0.5" />
+            </linearGradient>
+            <linearGradient id={`line-inactive-${heroKey}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={COLORS.textDim} stopOpacity="0.4" />
+              <stop offset="100%" stopColor={COLORS.textDim} stopOpacity="0.15" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {lines.map((l, i) => (
+            <line
+              key={i}
+              x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke={l.active ? `url(#line-active-${heroKey})` : `url(#line-inactive-${heroKey})`}
+              strokeWidth={l.active ? 2.5 : 1.5}
+              strokeDasharray={l.active ? "none" : "4 3"}
+              filter={l.active ? "url(#glow)" : "none"}
+              strokeLinecap="round"
+            />
+          ))}
+          {/* Active line dots at endpoints */}
+          {lines.filter(l => l.active).map((l, i) => (
+            <g key={`dots-${i}`}>
+              <circle cx={l.x1} cy={l.y1} r={3} fill={pal.clr} opacity={0.7} />
+              <circle cx={l.x2} cy={l.y2} r={3} fill={pal.clr} opacity={0.7} />
+            </g>
+          ))}
+        </svg>
 
-          return (
-            <div key={row}>
-              {/* Tier gate indicator */}
-              {gate > 0 && (
+        {/* Nodes grid */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, position: "relative", zIndex: 2 }}>
+          {rows.map(row => {
+            const rowNodes = tree.nodes.filter(n => n.row === row);
+            const unlocked = isRowUnlocked(row);
+            const gate = tree.tierGates[row] ?? 0;
+            const isCapstone = row === 4;
+
+            return (
+              <div key={row}>
+                {gate > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, paddingLeft: 4 }}>
+                    <div style={{
+                      flex: 1, height: 1,
+                      background: unlocked
+                        ? `linear-gradient(90deg, ${pal.clr}44, transparent)`
+                        : `linear-gradient(90deg, ${COLORS.textDim}44, transparent)`,
+                    }} />
+                    <span style={{
+                      fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2,
+                      color: unlocked ? pal.clr : COLORS.textDim,
+                      padding: "2px 8px", borderRadius: 4,
+                      background: unlocked ? pal.glow : "transparent",
+                      border: `1px solid ${unlocked ? pal.clr + "44" : COLORS.borderSub}`,
+                    }}>
+                      {unlocked ? "✓" : "🔒"} {gate} PTS REQUIRED
+                    </span>
+                    <div style={{
+                      flex: 1, height: 1,
+                      background: unlocked
+                        ? `linear-gradient(90deg, transparent, ${pal.clr}44)`
+                        : `linear-gradient(90deg, transparent, ${COLORS.textDim}44)`,
+                    }} />
+                  </div>
+                )}
+
                 <div style={{
-                  display: "flex", alignItems: "center", gap: 8, marginBottom: 6, paddingLeft: 4,
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${maxCol + 1}, 1fr)`,
+                  gap: 8,
                 }}>
-                  <div style={{
-                    flex: 1, height: 1,
-                    background: unlocked
-                      ? `linear-gradient(90deg, ${pal.clr}44, transparent)`
-                      : `linear-gradient(90deg, ${COLORS.textDim}44, transparent)`,
-                  }} />
-                  <span style={{
-                    fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2,
-                    color: unlocked ? pal.clr : COLORS.textDim,
-                    padding: "2px 8px", borderRadius: 4,
-                    background: unlocked ? pal.glow : "transparent",
-                    border: `1px solid ${unlocked ? pal.clr + "44" : COLORS.borderSub}`,
-                  }}>
-                    {unlocked ? "✓" : "🔒"} {gate} PTS REQUIRED
-                  </span>
-                  <div style={{
-                    flex: 1, height: 1,
-                    background: unlocked
-                      ? `linear-gradient(90deg, transparent, ${pal.clr}44)`
-                      : `linear-gradient(90deg, transparent, ${COLORS.textDim}44)`,
-                  }} />
-                </div>
-              )}
+                  {Array.from({ length: maxCol + 1 }, (_, col) => {
+                    const node = rowNodes.find(n => n.col === col);
+                    if (!node) return <div key={col} />;
 
-              {/* Nodes row */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: `repeat(${maxCol + 1}, 1fr)`,
-                gap: 8,
-              }}>
-                {/* Fill empty cols */}
-                {Array.from({ length: maxCol + 1 }, (_, col) => {
-                  const node = rowNodes.find(n => n.col === col);
-                  if (!node) return <div key={col} />;
+                    const selected = state.selected.has(node.nodeId);
+                    const selectable = canSelect(node);
+                    const isChoice = !!node.choiceB;
+                    const choiceIsB = state.choices[node.nodeId] === "b";
+                    const activeLabel = isChoice && choiceIsB ? node.choiceB!.label : node.label;
+                    const activeDesc = isChoice && choiceIsB ? node.choiceB!.desc : node.desc;
+                    const activeSpell = isChoice && choiceIsB ? node.choiceB!.spellId : node.spellId;
+                    const locked = !unlocked || (!selected && !selectable);
+                    const isHov = hovered === node.nodeId;
 
-                  const selected = state.selected.has(node.nodeId);
-                  const selectable = canSelect(node);
-                  const deselectable = canDeselect(node);
-                  const isChoice = !!node.choiceB;
-                  const choiceIsB = state.choices[node.nodeId] === "b";
-                  const activeLabel = isChoice && choiceIsB ? node.choiceB!.label : node.label;
-                  const activeDesc = isChoice && choiceIsB ? node.choiceB!.desc : node.desc;
-                  const activeSpell = isChoice && choiceIsB ? node.choiceB!.spellId : node.spellId;
-                  const locked = !unlocked || (!selected && !selectable);
-                  const isHov = hovered === node.nodeId;
-
-                  return (
-                    <div key={col} style={{ position: "relative" }}
-                      onMouseEnter={() => setHovered(node.nodeId)}
-                      onMouseLeave={() => setHovered(null)}>
+                    return (
                       <div
-                        onClick={() => !locked && toggleNode(node)}
-                        style={{
-                          borderRadius: isCapstone ? 12 : 10,
-                          padding: isCapstone ? "14px 16px" : "10px 12px",
-                          cursor: locked ? "not-allowed" : "pointer",
-                          opacity: locked ? 0.4 : 1,
-                          transition: "all .2s",
-                          transform: isHov && !locked ? "scale(1.02)" : "scale(1)",
-                          background: selected
-                            ? isCapstone
-                              ? `linear-gradient(135deg, ${pal.bg}, ${pal.bdr})`
-                              : pal.glow
-                            : COLORS.surface2,
-                          border: `2px solid ${
-                            selected
-                              ? isCapstone ? pal.clr : pal.clr + "88"
-                              : locked ? COLORS.borderSub : COLORS.border
-                          }`,
-                          boxShadow: selected
-                            ? `0 0 12px ${pal.clr}22, inset 0 1px 0 ${pal.clr}11`
-                            : "none",
-                        }}
+                        key={col}
+                        ref={el => { nodeRefs.current[node.nodeId] = el; }}
+                        style={{ position: "relative" }}
+                        onMouseEnter={() => setHovered(node.nodeId)}
+                        onMouseLeave={() => setHovered(null)}
                       >
-                        {/* Row/tier label */}
-                        <div style={{
-                          display: "flex", alignItems: "center", justifyContent: "space-between",
-                          marginBottom: 4,
-                        }}>
-                          <span style={{
-                            fontFamily: "'Orbitron',sans-serif", fontSize: 7,
-                            color: selected ? pal.clr : COLORS.textDim,
-                            letterSpacing: 1.5,
-                          }}>
-                            {isCapstone ? "★ CAPSTONE" : `T${row}`}
-                            {isChoice && (
-                              <span style={{ color: COLORS.goldLight, marginLeft: 6 }}>◆ CHOICE</span>
-                            )}
-                          </span>
-                          {/* Selection indicator */}
-                          <div style={{
-                            width: 14, height: 14, borderRadius: isCapstone ? 4 : 7,
-                            border: `2px solid ${selected ? pal.clr : COLORS.textDim + "66"}`,
-                            background: selected ? pal.clr : "transparent",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 8, color: selected ? "#000" : "transparent",
+                        <div
+                          onClick={() => !locked && toggleNode(node)}
+                          style={{
+                            borderRadius: isCapstone ? 12 : 10,
+                            padding: isCapstone ? "14px 16px" : "10px 12px",
+                            cursor: locked ? "not-allowed" : "pointer",
+                            opacity: locked ? 0.4 : 1,
                             transition: "all .2s",
-                          }}>
-                            ✓
+                            transform: isHov && !locked ? "scale(1.02)" : "scale(1)",
+                            background: selected
+                              ? isCapstone
+                                ? `linear-gradient(135deg, ${pal.bg}, ${pal.bdr})`
+                                : pal.glow
+                              : COLORS.surface2,
+                            border: `2px solid ${
+                              selected
+                                ? isCapstone ? pal.clr : pal.clr + "88"
+                                : locked ? COLORS.borderSub : COLORS.border
+                            }`,
+                            boxShadow: selected
+                              ? `0 0 12px ${pal.clr}22, inset 0 1px 0 ${pal.clr}11`
+                              : "none",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span style={{
+                              fontFamily: "'Orbitron',sans-serif", fontSize: 7,
+                              color: selected ? pal.clr : COLORS.textDim, letterSpacing: 1.5,
+                            }}>
+                              {isCapstone ? "★ CAPSTONE" : `T${row}`}
+                              {isChoice && <span style={{ color: COLORS.goldLight, marginLeft: 6 }}>◆ CHOICE</span>}
+                            </span>
+                            <div style={{
+                              width: 14, height: 14, borderRadius: isCapstone ? 4 : 7,
+                              border: `2px solid ${selected ? pal.clr : COLORS.textDim + "66"}`,
+                              background: selected ? pal.clr : "transparent",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 8, color: selected ? "#000" : "transparent", transition: "all .2s",
+                            }}>✓</div>
+                          </div>
+
+                          <div style={{
+                            fontFamily: "'Rajdhani',sans-serif", fontSize: isCapstone ? 15 : 13,
+                            fontWeight: 700, color: selected ? pal.clr : COLORS.textSec, marginBottom: 4,
+                          }}>{activeLabel}</div>
+
+                          <div style={{
+                            fontFamily: "'Rajdhani',sans-serif", fontSize: 11,
+                            color: COLORS.textMid, lineHeight: 1.45, minHeight: 30,
+                          }}>{activeDesc}</div>
+
+                          <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{
+                              fontFamily: "'IBM Plex Mono',monospace", fontSize: 9,
+                              color: COLORS.textDim, background: COLORS.surface3,
+                              borderRadius: 3, padding: "1px 5px",
+                            }}>#{activeSpell}</span>
+                            {node.requires?.length ? (
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: COLORS.textDim }}>
+                                🔗 {node.requires.length} prereq
+                              </span>
+                            ) : null}
                           </div>
                         </div>
 
-                        {/* Talent name */}
-                        <div style={{
-                          fontFamily: "'Rajdhani',sans-serif", fontSize: isCapstone ? 15 : 13,
-                          fontWeight: 700,
-                          color: selected ? pal.clr : COLORS.textSec,
-                          marginBottom: 4,
-                        }}>
-                          {activeLabel}
-                        </div>
-
-                        {/* Description */}
-                        <div style={{
-                          fontFamily: "'Rajdhani',sans-serif",
-                          fontSize: 11, color: COLORS.textMid, lineHeight: 1.45,
-                          minHeight: 30,
-                        }}>
-                          {activeDesc}
-                        </div>
-
-                        {/* Spell ID badge */}
-                        <div style={{
-                          marginTop: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
-                        }}>
-                          <span style={{
-                            fontFamily: "'IBM Plex Mono',monospace", fontSize: 9,
-                            color: COLORS.textDim, background: COLORS.surface3,
-                            borderRadius: 3, padding: "1px 5px",
-                          }}>
-                            #{activeSpell}
-                          </span>
-                          {node.requires?.length ? (
-                            <span style={{
-                              fontFamily: "'Rajdhani',sans-serif", fontSize: 9,
-                              color: COLORS.textDim,
-                            }}>
-                              🔗 {node.requires.length} prereq
-                            </span>
-                          ) : null}
-                        </div>
+                        {isChoice && selected && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleChoice(node.nodeId); }}
+                            style={{
+                              position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)",
+                              fontFamily: "'Rajdhani',sans-serif", fontSize: 9, fontWeight: 700,
+                              padding: "2px 10px", borderRadius: 10,
+                              background: COLORS.goldBg, border: `1px solid ${COLORS.gold}66`,
+                              color: COLORS.goldLight, cursor: "pointer", zIndex: 3, whiteSpace: "nowrap",
+                            }}
+                          >⇄ {choiceIsB ? node.label : node.choiceB!.label}</button>
+                        )}
                       </div>
-
-                      {/* Choice swap button */}
-                      {isChoice && selected && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleChoice(node.nodeId); }}
-                          style={{
-                            position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)",
-                            fontFamily: "'Rajdhani',sans-serif", fontSize: 9, fontWeight: 700,
-                            padding: "2px 10px", borderRadius: 10,
-                            background: COLORS.goldBg, border: `1px solid ${COLORS.gold}66`,
-                            color: COLORS.goldLight, cursor: "pointer",
-                            zIndex: 2, whiteSpace: "nowrap",
-                          }}
-                        >
-                          ⇄ {choiceIsB ? node.label : node.choiceB!.label}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Summary */}
-      <div style={{
-        marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center",
-      }}>
-        <span style={{
-          fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: COLORS.textDim,
-          letterSpacing: 2,
-        }}>SELECTED:</span>
+      <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: COLORS.textDim, letterSpacing: 2 }}>SELECTED:</span>
         {tree.nodes.filter(n => state.selected.has(n.nodeId)).map(n => {
           const isChoice = !!n.choiceB;
           const choiceIsB = state.choices[n.nodeId] === "b";
@@ -493,11 +515,8 @@ export default function HeroTalentTree({ heroKey }: Props) {
             <span key={n.nodeId} style={{
               fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 600,
               padding: "2px 8px", borderRadius: 4,
-              background: pal.glow, border: `1px solid ${pal.clr}44`,
-              color: pal.clr,
-            }}>
-              {label}
-            </span>
+              background: pal.glow, border: `1px solid ${pal.clr}44`, color: pal.clr,
+            }}>{label}</span>
           );
         })}
         {pointsSpent === 0 && (
