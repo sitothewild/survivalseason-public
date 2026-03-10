@@ -57,10 +57,10 @@ const PAD = 32;
 const NODE_R = 24;
 
 // Compact size (Hero trees + Apex)
-const CW_C = 50;
-const RH_C = 56;
-const PAD_C = 22;
-const NODE_R_C = 22;
+const CW_C = 42;
+const RH_C = 50;
+const PAD_C = 16;
+const NODE_R_C = 20;
 
 function gridBounds(nodes: TalentNodeDef[], compact = false) {
   const cw = compact ? CW_C : CW;
