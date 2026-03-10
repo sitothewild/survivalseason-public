@@ -13,11 +13,10 @@ import type {
 // Constants & mappings
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NODE_D      = 52;   // node circle diameter
-const COL_STEP    = 74;   // horizontal spacing (center to center)
-const ROW_STEP    = 74;   // vertical spacing
-const PAD         = 20;   // padding inside each section
-const SECTION_GAP = 36;   // gap between class / hero / spec columns
+const NODE_D   = 52;   // node circle diameter
+const COL_STEP = 74;   // horizontal spacing (center to center)
+const ROW_STEP = 74;   // vertical spacing
+const PAD      = 20;   // padding inside each section
 
 const GOLD = "#fbbf24";
 const GOLD_DIM = "#92620d";
