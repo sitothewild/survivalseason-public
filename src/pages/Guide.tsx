@@ -598,22 +598,6 @@ export default function Guide() {
                 })}
               </div>
 
-
-              {/* ── Gateway callout ───────────────────────── */}
-              <div style={{ background:'#1c1505', border:'1px solid #f59e0b55',
-                borderRadius:10, padding:"12px 16px", marginTop:16 }}>
-                <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:'#f59e0b',
-                  letterSpacing:2, marginBottom:8 }}>⚠ GATEWAY / FORCED PICKS</div>
-                {SURVIVAL_SPEC_TREE.filter(n => n.isGateway).map(node => (
-                  <div key={node.key} style={{ display:"flex", gap:10, padding:"6px 0",
-                    borderTop:`1px solid ${C.borderSub}` }}>
-                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
-                      fontWeight:700, color:'#f59e0b', minWidth:120 }}>{node.label}</span>
-                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
-                      color:C.textMid, lineHeight:1.4 }}>{node.gatewayNote}</span>
-                  </div>
-                ))}
-              </div>
             </Card>
           );
         })()}
