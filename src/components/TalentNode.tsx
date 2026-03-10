@@ -1,21 +1,56 @@
 // ─────────────────────────────────────────────────────────────
 // components/TalentNode.tsx
-// Individual talent node: regular (circle), choice (split), selection (hero)
+// Individual talent node with spell icons from local assets
 // Design system: surface #1c2333, border #2e3a50, gold #d97706, text #f1f5f9
 // Fonts: Orbitron (headers), Rajdhani (body), IBM Plex Mono (numbers)
 // ─────────────────────────────────────────────────────────────
 
 import { useState, useCallback } from "react";
 import type { MappedTalentNode, ChoiceOption } from "../types/talentTreeTypes";
+import { WOWHEAD_ICON_FALLBACKS } from "../lib/talentData";
+
+// ─── ICON HELPERS ───────────────────────────────────────────
+
+function getIconSrc(spellId: number): string | undefined {
+  return WOWHEAD_ICON_FALLBACKS[spellId];
+}
+
+function TalentIcon({
+  spellId,
+  fallback,
+  className = "",
+  grayscale = false,
+}: {
+  spellId: number;
+  fallback: string;
+  className?: string;
+  grayscale?: boolean;
+}) {
+  const src = getIconSrc(spellId);
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        draggable={false}
+        className={`w-full h-full object-cover rounded-full ${
+          grayscale ? "grayscale opacity-50" : ""
+        } ${className}`}
+      />
+    );
+  }
+  return <span className={className}>{fallback}</span>;
+}
 
 // ─── PROPS ──────────────────────────────────────────────────
 
 interface TalentNodeProps {
   node: MappedTalentNode;
   currentPoints: number;
-  choiceSelection: number | null; // 0 = optionA, 1 = optionB, null = none
-  isLocked: boolean; // true if prerequisite points not met
-  onPointChange: (delta: number) => void; // +1 or -1
+  choiceSelection: number | null;
+  isLocked: boolean;
+  onPointChange: (delta: number) => void;
   onChoiceSelect: (optionIndex: number) => void;
 }
 
@@ -34,12 +69,11 @@ export default function TalentNode({
   const isMaxed = currentPoints >= node.maxRank;
   const isActive = currentPoints > 0;
 
-  // Left-click = add point, right-click = remove point
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       if (isLocked) return;
-      if (node.nodeType === "choice") return; // choice nodes use the split buttons
+      if (node.nodeType === "choice") return;
       if (!isMaxed) onPointChange(1);
     },
     [isLocked, isMaxed, node.nodeType, onPointChange]
@@ -49,7 +83,6 @@ export default function TalentNode({
     (e: React.MouseEvent) => {
       e.preventDefault();
       if (node.nodeType === "choice") {
-        // Right-click on choice node = deselect
         onChoiceSelect(-1);
         return;
       }
@@ -58,7 +91,6 @@ export default function TalentNode({
     [currentPoints, node.nodeType, onPointChange, onChoiceSelect]
   );
 
-  // Render based on node type
   if (node.nodeType === "choice" && node.choiceOptions?.length === 2) {
     return (
       <ChoiceNodeRenderer
@@ -87,7 +119,6 @@ export default function TalentNode({
     );
   }
 
-  // Default: regular active/passive node
   return (
     <RegularNodeRenderer
       node={node}
@@ -103,7 +134,7 @@ export default function TalentNode({
   );
 }
 
-// ─── REGULAR NODE (CIRCLE) ──────────────────────────────────
+// ─── REGULAR NODE (CIRCLE WITH ICON) ────────────────────────
 
 function RegularNodeRenderer({
   node,
@@ -126,7 +157,6 @@ function RegularNodeRenderer({
   onClick: (e: React.MouseEvent) => void;
   onRightClick: (e: React.MouseEvent) => void;
 }) {
-  // Border color: locked=dim, unselected=gray, active=gold, maxed=green
   const borderColor = isLocked
     ? "border-gray-700/50"
     : isMaxed
@@ -135,24 +165,14 @@ function RegularNodeRenderer({
     ? "border-amber-500"
     : "border-slate-500";
 
-  // Inner fill
-  const bgColor = isLocked
-    ? "bg-slate-900/40"
-    : isMaxed
-    ? "bg-emerald-900/30"
-    : isActive
-    ? "bg-amber-900/25"
-    : "bg-slate-800/60";
-
-  // Glow effect when active
   const glow = isMaxed
     ? "shadow-[0_0_8px_rgba(16,185,129,0.3)]"
     : isActive
     ? "shadow-[0_0_8px_rgba(217,119,6,0.25)]"
     : "";
 
-  // Passive nodes = slightly smaller circle
   const size = node.nodeType === "passive" ? "w-9 h-9" : "w-11 h-11";
+  const iconGrayscale = isLocked || (!isActive && !isMaxed);
 
   return (
     <div
@@ -162,8 +182,8 @@ function RegularNodeRenderer({
     >
       <button
         className={`
-          ${size} rounded-full border-2 ${borderColor} ${bgColor} ${glow}
-          flex items-center justify-center
+          ${size} rounded-full border-2 ${borderColor} ${glow}
+          overflow-hidden flex items-center justify-center
           transition-all duration-150 ease-out
           ${isLocked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:scale-110 hover:border-amber-400"}
           focus:outline-none focus:ring-2 focus:ring-amber-500/40
@@ -173,14 +193,18 @@ function RegularNodeRenderer({
         disabled={isLocked}
         aria-label={`${node.name} — ${currentPoints}/${node.maxRank}`}
       >
-        {/* Node type indicator: active = small lightning, passive = dot */}
-        <span
-          className={`text-[10px] font-bold font-mono
-            ${isMaxed ? "text-emerald-300" : isActive ? "text-amber-300" : "text-slate-500"}
-          `}
-        >
-          {node.nodeType === "active" ? "⚡" : "◆"}
-        </span>
+        <TalentIcon
+          spellId={node.spellId}
+          fallback={node.nodeType === "active" ? "⚡" : "◆"}
+          grayscale={iconGrayscale}
+          className={
+            !getIconSrc(node.spellId)
+              ? `text-[10px] font-bold font-mono ${
+                  isMaxed ? "text-emerald-300" : isActive ? "text-amber-300" : "text-slate-500"
+                }`
+              : ""
+          }
+        />
       </button>
 
       {/* Rank badge */}
@@ -208,7 +232,6 @@ function RegularNodeRenderer({
         {node.name}
       </span>
 
-      {/* Tooltip */}
       {showTooltip && (
         <NodeTooltip
           name={node.name}
@@ -222,7 +245,7 @@ function RegularNodeRenderer({
   );
 }
 
-// ─── CHOICE NODE (SPLIT BUTTON) ─────────────────────────────
+// ─── CHOICE NODE (SPLIT CIRCLE WITH ICONS) ──────────────────
 
 function ChoiceNodeRenderer({
   node,
@@ -257,7 +280,6 @@ function ChoiceNodeRenderer({
       onMouseLeave={() => setShowTooltip(false)}
       onContextMenu={onRightClick}
     >
-      {/* Split octagonal shape via rounded-lg + clip */}
       <div
         className={`
           w-11 h-11 rounded-full border-2 ${borderColor}
@@ -270,12 +292,8 @@ function ChoiceNodeRenderer({
         {/* Option A — left half */}
         <button
           className={`
-            flex-1 flex items-center justify-center text-[9px] font-bold
-            transition-all duration-100
-            ${selection === 0
-              ? "bg-amber-700/70 text-amber-100"
-              : "bg-slate-800/60 text-slate-500 hover:bg-amber-900/30 hover:text-amber-300"
-            }
+            flex-1 overflow-hidden flex items-center justify-center
+            transition-all duration-100 relative
             ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}
             focus:outline-none
           `}
@@ -283,21 +301,22 @@ function ChoiceNodeRenderer({
           disabled={isLocked}
           aria-label={optA.name}
         >
-          ◀
+          <ChoiceHalfIcon
+            spellId={optA.spellId}
+            isSelected={selection === 0}
+            isLocked={isLocked}
+            side="left"
+          />
         </button>
 
         {/* Divider */}
-        <div className="w-px bg-slate-600/80" />
+        <div className="w-px bg-slate-600/80 z-10" />
 
         {/* Option B — right half */}
         <button
           className={`
-            flex-1 flex items-center justify-center text-[9px] font-bold
-            transition-all duration-100
-            ${selection === 1
-              ? "bg-amber-700/70 text-amber-100"
-              : "bg-slate-800/60 text-slate-500 hover:bg-amber-900/30 hover:text-amber-300"
-            }
+            flex-1 overflow-hidden flex items-center justify-center
+            transition-all duration-100 relative
             ${isLocked ? "cursor-not-allowed" : "cursor-pointer"}
             focus:outline-none
           `}
@@ -305,7 +324,12 @@ function ChoiceNodeRenderer({
           disabled={isLocked}
           aria-label={optB.name}
         >
-          ▶
+          <ChoiceHalfIcon
+            spellId={optB.spellId}
+            isSelected={selection === 1}
+            isLocked={isLocked}
+            side="right"
+          />
         </button>
       </div>
 
@@ -322,7 +346,6 @@ function ChoiceNodeRenderer({
           : `${optA.name.split(" ")[0]} / ${optB.name.split(" ")[0]}`}
       </span>
 
-      {/* Choice tooltip — shows both options */}
       {showTooltip && (
         <ChoiceTooltip optA={optA} optB={optB} selection={selection} />
       )}
@@ -330,7 +353,51 @@ function ChoiceNodeRenderer({
   );
 }
 
-// ─── SELECTION NODE (HERO TREE TOP) ─────────────────────────
+function ChoiceHalfIcon({
+  spellId,
+  isSelected,
+  isLocked,
+  side,
+}: {
+  spellId: number;
+  isSelected: boolean;
+  isLocked: boolean;
+  side: "left" | "right";
+}) {
+  const src = getIconSrc(spellId);
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        draggable={false}
+        className={`absolute inset-0 w-[200%] h-full object-cover ${
+          side === "left" ? "left-0" : "right-0 -translate-x-1/2"
+        } ${
+          isSelected
+            ? ""
+            : isLocked
+            ? "grayscale opacity-40"
+            : "grayscale opacity-60 hover:opacity-80 hover:grayscale-0"
+        }`}
+      />
+    );
+  }
+  return (
+    <span
+      className={`text-[9px] font-bold ${
+        isSelected
+          ? "text-amber-100"
+          : "text-slate-500"
+      }`}
+    >
+      {side === "left" ? "◀" : "▶"}
+    </span>
+  );
+}
+
+// ─── SELECTION NODE (HERO TREE TOP WITH ICON) ───────────────
 
 function SelectionNodeRenderer({
   node,
@@ -357,8 +424,8 @@ function SelectionNodeRenderer({
     >
       <button
         className={`
-          w-14 h-14 rounded-full border-3
-          ${isActive ? "border-amber-400 bg-amber-900/30 shadow-[0_0_12px_rgba(217,119,6,0.35)]" : "border-slate-500 bg-slate-800/50"}
+          w-14 h-14 rounded-full border-3 overflow-hidden
+          ${isActive ? "border-amber-400 shadow-[0_0_12px_rgba(217,119,6,0.35)]" : "border-slate-500"}
           flex items-center justify-center
           transition-all duration-200
           ${isLocked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:scale-105 hover:border-amber-300"}
@@ -369,10 +436,16 @@ function SelectionNodeRenderer({
         disabled={isLocked}
         aria-label={node.name}
       >
-        {/* Hero portrait placeholder — a larger icon */}
-        <span className={`text-lg ${isActive ? "text-amber-300" : "text-slate-500"}`}>
-          ✦
-        </span>
+        <TalentIcon
+          spellId={node.spellId}
+          fallback="✦"
+          grayscale={!isActive}
+          className={
+            !getIconSrc(node.spellId)
+              ? `text-lg ${isActive ? "text-amber-300" : "text-slate-500"}`
+              : ""
+          }
+        />
       </button>
 
       <span
@@ -400,6 +473,19 @@ function SelectionNodeRenderer({
 
 // ─── TOOLTIP COMPONENTS ─────────────────────────────────────
 
+function TooltipIcon({ spellId }: { spellId: number }) {
+  const src = getIconSrc(spellId);
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      alt=""
+      className="w-7 h-7 rounded border border-slate-700 object-cover flex-shrink-0"
+      draggable={false}
+    />
+  );
+}
+
 function NodeTooltip({
   name,
   nodeType,
@@ -423,14 +509,17 @@ function NodeTooltip({
         pointer-events-none
       "
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-bold text-amber-400 font-['Rajdhani',sans-serif]">
-          {name}
-        </span>
-        <span className="text-[9px] text-slate-500 font-mono uppercase">
-          {nodeType}
-        </span>
+      {/* Header with icon */}
+      <div className="flex items-center gap-2 mb-1.5">
+        <TooltipIcon spellId={spellId} />
+        <div className="flex-1 min-w-0">
+          <span className="text-[11px] font-bold text-amber-400 font-['Rajdhani',sans-serif] block truncate">
+            {name}
+          </span>
+          <span className="text-[9px] text-slate-500 font-mono uppercase">
+            {nodeType}
+          </span>
+        </div>
       </div>
 
       {/* Rank bar */}
@@ -451,14 +540,12 @@ function NodeTooltip({
         </span>
       </div>
 
-      {/* Spell ID ref */}
       {spellId > 0 && (
         <span className="text-[8px] text-slate-600 font-mono block">
           Spell ID: {spellId}
         </span>
       )}
 
-      {/* Interaction hint */}
       <div className="mt-2 pt-1.5 border-t border-slate-800">
         <span className="text-[8px] text-slate-600 italic">
           Left-click to add · Right-click to remove
@@ -487,7 +574,6 @@ function ChoiceTooltip({
         pointer-events-none
       "
     >
-      {/* Choice header */}
       <div className="text-[9px] text-slate-500 font-mono uppercase tracking-wider mb-2">
         Choose One
       </div>
@@ -500,8 +586,8 @@ function ChoiceTooltip({
             : "border-slate-700/50 bg-slate-800/30"
         }`}
       >
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-[8px] text-slate-600 font-mono">◀</span>
+        <div className="flex items-center gap-2 mb-1">
+          <TooltipIcon spellId={optA.spellId} />
           <span
             className={`text-[11px] font-bold font-['Rajdhani',sans-serif] ${
               selection === 0 ? "text-amber-400" : "text-slate-300"
@@ -513,9 +599,6 @@ function ChoiceTooltip({
         <p className="text-[9px] text-slate-400 leading-relaxed">
           {optA.description}
         </p>
-        <span className="text-[7px] text-slate-600 font-mono mt-1 block">
-          Spell {optA.spellId}
-        </span>
       </div>
 
       {/* Option B */}
@@ -526,8 +609,8 @@ function ChoiceTooltip({
             : "border-slate-700/50 bg-slate-800/30"
         }`}
       >
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-[8px] text-slate-600 font-mono">▶</span>
+        <div className="flex items-center gap-2 mb-1">
+          <TooltipIcon spellId={optB.spellId} />
           <span
             className={`text-[11px] font-bold font-['Rajdhani',sans-serif] ${
               selection === 1 ? "text-amber-400" : "text-slate-300"
@@ -539,12 +622,8 @@ function ChoiceTooltip({
         <p className="text-[9px] text-slate-400 leading-relaxed">
           {optB.description}
         </p>
-        <span className="text-[7px] text-slate-600 font-mono mt-1 block">
-          Spell {optB.spellId}
-        </span>
       </div>
 
-      {/* Interaction hint */}
       <div className="mt-2 pt-1.5 border-t border-slate-800">
         <span className="text-[8px] text-slate-600 italic">
           Click left/right to choose · Right-click to deselect
