@@ -32,10 +32,7 @@ const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 
 function resolveIcon(spellId: number | null | undefined): string {
   if (!spellId) return FALLBACK_ICON;
-  // Check static fallback map first, then try Wowhead's dynamic icon endpoint
-  if (WOWHEAD_ICON_FALLBACKS[spellId]) return WOWHEAD_ICON_FALLBACKS[spellId];
-  // Dynamic fallback: use Wowhead's spell icon redirect (works for most spell IDs)
-  return `https://wow.zamimg.com/images/wow/icons/large/spell_${spellId}.jpg`;
+  return WOWHEAD_ICON_FALLBACKS[spellId] ?? FALLBACK_ICON;
 }
 
 // Hero tree row gates (simple 1-per-row within hero tree, after hero unlock)
