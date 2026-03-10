@@ -872,18 +872,17 @@ export function BlizzardTalentTree({
   const rawSpecNodes = (specTree.spec_talent_nodes ?? []).filter((n: BzTalentNode) => !heroNodeIdSet.has(n.id));
 
   // Remove spatially isolated outlier nodes (stray hero nodes that leaked into spec list)
-  const specNodes = useMemo(() => {
-    if (rawSpecNodes.length < 3) return rawSpecNodes;
+  let specNodes = rawSpecNodes;
+  if (rawSpecNodes.length >= 3) {
     const cols = rawSpecNodes.map((n) => n.display_col).sort((a, b) => a - b);
     const medianCol = cols[Math.floor(cols.length / 2)];
-    // Find the main cluster: nodes within 6 col units of the median
     const mainCluster = rawSpecNodes.filter((n) => Math.abs(n.display_col - medianCol) <= 6);
-    if (mainCluster.length === rawSpecNodes.length) return rawSpecNodes;
-    // Only keep nodes in the main cluster
-    const mainMinCol = Math.min(...mainCluster.map((n) => n.display_col));
-    const mainMaxCol = Math.max(...mainCluster.map((n) => n.display_col));
-    return rawSpecNodes.filter((n) => n.display_col >= mainMinCol - 1 && n.display_col <= mainMaxCol + 1);
-  }, [rawSpecNodes]);
+    if (mainCluster.length < rawSpecNodes.length) {
+      const mainMinCol = Math.min(...mainCluster.map((n) => n.display_col));
+      const mainMaxCol = Math.max(...mainCluster.map((n) => n.display_col));
+      specNodes = rawSpecNodes.filter((n) => n.display_col >= mainMinCol - 1 && n.display_col <= mainMaxCol + 1);
+    }
+  }
 
   const classBudget = specTree.talent_point_budget?.class_points ?? 31;
   const specBudget  = specTree.talent_point_budget?.spec_points  ?? 31;
