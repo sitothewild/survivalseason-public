@@ -436,8 +436,8 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   1268705: "/icons/talents/ability_hunter_mendpet.jpg",
   472476: "/icons/talents/ability_druid_ferociousbite.jpg",
   472524: "/icons/talents/ability_druid_rake.jpg",
-  472550: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_wildattack.jpg", // 404 locally
-  472639: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_corneredprey.jpg", // 404 locally
+  472550: "/icons/talents/ability_hunter_wildattack.jpg",
+  472639: "/icons/talents/ability_hunter_corneredprey.jpg",
   1264781: "/icons/talents/ability_druid_mangle.jpg",
   472660: "/icons/talents/ability_druid_ferociousbite.jpg",
   472707: "/icons/talents/ability_hunter_rapidregeneration.jpg",
