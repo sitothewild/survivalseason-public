@@ -26,6 +26,10 @@ export const SPEC_ROW_GATES: Record<number, number> = {
   1: 0, 2: 1, 3: 2, 4: 4, 5: 6, 6: 8, 7: 10, 8: 14, 9: 20, 10: 26, 12: 30,
 };
 
+export const CLASS_ROW_GATES: Record<number, number> = {
+  0: 0, 1: 1, 2: 2, 3: 4, 4: 6, 5: 8, 6: 10, 7: 14, 8: 20, 9: 26,
+};
+
 export const HERO_UNLOCK_THRESHOLD = 7; // spec pts needed to unlock hero tree
 
 export const SPEC_MAX_PTS = 34;
