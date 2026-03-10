@@ -393,7 +393,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   460198: "https://wow.zamimg.com/images/wow/icons/large/inv_wildfirebomb.jpg",
   459843: "https://wow.zamimg.com/images/wow/icons/large/inv_misc_bomb_02.jpg",
   1252943: "https://wow.zamimg.com/images/wow/icons/large/inv_wildfirebomb.jpg",
-  1256938: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_flankingtrike.jpg",
+  1256938: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_beastmastery.jpg",
   1262409: "https://wow.zamimg.com/images/wow/icons/large/inv_wildfirebomb.jpg",
   1272154: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_killcommand.jpg",
   1259003: "https://wow.zamimg.com/images/wow/icons/large/inv12_apextalent_hunter_raptorswipe.jpg",
