@@ -212,14 +212,26 @@ export default function Guide() {
         <Card span style={{ marginBottom:20 }}>
           <Lbl>🌲 Talent Tree — {isSent ? 'Sentinel' : 'Pack Leader'}</Lbl>
           <div style={{
-            background:`url(${talentOptimizerBg}) center/cover no-repeat, linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)`,
+            position:"relative",
             border:`1px solid #2e3a50`,
             borderRadius:10,
             padding:"24px 16px 32px",
             overflow:"visible",
-            position:"relative",
           }}>
-            <div style={{ width:"100%", overflowX:"auto", overflow:"clip visible" }}>
+            {/* Blurred background image */}
+            <div style={{
+              position:"absolute", inset:0, borderRadius:10,
+              background:`url(${talentOptimizerBg}) center/cover no-repeat`,
+              filter:"blur(6px)",
+              zIndex:0,
+            }} />
+            {/* Semi-opaque overlay behind talent trees */}
+            <div style={{
+              position:"absolute", inset:0, borderRadius:10,
+              background:"rgba(18,26,42,0.82)",
+              zIndex:1,
+            }} />
+            <div style={{ width:"100%", overflowX:"auto", overflow:"clip visible", position:"relative", zIndex:2 }}>
               <BlizzardTalentTree
                 heroKey={hero === "sentinel" ? "sentinel" : "packLeader"}
                 onHeroChange={(h) => setHero(h === "sentinel" ? "sentinel" : "packLeader")}
