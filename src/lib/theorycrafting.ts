@@ -693,6 +693,49 @@ const SPELLS: Record<string, SpellDef> = {
     isPet: false, isFire: false, isBleed: false, aoeTargetCap: 1,
     hasteScalesCPM: true, bonusCritMult: 0,
   },
+  // ─ Hunter class tree abilities ─
+  deathChakram: {
+    label: 'Death Chakram', apCoef: 1.40, baseCPM: 1.5,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 4,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'deathChakram',
+  },
+  spittingCobra: {
+    label: 'Spitting Cobra', apCoef: 0.35, baseCPM: 3.0,
+    isPet: true, isFire: false, isBleed: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'spittingCobra',
+  },
+  barrage: {
+    label: 'Barrage', apCoef: 0.65, baseCPM: 1.0,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 8,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'barrage',
+  },
+  volley: {
+    label: 'Volley', apCoef: 0.55, baseCPM: 1.2,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 8,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'volley',
+  },
+  bloodshedBleed: {
+    label: 'Bloodshed', apCoef: 2.00, baseCPM: 0.75,
+    isPet: true, isFire: false, isBleed: true, aoeTargetCap: 1,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'bloodshed',
+  },
+  murderOfCrows: {
+    label: 'A Murder of Crows', apCoef: 1.80, baseCPM: 0.67,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'murderOfCrows',
+  },
+  wailingArrow: {
+    label: 'Wailing Arrow', apCoef: 2.20, baseCPM: 0.5,
+    isPet: false, isFire: false, isBleed: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, bonusCritMult: 0,
+    requiresTalent: 'wailingArrow',
+  },
 };
 
 // ── Core computation ─────────────────────────────────────────
