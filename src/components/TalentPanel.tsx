@@ -249,6 +249,70 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
           />
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          EXPORT MODAL
+          ═══════════════════════════════════════════════════════ */}
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="max-w-2xl bg-[#1c2333] border-[#2e3a50] text-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-amber-400 font-['Orbitron',sans-serif] text-sm tracking-widest uppercase">
+              SimC Profile Export
+            </DialogTitle>
+          </DialogHeader>
+
+          {exportResult && (
+            <div className="flex flex-col gap-4">
+              {/* Summary badges */}
+              <div className="flex flex-wrap gap-2">
+                <ExportBadge label="Hero" value={exportResult.summary.heroTree} />
+                <ExportBadge label="Fight" value={exportResult.summary.fightStyle} />
+                <ExportBadge label="Avg ilvl" value={String(exportResult.summary.avgIlvl)} />
+                <ExportBadge label="Slots" value={String(exportResult.summary.gearSlots)} />
+                <ExportBadge label="Enchants" value={String(exportResult.summary.enchants)} />
+                <ExportBadge label="Gems" value={String(exportResult.summary.gems)} />
+                <ExportBadge label="Talents" value={String(exportResult.summary.talentCount)} />
+              </div>
+
+              {/* Profile string */}
+              <pre
+                className="
+                  bg-[#0f1520] border border-[#2e3a50] rounded p-3
+                  text-[10px] text-slate-400 font-mono
+                  max-h-[400px] overflow-auto whitespace-pre
+                  cursor-pointer select-all
+                "
+                onClick={(e) => {
+                  const range = document.createRange();
+                  range.selectNodeContents(e.currentTarget);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+                }}
+              >
+                {exportResult.profileString}
+              </pre>
+
+              {/* Copy button */}
+              <button
+                className="
+                  self-end text-[10px] px-4 py-1.5 rounded
+                  bg-amber-900/30 border border-amber-700/50
+                  text-amber-400 hover:bg-amber-800/40 hover:border-amber-600
+                  transition-colors font-['Rajdhani',sans-serif] font-bold tracking-wider
+                "
+                onClick={() => {
+                  navigator.clipboard.writeText(exportResult.profileString);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? "✓ Copied!" : "Copy Profile"}
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
