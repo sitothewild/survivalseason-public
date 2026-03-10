@@ -176,6 +176,28 @@ serve(async (req) => {
         break;
       }
 
+      // Get talent tree index
+      case "talent-tree-index": {
+        result = await blizzardGet("/data/wow/talent-tree/index", region, "static");
+        break;
+      }
+
+      // Get talent tree for a spec
+      case "talent-tree": {
+        const { treeId, specId } = params;
+        if (!treeId || !specId) throw new Error("treeId and specId are required");
+        result = await blizzardGet(`/data/wow/talent-tree/${treeId}/playable-specialization/${specId}`, region, "static");
+        break;
+      }
+
+      // Get hero talent tree (sub-tree)
+      case "talent-tree-nodes": {
+        const { treeId } = params;
+        if (!treeId) throw new Error("treeId is required");
+        result = await blizzardGet(`/data/wow/talent-tree/${treeId}`, region, "static");
+        break;
+      }
+
       // Batch: fetch multiple items at once (up to 20)
       case "items-batch": {
         const { itemIds } = params;
