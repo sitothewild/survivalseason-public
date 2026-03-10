@@ -109,28 +109,36 @@ export default function TalentOptimizer() {
           Talent Optimizer
         </h1>
 
-        {/* Dark panel wrapping the talent tree — matches Custom Loadout style */}
+        {/* Outer lighter panel */}
         <div style={{
-          background:"linear-gradient(160deg,#0d1117 0%,#151d2b 50%,#0f1a2e 100%)",
+          background:"linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)",
           border:`1px solid #2e3a50`,
-          borderRadius:12,
-          padding:"24px 16px 32px",
-          overflow:"visible",
+          borderRadius:14,
+          padding:"20px 16px 24px",
         }}>
-          <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
-            <div
-              ref={innerRef}
-              style={{
-                transformOrigin:"top left",
-                transform:`scale(${treeScale})`,
-                display:"inline-flex",
-                justifyContent:"flex-start",
-                width:"100%",
-                minWidth:"fit-content",
-                paddingLeft:"2%",
-              }}
-            >
-              <BlizzardTalentTree />
+          {/* Inner darker panel with the talent tree */}
+          <div style={{
+            background:"linear-gradient(160deg,#0d1117 0%,#121a28 50%,#0f1520 100%)",
+            border:`1px solid #1a2236`,
+            borderRadius:10,
+            padding:"24px 16px 32px",
+            overflow:"visible",
+          }}>
+            <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
+              <div
+                ref={innerRef}
+                style={{
+                  transformOrigin:"top left",
+                  transform:`scale(${treeScale})`,
+                  display:"inline-flex",
+                  justifyContent:"flex-start",
+                  width:"100%",
+                  minWidth:"fit-content",
+                  paddingLeft:"2%",
+                }}
+              >
+                <BlizzardTalentTree />
+              </div>
             </div>
           </div>
         </div>
