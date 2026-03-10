@@ -49,10 +49,10 @@ function pointColor(pts: number, max: number): string {
 }
 
 // ── Grid layout calculation ──────────────────────────────────
-const CW = 52;  // col step
-const RH = 56;  // row step
-const PAD = 30;
-const NODE_R = 20;
+const CW = 42;  // col step (was 52)
+const RH = 48;  // row step (was 56)
+const PAD = 20;  // padding (was 30)
+const NODE_R = 18; // node radius (was 20)
 
 function gridBounds(nodes: TalentNodeDef[]) {
   const rows = nodes.map(n => n.row);
@@ -190,7 +190,7 @@ function InteractiveTalentNode({
   const isApex = node.type === 'apex';
   const isTier = node.id.startsWith('apex_tier');
   const isCapstone = node.row === 5 && node.parents.length >= 3;
-  const sz = isApex ? 52 : isTier ? 28 : 40;
+  const sz = isApex ? 44 : isTier ? 24 : 36;
 
   const ringColor = nodeState === 'SELECTED' ? GOLD
     : nodeState === 'PARTIAL' ? GOLD
@@ -435,7 +435,7 @@ function TreeSection({
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
           const isApex = node.type === 'apex';
-          const sz = isApex ? 52 : 40;
+          const sz = isApex ? 44 : 36;
 
           return (
             <div key={node.id} style={{
@@ -630,7 +630,7 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
           const pts = tree.state.points[node.id] ?? 0;
           const isApex = node.type === 'apex';
           const isTier = node.id.startsWith('apex_tier');
-          const sz = isApex ? 52 : (isTier ? 28 : 40);
+          const sz = isApex ? 44 : (isTier ? 24 : 36);
 
           return (
             <div key={node.id} style={{
@@ -722,7 +722,7 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
-          const sz = 40;
+          const sz = 36;
 
           return (
             <div key={node.id} style={{
