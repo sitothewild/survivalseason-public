@@ -560,29 +560,42 @@ export function BlizzardTalentTree({
 
           {/* HERO TREE + APEX (center) */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {/* Hero switcher */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-              {(["sentinel", "packLeader"] as const).map(h => {
-                const isActive = activeHeroKey === h;
-                const clr = h === "sentinel" ? "#7dd3fc" : "#d8b4fe";
-                return (
-                  <button key={h}
-                    onClick={() => {
-                      if (onHeroChange) onHeroChange(h);
-                      else setInternalHeroKey(h);
-                    }}
-                    style={{
-                      fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                      padding: "4px 12px", borderRadius: 6, cursor: "pointer",
-                      border: `1px solid ${isActive ? clr : "#444"}`,
-                      background: isActive ? `${clr}22` : "#111",
-                      color: isActive ? clr : "#666",
-                      transition: "all .15s",
-                    }}>
-                    {h === "sentinel" ? "🌙 Sentinel" : "🐺 Pack Leader"}
-                  </button>
-                );
-              })}
+            {/* Hero switcher — single large circle toggle */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12 }}>
+              <button
+                onClick={handleHeroSwitch}
+                title={`Switch to ${isSentinel ? "Pack Leader" : "Sentinel"}`}
+                style={{
+                  width: 80, height: 80, borderRadius: "50%",
+                  border: `3px solid ${isSentinel ? "#7dd3fc" : "#d8b4fe"}`,
+                  background: `radial-gradient(circle at 40% 35%, ${isSentinel ? "#1e3a5f" : "#3b1a5c"} 0%, #0a0a12 80%)`,
+                  boxShadow: `0 0 20px 4px ${isSentinel ? "rgba(125,211,252,.3)" : "rgba(216,180,254,.3)"}, 0 0 0 2px ${isSentinel ? "rgba(125,211,252,.15)" : "rgba(216,180,254,.15)"}`,
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all .3s ease",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <span style={{
+                  fontSize: 28, 
+                  filter: "drop-shadow(0 0 6px rgba(255,255,255,.3))",
+                  transition: "transform .3s ease",
+                }}>
+                  {isSentinel ? "🌙" : "🐺"}
+                </span>
+              </button>
+              <span style={{
+                fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700,
+                letterSpacing: 2, color: isSentinel ? "#7dd3fc" : "#d8b4fe",
+                marginTop: 6, textTransform: "uppercase",
+                transition: "color .3s ease",
+              }}>
+                {isSentinel ? "Sentinel" : "Pack Leader"}
+              </span>
+              <span style={{ fontSize: 8, color: "#666", marginTop: 2, fontFamily: "'Rajdhani',sans-serif" }}>
+                Click to switch
+              </span>
             </div>
 
 
