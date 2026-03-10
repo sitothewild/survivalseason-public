@@ -111,13 +111,13 @@ export default function TalentOptimizer() {
 
         {/* Dark panel wrapping the talent tree — matches Custom Loadout style */}
         <div style={{
-          background:"linear-gradient(160deg,#1c2333 0%,#242d3f 50%,#1e2a3d 100%)",
-          border:`1px solid ${C.border}`,
+          background:"linear-gradient(160deg,#2a2d32 0%,#343840 50%,#2e3138 100%)",
+          border:`1px solid #44484f`,
           borderRadius:12,
           padding:"24px 16px 32px",
-          overflow:"hidden",
+          overflow:"visible",
         }}>
-          <div ref={containerRef} style={{ width:"100%", overflow:"hidden" }}>
+          <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
             <div
               ref={innerRef}
               style={{
