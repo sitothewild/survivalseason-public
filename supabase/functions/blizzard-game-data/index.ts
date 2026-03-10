@@ -357,8 +357,19 @@ serve(async (req) => {
           ),
         ] as number[];
 
+        // Always include Survival Hunter hero talent spell IDs (API hero-talent endpoint is unavailable)
+        const heroSpellIds = [
+          1253825, 1253751, 1253807, 450379, 1264904, 1266069, 450373, 450376, 450380,
+          1253846, 450378, 1264903, 450384, // Sentinel
+          472358, 472357, 472719, 472720, 472476, 472524, 472550, 472639, 1264781,
+          472660, 472707, 1264797, 1264792, 1264775, 472741, // Pack Leader
+        ];
+        for (const hid of heroSpellIds) {
+          if (!spellIds.includes(hid)) spellIds.push(hid);
+        }
+
         // Batch-fetch all spell media icons in parallel (limit to 50 to avoid timeout)
-        const limitedSpellIds = spellIds.slice(0, 50);
+        const limitedSpellIds = spellIds.slice(0, 80);
         const mediaResults = await Promise.allSettled(
           limitedSpellIds.map((id) =>
             blizzardGet(`/data/wow/media/spell/${id}`, region, "static")
