@@ -507,7 +507,7 @@ export function BlizzardTalentTree({
   const [specTotalPts, setSpecTotalPts] = useState(0);
 
   const heroNodes = activeHeroKey === "sentinel" ? SENTINEL_NODES : PACK_LEADER_NODES;
-  const heroGateMet = specTotalPts >= HERO_UNLOCK_THRESHOLD;
+  const heroGateMet = true; // Hero tree always unlocked
 
   const isSentinel = activeHeroKey === "sentinel";
 
