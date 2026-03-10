@@ -130,10 +130,18 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
     parents:['savagery'], desc:'Wildfire Bomb detonates for bonus damage when its DoT expires or is refreshed.' },
   { id:'primal_surge', spellId:1272154, name:'Primal Surge', type:'passive', maxPts:1, row:10, col:7,
     parents:['wfb_infusion'], desc:'Takedown cooldown reduced. Kill Command resets generate Focus.' },
-  // APEX
-  { id:'raptor_swipe', spellId:1259019, name:'Raptor Swipe', type:'apex', maxPts:4, row:12, col:4,
-    parents:['grenade_juggler','wildfire_imbuement','flanked','lethal_calibration','primal_surge'],
-    desc:'APEX TALENT. Raptor Strike has a chance to become Raptor Swipe (AoE cleave). Each rank increases proc chance and damage.' },
+];
+
+// ── APEX TALENT (standalone, shares Survival 34-pt budget) ───
+export const APEX_NODES: TalentNodeDef[] = [
+  { id:'raptor_swipe', spellId:1259019, name:'Raptor Swipe', type:'apex', maxPts:1, row:0, col:2,
+    parents:[], desc:'APEX TALENT. Raptor Strike has a chance to become Raptor Swipe, an AoE cleave.' },
+  { id:'apex_tier_1', spellId:1259019, name:'Raptor Swipe II', type:'passive', maxPts:1, row:1, col:1,
+    parents:['raptor_swipe'], desc:'Increases Raptor Swipe proc chance and damage.' },
+  { id:'apex_tier_2', spellId:1259019, name:'Raptor Swipe III', type:'passive', maxPts:1, row:1, col:2,
+    parents:['raptor_swipe'], desc:'Further increases Raptor Swipe proc chance and damage.' },
+  { id:'apex_tier_3', spellId:1259019, name:'Raptor Swipe IV', type:'passive', maxPts:1, row:1, col:3,
+    parents:['raptor_swipe'], desc:'Maximizes Raptor Swipe proc chance and damage.' },
 ];
 
 // ── SENTINEL HERO TREE (Midnight 12.0.1) ─────────────────────
