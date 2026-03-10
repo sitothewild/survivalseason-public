@@ -443,9 +443,8 @@ function TalentSection({
   onHover: (info: TooltipInfo | null, x: number, y: number) => void;
   showPointCounter?: boolean;
 }) {
-  const validNodes = useMemo(() => nodes.filter((n) => n.entries?.length > 0 && n.entries[0]?.spell_tooltip?.spell?.name), [nodes]);
-  const { minRow, minCol, maxCol, w, h } = useMemo(() => gridLayout(validNodes), [validNodes]);
-  const nodeMap = useMemo(() => buildNodeMap(validNodes), [validNodes]);
+  const { minRow, minCol, maxCol, w, h } = useMemo(() => gridLayout(nodes), [nodes]);
+  const nodeMap = useMemo(() => buildNodeMap(nodes), [nodes]);
 
   const usedPts = useMemo(() => validNodes.reduce((sum, n) => {
     const k = nodeTalentKey(n);
