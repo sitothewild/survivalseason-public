@@ -125,7 +125,6 @@ export default function Gear() {
     { to:"/gear",              label:"⚗ Gear"      },
     { to:"/guide",             label:"📖 Guide"     },
     { to:"/talent-optimizer",  label:"🧬 Talent Optimizer" },
-    { to:"/calculator",        label:"🧮 Calculator" },
   ];
 
   return (

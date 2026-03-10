@@ -7,8 +7,8 @@
 
 import { useState, useCallback } from "react";
 import TalentTreeGrid from "./TalentTreeGrid";
-import { useTalentTreeData } from "../hooks/useTalentTreeData";
-import type { BlizzardTalentTreeResponse } from "../types/talentTreeTypes";
+import { useTalentTreeData } from "@/hooks/useTalentTreeData";
+import type { BlizzardTalentTreeResponse } from "@/types/talentTreeTypes";
 
 // ─── PROPS ──────────────────────────────────────────────────
 
