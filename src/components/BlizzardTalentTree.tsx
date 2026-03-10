@@ -437,6 +437,93 @@ const FALLBACK_ICON =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' fill='%23222'/><text x='50%25' y='55%25' text-anchor='middle' dominant-baseline='middle' fill='%23888' font-size='22'>?</text></svg>";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TalentNodeGrid — renders one node in CSS Grid context (no absolute pos)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TalentNodeGrid({ node, mediaMap, selectedKeys, selectedChoices, canSelect, isCore, onClick, onChoiceClick, onHover }: {
+  node: BzTalentNode; mediaMap: Record<number, string>;
+  selectedKeys: Set<string>; selectedChoices: Record<number, number>;
+  canSelect: boolean; isCore: boolean;
+  onClick: () => void; onChoiceClick: (idx: number) => void;
+  onHover: (info: TooltipInfo | null, x: number, y: number) => void;
+}) {
+  if (!node.entries?.length || !node.node_type) return null;
+  const isChoice = node.node_type.type === "SELECTION";
+  const key = nodeTalentKey(node);
+  const isSelected = key ? (selectedKeys.has(key) || isCore) : isCore;
+  const isLocked = !isCore && !isSelected && !canSelect;
+  const borderColor = isSelected ? GOLD : isLocked ? "#1e2d3d" : "#3a4f68";
+  const glowShadow = isSelected ? `0 0 0 2px ${GOLD_GLOW}, 0 0 12px 2px ${GOLD_GLOW}` : undefined;
+  const brightness = isSelected ? 1 : isLocked ? 0.3 : 0.65;
+  const entry = node.entries[0];
+  const spellId = entry?.spell_tooltip?.spell?.id;
+  const iconUrl = spellId ? (mediaMap[spellId] ?? FALLBACK_ICON) : FALLBACK_ICON;
+  const maxRank = entry?.max_rank ?? 1;
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    const chosenIdx = selectedChoices[node.id] ?? 0;
+    const e2 = node.entries[chosenIdx] ?? entry;
+    onHover({
+      name: e2?.spell_tooltip?.spell?.name ?? "?",
+      description: e2?.spell_tooltip?.description ?? "",
+      castTime: e2?.spell_tooltip?.cast_time,
+      cooldown: e2?.spell_tooltip?.cooldown,
+      rank: isSelected ? (e2?.max_rank ?? 1) : 0,
+      maxRank: e2?.max_rank ?? 1,
+    }, e.clientX, e.clientY);
+  };
+
+  if (isChoice && node.entries.length >= 2) {
+    const chosenIdx = selectedChoices[node.id] ?? 0;
+    return (
+      <div
+        style={{
+          width: NODE_D, height: NODE_D, borderRadius: "50%",
+          border: `2px solid ${borderColor}`, boxShadow: glowShadow,
+          overflow: "hidden", cursor: isLocked ? "not-allowed" : "pointer",
+          display: "flex", transition: "border-color .15s, box-shadow .15s",
+        }}
+        title={node.entries.map(e => e.spell_tooltip?.spell?.name).join(" / ")}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => onHover(null, 0, 0)}
+      >
+        <div style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative" }}
+          onClick={() => { if (!isLocked) onChoiceClick(0); }}>
+          <ChoiceIcon entry={node.entries[0]} mediaMap={mediaMap} active={isSelected && chosenIdx === 0} brightness={brightness} clipLeft />
+        </div>
+        <div style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative" }}
+          onClick={() => { if (!isLocked) onChoiceClick(1); }}>
+          <ChoiceIcon entry={node.entries[1]} mediaMap={mediaMap} active={isSelected && chosenIdx === 1} brightness={brightness} clipRight />
+        </div>
+        <div style={{ position: "absolute", left: "50%", top: 0, width: 1, height: "100%", background: "#000", opacity: 0.6, pointerEvents: "none" }} />
+        {isSelected && <div style={RANK_BADGE_STYLE}>1/1</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => { if (!isCore && canSelect) onClick(); }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => onHover(null, 0, 0)}
+      style={{
+        width: NODE_D, height: NODE_D, borderRadius: "50%",
+        border: `2px solid ${borderColor}`, boxShadow: glowShadow,
+        overflow: "hidden", cursor: isCore ? "default" : isLocked ? "not-allowed" : "pointer",
+        transition: "border-color .15s, box-shadow .15s", background: "#0a1520",
+      }}
+      title={entry?.spell_tooltip?.spell?.name}
+    >
+      <img src={iconUrl} alt="" loading="lazy" draggable={false}
+        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", filter: `brightness(${brightness})`, transition: "filter .15s", borderRadius: "50%" }}
+      />
+      {(maxRank > 1 || isSelected) && <div style={RANK_BADGE_STYLE}>{isSelected ? maxRank : 0}/{maxRank}</div>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ConnectionLines — SVG lines between prerequisite nodes
 // ─────────────────────────────────────────────────────────────────────────────
 
