@@ -1897,7 +1897,7 @@ export default function SurvivalHunterSim() {
                 </CARD>
 
                 {/* Professions — shown after armory import */}
-                <CARD style={{ marginTop: 12 }}>
+                <CARD style={{ marginTop: 6 }}>
                   <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>PROFESSIONS</div>
                     {professions && professions.filter((p: any) => !p.secondary).length > 0 ? (
