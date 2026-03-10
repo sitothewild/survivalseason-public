@@ -167,9 +167,11 @@ function parseSimcString(simcText) {
   };
 
   const slotLabels: Record<string, string> = {
-    head:'Head',neck:'Neck',shoulders:'Shoulders',back:'Back',chest:'Chest',wrist:'Wrist',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',
+    head:'Head',neck:'Neck',shoulders:'Shoulders',shoulder:'Shoulders',back:'Back',chest:'Chest',wrist:'Wrist',wrists:'Wrist',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',
     finger1:'Ring 1',finger2:'Ring 2',trinket1:'Trinket 1',trinket2:'Trinket 2',main_hand:'Main Hand',off_hand:'Off Hand',tabard:'Tabard',shirt:'Shirt'
   };
+  // Canonical slot keys used for display grid mapping
+  const SLOT_ALIASES: Record<string, string> = { shoulder: 'shoulders', wrists: 'wrist' };
   const gearSlotNames = Object.keys(slotLabels).join('|');
   const gearSlotPattern = new RegExp(`^(${gearSlotNames})=`);
   const bagSectionIdx = lines.findIndex(l => /gear from bags/i.test(l));
@@ -179,7 +181,7 @@ function parseSimcString(simcText) {
     if (!gearSlotPattern.test(line)) return;
     const slotMatch = line.match(/^(\w+)=/); if (!slotMatch) return;
     const rawSlot = slotMatch[1];
-    const slotKey = rawSlot.replace(/^shoulder$/, 'shoulders').replace(/^wrists$/, 'wrist');
+    const slotKey = SLOT_ALIASES[rawSlot] || rawSlot;
     if (slotKey === 'tabard' || slotKey === 'shirt') return;
     const idMatch = line.match(/,id=(\d+)/);
     let itemName = slotLabels[slotKey] || slotKey; let ilvl = 0;
