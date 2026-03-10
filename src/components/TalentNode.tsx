@@ -312,8 +312,8 @@ function ChoiceNodeRenderer({
       {/* Selected talent name under node */}
       <span
         className={`
-          mt-1 text-[8px] leading-tight text-center max-w-[64px] truncate
-          font-['Rajdhani',sans-serif]
+          mt-1 text-[8px] leading-tight text-center max-w-[80px]
+          font-['Rajdhani',sans-serif] whitespace-normal break-words
           ${hasSelection ? "text-slate-300" : "text-slate-600"}
         `}
       >
