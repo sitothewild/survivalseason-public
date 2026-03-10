@@ -1017,8 +1017,6 @@ export function BlizzardTalentTree({
       .filter(Boolean) as string[]
   );
 
-  const innerH = innerRef.current?.scrollHeight ?? 0;
-
   return (
     <div ref={compactRef} style={{ userSelect: "none", ...(compact ? { overflow: "hidden" } : {}) }}>
       {/* ── Scroll wrapper ─────────────────────────────────────────────── */}
@@ -1026,7 +1024,7 @@ export function BlizzardTalentTree({
         ref={innerRef}
         style={{
           ...(compact
-            ? { transform: `scale(${compactScale})`, transformOrigin: "top left", height: innerH * compactScale || "auto" }
+            ? { transform: `scale(${compactScale})`, transformOrigin: "top left", ...(compactHeight ? { height: compactHeight } : {}) }
             : { overflowX: "auto", overflowY: "visible" }),
         }}
       >
