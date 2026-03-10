@@ -598,7 +598,7 @@ function TalentSection({
                   gridColumn: colMap.get(node.display_col) ?? 1,
                 }}
               >
-                <TalentNode
+                <TalentNodeGrid
                   node={node}
                   mediaMap={mediaMap}
                   selectedKeys={selectedKeys}
