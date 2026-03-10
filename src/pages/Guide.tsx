@@ -231,7 +231,7 @@ export default function Guide() {
               background:"rgba(18,26,42,0.82)",
               zIndex:1,
             }} />
-            <div style={{ width:"100%", overflowX:"auto", overflow:"clip visible" }}>
+            <div style={{ width:"100%", overflowX:"auto", overflow:"clip visible", position:"relative", zIndex:2 }}>
               <BlizzardTalentTree
                 heroKey={hero === "sentinel" ? "sentinel" : "packLeader"}
                 onHeroChange={(h) => setHero(h === "sentinel" ? "sentinel" : "packLeader")}
