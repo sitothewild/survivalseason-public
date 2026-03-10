@@ -373,6 +373,7 @@ function InteractiveTalentNode({
 function TreeSection({
   label, nodes, maxPts, rowGates, externalGateMet = true,
   onTalentChange, compact = false, tree: externalTree,
+  onGlobalHover,
 }: {
   label: string;
   nodes: TalentNodeDef[];
@@ -382,20 +383,19 @@ function TreeSection({
   onTalentChange?: (nodeId: string, pts: number, choiceSide?: 0 | 1) => void;
   compact?: boolean;
   tree?: UseTalentTreeReturn;
+  onGlobalHover?: (info: TooltipInfo | null) => void;
 }) {
   const internalTree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
   const tree = externalTree ?? internalTree;
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(nodes, compact), [nodes, compact]);
 
-  const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
 
-  const handleHover = useCallback((info: TooltipInfo | null, x: number, y: number) => {
+  const handleHover = useCallback((info: TooltipInfo | null, _x: number, _y: number) => {
     clearTimeout(tipTimer.current);
     if (!info) {
-      tipTimer.current = window.setTimeout(() => setTooltip(null), 80);
+      tipTimer.current = window.setTimeout(() => onGlobalHover?.(null), 80);
     } else {
-      // Calculate ptsNeeded for locked nodes
       if (info.state === 'LOCKED') {
         const node = nodes.find(n => n.name === info.name);
         if (node) {
@@ -403,15 +403,14 @@ function TreeSection({
           info.ptsNeeded = Math.max(0, gate - tree.totalPoints);
         }
       }
-      setTooltip({ info, x, y });
+      onGlobalHover?.(info);
     }
-  }, [nodes, rowGates, tree.totalPoints]);
+  }, [nodes, rowGates, tree.totalPoints, onGlobalHover]);
 
   const handleRightClick = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.preventDefault();
     const node = nodes.find(n => n.id === nodeId);
     if (node?.type === 'choice') {
-      // Choice nodes: deselect via selectChoice(-1) to clear both choice and point
       tree.selectChoice(nodeId, -1);
       onTalentChange?.(nodeId, 0);
     } else {
@@ -495,8 +494,6 @@ function TreeSection({
           );
         })}
       </div>
-
-      {tooltip && <TalentTooltip info={tooltip.info} x={tooltip.x} y={tooltip.y} />}
     </div>
   );
 }
@@ -527,6 +524,18 @@ export function BlizzardTalentTree({
   const activeHeroKey = heroKeyProp ?? internalHeroKey;
 
   const [specTotalPts, setSpecTotalPts] = useState(0);
+
+  // Global tooltip state — all trees feed into this, rendered below Apex
+  const [globalTooltip, setGlobalTooltip] = useState<TooltipInfo | null>(null);
+  const globalTipTimer = useRef<number>();
+  const handleGlobalHover = useCallback((info: TooltipInfo | null) => {
+    clearTimeout(globalTipTimer.current);
+    if (!info) {
+      globalTipTimer.current = window.setTimeout(() => setGlobalTooltip(null), 120);
+    } else {
+      setGlobalTooltip(info);
+    }
+  }, []);
 
   const heroNodes = activeHeroKey === "sentinel" ? SENTINEL_NODES : PACK_LEADER_NODES;
   const heroGateMet = true; // Hero tree always unlocked
@@ -587,6 +596,7 @@ export function BlizzardTalentTree({
             nodes={HUNTER_NODES}
             maxPts={CLASS_MAX_PTS}
             rowGates={CLASS_ROW_GATES}
+            onGlobalHover={handleGlobalHover}
           />
 
           {/* HERO TREE + APEX (center) */}
@@ -640,14 +650,18 @@ export function BlizzardTalentTree({
               externalGateMet={heroGateMet}
               compact
               tree={heroTree}
+              onGlobalHover={handleGlobalHover}
             />
 
             {/* APEX TALENT (under hero tree) */}
-            <ApexSection tree={specTree} />
+            <ApexSection tree={specTree} onGlobalHover={handleGlobalHover} />
+
+            {/* Static tooltip panel — shows hovered talent from any tree */}
+            <StaticTooltipPanel info={globalTooltip} />
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
-          <SpecTreeSection tree={specTree} />
+          <SpecTreeSection tree={specTree} onGlobalHover={handleGlobalHover} />
         </div>
       </div>
 
@@ -659,21 +673,19 @@ export function BlizzardTalentTree({
 }
 
 // Apex section rendered under the Hero tree
-function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
+function ApexSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void }) {
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES, true), []);
-  const [hoveredInfo, setHoveredInfo] = useState<TooltipInfo | null>(null);
   const tipTimer = useRef<number>();
 
   const handleHover = useCallback((info: TooltipInfo | null, _x: number, _y: number) => {
     clearTimeout(tipTimer.current);
     if (!info) {
-      tipTimer.current = window.setTimeout(() => setHoveredInfo(null), 120);
+      tipTimer.current = window.setTimeout(() => onGlobalHover?.(null), 120);
     } else {
-      setHoveredInfo(info);
+      onGlobalHover?.(info);
     }
-  }, []);
+  }, [onGlobalHover]);
 
-  // Count apex points for display
   const apexPts = APEX_NODES.reduce((sum, n) => sum + (tree.state.points[n.id] ?? 0), 0);
 
   return (
@@ -722,9 +734,6 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
           );
         })}
       </div>
-
-      {/* Static tooltip panel below Apex */}
-      <StaticTooltipPanel info={hoveredInfo} />
     </div>
   );
 }
@@ -792,16 +801,15 @@ function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
 }
 
 // Survival spec tree (uses shared tree state from parent)
-function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
+function SpecTreeSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void }) {
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(SURVIVAL_NODES), []);
 
-  const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
 
-  const handleHover = useCallback((info: TooltipInfo | null, x: number, y: number) => {
+  const handleHover = useCallback((info: TooltipInfo | null, _x: number, _y: number) => {
     clearTimeout(tipTimer.current);
     if (!info) {
-      tipTimer.current = window.setTimeout(() => setTooltip(null), 80);
+      tipTimer.current = window.setTimeout(() => onGlobalHover?.(null), 80);
     } else {
       if (info.state === 'LOCKED') {
         const node = SURVIVAL_NODES.find(n => n.name === info.name);
@@ -810,9 +818,9 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
           info.ptsNeeded = Math.max(0, gate - tree.totalPoints);
         }
       }
-      setTooltip({ info, x, y });
+      onGlobalHover?.(info);
     }
-  }, [tree.totalPoints]);
+  }, [tree.totalPoints, onGlobalHover]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -877,8 +885,6 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
           );
         })}
       </div>
-
-      {tooltip && <TalentTooltip info={tooltip.info} x={tooltip.x} y={tooltip.y} />}
     </div>
   );
 }
