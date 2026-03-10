@@ -737,8 +737,6 @@ function ApexSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlo
     </div>
   );
 }
-  );
-}
 
 // Static tooltip panel rendered in the empty space below Apex
 function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
