@@ -510,7 +510,7 @@ function TalentNodeGrid({ node, mediaMap, selectedKeys, selectedChoices, canSele
         position: "relative",
         width: NODE_D, height: NODE_D, borderRadius: "50%",
         border: `2px solid ${borderColor}`, boxShadow: glowShadow,
-        overflow: "hidden", cursor: isCore ? "default" : isLocked ? "not-allowed" : "pointer",
+        cursor: isCore ? "default" : isLocked ? "not-allowed" : "pointer",
         transition: "border-color .15s, box-shadow .15s", background: "#0a1520",
       }}
       title={entry?.spell_tooltip?.spell?.name}
