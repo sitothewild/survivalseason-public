@@ -1132,7 +1132,7 @@ export default function SurvivalHunterSim() {
   const [fightStyle, setFightStyle] = useState('patchwerk');
   const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({ battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true });
   const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered' });
-  const [showAdv, setShowAdv] = useState(true);
+  const [showAdv, setShowAdv] = useState(false);
   const [copied, setCopied] = useState('');
   const [copiedLoadoutId, setCopiedLoadoutId] = useState<string|null>(null);
   // Custom talent loadout slots
