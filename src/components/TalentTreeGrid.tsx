@@ -143,7 +143,7 @@ export default function TalentTreeGrid({
               )}
 
               {/* Row of nodes */}
-              <div className="flex justify-center items-start gap-1.5">
+              <div className="flex justify-center items-start gap-3">
                 {rowNodes.map((node) => (
                   <TalentNode
                     key={node.nodeId}
