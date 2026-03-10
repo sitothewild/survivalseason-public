@@ -270,49 +270,69 @@ function InteractiveTalentNode({
     const filterA = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 0 ? 'none' : 'grayscale(1) brightness(0.75)';
     const filterB = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 1 ? 'none' : 'grayscale(1) brightness(0.75)';
 
+    const hexClip = "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)";
+    const hexInset = "polygon(28% 3%, 72% 3%, 97% 50%, 72% 97%, 28% 97%, 3% 50%)";
+
     return (
       <div
         style={{
-          width: sz, height: sz, borderRadius: "50%",
-          border: `2.5px solid ${ringColor}`, boxShadow: glow,
-          overflow: "hidden", cursor, position: "relative",
-          background: NODE_FILL, display: "flex",
+          width: sz, height: sz, position: "relative", cursor,
         }}
         onMouseEnter={handleEnter}
         onMouseMove={(e) => handleEnter(e)}
         onMouseLeave={() => onHover(null, 0, 0)}
         onContextMenu={onRightClick}
       >
-        {/* Left half */}
-        <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(0); }}
-          style={{
-            width: "50%", height: "100%", flexShrink: 0,
-            backgroundImage: `url(${iconA})`,
-            backgroundSize: `${sz}px ${sz}px`,
-            backgroundPosition: "left center",
-            backgroundRepeat: "no-repeat",
-            filter: filterA, transition: "filter .15s",
-          }} />
-        {/* Right half */}
-        <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(1); }}
-          style={{
-            width: "50%", height: "100%", flexShrink: 0,
-            backgroundImage: `url(${iconB})`,
-            backgroundSize: `${sz}px ${sz}px`,
-            backgroundPosition: "right center",
-            backgroundRepeat: "no-repeat",
-            filter: filterB, transition: "filter .15s",
-          }} />
-        {/* Dashed divider */}
+        {/* Hex border background */}
         <div style={{
-          position: "absolute", left: "50%", top: 4, bottom: 4, width: 1,
-          transform: "translateX(-50%)",
-          background: `repeating-linear-gradient(to bottom,${GOLD_DIM} 0,${GOLD_DIM} 3px,transparent 3px,transparent 5px)`,
+          position: "absolute", inset: -2.5,
+          clipPath: hexClip,
+          background: ringColor,
+          boxShadow: glow,
+        }} />
+        {/* Hex content area */}
+        <div style={{
+          position: "absolute", inset: 0,
+          clipPath: hexClip,
+          overflow: "hidden",
+          background: NODE_FILL,
+          display: "flex",
+        }}>
+          {/* Left half */}
+          <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(0); }}
+            style={{
+              width: "50%", height: "100%", flexShrink: 0,
+              backgroundImage: `url(${iconA})`,
+              backgroundSize: `${sz}px ${sz}px`,
+              backgroundPosition: "left center",
+              backgroundRepeat: "no-repeat",
+              filter: filterA, transition: "filter .15s",
+            }} />
+          {/* Right half */}
+          <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(1); }}
+            style={{
+              width: "50%", height: "100%", flexShrink: 0,
+              backgroundImage: `url(${iconB})`,
+              backgroundSize: `${sz}px ${sz}px`,
+              backgroundPosition: "right center",
+              backgroundRepeat: "no-repeat",
+              filter: filterB, transition: "filter .15s",
+            }} />
+          {/* Dashed divider */}
+          <div style={{
+            position: "absolute", left: "50%", top: 4, bottom: 4, width: 1,
+            transform: "translateX(-50%)",
+            background: `repeating-linear-gradient(to bottom,${GOLD_DIM} 0,${GOLD_DIM} 3px,transparent 3px,transparent 5px)`,
+            pointerEvents: "none",
+          }} />
+        </div>
+        {/* Inner hex ring */}
+        <div style={{
+          position: "absolute", inset: 4,
+          clipPath: hexInset,
+          border: `1px solid #3a2a08`,
           pointerEvents: "none",
         }} />
-        {/* Inner ring */}
-        <div style={{ position: "absolute", inset: 4, borderRadius: "50%",
-          border: `1px solid #3a2a08`, pointerEvents: "none" }} />
       </div>
     );
   }
