@@ -661,7 +661,7 @@ export function BlizzardTalentTree({
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
-          <SpecTreeSection tree={specTree} />
+          <SpecTreeSection tree={specTree} onGlobalHover={handleGlobalHover} />
         </div>
       </div>
 
