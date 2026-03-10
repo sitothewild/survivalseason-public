@@ -1772,25 +1772,36 @@ export default function SurvivalHunterSim() {
                     {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
                   </div>
                   {parsedChar && parsedChar.gear.length > 0 ? (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
-                      {[
-                        parsedChar.gear.filter((g: any) => ['head','neck','shoulders','back','chest','wrist','hands','waist'].includes(g.slot)),
-                        parsedChar.gear.filter((g: any) => ['legs','feet','finger1','finger2','trinket1','trinket2','main_hand','off_hand'].includes(g.slot)),
-                      ].map((col, ci) => (
-                        <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
-                          {col.map((g, i) => {
-                            const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
-                            return (
-                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
-                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 48, flexShrink: 0 }}>{g.slotLabel}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 2 }}>{g.name || "—"}</span>
-                              </div>
-                            );
-                          })}
+                    (() => {
+                      const SLOT_ORDER_L = ['head','neck','shoulders','back','chest','wrist','hands','waist'];
+                      const SLOT_ORDER_R = ['legs','feet','finger1','finger2','trinket1','trinket2','main_hand','off_hand'];
+                      const SLOT_LABELS_L = ['Head','Neck','Shoulders','Back','Chest','Wrist','Hands','Waist'];
+                      const SLOT_LABELS_R = ['Legs','Feet','Ring 1','Ring 2','Trinket 1','Trinket 2','Main Hand','Off Hand'];
+                      const gearMap: Record<string, any> = {};
+                      parsedChar.gear.forEach((g: any) => { gearMap[g.slot] = g; });
+                      const cols = [
+                        SLOT_ORDER_L.map((slot, i) => ({ slot, label: SLOT_LABELS_L[i], gear: gearMap[slot] })),
+                        SLOT_ORDER_R.map((slot, i) => ({ slot, label: SLOT_LABELS_R[i], gear: gearMap[slot] })),
+                      ];
+                      return (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
+                          {cols.map((col, ci) => (
+                            <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                              {col.map(({ slot, label, gear: g }, i) => {
+                                const qualityColor = g ? getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl) : "#2e3a50";
+                                return (
+                                  <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g?.itemId ? "pointer" : "default" }}
+                                    onMouseEnter={e => g?.itemId && handleItemHover(g.itemId, e)}>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 48, flexShrink: 0 }}>{g?.slotLabel || label}</span>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 2 }}>{g?.name || "—"}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()
                   ) : (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }}>
                       {[
