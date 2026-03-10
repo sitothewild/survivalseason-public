@@ -483,7 +483,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   1268868: "https://wow.zamimg.com/images/wow/icons/large/ability_rogue_trip.jpg",
   109248: "https://wow.zamimg.com/images/wow/icons/large/spell_shaman_bindelemental.jpg",
   199921: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_pathfinding2.jpg",
-  459488: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_rapidkill.jpg",
+  459488: "https://wow.zamimg.com/images/wow/icons/large/ability_karoz_leap.jpg",
   1268671: "https://wow.zamimg.com/images/wow/icons/large/spell_frost_chainsofice.jpg",
   459507: "https://wow.zamimg.com/images/wow/icons/large/spell_nature_spiritarmor.jpg",
   1258509: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg",
