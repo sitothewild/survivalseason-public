@@ -524,48 +524,35 @@ function TalentSection({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // normalizeHeroLayout — remap hero nodes to canonical 1-4-4-4-1 diamond
-// Row 0: col 3 | Rows 1-3: cols 1,2,4,5 | Row 4: col 3
+// The Blizzard API returns hero nodes with cols 1-4 and rows 1-N.
+// We remap to: Row 1-3 cols 1,2,4,5 (skip center col 3) and capstone at col 3.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function normalizeHeroLayout(nodes: BzTalentNode[]): BzTalentNode[] {
-  if (nodes.length < 5) return nodes;
+  if (nodes.length < 3) return nodes;
 
-  // Group by original display_row
+  // Column remap: API cols 1,2,3,4 → display cols 1,2,4,5 (gap at 3 = center)
+  const COL_REMAP: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 5 };
+
+  // Group by original display_row to detect single-node (capstone) rows
   const rowMap = new Map<number, BzTalentNode[]>();
   nodes.forEach((n) => {
     const r = n.display_row;
     if (!rowMap.has(r)) rowMap.set(r, []);
     rowMap.get(r)!.push(n);
   });
-
-  // Sort row keys
   const rowKeys = [...rowMap.keys()].sort((a, b) => a - b);
 
-  // Sort each row's nodes by display_col
-  rowKeys.forEach((r) => rowMap.get(r)!.sort((a, b) => a.display_col - b.display_col));
+  // Find the min row (used to calculate offset)
+  const minRow = rowKeys[0] ?? 0;
 
-  // Assign canonical positions: 1-4-4-4-1 pattern
-  // Single-node rows → row 0/4 at col 3, multi-node rows → rows 1-3 at cols 1,2,4,5
-  const MULTI_COLS = [1, 2, 4, 5];
-  const result: BzTalentNode[] = [];
-  let canonRow = 0;
-
-  for (const rk of rowKeys) {
-    const rowNodes = rowMap.get(rk)!;
-    if (rowNodes.length === 1) {
-      // Single node row: col 3
-      result.push({ ...rowNodes[0], display_row: canonRow, display_col: 3 });
-    } else {
-      // Multi node row: assign cols 1,2,4,5 (or subset if fewer than 4)
-      rowNodes.forEach((n, i) => {
-        const col = i < MULTI_COLS.length ? MULTI_COLS[i] : MULTI_COLS[MULTI_COLS.length - 1];
-        result.push({ ...n, display_row: canonRow, display_col: col });
-      });
-    }
-    canonRow++;
-  }
-
-  return result;
+  return nodes.map((n) => {
+    const rowNodes = rowMap.get(n.display_row)!;
+    const isSingleNodeRow = rowNodes.length === 1;
+    const newRow = n.display_row - minRow;
+    const newCol = isSingleNodeRow ? 3 : (COL_REMAP[n.display_col] ?? n.display_col);
+    return { ...n, display_row: newRow, display_col: newCol };
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
