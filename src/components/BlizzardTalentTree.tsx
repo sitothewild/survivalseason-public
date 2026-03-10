@@ -601,17 +601,42 @@ interface HeroToggleProps {
 }
 
 function HeroToggle({ heroTrees, activeHeroId, mediaMap, onSwitch }: HeroToggleProps) {
-  const [pendingId, setPendingId] = useState<number | null>(null);
-
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 10 }}>
-        {heroTrees.map((ht) => {
-          const isActive = ht.id === activeHeroId;
-          // Grab first node's first entry icon as the hero's "face" icon
-          const heroNodes = ht.spec_talent_nodes ?? ht.hero_talent_nodes ?? ht.class_talent_nodes ?? [];
-          const firstSpellId = heroNodes[0]?.entries?.[0]?.spell_tooltip?.spell?.id;
-          const iconUrl = firstSpellId ? (mediaMap[firstSpellId] ?? FALLBACK_ICON) : FALLBACK_ICON;
+    <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 10, width: "100%" }}>
+      {heroTrees.map((ht) => {
+        const isActive = ht.id === activeHeroId;
+        const isSentinel = ht.name.toLowerCase().includes("sentinel");
+        const icon = isSentinel ? "🌙" : "🐾";
+        const activeColor = isSentinel ? "#38bdf8" : "#c084fc";
+        return (
+          <button
+            key={ht.id}
+            onClick={() => { if (!isActive) onSwitch(ht.id); }}
+            style={{
+              flex: 1,
+              padding: "6px 10px",
+              borderRadius: 7,
+              cursor: isActive ? "default" : "pointer",
+              background: isActive ? (isSentinel ? "rgba(56,189,248,.12)" : "rgba(192,132,252,.12)") : "rgba(0,8,20,.45)",
+              border: `1px solid ${isActive ? activeColor : "#2d3e52"}`,
+              color: isActive ? activeColor : "#4b6070",
+              fontFamily: "'Rajdhani',sans-serif",
+              fontSize: 12,
+              fontWeight: isActive ? 700 : 400,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+              transition: "all .2s",
+            }}
+          >
+            <span>{icon}</span>
+            <span>{ht.name}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
           return (
             <div
               key={ht.id}
