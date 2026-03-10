@@ -96,7 +96,7 @@ export function charToSimInput(
   targets: number,
   durationS: number,
   simOptions?: SimOptions,
-  opts?: { captureTimeline?: boolean; iterations?: number },
+  opts?: { captureTimeline?: boolean; iterations?: number; customAPL?: string },
 ): SimInput {
   const s = char.stats;
 
@@ -138,7 +138,7 @@ export function charToSimInput(
   );
 
   const aplKey = getDefaultAPLKey(hero, fightStyle);
-  const apl = DEFAULT_APLS[aplKey] ?? "";
+  const apl = opts?.customAPL ?? DEFAULT_APLS[aplKey] ?? "";
 
   const config: SimConfig = {
     durationMs: durationS * 1000,

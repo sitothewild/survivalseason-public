@@ -23,6 +23,7 @@ import { charToSimInput } from "@/engine/adapters/charToSimInput";
 import { simResultToLegacy } from "@/engine/adapters/simResultToLegacy";
 import { getWorkerPool } from "@/engine/WorkerPool";
 import type { HeroTree } from "@/engine/types";
+import { DEFAULT_APLS, getDefaultAPLKey, validateAPL } from "@/engine/APLEngine";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -994,6 +995,10 @@ export default function SurvivalHunterSim() {
   const [manualEnchants, setManualEnchants] = useState<Record<string, string>>({});
   const [showEnchants, setShowEnchants] = useState(false);
   const [showAdv, setShowAdv] = useState(true);
+  // Custom APL editor state
+  const [customAPL, setCustomAPL] = useState<string | null>(null); // null = use default
+  const [aplEditorOpen, setAplEditorOpen] = useState(false);
+  const [aplValidation, setAplValidation] = useState<{ valid: boolean; actionCount: number; warnings: string[]; errors: string[] } | null>(null);
   const [copied, setCopied] = useState('');
   const [copiedLoadoutId, setCopiedLoadoutId] = useState<string|null>(null);
   // Custom talent loadout slots
@@ -1533,6 +1538,7 @@ export default function SurvivalHunterSim() {
     try {
       // Build SimInput for each target count and run via WorkerPool
       // Capture timeline on the primary target count (first entry) for Report tab
+      const aplOverride = customAPL ?? undefined;
       const engineResults = await Promise.all(
         targets.map(async (t, idx) => {
           const input = charToSimInput(
@@ -1541,7 +1547,7 @@ export default function SurvivalHunterSim() {
             t,
             fightDuration,
             currentSimOptions,
-            idx === 0 ? { captureTimeline: true } : undefined,
+            { captureTimeline: idx === 0, customAPL: aplOverride },
           );
           const result = await pool.runSim(input);
           return simResultToLegacy(result, heroTalent as HeroTree, t, fightDuration);
@@ -2837,11 +2843,99 @@ export default function SurvivalHunterSim() {
                     )}
                   </div>
 
+                  {/* ── APL Editor ────────────────────────── */}
+                  <div style={{ marginBottom: 16 }}>
+                    <button className="adv-toggle" onClick={() => setAplEditorOpen(!aplEditorOpen)}>
+                      <span style={{ fontSize: 10 }}>{aplEditorOpen ? "▲" : "▼"}</span>
+                      {aplEditorOpen ? "COLLAPSE" : "APL EDITOR"} {!aplEditorOpen && <span style={{ color: C.textDim }}>(Custom Action Priority List)</span>}
+                    </button>
+                    {aplEditorOpen && (
+                      <div style={{ marginTop: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>
+                            ACTION PRIORITY LIST
+                            {customAPL !== null && <span style={{ color: C.gold, marginLeft: 6 }}>(CUSTOM)</span>}
+                          </div>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => {
+                              const text = customAPL ?? DEFAULT_APLS[getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st')] ?? '';
+                              const result = validateAPL(text);
+                              setAplValidation(result);
+                            }}
+                              style={{
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                background: C.surface, border: `1px solid ${C.border}`,
+                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                                color: C.textMid, transition: "all .15s",
+                              }}>Validate</button>
+                            <button onClick={() => {
+                              setCustomAPL(null);
+                              setAplValidation(null);
+                            }}
+                              style={{
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                background: customAPL !== null ? '#2a1f08' : C.surface,
+                                border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
+                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                                color: customAPL !== null ? C.goldLight : C.textDim, transition: "all .15s",
+                              }}>Reset to Default</button>
+                          </div>
+                        </div>
+                        <textarea
+                          value={customAPL ?? DEFAULT_APLS[getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st')] ?? ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const defaultKey = getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st');
+                            // If user typed back to default, reset to null
+                            if (val === DEFAULT_APLS[defaultKey]) {
+                              setCustomAPL(null);
+                            } else {
+                              setCustomAPL(val);
+                            }
+                            setAplValidation(null);
+                          }}
+                          spellCheck={false}
+                          style={{
+                            width: "100%", minHeight: 180, maxHeight: 400, resize: "vertical",
+                            background: "#141c2a", border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
+                            borderRadius: 8, color: "#cbd5e1", fontFamily: "'IBM Plex Mono',monospace",
+                            fontSize: 11, lineHeight: 1.6, padding: "10px 12px",
+                            outline: "none", transition: "border-color .2s",
+                          }}
+                        />
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>
+                            SimC-style syntax: <code style={{ color: C.textMid, fontSize: 10 }}>actions+=/ability,if=condition1&amp;condition2</code>
+                          </div>
+                          {aplValidation && (
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700, color: aplValidation.valid ? '#6ee7b7' : '#f87171' }}>
+                              {aplValidation.valid ? `Valid (${aplValidation.actionCount} actions)` : `${aplValidation.errors.length} error(s)`}
+                            </div>
+                          )}
+                        </div>
+                        {aplValidation && (aplValidation.errors.length > 0 || aplValidation.warnings.length > 0) && (
+                          <div style={{ marginTop: 8, padding: 10, background: "#1a1020", borderRadius: 6, border: `1px solid ${aplValidation.errors.length > 0 ? '#7f1d1d' : '#78350f'}` }}>
+                            {aplValidation.errors.map((e, i) => (
+                              <div key={`e${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#f87171', marginBottom: 3 }}>
+                                {e}
+                              </div>
+                            ))}
+                            {aplValidation.warnings.map((w, i) => (
+                              <div key={`w${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#fbbf24', marginBottom: 3 }}>
+                                {w}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Run Simulation button */}
                   <div style={{ flex: 1 }} />
-                  <button 
-                    className="sim-btn" 
-                    onClick={handleSim} 
+                  <button
+                    className="sim-btn"
+                    onClick={handleSim}
                     disabled={!parsedChar || isSimming}
                     style={parsedChar && !isSimming ? { animation: "goldPulse 2s ease-in-out infinite" } : { opacity: 0.5 }}
                   >
