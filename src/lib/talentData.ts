@@ -143,7 +143,7 @@ export const HUNTER_NODES: TalentNodeDef[] = [
 
   // ROW 8 (API row 10)
   { id:'h_cold_feet', apiNodeId:110153, spellId:1268671, name:'Cold Feet', type:'passive', maxPts:1, row:8, col:1,
-    parents:['h_shell_wall'], desc:"When your Freezing Trap breaks, the victim's movement speed is reduced by 70% for 4 sec." },
+    parents:['h_shell_wall','h_intimidation'], desc:"When your Freezing Trap breaks, the victim's movement speed is reduced by 70% for 4 sec." },
   { id:'h_territorial_choice', apiNodeId:102394, spellId:null, name:'Territorial Instincts / Guttural Roar', type:'choice', maxPts:1, row:8, col:2,
     parents:['h_intimidation'], desc:'Territorial: Intimidation CD reduced. Guttural: Intimidation also stuns nearby.',
     choiceA: { name:'Territorial Instincts', spellId:459507, desc:'The cooldown of Intimidation is reduced by 20 sec.' },
