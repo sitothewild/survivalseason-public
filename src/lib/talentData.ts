@@ -408,7 +408,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   462036: "https://wow.zamimg.com/images/wow/icons/large/inv_wildfirebomb.jpg",
 
   // ── Sentinel ──
-  1253599: "https://wow.zamimg.com/images/wow/icons/large/ability_racial_dvinewardenofthelightofthestar.jpg",
+  1253599: "https://wow.zamimg.com/images/wow/icons/large/inv_ability_sentinelhunter_lunarstorm.jpg",
   450373: "https://wow.zamimg.com/images/wow/icons/large/ability_rogue_feint.jpg",
   1253825: "https://wow.zamimg.com/images/wow/icons/large/spell_arcane_starfire.jpg",
   1253831: "https://wow.zamimg.com/images/wow/icons/large/inv_polearm_2h_felfireraid_d_01.jpg",
