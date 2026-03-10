@@ -105,7 +105,7 @@ export const HUNTER_NODES: TalentNodeDef[] = [
   { id:'h_trigger_finger', apiNodeId:102396, spellId:459534, name:'Trigger Finger', type:'passive', maxPts:2, row:5, col:3,
     parents:['h_pathfinding','h_disruptive_rounds'], desc:'Haste increased by 1%.' },
   { id:'h_trap_choice', apiNodeId:102393, spellId:null, name:'Tar Trap / Scare Beast', type:'choice', maxPts:1, row:5, col:4,
-    parents:['h_disruptive_rounds','h_improved_feign'], desc:'Tar Trap: AoE slow pool. Scare Beast: fears a beast target.',
+    parents:['h_disruptive_rounds'], desc:'Tar Trap: AoE slow pool. Scare Beast: fears a beast target.',
     choiceA: { name:'Tar Trap', spellId:187698, desc:'Place a trap that creates a tar pool, slowing enemies by 50%.' },
     choiceB: { name:'Scare Beast', spellId:1513, desc:'Fear a Beast target for 20 sec. Damage breaks effect.' } },
   { id:'h_touch_of_grass', apiNodeId:109487, spellId:1258402, name:'Touch of Grass', type:'passive', maxPts:2, row:5, col:5,
