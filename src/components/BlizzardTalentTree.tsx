@@ -1,4 +1,5 @@
 // @ts-nocheck
+
 /**
  * BlizzardTalentTree — Fully interactive Survival Hunter talent tree
  *
