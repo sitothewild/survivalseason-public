@@ -137,11 +137,12 @@ function TalentTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number
 
 // ── Connection Lines ─────────────────────────────────────────
 function ConnectionLines({
-  nodes, minRow, minCol, w, h, pointsMap,
+  nodes, minRow, minCol, w, h, pointsMap, compact = false,
 }: {
   nodes: TalentNodeDef[];
   minRow: number; minCol: number; w: number; h: number;
   pointsMap: Record<string, number>;
+  compact?: boolean;
 }) {
   const lines = useMemo(() => {
     const result: React.ReactNode[] = [];
@@ -151,8 +152,8 @@ function ConnectionLines({
       node.parents.forEach(pid => {
         const parent = nodeMap.get(pid);
         if (!parent) return;
-        const from = nodePos(parent, minRow, minCol);
-        const to = nodePos(node, minRow, minCol);
+        const from = nodePos(parent, minRow, minCol, compact);
+        const to = nodePos(node, minRow, minCol, compact);
         const parentOn = (pointsMap[pid] ?? 0) > 0;
         const nodeOn = (pointsMap[node.id] ?? 0) > 0;
 
@@ -177,7 +178,7 @@ function ConnectionLines({
       });
     });
     return result;
-  }, [nodes, minRow, minCol, pointsMap]);
+  }, [nodes, minRow, minCol, pointsMap, compact]);
 
   return (
     <svg width={w} height={h}
