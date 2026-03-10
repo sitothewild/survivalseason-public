@@ -30,6 +30,11 @@ interface TalentPanelProps {
 // ─── COMPONENT ──────────────────────────────────────────────
 
 export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
+  const [exportFightStyle, setExportFightStyle] = useState<FightStyle>("st");
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportResult, setExportResult] = useState<{ profileString: string; summary: any } | null>(null);
+  const [copied, setCopied] = useState(false);
+
   const tree = useTalentTreeData(fetchTalentTree);
 
   // Switch hero tree AND reset all hero points
