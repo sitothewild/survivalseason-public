@@ -72,7 +72,7 @@ const SURVIVAL_NODES: LayoutNode[] = [
   // ── ROW 5 ──
   { id: "bomb_choice",     spellId: 0,       name: "Shrapnel Bomb / Flamebreak",   type: "choice",  maxPts: 1, row: 5, col: 1,
     entryA: { spellId: 270335,  name: "Shrapnel Bomb" },
-    entryB: { spellId: 0,       name: "Flamebreak",    key: "flamebreak" } },
+    entryB: { spellId: 1253176, name: "Flamebreak",    key: "flamebreak" } },
   { id: "mongoose_fury",   spellId: 260248,  name: "Mongoose Fury",            type: "passive", maxPts: 1, row: 5, col: 3 },
   { id: "grenade_juggler", spellId: 1272136, name: "Grenade Juggler",          type: "passive", maxPts: 1, row: 5, col: 4 },
   { id: "pack_tactics",    spellId: 459964,  name: "Pack Tactics",             type: "passive", maxPts: 1, row: 5, col: 5 },
@@ -80,7 +80,7 @@ const SURVIVAL_NODES: LayoutNode[] = [
   // ── ROW 6 ──
   { id: "mongoose_fury2",  spellId: 1252708, name: "Mongoose Fury II",         type: "passive", maxPts: 1, row: 6, col: 2, talentKey: "mongooseFury" },
   { id: "ammo_choice",     spellId: 0,       name: "Mongoose Rounds / Wildfire Shells", type: "choice", maxPts: 1, row: 6, col: 3,
-    entryA: { spellId: 0,       name: "Mongoose Rounds" },
+    entryA: { spellId: 1253945, name: "Mongoose Rounds" },
     entryB: { spellId: 1261229, name: "Wildfire Shells", key: "wildfireShells" } },
   { id: "spearhead_talent",spellId: 1252931, name: "Spearhead Talent",         type: "passive", maxPts: 1, row: 6, col: 5, talentKey: "primalSurge" },
   { id: "lethal_barbs",    spellId: 1253137, name: "Lethal Barbs",             type: "passive", maxPts: 1, row: 6, col: 6, talentKey: "lethalCalibration" },
@@ -120,10 +120,10 @@ const SENTINEL_NODES: LayoutNode[] = [
   // Row 1 — auto-selected keystone
   { id: "lunar_storm",       spellId: 1253599, name: "Lunar Storm",           type: "passive", maxPts: 1, row: 1, col: 4, autoSelected: true },
   // Row 2
-  { id: "sanctified_arms",   spellId: 450373,  name: "Sanctified Armaments",  type: "passive", maxPts: 1, row: 2, col: 1 },
+  { id: "sanctified_arms",   spellId: 1253831, name: "Sanctified Armaments",  type: "passive", maxPts: 1, row: 2, col: 1 },
   { id: "lunar_inspiration", spellId: 1253825, name: "Lunar Inspiration",     type: "passive", maxPts: 1, row: 2, col: 3 },
-  { id: "moonlight_chakram", spellId: 1253831, name: "Moonlight Chakram",     type: "passive", maxPts: 1, row: 2, col: 5 },
-  { id: "chakram_passback",  spellId: 1264902, name: "Chakram Passback",      type: "passive", maxPts: 1, row: 2, col: 7 },
+  { id: "moonlight_chakram", spellId: 1264902, name: "Moonlight Chakram",     type: "passive", maxPts: 1, row: 2, col: 5 },
+  { id: "chakram_passback",  spellId: 0,       name: "Chakram Passback",      type: "passive", maxPts: 1, row: 2, col: 7 },
   // Row 3
   { id: "stargazer_choice",  spellId: 0,       name: "Stargazer / Open Fire", type: "choice",  maxPts: 1, row: 3, col: 1,
     entryA: { spellId: 1253751, name: "Stargazer",   key: "stargazer" },
@@ -153,7 +153,7 @@ const PACK_LEADER_NODES: LayoutNode[] = [
   { id: "horn",                spellId: 472352, name: "Horn",                      type: "passive", maxPts: 1, row: 2, col: 3 },
   { id: "pathfinding",         spellId: 472357, name: "Pathfinding",               type: "passive", maxPts: 1, row: 2, col: 5 },
   { id: "shoes_choice",        spellId: 0,      name: "Slicked Shoes / Masterful Call", type: "choice", maxPts: 1, row: 2, col: 7,
-    entryA: { spellId: 0,       name: "Slicked Shoes",  key: "slickedShoes" },
+    entryA: { spellId: 472719,  name: "Slicked Shoes",  key: "slickedShoes" },
     entryB: { spellId: 1268705, name: "Masterful Call", key: "masterfulCall" } },
   // Row 3
   { id: "ursine_choice",       spellId: 0,      name: "Ursine Fury / Sharpened Claws", type: "choice", maxPts: 1, row: 3, col: 1,
