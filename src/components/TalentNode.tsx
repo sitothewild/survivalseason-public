@@ -260,7 +260,7 @@ function ChoiceNodeRenderer({
       {/* Split octagonal shape via rounded-lg + clip */}
       <div
         className={`
-          w-12 h-11 rounded-lg border-2 ${borderColor}
+          w-11 h-11 rounded-full border-2 ${borderColor}
           overflow-hidden flex
           transition-all duration-150 ease-out
           ${isLocked ? "cursor-not-allowed opacity-40" : "hover:border-amber-400"}
