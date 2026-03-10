@@ -486,7 +486,7 @@ function TalentSection({
           selectedKeys={selectedKeys} coreKeys={coreKeys}
         />
 
-        {nodes.map((node) => {
+        {nodes.filter((node) => node.entries?.length > 0 && node.entries[0]?.spell_tooltip?.spell?.name).map((node) => {
           const key = nodeTalentKey(node);
           const isCore = !!(key && coreKeys.has(key));
           const prereqsMet = (node.prerequisite_nodes ?? []).every((p) => {
