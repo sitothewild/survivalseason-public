@@ -121,14 +121,29 @@ export default function TalentOptimizer() {
           padding:"20px 16px 24px",
         }}>
           {/* Inner lighter panel with the talent tree */}
-          <div style={{
-            background:`url(${talentOptimizerBg}) center/cover no-repeat, linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)`,
-            border:`1px solid #2e3a50`,
-            borderRadius:10,
-            padding:"24px 16px 32px",
-            overflow:"visible",
-            position:"relative",
-          }}>
+          <div
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            style={{
+              background: `linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)`,
+              border:`1px solid #2e3a50`,
+              borderRadius:10,
+              padding:"24px 16px 32px",
+              overflow:"visible",
+              position:"relative",
+            }}>
+            {/* Background image layer with conditional blur */}
+            <div style={{
+              position:"absolute", inset:0, borderRadius:10,
+              backgroundImage:`url(${talentOptimizerBg})`,
+              backgroundSize:"cover", backgroundPosition:"center",
+              transition:"filter .4s ease",
+              filter: isHovering ? "blur(3px) brightness(0.6)" : "none",
+              pointerEvents:"none",
+              zIndex:0,
+            }} />
+            {/* Content layer */}
+            <div style={{ position:"relative", zIndex:1 }}>
             {/* Fight style toggle — top right */}
             <FightStyleToggle active={fightStyle} onChange={setFightStyle} />
             <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
