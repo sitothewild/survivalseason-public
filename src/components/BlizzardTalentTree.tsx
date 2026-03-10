@@ -871,17 +871,42 @@ export function BlizzardTalentTree({
   }
   const rawSpecNodes = (specTree.spec_talent_nodes ?? []).filter((n: BzTalentNode) => !heroNodeIdSet.has(n.id));
 
-  // Remove spatially isolated outlier nodes (stray hero nodes that leaked into spec list)
+  // Remove spatially isolated outlier nodes by keeping only the largest connected component
   let specNodes = rawSpecNodes;
   if (rawSpecNodes.length >= 3) {
-    const cols = rawSpecNodes.map((n) => n.display_col).sort((a, b) => a - b);
-    const medianCol = cols[Math.floor(cols.length / 2)];
-    const mainCluster = rawSpecNodes.filter((n) => Math.abs(n.display_col - medianCol) <= 6);
-    if (mainCluster.length < rawSpecNodes.length) {
-      const mainMinCol = Math.min(...mainCluster.map((n) => n.display_col));
-      const mainMaxCol = Math.max(...mainCluster.map((n) => n.display_col));
-      specNodes = rawSpecNodes.filter((n) => n.display_col >= mainMinCol - 1 && n.display_col <= mainMaxCol + 1);
-    }
+    const idSet = new Set(rawSpecNodes.map((n) => n.id));
+    // Build adjacency from prerequisite links
+    const adj = new Map<number, Set<number>>();
+    rawSpecNodes.forEach((n) => {
+      if (!adj.has(n.id)) adj.set(n.id, new Set());
+      (n.prerequisite_nodes ?? []).forEach((p) => {
+        if (idSet.has(p.id)) {
+          adj.get(n.id)!.add(p.id);
+          if (!adj.has(p.id)) adj.set(p.id, new Set());
+          adj.get(p.id)!.add(n.id);
+        }
+      });
+    });
+    // BFS to find connected components
+    const visited = new Set<number>();
+    const components: number[][] = [];
+    rawSpecNodes.forEach((n) => {
+      if (visited.has(n.id)) return;
+      const comp: number[] = [];
+      const queue = [n.id];
+      while (queue.length) {
+        const cur = queue.pop()!;
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        comp.push(cur);
+        adj.get(cur)?.forEach((nb) => { if (!visited.has(nb)) queue.push(nb); });
+      }
+      components.push(comp);
+    });
+    // Keep only the largest component
+    const largest = components.reduce((a, b) => a.length >= b.length ? a : b, []);
+    const largestSet = new Set(largest);
+    specNodes = rawSpecNodes.filter((n) => largestSet.has(n.id));
   }
 
   const classBudget = specTree.talent_point_budget?.class_points ?? 31;
