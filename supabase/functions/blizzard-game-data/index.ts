@@ -176,6 +176,31 @@ serve(async (req) => {
         break;
       }
 
+      // Get talent tree for a spec
+      case "talent-tree": {
+        const { specId } = params;
+        if (!specId) throw new Error("specId is required");
+        // First get the talent tree index to find the tree ID for this spec
+        const index = await blizzardGet("/data/wow/talent-tree/index", region, "static");
+        // Find the tree that contains this spec
+        let treeId = null;
+        if (index?.spec_talent_trees) {
+          for (const tree of index.spec_talent_trees) {
+            if (tree?.playable_specialization?.id === specId) {
+              // Extract tree ID from the key href
+              const match = tree.key?.href?.match(/talent-tree\/(\d+)\//);
+              if (match) { treeId = match[1]; break; }
+            }
+          }
+        }
+        if (!treeId) {
+          // Fallback: try common tree IDs for Hunter
+          treeId = "786"; // Hunter talent tree ID
+        }
+        result = await blizzardGet(`/data/wow/talent-tree/${treeId}/playable-specialization/${specId}`, region, "static");
+        break;
+      }
+
       // Batch: fetch multiple items at once (up to 20)
       case "items-batch": {
         const { itemIds } = params;
