@@ -1972,15 +1972,10 @@ export default function SurvivalHunterSim() {
                     </div>
                   )}
                 </CARD>
-              </div>
 
-              {/* ═══ RIGHT COLUMN — Simulation Config (65%) ═══ */}
-              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}>
-                <CARD style={{ display: "flex", flexDirection: "column" }}>
-                  <LBL>⚙ Simulation Config</LBL>
-
-                  {/* Current Talents — always visible */}
-                  <div style={{ marginBottom: 16, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                {/* Current Talents — always visible */}
+                <CARD style={{ marginTop: 12 }}>
+                  <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                       {parsedChar ? (
@@ -2030,6 +2025,13 @@ export default function SurvivalHunterSim() {
                       {parsedChar ? (displayedTalentString || 'Talent string unavailable') : '—'}
                     </div>
                   </div>
+                </CARD>
+              </div>
+
+              {/* ═══ RIGHT COLUMN — Simulation Config (65%) ═══ */}
+              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}>
+                <CARD style={{ display: "flex", flexDirection: "column" }}>
+                  <LBL>⚙ Simulation Config</LBL>
 
                   {/* ── Hero Talent + Talent Loadout ───────────── */}
                   <div style={{ marginBottom: 16 }}>
