@@ -70,28 +70,44 @@ export interface TalentConfig {
   twoAgainstMany: boolean;
   /** Lethal Calibration: all builds except Raid Sentinel */
   lethalCalibration: boolean;
-  // ─ Sentinel hero ─
-  dontLookBack: boolean;
-  moonsBlessing: boolean;
-  sanctifiedArmaments: boolean;
-  moonlightChakram: boolean;
-  cantMissWontMissSent: boolean; // Can't Miss, Won't Miss (Sentinel hero node)
-  invigoratingPulse: boolean;
-  arcaneTalons: boolean;
-  lunarCalling: boolean;
-  radiantEdge: boolean;
-  lunarStorm: boolean;
-  // ─ Pack Leader hero ─
-  packMentality: boolean;
-  direSummons: boolean;
-  betterTogether: boolean;
-  furyOfTheWyvern: boolean;
-  hogstrider: boolean;
-  lethalBarbs: boolean;
-  noMercy: boolean;
-  shellCover: boolean;
-  sharpenedFangs: boolean;
-  stampede: boolean;
+  // ─ Sentinel hero — Blizzard API · talent-tree/774/spec/255 · Midnight 12.0.1 live ─
+  // Row 1 (4 nodes): Stargazer/Open Fire (choice), Lunar Inspiration, Extrapolation, Twilight Requiem/Stalk and Strike (choice)
+  stargazer: boolean;            // node 94958 choice A, spell 1253751 — col 0
+  openFire: boolean;             // node 94958 choice B, spell 1253807 — col 0
+  lunarInspiration: boolean;     // node 94973, spell 1253825 — col 1
+  extrapolation: boolean;        // node 94971, spell 450379 — col 2 (99.99% uptime mark buff)
+  twilightRequiem: boolean;      // node 110028 choice A, spell 1264904 — col 3
+  stalkAndStrike: boolean;       // node 110028 choice B, spell 1266069 — col 3
+  // Row 2 (3 nodes): Don't Look Back, Catch Out, Invigorating Pulse
+  dontLookBack: boolean;         // node 94960, spell 450373 — col 0 (Harpoon applies Mark)
+  catchOut: boolean;             // node 94959, spell 450376 — col 1 (KC chance to apply extra Mark)
+  invigoratingPulse: boolean;    // node 94957, spell 450380 — col 2 (Mark consumption heals)
+  // Row 3 (3 nodes): Eyes Closed, Lunar Calling, Release and Reload
+  eyesClosed: boolean;           // node 94970, spell 1253846 — col 0 (Mark dmg +10%)
+  lunarCalling: boolean;         // node 94956, spell 450378 — col 1 (Mark consumption dmg+crit)
+  releaseAndReload: boolean;     // node 109805, spell 1264903 — col 3 (Sentinel CD reduction)
+  // Row 4 capstone
+  lunarStorm: boolean;           // node 94955, spell 450384 — capstone (Mark consumption → Lunar Storm AoE)
+  // ─ Pack Leader hero — Blizzard API · talent-tree/774/spec/255 · Midnight 12.0.1 live ─
+  // Row 1 (3 nodes): Vicious Hunt, Pack Coordination, Howl of the Pack/Den Recovery (choice)
+  viciousHunt: boolean;          // node 94985, spell 472358 — col 0 (KC chance to summon dire beast)
+  packCoordination: boolean;     // node 94962, spell 472357 — col 2 (pet dmg increased)
+  howlOfThePack: boolean;        // node 94979 choice A, spell 472719 — col 3 (pet Basic Attack → Focus)
+  denRecovery: boolean;          // node 94979 choice B, spell 472720 — col 3 (Turtle heals pet)
+  // Row 2 (4 nodes): Ursine Fury/Sharpened Claws (choice), Wild Attacks, Cornered Prey, Frenzied Tear
+  ursineFury: boolean;           // node 94972 choice A, spell 472476 — col 0 (KC reset chance)
+  sharpenedClaws: boolean;       // node 94972 choice B, spell 472524 — col 0 (pet crit dmg)
+  wildAttacks: boolean;          // node 94984, spell 472550 — col 1 (pet bonus attack)
+  corneredPrey: boolean;         // node 94988, spell 472639 — col 2 (KC dmg +20% <20% hp)
+  frenziedTear: boolean;         // node 109803, spell 1264781 — col 3 (pet frenzy after KC)
+  // Row 3 (4 nodes): Go for the Throat, Furious Assault, Scattered Prey/Wyvern's Gaze (choice), Claw Frenzy
+  goForTheThroat: boolean;       // node 94969, spell 472660 — col 0 (KC generates Focus)
+  furiousAssault: boolean;       // node 94967, spell 472707 — col 1 (melee → extra pet attack)
+  scatteredPrey: boolean;        // node 109804 choice A, spell 1264797 — col 2 (KC cleaves nearby)
+  wyvernGaze: boolean;           // node 109804 choice B, spell 1264792 — col 2 (pet stun)
+  clawFrenzy: boolean;           // node 109802, spell 1264775 — col 3 (pet atk spd per bleed)
+  // Row 4 capstone
+  packAssault: boolean;          // node 94966, spell 472741 — capstone (Takedown → Pack Assault burst)
 }
 
 export interface AbilityDpsResult {
@@ -179,6 +195,8 @@ export interface HeroTalentNode {
   col: number;
   pointCost: 1;
   desc: string;
+  /** True if this node is one side of a binary choice node (same row+col as its partner) */
+  isChoice?: boolean;
 }
 
 // Row gate thresholds for the 11-row spec tree.
@@ -323,82 +341,110 @@ export const SURVIVAL_SPEC_TREE: TalentNode[] = [
 
 // ============================================================
 // HERO TALENT TREES — MIDNIGHT 12.0
-// All 10 nodes per hero, exact WoWHead positions.
+// 13 nodes per hero (1 gateway + 13 spendable = "Spent: 0/13" per WoWHead).
+// 4-col × 4-row grid: rows 1–3 have 4 nodes each, row 4 is the capstone.
 // WoWHead cols c7-c13 normalized to col 0-3: (wh_col - 7) / 2
 // WoWHead rows r2-r5 normalized to row 1-4: wh_row - 1
 // ============================================================
+// Source: HeroTalentTree.tsx — Blizzard API talent-tree/774/playable-specialization/255 · Midnight 12.0.1 live
+// Sentinel: 11 nodes, maxPoints 10, tierGates { 1:0, 2:2, 3:5, 4:8 }
+// Pack Leader: 12 nodes, maxPoints 10, tierGates { 1:0, 2:2, 3:5, 4:8 }
 export const HERO_TALENT_TREES: Record<'sentinel' | 'packLeader', HeroTalentNode[]> = {
   sentinel: [
-    // ─── ROW 1 (WoWHead r2) ────────────────────────────────
-    { key: 'dontLookBack', label: "Don't Look Back",
-      row: 1, col: 0, pointCost: 1,
-      desc: 'Sentinel-themed passive. WoWHead r2 c7.' },
-    { key: 'moonsBlessing', label: "Moon's Blessing",
+    // ─── ROW 1 — 4 nodes (2 choice nodes) ─────────────────
+    { key: 'stargazer', label: 'Stargazer',
+      row: 1, col: 0, pointCost: 1, isChoice: true,
+      desc: 'Node 94958 · spell 1253751. Raptor Strike / Mongoose Bite extends Sentinel Mark by 2 sec.' },
+    { key: 'openFire', label: 'Open Fire',
+      row: 1, col: 0, pointCost: 1, isChoice: true,
+      desc: 'Node 94958 choice B · spell 1253807. Kill Command reduces the cooldown of Sentinel by 5 sec.' },
+    { key: 'lunarInspiration', label: 'Lunar Inspiration',
       row: 1, col: 1, pointCost: 1,
-      desc: 'Increases Sentinel Mark proc chance. WoWHead r2 c9.' },
-    { key: 'sanctifiedArmaments', label: 'Sanctified Armaments',
+      desc: 'Node 94973 · spell 1253825. Your Sentinel abilities deal increased Arcane damage.' },
+    { key: 'extrapolation', label: 'Extrapolation',
       row: 1, col: 2, pointCost: 1,
-      desc: 'Sentinel-themed passive. WoWHead r2 c11.' },
-    { key: 'moonlightChakram', label: 'Moonlight Chakram',
-      row: 1, col: 3, pointCost: 1,
-      desc: 'Sentinel Mark procs release a bouncing shadow chakram hitting up to 5 targets. WoWHead r2 c13.' },
-    // ─── ROW 2 (WoWHead r3) ────────────────────────────────
-    { key: 'cantMissWontMissSent', label: "Can't Miss, Won't Miss",
+      desc: 'Node 94971 · spell 450379. Sentinel Marks have near-permanent uptime — effectively always active in combat.' },
+    { key: 'twilightRequiem', label: 'Twilight Requiem',
+      row: 1, col: 3, pointCost: 1, isChoice: true,
+      desc: 'Node 110028 · spell 1264904. When Sentinel expires, it deals Arcane damage to all marked targets.' },
+    { key: 'stalkAndStrike', label: 'Stalk and Strike',
+      row: 1, col: 3, pointCost: 1, isChoice: true,
+      desc: 'Node 110028 choice B · spell 1266069. Mongoose Bite / Raptor Strike damage increased for each active Sentinel Mark.' },
+    // ─── ROW 2 — 3 nodes ───────────────────────────────────
+    { key: 'dontLookBack', label: "Don't Look Back",
+      row: 2, col: 0, pointCost: 1,
+      desc: "Node 94960 · spell 450373. Harpoon gains Sentinel Mark application on impact." },
+    { key: 'catchOut', label: 'Catch Out',
       row: 2, col: 1, pointCost: 1,
-      desc: 'Sentinel-themed accuracy passive. WoWHead r3 c9.' },
+      desc: 'Node 94959 · spell 450376. Kill Command has a chance to apply an additional Sentinel Mark.' },
     { key: 'invigoratingPulse', label: 'Invigorating Pulse',
       row: 2, col: 2, pointCost: 1,
-      desc: 'Sentinel-themed regeneration passive. WoWHead r3 c11.' },
-    // ─── ROW 3 (WoWHead r4) ────────────────────────────────
-    { key: 'arcaneTalons', label: 'Arcane Talons',
+      desc: 'Node 94957 · spell 450380. Sentinel Mark consumption heals you for a small amount.' },
+    // ─── ROW 3 — 3 nodes ───────────────────────────────────
+    { key: 'eyesClosed', label: 'Eyes Closed',
       row: 3, col: 0, pointCost: 1,
-      desc: 'Pet arcane damage passive. WoWHead r4 c7.' },
+      desc: 'Node 94970 · spell 1253846. Sentinel Mark damage is increased by 10%.' },
     { key: 'lunarCalling', label: 'Lunar Calling',
       row: 3, col: 1, pointCost: 1,
-      desc: 'Amplifies Lunar Storm damage. WoWHead r4 c9.' },
-    { key: 'radiantEdge', label: 'Radiant Edge',
+      desc: 'Node 94956 · spell 450378. Sentinel Mark consumption damage is increased and can critically strike.' },
+    { key: 'releaseAndReload', label: 'Release and Reload',
       row: 3, col: 3, pointCost: 1,
-      desc: 'Sentinel-themed edge damage passive. WoWHead r4 c13.' },
-    // ─── ROW 4 (WoWHead r5) — Capstone ────────────────────
+      desc: "Node 109805 · spell 1264903. Sentinel's cooldown is reduced when you consume Sentinel Marks." },
+    // ─── ROW 4 — Capstone ──────────────────────────────────
     { key: 'lunarStorm', label: 'Lunar Storm',
       row: 4, col: 1, pointCost: 1,
-      desc: 'Capstone: Mark consumption triggers a Lunar Storm AoE burst. WoWHead r5 c10 (between c9 and c11).' },
+      desc: 'Node 94955 · spell 450384. Capstone: Sentinel Mark consumption triggers a devastating Lunar Storm AoE — the strongest burst AoE event in the Sentinel kit.' },
   ],
   packLeader: [
-    // ─── ROW 1 (WoWHead r2) ────────────────────────────────
-    { key: 'packMentality', label: 'Pack Mentality',
+    // ─── ROW 1 — 3 nodes (1 choice node) ──────────────────
+    { key: 'viciousHunt', label: 'Vicious Hunt',
       row: 1, col: 0, pointCost: 1,
-      desc: 'Pack-themed damage passive. WoWHead r2 c7.' },
-    { key: 'direSummons', label: 'Dire Summons',
-      row: 1, col: 1, pointCost: 1,
-      desc: 'Reduces beast companion spawn cooldown. WoWHead r2 c9.' },
-    { key: 'betterTogether', label: 'Better Together',
+      desc: 'Node 94985 · spell 472358. Kill Command has a chance to summon a dire beast to attack your target.' },
+    { key: 'packCoordination', label: 'Pack Coordination',
       row: 1, col: 2, pointCost: 1,
-      desc: 'Pack-themed synergy passive. WoWHead r2 c11.' },
-    // ─── ROW 2 (WoWHead r3) ────────────────────────────────
-    { key: 'furyOfTheWyvern', label: 'Fury of the Wyvern',
+      desc: "Node 94962 · spell 472357. Your pet's damage is increased while you fight alongside it." },
+    { key: 'howlOfThePack', label: 'Howl of the Pack',
+      row: 1, col: 3, pointCost: 1, isChoice: true,
+      desc: "Node 94979 · spell 472719. Your pet's Basic Attack generates Focus for you." },
+    { key: 'denRecovery', label: 'Den Recovery',
+      row: 1, col: 3, pointCost: 1, isChoice: true,
+      desc: 'Node 94979 choice B · spell 472720. Aspect of the Turtle also heals your pet to full.' },
+    // ─── ROW 2 — 4 nodes (1 choice node) ──────────────────
+    { key: 'ursineFury', label: 'Ursine Fury',
+      row: 2, col: 0, pointCost: 1, isChoice: true,
+      desc: 'Node 94972 · spell 472476. Kill Command deals increased damage and has a chance to reset its cooldown.' },
+    { key: 'sharpenedClaws', label: 'Sharpened Claws',
+      row: 2, col: 0, pointCost: 1, isChoice: true,
+      desc: "Node 94972 choice B · spell 472524. Your pet's critical strikes deal increased damage." },
+    { key: 'wildAttacks', label: 'Wild Attacks',
       row: 2, col: 1, pointCost: 1,
-      desc: 'Wyvern companion damage amplifier. WoWHead r3 c9.' },
-    { key: 'hogstrider', label: 'Hogstrider',
+      desc: "Node 94984 · spell 472550. Your pet's Basic Attack can trigger a bonus attack." },
+    { key: 'corneredPrey', label: 'Cornered Prey',
       row: 2, col: 2, pointCost: 1,
-      desc: 'Pack Leader beast ability. WoWHead r3 c11.' },
-    { key: 'lethalBarbs', label: 'Lethal Barbs',
+      desc: 'Node 94988 · spell 472639. Kill Command damage is increased on targets below 20% health.' },
+    { key: 'frenziedTear', label: 'Frenzied Tear',
       row: 2, col: 3, pointCost: 1,
-      desc: 'Auto-attacks generate 2 bonus Focus. WoWHead r3 c13.' },
-    // ─── ROW 3 (WoWHead r4) ────────────────────────────────
-    { key: 'noMercy', label: 'No Mercy',
+      desc: 'Node 109803 · spell 1264781. Your pet enters a frenzy after Kill Command, increasing attack speed.' },
+    // ─── ROW 3 — 4 nodes (1 choice node) ──────────────────
+    { key: 'goForTheThroat', label: 'Go for the Throat',
       row: 3, col: 0, pointCost: 1,
-      desc: 'Pack Leader execute amplifier. WoWHead r4 c7.' },
-    { key: 'shellCover', label: 'Shell Cover',
+      desc: 'Node 94969 · spell 472660. Kill Command generates additional Focus.' },
+    { key: 'furiousAssault', label: 'Furious Assault',
       row: 3, col: 1, pointCost: 1,
-      desc: 'Pack Leader defensive/utility passive. WoWHead r4 c9.' },
-    { key: 'sharpenedFangs', label: 'Sharpened Fangs',
+      desc: 'Node 94967 · spell 472707. Your melee attacks have a chance to trigger an additional pet attack.' },
+    { key: 'scatteredPrey', label: 'Scattered Prey',
+      row: 3, col: 2, pointCost: 1, isChoice: true,
+      desc: 'Node 109804 · spell 1264797. Kill Command hits additional nearby targets for reduced damage.' },
+    { key: 'wyvernGaze', label: "Wyvern's Gaze",
+      row: 3, col: 2, pointCost: 1, isChoice: true,
+      desc: "Node 109804 choice B · spell 1264792. Your pet stuns targets with its attacks periodically." },
+    { key: 'clawFrenzy', label: 'Claw Frenzy',
       row: 3, col: 3, pointCost: 1,
-      desc: 'Pet crit damage amplifier. WoWHead r4 c13.' },
-    // ─── ROW 4 (WoWHead r5) — Capstone ────────────────────
-    { key: 'stampede', label: 'Stampede!',
+      desc: "Node 109802 · spell 1264775. Your pet's attack speed is increased for each active bleed on the target." },
+    // ─── ROW 4 — Capstone ──────────────────────────────────
+    { key: 'packAssault', label: 'Pack Assault',
       row: 4, col: 1, pointCost: 1,
-      desc: 'Capstone: Takedown triggers a beast stampede. The core ST damage amplifier. WoWHead r5 c10.' },
+      desc: 'Node 94966 · spell 472741. Capstone: Takedown triggers a Pack Assault — all beasts attack simultaneously for massive burst.' },
   ],
 };
 
@@ -600,11 +646,12 @@ const SPELLS: Record<string, SpellDef> = {
     requiresTalent: 'raptorSwipe',
   },
   // ─ Sentinel hero ─
-  moonlightChakram: {
-    label: 'Moonlight Chakram', apCoef: 4.80, baseCPM: 0.67,  // 1/90s
+  // lunarCalling: Mark consumption damage increased + can crit — modelled as periodic proc
+  lunarCallingProc: {
+    label: 'Lunar Calling (Mark proc)', apCoef: 4.80, baseCPM: 0.67,
     isPet: false, isFire: false, isBleed: false, aoeTargetCap: 8,
     hasteScalesCPM: false, bonusCritMult: 0,
-    requiresTalent: 'moonlightChakram', requiresHero: 'sentinel',
+    requiresTalent: 'lunarCalling', requiresHero: 'sentinel',
   },
   lunarStorm: {
     label: 'Lunar Storm', apCoef: 1.20, baseCPM: 2.4,
@@ -767,7 +814,7 @@ function computeAbilityDps(
 
   // ── Sentinel Mark → Lunar Storm CPM ──
   if (key === 'lunarStorm') {
-    const markProcRate = talents.moonsBlessing
+    const markProcRate = talents.catchOut
       ? SENTINEL_MARK_PROC_MOONS
       : SENTINEL_MARK_PROC_BASE;
     const rsCPM = SPELLS.raptorStrike.baseCPM * hasteMult;
@@ -784,9 +831,9 @@ function computeAbilityDps(
 
   // ── Pack Leader: beast procs ──
   if (key === 'packLeaderBeasts') {
-    if (talents.direSummons) {
-      cpm *= 1.15;  // Reduced spawn CD
-      notes.push('Dire Summons: -CD on beast spawns +15% CPM');
+    if (talents.packAssault) {
+      cpm *= 1.15;  // Pack Assault capstone amplifies beast pack CPM
+      notes.push('Pack Assault: pack beast CPM +15%');
     }
   }
 
@@ -842,14 +889,17 @@ function buildSentinelST(): TalentConfig {
     bloodseeker: false,       // Raid Pack Leader only
     twoAgainstMany: false,    // all builds except Raid Sentinel → NOT in Raid Sentinel
     lethalCalibration: false, // all builds except Raid Sentinel → NOT in Raid Sentinel
-    // ── Sentinel hero: all 10 nodes ──
-    dontLookBack: true, moonsBlessing: true, sanctifiedArmaments: true,
-    moonlightChakram: true, cantMissWontMissSent: true, invigoratingPulse: true,
-    arcaneTalons: true, lunarCalling: true, radiantEdge: true, lunarStorm: true,
+    // ── Sentinel hero: all 10 pts · Blizzard API Midnight 12.0.1 ──
+    stargazer: true, openFire: false, lunarInspiration: true, extrapolation: true,
+    twilightRequiem: true, stalkAndStrike: false,
+    dontLookBack: true, catchOut: true, invigoratingPulse: true,
+    eyesClosed: true, lunarCalling: true, releaseAndReload: true,
+    lunarStorm: true,
     // ── Pack Leader hero: not taken ──
-    packMentality: false, direSummons: false, betterTogether: false,
-    furyOfTheWyvern: false, hogstrider: false, lethalBarbs: false,
-    noMercy: false, shellCover: false, sharpenedFangs: false, stampede: false,
+    viciousHunt: false, packCoordination: false, howlOfThePack: false, denRecovery: false,
+    ursineFury: false, sharpenedClaws: false, wildAttacks: false, corneredPrey: false, frenziedTear: false,
+    goForTheThroat: false, furiousAssault: false, scatteredPrey: false, wyvernGaze: false, clawFrenzy: false,
+    packAssault: false,
   };
 }
 
@@ -870,14 +920,17 @@ function buildSentinelAoE(): TalentConfig {
     bloodseeker: false,      // Raid Pack Leader only
     twoAgainstMany: true,    // all builds except Raid Sentinel
     lethalCalibration: true, // all builds except Raid Sentinel
-    // ── Sentinel hero: all 10 nodes ──
-    dontLookBack: true, moonsBlessing: true, sanctifiedArmaments: true,
-    moonlightChakram: true, cantMissWontMissSent: true, invigoratingPulse: true,
-    arcaneTalons: true, lunarCalling: true, radiantEdge: true, lunarStorm: true,
+    // ── Sentinel hero: all 10 pts · Blizzard API Midnight 12.0.1 ──
+    stargazer: true, openFire: false, lunarInspiration: true, extrapolation: true,
+    twilightRequiem: true, stalkAndStrike: false,
+    dontLookBack: true, catchOut: true, invigoratingPulse: true,
+    eyesClosed: true, lunarCalling: true, releaseAndReload: true,
+    lunarStorm: true,
     // ── Pack Leader hero: not taken ──
-    packMentality: false, direSummons: false, betterTogether: false,
-    furyOfTheWyvern: false, hogstrider: false, lethalBarbs: false,
-    noMercy: false, shellCover: false, sharpenedFangs: false, stampede: false,
+    viciousHunt: false, packCoordination: false, howlOfThePack: false, denRecovery: false,
+    ursineFury: false, sharpenedClaws: false, wildAttacks: false, corneredPrey: false, frenziedTear: false,
+    goForTheThroat: false, furiousAssault: false, scatteredPrey: false, wyvernGaze: false, clawFrenzy: false,
+    packAssault: false,
   };
 }
 
@@ -899,13 +952,16 @@ function buildPackLeaderST(): TalentConfig {
     twoAgainstMany: true,    // all builds except Raid Sentinel
     lethalCalibration: true, // all builds except Raid Sentinel
     // ── Sentinel hero: not taken ──
-    dontLookBack: false, moonsBlessing: false, sanctifiedArmaments: false,
-    moonlightChakram: false, cantMissWontMissSent: false, invigoratingPulse: false,
-    arcaneTalons: false, lunarCalling: false, radiantEdge: false, lunarStorm: false,
-    // ── Pack Leader hero: all 10 nodes ──
-    packMentality: true, direSummons: true, betterTogether: true,
-    furyOfTheWyvern: true, hogstrider: true, lethalBarbs: true,
-    noMercy: true, shellCover: true, sharpenedFangs: true, stampede: true,
+    stargazer: false, openFire: false, lunarInspiration: false, extrapolation: false,
+    twilightRequiem: false, stalkAndStrike: false,
+    dontLookBack: false, catchOut: false, invigoratingPulse: false,
+    eyesClosed: false, lunarCalling: false, releaseAndReload: false,
+    lunarStorm: false,
+    // ── Pack Leader hero: all 10 pts · Blizzard API Midnight 12.0.1 ──
+    viciousHunt: true, packCoordination: true, howlOfThePack: true, denRecovery: false,
+    ursineFury: true, sharpenedClaws: false, wildAttacks: true, corneredPrey: true, frenziedTear: true,
+    goForTheThroat: true, furiousAssault: true, scatteredPrey: true, wyvernGaze: false, clawFrenzy: true,
+    packAssault: true,
   };
 }
 
@@ -927,13 +983,16 @@ function buildPackLeaderAoE(): TalentConfig {
     twoAgainstMany: true,    // all builds except Raid Sentinel
     lethalCalibration: true, // all builds except Raid Sentinel
     // ── Sentinel hero: not taken ──
-    dontLookBack: false, moonsBlessing: false, sanctifiedArmaments: false,
-    moonlightChakram: false, cantMissWontMissSent: false, invigoratingPulse: false,
-    arcaneTalons: false, lunarCalling: false, radiantEdge: false, lunarStorm: false,
-    // ── Pack Leader hero: all 10 nodes ──
-    packMentality: true, direSummons: true, betterTogether: true,
-    furyOfTheWyvern: true, hogstrider: true, lethalBarbs: true,
-    noMercy: true, shellCover: true, sharpenedFangs: true, stampede: true,
+    stargazer: false, openFire: false, lunarInspiration: false, extrapolation: false,
+    twilightRequiem: false, stalkAndStrike: false,
+    dontLookBack: false, catchOut: false, invigoratingPulse: false,
+    eyesClosed: false, lunarCalling: false, releaseAndReload: false,
+    lunarStorm: false,
+    // ── Pack Leader hero: all 10 pts · Blizzard API Midnight 12.0.1 ──
+    viciousHunt: true, packCoordination: true, howlOfThePack: true, denRecovery: false,
+    ursineFury: true, sharpenedClaws: false, wildAttacks: true, corneredPrey: true, frenziedTear: true,
+    goForTheThroat: true, furiousAssault: true, scatteredPrey: true, wyvernGaze: false, clawFrenzy: true,
+    packAssault: true,
   };
 }
 
@@ -964,37 +1023,37 @@ function calcTalentDeltas(
   // ── Sentinel-specific hero node tests ──
   const sentinelNodes: typeof talentsToTest = [
     {
-      key: 'moonlightChakram', label: 'Moonlight Chakram (Sentinel)',
-      communityRanks: true,
-      reasoning: 'Highest single-cast AP coef in the kit (4.80). Fires every ~90s aligned with Takedown burst. Mandatory Sentinel node — every guide agrees.',
-    },
-    {
       key: 'lunarStorm', label: 'Lunar Storm (Sentinel capstone)',
       communityRanks: true,
-      reasoning: 'Capstone: Mark consumption triggers Lunar Storm AoE burst. With Moon\'s Blessing at 30% proc rate × 12 RS/min = ~3.6 fires/min. BiS Sentinel node.',
+      reasoning: 'Capstone (node 94955, spell 450384). Mark consumption triggers Lunar Storm AoE — the primary Sentinel burst event. Mandatory.',
     },
     {
-      key: 'moonsBlessing', label: "Moon's Blessing (Sentinel)",
+      key: 'lunarCalling', label: 'Lunar Calling (Sentinel)',
       communityRanks: true,
-      reasoning: 'Raises Sentinel Mark proc rate 20% → 30% (+50% relative), directly multiplying Lunar Storm CPM. High value per point — scales Lunar Storm output by 50%.',
+      reasoning: 'Node 94956, spell 450378. Mark consumption damage increased + can crit. Direct multiplier on every Mark tick — backbone of the Sentinel damage loop.',
+    },
+    {
+      key: 'catchOut', label: 'Catch Out (Sentinel)',
+      communityRanks: true,
+      reasoning: 'Node 94959, spell 450376. KC has a chance to apply an extra Mark — increases Mark application rate, directly scaling Lunar Storm CPM.',
     },
   ];
   // ── Pack Leader-specific hero node tests ──
   const packLeaderNodes: typeof talentsToTest = [
     {
-      key: 'stampede', label: 'Stampede! (Pack Leader capstone)',
+      key: 'packAssault', label: 'Pack Assault (Pack Leader capstone)',
       communityRanks: true,
-      reasoning: 'Capstone: Takedown triggers a beast stampede. The core ST damage amplifier in Pack Leader — every guide marks this as mandatory.',
+      reasoning: 'Capstone (node 94966, spell 472741). Takedown triggers Pack Assault — all beasts attack simultaneously. Modeled as +15% beast CPM. Mandatory.',
     },
     {
-      key: 'direSummons', label: 'Dire Summons (Pack Leader)',
+      key: 'viciousHunt', label: 'Vicious Hunt (Pack Leader)',
       communityRanks: true,
-      reasoning: 'Reduces beast companion spawn CD — modeled as +15% Pack Leader beast CPM. Standard Pack Leader node.',
+      reasoning: 'Node 94985, spell 472358. KC has a chance to summon a dire beast — the primary beast proc driver in Pack Leader. Row 1, always taken.',
     },
     {
-      key: 'lethalBarbs', label: 'Lethal Barbs (Pack Leader)',
+      key: 'goForTheThroat', label: 'Go for the Throat (Pack Leader)',
       communityRanks: true,
-      reasoning: 'Auto-attacks generate 2 bonus Focus, enabling faster KC cycling and more Raptor Strike casts per Takedown window.',
+      reasoning: 'Node 94969, spell 472660. KC generates additional Focus — enables faster KC cycling and more abilities per Takedown window.',
     },
   ];
 
@@ -1215,7 +1274,7 @@ function buildRotationNotes(
     notes.push(`4pc tier: Boomstick effective CD ~${effBoomCD}s (from 60s) — align with Takedown where possible`);
   }
   if (heroTalent === 'sentinel') {
-    const markProcRate = talents.moonsBlessing ? 30 : 20;
+    const markProcRate = talents.catchOut ? 30 : 20;
     notes.push(`Sentinel Mark: ${markProcRate}% per RS → consume ASAP with next RS to trigger Lunar Storm`);
     notes.push('Moonlight Chakram: use on CD inside Takedown window for peak burst alignment');
   }
