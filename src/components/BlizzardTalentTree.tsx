@@ -299,7 +299,7 @@ function InteractiveTalentNode({
 
   // STANDARD / APEX NODE
   const iconUrl = resolveIcon(node.spellId);
-  const outerStrokeW = (isCapstone || isApex) ? 2.5 : 1.5;
+  const outerStrokeW = (isCapstone || isApex) ? 3.5 : 2.5;
 
   // Partial state: half-gold arc using SVG overlay
   const showPartialArc = nodeState === 'PARTIAL';
