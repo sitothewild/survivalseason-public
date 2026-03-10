@@ -866,20 +866,12 @@ function TreeSkeleton() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BlizzardTalentTreeProps {
-  /** Currently selected optional spec talent keys (TalentConfig keys) */
   specSelectedKeys?: string[];
-  /** Called when optional spec node is toggled */
   onSpecToggle?: (key: string, selected: boolean) => void;
-  /** Current hero path */
   heroKey?: "sentinel" | "packLeader";
-  /** Called when hero switches */
   onHeroChange?: (hero: "sentinel" | "packLeader") => void;
-  /** Selected hero talent keys */
   heroSelectedKeys?: string[];
-  /** Called when hero node toggled */
   onHeroToggle?: (key: string, selected: boolean) => void;
-  /** Compact mode — scales down to fit in smaller containers */
-  compact?: boolean;
 }
 
 export function BlizzardTalentTree({
@@ -889,7 +881,6 @@ export function BlizzardTalentTree({
   onHeroChange,
   heroSelectedKeys: heroSelectedKeysProp,
   onHeroToggle,
-  compact = false,
 }: BlizzardTalentTreeProps) {
   // ── Data ──────────────────────────────────────────────────────────────────
   const [treeData, setTreeData] = useState<TalentTreeFullResponse | null>(null);
@@ -1057,28 +1048,6 @@ export function BlizzardTalentTree({
     }
   }, [heroTrees, onHeroChange]);
 
-  // Compact mode: measure inner content and scale to fit container
-  const compactRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [compactScale, setCompactScale] = useState(0.45);
-  const [compactHeight, setCompactHeight] = useState<number>(400);
-
-  useEffect(() => {
-    if (!compact) return;
-    // Delay measurement to allow tree to fully render
-    const timer = setTimeout(() => {
-      if (!compactRef.current || !innerRef.current) return;
-      const containerW = compactRef.current.clientWidth;
-      const innerW = innerRef.current.scrollWidth;
-      const innerH = innerRef.current.scrollHeight;
-      if (innerW > 0 && containerW > 0) {
-        const s = Math.min(1, containerW / innerW);
-        setCompactScale(s);
-        if (innerH > 0) setCompactHeight(innerH * s);
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [compact, treeData]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (isLoading) return <TreeSkeleton />;
@@ -1121,22 +1090,14 @@ export function BlizzardTalentTree({
   );
 
   return (
-    <div ref={compactRef} style={{ userSelect: "none", ...(compact ? { overflow: "hidden" } : {}) }}>
-      {/* ── Scroll wrapper ─────────────────────────────────────────────── */}
-      <div
-        ref={innerRef}
-        style={{
-          ...(compact
-            ? { transform: `scale(${compactScale})`, transformOrigin: "top left", ...(compactHeight ? { height: compactHeight } : {}) }
-            : { overflowX: "auto", overflowY: "visible" }),
-        }}
-      >
+    <div style={{ userSelect: "none" }}>
+      <div style={{ overflowX: "auto", overflowY: "visible" }}>
         <div style={{
           display: "flex",
-          gap: compact ? SECTION_GAP * 0.6 : SECTION_GAP,
+          gap: SECTION_GAP,
           alignItems: "flex-start",
           minWidth: "fit-content",
-          padding: compact ? "4px 2px 8px" : "8px 4px 16px",
+          padding: "8px 4px 16px",
         }}>
           {/* CLASS TREE */}
           <TalentSection
