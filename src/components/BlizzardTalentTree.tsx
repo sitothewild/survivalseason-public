@@ -481,7 +481,7 @@ function TalentSection({
         boxShadow: `0 0 40px rgba(200,168,75,0.05), inset 0 1px 0 ${GOLD_DIM}20`,
       }}>
         <ConnectionLines
-          nodes={nodes} nodeMap={nodeMap}
+          nodes={validNodes} nodeMap={nodeMap}
           minRow={minRow} minCol={minCol}
           w={w} h={h}
           selectedKeys={selectedKeys} coreKeys={coreKeys}
