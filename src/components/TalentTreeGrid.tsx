@@ -122,10 +122,10 @@ export default function TalentTreeGrid({
       <div
         className="
           flex flex-col items-center gap-3
-          p-4 rounded-lg
-          bg-[#1c2333]/80 border border-[#2e3a50]
+          p-5 rounded-lg
+          bg-secondary/80 border border-border
           backdrop-blur-sm
-          min-w-[180px]
+          min-w-[280px]
         "
       >
         {sortedRowIndices.map((rowIdx) => {
@@ -143,7 +143,7 @@ export default function TalentTreeGrid({
               )}
 
               {/* Row of nodes */}
-              <div className="flex justify-center items-start gap-1.5">
+              <div className="flex justify-center items-start gap-3">
                 {rowNodes.map((node) => (
                   <TalentNode
                     key={node.nodeId}

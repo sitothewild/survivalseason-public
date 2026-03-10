@@ -88,7 +88,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
       <div
         className="
           flex items-center justify-between px-4 py-3
-          bg-[#1c2333]/70 border border-[#2e3a50]
+          bg-card/70 border border-border
           rounded-t-lg
         "
       >
@@ -144,9 +144,9 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
           ═══════════════════════════════════════════════════════ */}
       <div
         className="
-          flex items-start justify-center gap-4 p-4
-          bg-[#0f1520]
-          border-x border-b border-[#2e3a50]
+          flex items-start justify-center gap-6 p-6
+          bg-card
+          border-x border-b border-border
           rounded-b-lg
           overflow-x-auto
         "
@@ -168,7 +168,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
         </div>
 
         {/* ─── COLUMN DIVIDER ─── */}
-        <div className="self-stretch w-px bg-[#2e3a50]/50 flex-shrink-0" />
+        <div className="self-stretch w-px bg-border/50 flex-shrink-0" />
 
         {/* ─── CENTER COLUMN: Hero Tree with Toggle ─── */}
         <div className="flex-shrink-0 flex flex-col items-center">
@@ -193,7 +193,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
         </div>
 
         {/* ─── COLUMN DIVIDER ─── */}
-        <div className="self-stretch w-px bg-[#2e3a50]/50 flex-shrink-0" />
+        <div className="self-stretch w-px bg-border/50 flex-shrink-0" />
 
         {/* ─── RIGHT COLUMN: Spec (Survival) Tree ─── */}
         <div className="flex-shrink-0">
