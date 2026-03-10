@@ -15,7 +15,7 @@ import {
   SIM_TALENT_MAP,
   type TalentNodeDef, type NodeState,
 } from "@/lib/talentData";
-import { useTalentTree } from "@/hooks/useTalentTree";
+import { useTalentTree, type UseTalentTreeReturn } from "@/hooks/useTalentTree";
 
 // ── Visual constants ─────────────────────────────────────────
 const GOLD        = "#C8A84B";
