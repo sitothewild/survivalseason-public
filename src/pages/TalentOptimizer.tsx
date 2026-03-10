@@ -111,7 +111,7 @@ export default function TalentOptimizer() {
 
         {/* Dark panel wrapping the talent tree — matches Custom Loadout style */}
         <div style={{
-          background:"linear-gradient(160deg,#0d1117 0%,#1c2333 50%,#0f1a2e 100%)",
+          background:"linear-gradient(160deg,#1c2333 0%,#242d3f 50%,#1e2a3d 100%)",
           border:`1px solid ${C.border}`,
           borderRadius:12,
           padding:"24px 16px 32px",
@@ -121,12 +121,13 @@ export default function TalentOptimizer() {
             <div
               ref={innerRef}
               style={{
-                transformOrigin:"top center",
+                transformOrigin:"top left",
                 transform:`scale(${treeScale})`,
                 display:"inline-flex",
-                justifyContent:"center",
+                justifyContent:"flex-start",
                 width:"100%",
                 minWidth:"fit-content",
+                paddingLeft:"2%",
               }}
             >
               <BlizzardTalentTree />
