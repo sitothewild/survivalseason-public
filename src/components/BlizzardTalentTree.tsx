@@ -866,20 +866,12 @@ function TreeSkeleton() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BlizzardTalentTreeProps {
-  /** Currently selected optional spec talent keys (TalentConfig keys) */
   specSelectedKeys?: string[];
-  /** Called when optional spec node is toggled */
   onSpecToggle?: (key: string, selected: boolean) => void;
-  /** Current hero path */
   heroKey?: "sentinel" | "packLeader";
-  /** Called when hero switches */
   onHeroChange?: (hero: "sentinel" | "packLeader") => void;
-  /** Selected hero talent keys */
   heroSelectedKeys?: string[];
-  /** Called when hero node toggled */
   onHeroToggle?: (key: string, selected: boolean) => void;
-  /** Compact mode — scales down to fit in smaller containers */
-  compact?: boolean;
 }
 
 export function BlizzardTalentTree({
@@ -889,7 +881,6 @@ export function BlizzardTalentTree({
   onHeroChange,
   heroSelectedKeys: heroSelectedKeysProp,
   onHeroToggle,
-  compact = false,
 }: BlizzardTalentTreeProps) {
   // ── Data ──────────────────────────────────────────────────────────────────
   const [treeData, setTreeData] = useState<TalentTreeFullResponse | null>(null);
