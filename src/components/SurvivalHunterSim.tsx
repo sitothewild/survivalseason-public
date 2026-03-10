@@ -1877,7 +1877,7 @@ export default function SurvivalHunterSim() {
                         </span>
                         <button onClick={handleLoadSample} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 5, color: C.textMid, fontSize: 11, padding: "3px 8px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, whiteSpace: "nowrap" }}>Sample</button>
                       </div>
-                      <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ minHeight: 120, resize: "vertical", lineHeight: 1.6 }} />
+                      <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ minHeight: 140, resize: "vertical", lineHeight: 1.6, width: "100%" }} />
                       {parseError && <div style={{ color: C.red, fontSize: 12, fontFamily: "'Rajdhani',sans-serif" }}>⚠ {parseError}</div>}
                       <button className="parse-btn" onClick={handleParse}>✦ Parse Character Data</button>
                     </div>
