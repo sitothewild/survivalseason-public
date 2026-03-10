@@ -46,11 +46,11 @@ describe("charToSimInput", () => {
   });
 
   it("sets multi-target config", () => {
-    const input = charToSimInput(SAMPLE_CHAR, "packLeader", 5, 180);
+    const input = charToSimInput(SAMPLE_CHAR, "pack_leader", 5, 180);
     expect(input.config.durationMs).toBe(180_000);
     expect(input.config.targets).toBe(5);
     expect(input.config.fightStyle).toBe("mplus_pull");
-    expect(input.talents.hero).toBe("packLeader");
+    expect(input.talents.hero).toBe("pack_leader");
   });
 
   it("applies SimOptions", () => {
