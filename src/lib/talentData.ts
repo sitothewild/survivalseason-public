@@ -241,7 +241,7 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
     parents:['sic_em'], desc:'Each damage over time effect on a target increases the critical strike damage they receive from you by 4%.' },
   // ROW 8 (API row 9) — GATE: 20 spec pts
   { id:'explosives_expert', apiNodeId:102281, spellId:378937, name:'Explosives Expert', type:'passive', maxPts:2, row:8, col:2,
-    parents:['improved_wfb','bloody_claws'], desc:'Wildfire Bomb damage increased and cooldown reduced.' },
+    parents:['improved_wfb','bonding','bloody_claws'], desc:'Wildfire Bomb damage increased and cooldown reduced.' },
   { id:'takedown', apiNodeId:109323, spellId:1250646, name:'Takedown', type:'active', maxPts:1, row:8, col:4,
     parents:['bonding','sweeping_spear','vuln_choice'], desc:'Leap to your target with your pet. Increases all damage for 8 sec. Primary cooldown.' },
   { id:'killer_companion', apiNodeId:109312, spellId:378955, name:'Killer Companion', type:'passive', maxPts:2, row:8, col:6,
