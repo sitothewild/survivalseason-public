@@ -22,6 +22,23 @@ import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 
 const SURVIVAL_ICON = survivalIconImg;
 
+// Blizzard CDN icon filenames for professions
+const PROFESSION_ICONS: Record<string, string> = {
+  'Blacksmithing': 'trade_blacksmithing',
+  'Leatherworking': 'trade_leatherworking',
+  'Tailoring': 'trade_tailoring',
+  'Engineering': 'trade_engineering',
+  'Enchanting': 'trade_engraving',
+  'Alchemy': 'trade_alchemy',
+  'Inscription': 'inv_inscription_tradeskill01',
+  'Jewelcrafting': 'inv_misc_gem_01',
+  'Mining': 'trade_mining',
+  'Herbalism': 'trade_herbalism',
+  'Skinning': 'inv_misc_pelt_wolf_01',
+  'Cooking': 'inv_misc_food_15',
+  'Fishing': 'trade_fishing',
+};
+
 const MIDNIGHT_DATA = {
   classAura: 1.20,
   petApScaling: 0.60,
@@ -1283,10 +1300,12 @@ export default function SurvivalHunterSim() {
       if (fullData.professions?.primaries || fullData.professions?.secondaries) {
         const profs: any[] = [];
         for (const p of (fullData.professions?.primaries || [])) {
+          const latestTier = p.tiers?.[p.tiers.length - 1];
           profs.push({
             name: p.profession?.name || 'Unknown',
-            skillPoints: p.tiers?.[p.tiers.length - 1]?.skill_points ?? 0,
-            maxSkillPoints: p.tiers?.[p.tiers.length - 1]?.max_skill_points ?? 0,
+            professionId: p.profession?.id,
+            skillPoints: latestTier?.skill_points ?? 0,
+            maxSkillPoints: latestTier?.max_skill_points ?? 0,
             specializations: (p.specializations || []).map((s: any) => s.name || s.specialization?.name).filter(Boolean),
           });
         }
@@ -1882,10 +1901,18 @@ export default function SurvivalHunterSim() {
                   <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>PROFESSIONS</div>
                     {professions && professions.filter((p: any) => !p.secondary).length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {professions.filter((p: any) => !p.secondary).map((p: any, i: number) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: C.goldLight, minWidth: 110 }}>
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            {p.professionId && (
+                              <img
+                                src={`https://render.worldofwarcraft.com/us/icons/56/${PROFESSION_ICONS[p.name] || 'trade_blacksmithing'}.jpg`}
+                                alt={p.name}
+                                style={{ width: 22, height: 22, borderRadius: 4, border: `1px solid ${C.border}`, flexShrink: 0 }}
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            )}
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: C.goldLight, minWidth: 100 }}>
                               {p.name}
                             </span>
                             <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textSec }}>
@@ -1897,7 +1924,7 @@ export default function SurvivalHunterSim() {
                                   <span key={j} style={{
                                     fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 600,
                                     color: C.sentClr, background: C.surface, border: `1px solid ${C.borderSub}`,
-                                    borderRadius: 4, padding: "1px 6px",
+                                    borderRadius: 4, padding: "1px 6px", letterSpacing: 0.5,
                                   }}>{s}</span>
                                 ))}
                               </div>
