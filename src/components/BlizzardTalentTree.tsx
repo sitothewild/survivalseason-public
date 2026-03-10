@@ -7,7 +7,7 @@
  * Implements: click to select, right-click to deselect, row gates,
  * parent prerequisites, choice nodes, cascade deselection, reset buttons.
  */
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import heroSentinelImg from "@/assets/hero-sentinel.png";
 import heroPackLeaderImg from "@/assets/hero-pack-leader.png";
 import {
@@ -19,6 +19,8 @@ import {
   type TalentNodeDef, type NodeState,
 } from "@/lib/talentData";
 import { useTalentTree, type UseTalentTreeReturn } from "@/hooks/useTalentTree";
+import { getPresetBuild } from "@/lib/presetBuilds";
+import type { FightStyle } from "@/utils/simcProfileBuilder";
 
 // ── Visual constants ─────────────────────────────────────────
 const GOLD        = "#C8A84B";
@@ -370,7 +372,7 @@ function InteractiveTalentNode({
 // ── Tree Section ─────────────────────────────────────────────
 function TreeSection({
   label, nodes, maxPts, rowGates, externalGateMet = true,
-  onTalentChange, compact = false,
+  onTalentChange, compact = false, tree: externalTree,
 }: {
   label: string;
   nodes: TalentNodeDef[];
@@ -379,8 +381,10 @@ function TreeSection({
   externalGateMet?: boolean;
   onTalentChange?: (nodeId: string, pts: number, choiceSide?: 0 | 1) => void;
   compact?: boolean;
+  tree?: UseTalentTreeReturn;
 }) {
-  const tree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
+  const internalTree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
+  const tree = externalTree ?? internalTree;
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(nodes, compact), [nodes, compact]);
 
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
@@ -508,6 +512,7 @@ export interface BlizzardTalentTreeProps {
   classSelectedKeys?: string[];
   onClassToggle?: (key: string, selected: boolean) => void;
   onTalentConfigChange?: (config: Record<string, any>) => void;
+  fightStyle?: FightStyle;
 }
 
 export function BlizzardTalentTree({
@@ -516,6 +521,7 @@ export function BlizzardTalentTree({
   onTalentConfigChange,
   onClassToggle,
   classSelectedKeys,
+  fightStyle,
 }: BlizzardTalentTreeProps) {
   const [internalHeroKey, setInternalHeroKey] = useState<"sentinel" | "packLeader">("sentinel");
   const activeHeroKey = heroKeyProp ?? internalHeroKey;
@@ -529,7 +535,6 @@ export function BlizzardTalentTree({
 
   const handleSpecChange = useCallback((nodeId: string, pts: number) => {
     // Recalculate total from the tree section internally
-    // We track this via a ref-based approach
   }, []);
 
   const handleHeroSwitch = useCallback(() => {
@@ -542,12 +547,31 @@ export function BlizzardTalentTree({
   const allSpecNodes = useMemo(() => [...SURVIVAL_NODES, ...APEX_NODES], []);
   const specTree = useTalentTree(allSpecNodes, SPEC_MAX_PTS, SPEC_ROW_GATES, true);
 
+  // Hero tree lifted to parent level for preset loading
+  const heroTree = useTalentTree(heroNodes, HERO_MAX_PTS, HERO_ROW_GATES, heroGateMet);
+
   // Report total points for hero gate
   const prevTotal = useRef(0);
   if (specTree.totalPoints !== prevTotal.current) {
     prevTotal.current = specTree.totalPoints;
     setTimeout(() => setSpecTotalPts(specTree.totalPoints), 0);
   }
+
+  // Apply preset builds when fight style changes
+  const prevFightStyle = useRef<FightStyle | undefined>(undefined);
+  const prevHeroForPreset = useRef<string>(activeHeroKey);
+  useEffect(() => {
+    if (!fightStyle) return;
+    const heroChanged = prevHeroForPreset.current !== activeHeroKey;
+    const fightChanged = prevFightStyle.current !== fightStyle;
+    if (fightChanged || heroChanged) {
+      prevFightStyle.current = fightStyle;
+      prevHeroForPreset.current = activeHeroKey;
+      const preset = getPresetBuild(activeHeroKey, fightStyle);
+      specTree.loadBuild(preset.spec);
+      heroTree.loadBuild(preset.hero);
+    }
+  }, [fightStyle, activeHeroKey]);
 
   return (
     <div style={{ userSelect: "none" }}>
@@ -615,6 +639,7 @@ export function BlizzardTalentTree({
               rowGates={HERO_ROW_GATES}
               externalGateMet={heroGateMet}
               compact
+              tree={heroTree}
             />
 
             {/* APEX TALENT (under hero tree) */}

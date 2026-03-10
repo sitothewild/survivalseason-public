@@ -26,6 +26,7 @@ export default function TalentOptimizer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [treeScale, setTreeScale] = useState(1);
+  const [fightStyle, setFightStyle] = useState<FightStyle>("st");
 
   useEffect(() => {
     const container = containerRef.current;
@@ -128,7 +129,7 @@ export default function TalentOptimizer() {
             position:"relative",
           }}>
             {/* Fight style toggle — top right */}
-            <FightStyleToggle />
+            <FightStyleToggle active={fightStyle} onChange={setFightStyle} />
             <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
               <div
                 ref={innerRef}
@@ -142,7 +143,7 @@ export default function TalentOptimizer() {
                   paddingLeft:"2%",
                 }}
               >
-                <BlizzardTalentTree />
+                <BlizzardTalentTree fightStyle={fightStyle} />
               </div>
             </div>
           </div>
@@ -152,8 +153,7 @@ export default function TalentOptimizer() {
   );
 }
 
-function FightStyleToggle() {
-  const [active, setActive] = useState<FightStyle>("st");
+function FightStyleToggle({ active, onChange }: { active: FightStyle; onChange: (fs: FightStyle) => void }) {
   const styles: { key: FightStyle; label: string }[] = [
     { key: "st", label: "ST" },
     { key: "cleave", label: "Cleave" },
@@ -169,7 +169,7 @@ function FightStyleToggle() {
       {styles.map(({ key, label }) => (
         <button
           key={key}
-          onClick={() => setActive(key)}
+          onClick={() => onChange(key)}
           style={{
             padding: "4px 12px",
             fontSize: 10,

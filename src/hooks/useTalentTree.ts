@@ -15,6 +15,7 @@ export interface UseTalentTreeReturn {
   deallocatePoint: (nodeId: string) => void;
   selectChoice: (nodeId: string, side: 0 | 1) => void;
   reset: () => void;
+  loadBuild: (newState: TalentTreeState) => void;
 }
 
 export function useTalentTree(
@@ -200,6 +201,10 @@ export function useTalentTree(
     setState({ points: {}, choiceSelections: {} });
   }, []);
 
+  const loadBuild = useCallback((newState: TalentTreeState) => {
+    setState(newState);
+  }, []);
+
   return {
     state,
     totalPoints,
@@ -209,5 +214,6 @@ export function useTalentTree(
     deallocatePoint,
     selectChoice,
     reset,
+    loadBuild,
   };
 }
