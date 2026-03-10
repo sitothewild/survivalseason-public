@@ -49,10 +49,10 @@ function pointColor(pts: number, max: number): string {
 }
 
 // ── Grid layout calculation ──────────────────────────────────
-const CW = 52;  // col step
-const RH = 56;  // row step
-const PAD = 30;
-const NODE_R = 20;
+const CW = 42;  // col step (was 52)
+const RH = 48;  // row step (was 56)
+const PAD = 20;  // padding (was 30)
+const NODE_R = 18; // node radius (was 20)
 
 function gridBounds(nodes: TalentNodeDef[]) {
   const rows = nodes.map(n => n.row);
