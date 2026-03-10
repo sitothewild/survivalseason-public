@@ -452,7 +452,7 @@ function TreeSection({
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
           const isApex = node.type === 'apex';
-          const sz = isApex ? 44 : 36;
+          const sz = compact ? (isApex ? 44 : 36) : (isApex ? 52 : 40);
 
           return (
             <div key={node.id} style={{
