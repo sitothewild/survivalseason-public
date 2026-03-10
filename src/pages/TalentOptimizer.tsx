@@ -151,3 +151,43 @@ export default function TalentOptimizer() {
     </div>
   );
 }
+
+function FightStyleToggle() {
+  const [active, setActive] = useState<FightStyle>("st");
+  const styles: { key: FightStyle; label: string }[] = [
+    { key: "st", label: "ST" },
+    { key: "cleave", label: "Cleave" },
+    { key: "aoe", label: "AoE" },
+  ];
+
+  return (
+    <div style={{
+      position: "absolute", top: 10, right: 14, zIndex: 10,
+      display: "flex", borderRadius: 6, overflow: "hidden",
+      border: "1px solid #2e3a50",
+    }}>
+      {styles.map(({ key, label }) => (
+        <button
+          key={key}
+          onClick={() => setActive(key)}
+          style={{
+            padding: "4px 12px",
+            fontSize: 10,
+            fontFamily: "'Rajdhani',sans-serif",
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            textTransform: "uppercase",
+            border: "none",
+            cursor: "pointer",
+            transition: "all .15s",
+            background: active === key ? "rgba(217,119,6,.25)" : "rgba(15,21,32,.7)",
+            color: active === key ? "#fbbf24" : "#5a6a82",
+            borderRight: "1px solid #2e3a50",
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
