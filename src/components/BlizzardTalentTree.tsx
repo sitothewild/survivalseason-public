@@ -792,10 +792,7 @@ export function BlizzardTalentTree({
   const heroNodes: BzTalentNode[] = useMemo(() => {
     if (!activeHeroTree) return [];
     const raw = activeHeroTree.spec_talent_nodes ?? activeHeroTree.hero_talent_nodes ?? activeHeroTree.class_talent_nodes ?? [];
-    console.log('[HeroTree DEBUG] raw nodes:', raw.map(n => ({ id: n.id, row: n.display_row, col: n.display_col, type: n.node_type?.type, name: n.entries?.[0]?.spell_tooltip?.spell?.name })));
-    const normalized = normalizeHeroLayout(raw);
-    console.log('[HeroTree DEBUG] normalized:', normalized.map(n => ({ id: n.id, row: n.display_row, col: n.display_col, name: n.entries?.[0]?.spell_tooltip?.spell?.name })));
-    return normalized;
+    return normalizeHeroLayout(raw);
   }, [activeHeroTree]);
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
