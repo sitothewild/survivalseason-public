@@ -816,8 +816,10 @@ export default function Gear() {
         const sourceBase  = sourceParts[0];
         const sourceBoss  = sourceParts.slice(1).join(" — ");
 
-        const tipX = Math.min(bisTooltipPos.x, window.innerWidth - 360);
-        const tipY = Math.max(8, Math.min(bisTooltipPos.y, window.innerHeight - 520));
+        const tipW = 340;
+        const tipH = 480; // approximate tooltip height
+        const tipX = Math.min(bisTooltipPos.x - tipW - 12, window.innerWidth - tipW - 8);
+        const tipY = Math.max(8, Math.min(bisTooltipPos.y - tipH / 2, window.innerHeight - tipH - 8));
 
         const Divider = () => (
           <div style={{ borderTop:`1px solid ${C.borderSub}`, margin:"10px 0" }} />
