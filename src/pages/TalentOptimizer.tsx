@@ -26,6 +26,7 @@ export default function TalentOptimizer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [treeScale, setTreeScale] = useState(1);
+  const [fightStyle, setFightStyle] = useState<FightStyle>("st");
 
   useEffect(() => {
     const container = containerRef.current;
@@ -128,7 +129,7 @@ export default function TalentOptimizer() {
             position:"relative",
           }}>
             {/* Fight style toggle — top right */}
-            <FightStyleToggle />
+            <FightStyleToggle active={fightStyle} onChange={setFightStyle} />
             <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
               <div
                 ref={innerRef}
@@ -142,7 +143,7 @@ export default function TalentOptimizer() {
                   paddingLeft:"2%",
                 }}
               >
-                <BlizzardTalentTree />
+                <BlizzardTalentTree fightStyle={fightStyle} />
               </div>
             </div>
           </div>
