@@ -858,10 +858,14 @@ export function BlizzardTalentTree({
   const { specTree, mediaMap } = treeData;
   const classNodes = specTree.class_talent_nodes ?? [];
 
-  // Filter hero node IDs out of spec nodes
+  // Filter hero node IDs out of spec nodes — check ALL node list keys on each hero tree
   const heroNodeIdSet = new Set<number>();
   for (const ht of heroTrees) {
-    for (const n of (ht.hero_talent_nodes ?? ht.spec_talent_nodes ?? ht.class_talent_nodes ?? [])) {
+    for (const n of [
+      ...(ht.hero_talent_nodes ?? []),
+      ...(ht.spec_talent_nodes ?? []),
+      ...(ht.class_talent_nodes ?? []),
+    ]) {
       heroNodeIdSet.add(n.id);
     }
   }
