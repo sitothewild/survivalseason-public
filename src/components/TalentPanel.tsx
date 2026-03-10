@@ -6,10 +6,17 @@
 // Switching hero trees resets the previous hero tree's points.
 // ─────────────────────────────────────────────────────────────
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import TalentTreeGrid from "./TalentTreeGrid";
 import { useTalentTreeData } from "../hooks/useTalentTreeData";
 import type { BlizzardTalentTreeResponse } from "../types/talentTreeTypes";
+import { buildSimcProfile, type FightStyle } from "../utils/simcProfileBuilder";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 // ─── PROPS ──────────────────────────────────────────────────
 
