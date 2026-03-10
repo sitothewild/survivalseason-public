@@ -256,15 +256,15 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
   { id:'wfb_infusion', apiNodeId:102268, spellId:460198, name:'Wildfire Infusion', type:'passive', maxPts:1, row:9, col:6,
     parents:['killer_companion'], desc:'Kill Command damage increased by 15%. Kill Command reduces the cooldown of Wildfire Bomb by 1.0 sec.' },
   // ROW 10 (API row 11)
-  { id:'grenade_juggler', spellId:459843, name:'Grenade Juggler', type:'passive', maxPts:1, row:10, col:1,
+  { id:'grenade_juggler', apiNodeId:109317, spellId:459843, name:'Grenade Juggler', type:'passive', maxPts:1, row:10, col:1,
     parents:['flamefang'], desc:'Flamefang Pitch gains 1 additional charge. Throwing your Flamefang Pitch grants 1 charge of Wildfire Bomb.' },
-  { id:'wildfire_imbuement', spellId:1252943, name:'Wildfire Imbuement', type:'passive', maxPts:1, row:10, col:3,
+  { id:'wildfire_imbuement', apiNodeId:110160, spellId:1252943, name:'Wildfire Imbuement', type:'passive', maxPts:1, row:10, col:3,
     parents:['flamefang'], desc:"Throwing your Flamefang Pitch imbues your weapon with flame, causing you and your pet's auto-attacks to deal additional Fire damage for 10 sec." },
-  { id:'flanked', spellId:1256938, name:'Flanked', type:'passive', maxPts:1, row:10, col:4,
+  { id:'flanked', apiNodeId:110161, spellId:1256938, name:'Flanked', type:'passive', maxPts:1, row:10, col:4,
     parents:['twin_fangs','savagery'], desc:'Takedown damage increased by 50% and it now strikes 4 additional nearby targets. During Takedown, your attack speed is increased by 100%.' },
-  { id:'lethal_calibration', spellId:1262409, name:'Lethal Calibration', type:'passive', maxPts:1, row:10, col:5,
+  { id:'lethal_calibration', apiNodeId:102257, spellId:1262409, name:'Lethal Calibration', type:'passive', maxPts:1, row:10, col:5,
     parents:['wfb_infusion'], desc:'Wildfire Bomb reduces the cooldown of Boomstick by 2.0 sec for each enemy hit, up to 10 sec.' },
-  { id:'primal_surge', spellId:1272154, name:'Primal Surge', type:'passive', maxPts:1, row:10, col:7,
+  { id:'primal_surge', apiNodeId:110159, spellId:1272154, name:'Primal Surge', type:'passive', maxPts:1, row:10, col:7,
     parents:['wfb_infusion'], desc:'Kill Command grants 1 additional stack of Tip of the Spear. Tip of the Spear\'s damage bonus is increased by 5%.' },
 ];
 
