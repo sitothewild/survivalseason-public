@@ -1142,6 +1142,7 @@ export default function SurvivalHunterSim() {
   // Armory
   const [armoryRealm, setArmoryRealm] = useState('');
   const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
+  const [inputTab, setInputTab] = useState<'armory' | 'simc'>('armory');
   const [showRealmDropdown, setShowRealmDropdown] = useState(false);
   const [realmHighlightIdx, setRealmHighlightIdx] = useState(-1);
   const [armoryName, setArmoryName] = useState('');
@@ -1784,145 +1785,103 @@ export default function SurvivalHunterSim() {
 
               {/* ═══ LEFT COLUMN — Inputs Only (260px) ═══ */}
               <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%" }}>
-                {/* Armory Lookup */}
-                <CARD>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: 16 }}>🌐</span>
-                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 3, color: C.textMid, textTransform: "uppercase" }}>Armory Lookup</span>
-                  </div>
-                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
-                    Pull your character directly from the WoW Armory — no addon needed
-                  </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 12 }}>
-                    {["us", "eu", "kr", "tw"].map(r => (
-                      <button key={r} onClick={() => { setArmoryRegion(r); setArmoryRealm(""); setArmoryRealmSearch(""); }}
-                        style={{ background: armoryRegion === r ? "transparent" : C.surface2, border: `1px solid ${armoryRegion === r ? C.gold : C.border}`,
-                          borderRadius: 8, padding: "10px 0", color: armoryRegion === r ? C.goldLight : C.textMid,
-                          fontFamily: "'Orbitron',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: "pointer", transition: "all .2s",
-                          boxShadow: armoryRegion === r ? `inset 0 0 0 1px ${C.gold},0 0 12px rgba(217,119,6,.2)` : "none", textTransform: "uppercase"
-                        }}>{r}</button>
+                {/* Armory / SimC — tabbed single card */}
+                <CARD style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
+                  {/* Tab bar */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: `1px solid ${C.border}` }}>
+                    {(["armory", "simc"] as const).map(t => (
+                      <button key={t} onClick={() => setInputTab(t)} style={{
+                        background: "transparent", border: "none", borderBottom: inputTab === t ? `2px solid ${C.gold}` : "2px solid transparent",
+                        padding: "10px 0", cursor: "pointer", transition: "all .15s",
+                        fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 2, fontWeight: 700, textTransform: "uppercase",
+                        color: inputTab === t ? C.goldLight : C.textDim,
+                      }}>
+                        {t === "armory" ? "🌐 Armory" : "📋 SimC"}
+                      </button>
                     ))}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12, position: "relative" }}>
-                    <div ref={realmDropdownRef} style={{ position: "relative" }}>
-                      <input
-                        ref={realmInputRef}
-                        className="ifield"
-                        value={armoryRealmSearch}
-                        onChange={e => {
-                          setArmoryRealmSearch(e.target.value);
-                          setShowRealmDropdown(true);
-                          setRealmHighlightIdx(-1);
-                        }}
-                        onKeyDown={e => {
-                          const filtered = realmSuggestions;
-                          if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            if (!showRealmDropdown) { setShowRealmDropdown(true); setRealmHighlightIdx(0); return; }
-                            setRealmHighlightIdx(prev => (prev + 1) % filtered.length);
-                            return;
-                          }
-                          if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            setRealmHighlightIdx(prev => (prev - 1 + filtered.length) % filtered.length);
-                            return;
-                          }
-                          if (e.key === 'Escape') {
-                            if (showRealmDropdown) {
+
+                  {/* Armory tab */}
+                  {inputTab === "armory" && (
+                    <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+                        {["us", "eu", "kr", "tw"].map(r => (
+                          <button key={r} onClick={() => { setArmoryRegion(r); setArmoryRealm(""); setArmoryRealmSearch(""); }}
+                            style={{ background: armoryRegion === r ? "transparent" : C.surface2, border: `1px solid ${armoryRegion === r ? C.gold : C.border}`,
+                              borderRadius: 6, padding: "7px 0", color: armoryRegion === r ? C.goldLight : C.textMid,
+                              fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: 2, cursor: "pointer", transition: "all .2s",
+                              boxShadow: armoryRegion === r ? `inset 0 0 0 1px ${C.gold},0 0 10px rgba(217,119,6,.18)` : "none", textTransform: "uppercase"
+                            }}>{r}</button>
+                        ))}
+                      </div>
+                      <div ref={realmDropdownRef} style={{ position: "relative" }}>
+                        <input
+                          ref={realmInputRef}
+                          className="ifield"
+                          value={armoryRealmSearch}
+                          onChange={e => { setArmoryRealmSearch(e.target.value); setShowRealmDropdown(true); setRealmHighlightIdx(-1); }}
+                          onKeyDown={e => {
+                            const filtered = realmSuggestions;
+                            if (e.key === 'ArrowDown') { e.preventDefault(); if (!showRealmDropdown) { setShowRealmDropdown(true); setRealmHighlightIdx(0); return; } setRealmHighlightIdx(prev => (prev + 1) % filtered.length); return; }
+                            if (e.key === 'ArrowUp') { e.preventDefault(); setRealmHighlightIdx(prev => (prev - 1 + filtered.length) % filtered.length); return; }
+                            if (e.key === 'Escape') { if (showRealmDropdown) { e.preventDefault(); setShowRealmDropdown(false); setRealmHighlightIdx(-1); } return; }
+                            if (e.key === 'Enter') {
                               e.preventDefault();
-                              setShowRealmDropdown(false);
-                              setRealmHighlightIdx(-1);
+                              if (realmHighlightIdx >= 0 && filtered[realmHighlightIdx]) { setArmoryRealmSearch(filtered[realmHighlightIdx]); setArmoryRealm(normalizeRealmSlug(filtered[realmHighlightIdx])); setShowRealmDropdown(false); setRealmHighlightIdx(-1); return; }
+                              if (resolvedRealmSlug) { setShowRealmDropdown(false); setRealmHighlightIdx(-1); return; }
+                              const first = filtered[0];
+                              if (first) { setArmoryRealmSearch(first); setArmoryRealm(normalizeRealmSlug(first)); setShowRealmDropdown(false); setRealmHighlightIdx(-1); }
                             }
-                            return;
-                          }
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (realmHighlightIdx >= 0 && filtered[realmHighlightIdx]) {
-                              setArmoryRealmSearch(filtered[realmHighlightIdx]);
-                              setArmoryRealm(normalizeRealmSlug(filtered[realmHighlightIdx]));
-                              setShowRealmDropdown(false);
-                              setRealmHighlightIdx(-1);
-                              return;
-                            }
-                            if (resolvedRealmSlug) {
-                              setShowRealmDropdown(false);
-                              setRealmHighlightIdx(-1);
-                              return;
-                            }
-                            const first = filtered[0];
-                            if (first) {
-                              setArmoryRealmSearch(first);
-                              setArmoryRealm(normalizeRealmSlug(first));
-                              setShowRealmDropdown(false);
-                              setRealmHighlightIdx(-1);
-                            }
-                          }
-                        }}
-                        onFocus={() => { setShowRealmDropdown(true); setRealmHighlightIdx(-1); }}
-                        placeholder="Search realm..."
-                        style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }}
-                        autoComplete="off"
-                      />
-                      {showRealmDropdown && (() => {
-                        const filtered = realmSuggestions;
-                        if (filtered.length === 0) return null;
-                        return (
-                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
-                            {filtered.map((rv, idx) => (
-                              <div
-                                key={rv}
-                                onMouseDown={() => {
-                                  setArmoryRealm(normalizeRealmSlug(rv));
-                                  setArmoryRealmSearch(rv);
-                                  setShowRealmDropdown(false);
-                                  setRealmHighlightIdx(-1);
-                                }}
-                                onMouseEnter={() => setRealmHighlightIdx(idx)}
-                                style={{
-                                  padding: "9px 14px",
-                                  fontFamily: "'Rajdhani',sans-serif",
-                                  fontSize: 14,
-                                  color: idx === realmHighlightIdx ? C.goldLight : C.textSec,
-                                  cursor: "pointer",
-                                  transition: "background .08s",
-                                  borderBottom: `1px solid ${C.borderSub}`,
-                                  background: idx === realmHighlightIdx ? C.surface3 : "transparent",
-                                }}
-                              >
-                                {rv}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <input className="ifield" value={armoryName} onChange={e => setArmoryName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleArmoryLookup()} placeholder="Character name" style={{ fontSize: 14, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }} />
-                  </div>
-                  {armoryError && <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.red, marginBottom: 10, lineHeight: 1.5 }}>⚠ {armoryError}</div>}
-                  <button onClick={handleArmoryLookup} disabled={armoryLoading}
-                    style={{ width: "100%", background: armoryLoading ? "#1c2a3a" : C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: armoryLoading ? "not-allowed" : "pointer", transition: "all .2s", color: armoryLoading ? C.textDim : C.textSec, fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700 }}>
-                    {armoryLoading ? <><span style={{ width: 10, height: 10, border: "2px solid #2e3a50", borderTopColor: C.sentClr, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> FETCHING...</> : <>🔵 FETCH FROM ARMORY</>}
-                  </button>
-                  {armoryAvatar && (
-                    <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10 }}>
-                      <img src={armoryAvatar} alt="" style={{ width: 40, height: 40, borderRadius: 6, border: `2px solid ${C.border}` }} />
-                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.green }}>✓ Loaded from Armory {itemEnrichLoading && <span style={{ color: C.goldLight }}>· Enriching items...</span>}</span>
+                          }}
+                          onFocus={() => { setShowRealmDropdown(true); setRealmHighlightIdx(-1); }}
+                          placeholder="Search realm..."
+                          style={{ fontSize: 13, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }}
+                          autoComplete="off"
+                        />
+                        {showRealmDropdown && (() => {
+                          const filtered = realmSuggestions;
+                          if (filtered.length === 0) return null;
+                          return (
+                            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>
+                              {filtered.map((rv, idx) => (
+                                <div key={rv} onMouseDown={() => { setArmoryRealm(normalizeRealmSlug(rv)); setArmoryRealmSearch(rv); setShowRealmDropdown(false); setRealmHighlightIdx(-1); }} onMouseEnter={() => setRealmHighlightIdx(idx)}
+                                  style={{ padding: "8px 12px", fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: idx === realmHighlightIdx ? C.goldLight : C.textSec, cursor: "pointer", transition: "background .08s", borderBottom: `1px solid ${C.borderSub}`, background: idx === realmHighlightIdx ? C.surface3 : "transparent" }}>
+                                  {rv}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <input className="ifield" value={armoryName} onChange={e => setArmoryName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleArmoryLookup()} placeholder="Character name" style={{ fontSize: 13, fontFamily: "'Rajdhani',sans-serif", fontWeight: 500 }} />
+                      {armoryError && <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.red, lineHeight: 1.5 }}>⚠ {armoryError}</div>}
+                      <button onClick={handleArmoryLookup} disabled={armoryLoading}
+                        style={{ width: "100%", background: armoryLoading ? "#1c2a3a" : C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "11px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: armoryLoading ? "not-allowed" : "pointer", transition: "all .2s", color: armoryLoading ? C.textDim : C.textSec, fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700 }}>
+                        {armoryLoading ? <><span style={{ width: 10, height: 10, border: "2px solid #2e3a50", borderTopColor: C.sentClr, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> FETCHING...</> : <>🔵 FETCH FROM ARMORY</>}
+                      </button>
+                      {armoryAvatar && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <img src={armoryAvatar} alt="" style={{ width: 32, height: 32, borderRadius: 5, border: `2px solid ${C.border}` }} />
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.green }}>✓ Loaded {itemEnrichLoading && <span style={{ color: C.goldLight }}>· Enriching...</span>}</span>
+                        </div>
+                      )}
                     </div>
                   )}
-                </CARD>
 
-                {/* SimC Import — textarea grows to fill remaining height */}
-                <CARD style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <LBL>📋 SimulationCraft Import</LBL>
-                    <button onClick={handleLoadSample} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 6, color: C.textMid, fontSize: 12, padding: "4px 10px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, marginLeft: 10, whiteSpace: "nowrap" }}>Sample</button>
-                  </div>
-                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 10, lineHeight: 1.5 }}>
-                    In-game: <code style={{ background: C.surface2, padding: "1px 6px", borderRadius: 3, fontSize: 11, color: C.textSec }}>/simc</code> → copy all → paste below
-                  </p>
-                  <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ flexGrow: 1, minHeight: 100, resize: "vertical", lineHeight: 1.6 }} />
-                  {parseError && <div style={{ color: C.red, fontSize: 13, marginTop: 6, fontFamily: "'Rajdhani',sans-serif" }}>⚠ {parseError}</div>}
-                  <button className="parse-btn" onClick={handleParse} style={{ marginTop: 10 }}>✦ Parse Character Data</button>
+                  {/* SimC tab */}
+                  {inputTab === "simc" && (
+                    <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>
+                          In-game: <code style={{ background: C.surface2, padding: "1px 5px", borderRadius: 3, fontSize: 11, color: C.textSec }}>/simc</code> → paste below
+                        </span>
+                        <button onClick={handleLoadSample} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 5, color: C.textMid, fontSize: 11, padding: "3px 8px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, whiteSpace: "nowrap" }}>Sample</button>
+                      </div>
+                      <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ minHeight: 120, resize: "vertical", lineHeight: 1.6 }} />
+                      {parseError && <div style={{ color: C.red, fontSize: 12, fontFamily: "'Rajdhani',sans-serif" }}>⚠ {parseError}</div>}
+                      <button className="parse-btn" onClick={handleParse}>✦ Parse Character Data</button>
+                    </div>
+                  )}
                 </CARD>
               </div>
 
@@ -2071,12 +2030,18 @@ export default function SurvivalHunterSim() {
                       </div>
                     ) : (
                       /* Empty gear slots placeholder */
-                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                        {["Head", "Neck", "Shoulders", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet", "Ring 1", "Ring 2", "Trinket 1", "Trinket 2", "Main Hand", "Off Hand"].map((slot, i) => (
-                          <div key={slot} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: "#5a6a82", fontWeight: 500 }}>{slot}</span>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: "#2e3a50", fontWeight: 600, textAlign: "center" }}>—</span>
-                            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: "#2e3a50", fontWeight: 700, textAlign: "right", minWidth: 32 }}>—</span>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }}>
+                        {[
+                          ["Head","Neck","Shoulders","Back","Chest","Wrist","Hands","Waist"],
+                          ["Legs","Feet","Ring 1","Ring 2","Trinket 1","Trinket 2","Main Hand","Off Hand"]
+                        ].map((col, ci) => (
+                          <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                            {col.map((slot, i) => (
+                              <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 6px", borderRadius: 4, background: i % 2 === 0 ? "transparent" : C.borderSub }}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#5a6a82", fontWeight: 500, minWidth: 52 }}>{slot}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#2e3a50", fontWeight: 600 }}>—</span>
+                              </div>
+                            ))}
                           </div>
                         ))}
                       </div>
