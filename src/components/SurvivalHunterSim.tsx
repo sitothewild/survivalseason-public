@@ -2980,7 +2980,7 @@ export default function SurvivalHunterSim() {
               {/* AoE Divider */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
-                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', fontWeight: 700 }}>AOE / M+</span>
+                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 12, letterSpacing: 3, color: '#1c2333', fontWeight: 900 }}>AOE / M+</span>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
               </div>
 
