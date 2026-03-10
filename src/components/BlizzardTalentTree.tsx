@@ -217,9 +217,14 @@ function InteractiveTalentNode({
     : LOCKED_RING;
 
   const fillColor = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') ? NODE_FILL_SEL : NODE_FILL;
+  const emboss = isApex
+    ? `0 0 0 3px ${GOLD_GLOW}, 0 4px 12px 2px rgba(0,0,0,.7), inset 0 2px 4px rgba(200,168,75,.25), inset 0 -2px 4px rgba(0,0,0,.5), 0 0 24px 6px ${GOLD_GLOW}`
+    : undefined;
   const glow = nodeState === 'SELECTED'
-    ? `0 0 0 3px ${GOLD_GLOW}, 0 0 18px 5px ${GOLD_GLOW}`
-    : `0 0 0 1px rgba(122,90,32,.3), 0 0 8px 2px rgba(122,90,32,.15)`;
+    ? (isApex ? emboss! : `0 0 0 3px ${GOLD_GLOW}, 0 0 18px 5px ${GOLD_GLOW}`)
+    : isApex
+      ? `0 0 0 2px rgba(122,90,32,.4), 0 4px 10px 2px rgba(0,0,0,.6), inset 0 2px 3px rgba(200,168,75,.15), inset 0 -2px 3px rgba(0,0,0,.4), 0 0 16px 4px rgba(122,90,32,.2)`
+      : `0 0 0 1px rgba(122,90,32,.3), 0 0 8px 2px rgba(122,90,32,.15)`;
   const imgFilter = (nodeState === 'SELECTED') ? 'none' : 'grayscale(1) brightness(0.75)';
   const cursor = nodeState === 'LOCKED' ? 'not-allowed'
     : (nodeState === 'AVAILABLE' || nodeState === 'PARTIAL') ? 'pointer'
