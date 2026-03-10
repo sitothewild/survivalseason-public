@@ -1279,6 +1279,7 @@ export default function SurvivalHunterSim() {
       setImportedTalentString(simData?.talents || '');
       setSimResults(null);
       // Extract professions data
+      
       if (fullData.professions?.primaries || fullData.professions?.secondaries) {
         const profs: any[] = [];
         for (const p of (fullData.professions?.primaries || [])) {
