@@ -2021,7 +2021,7 @@ export default function SurvivalHunterSim() {
                       // Point counters (25 core spec talents are always active; 3 core class talents always taken)
                       const specTotalSelected = editDraft.enabledTalents.length + 25;
                       const heroTotalSelected = editDraft.enabledHeroTalents.length;
-                      const classTotalSelected = 3;
+                      const classTotalSelected = (editDraft.enabledClassTalents?.length ?? 0) + 3;
                       const specBudget = 31;
                       const heroBudgetVal = 10;
                       const classBudget = 31;
