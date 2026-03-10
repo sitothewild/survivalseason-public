@@ -453,7 +453,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   270581: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mendpet.jpg",
   459450: "https://wow.zamimg.com/images/wow/icons/large/spell_nature_spiritarmor.jpg",
   1267003: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mastermarksman.jpg",
-  459502: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_serpentsting.jpg",
+  459502: "https://wow.zamimg.com/images/wow/icons/large/inv_spear_01.jpg",
   385539: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mendpet.jpg",
   384799: "https://wow.zamimg.com/images/wow/icons/large/ability_rogue_feigndeath.jpg",
   5116: "https://wow.zamimg.com/images/wow/icons/large/spell_frost_stun.jpg",
