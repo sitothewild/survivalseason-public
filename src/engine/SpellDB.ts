@@ -1,0 +1,304 @@
+// ─────────────────────────────────────────────────────────────
+// engine/SpellDB.ts
+// Spell definitions, DoT rules, and ability metadata for the sim.
+// All AP coefficients from sc_hunter.cpp (Midnight branch).
+// ─────────────────────────────────────────────────────────────
+
+export type DamageSchool = "physical" | "nature" | "fire" | "shadow" | "arcane";
+
+export interface SpellInfo {
+  id: number;
+  key: string;
+  label: string;
+  apCoef: number;
+  focusCost: number;         // positive = costs focus, negative = generates focus
+  cooldownMs: number;        // 0 = no CD (GCD only)
+  charges: number;           // charge-based CDs
+  gcdMs: number;             // 0 = off-GCD
+  school: DamageSchool;
+  isPet: boolean;
+  aoeTargetCap: number;      // 1 = single target
+  hasteScalesCPM: boolean;
+  hasteScalesCD: boolean;
+  /** Bonus crit damage multiplier (e.g. Shellshock on Boomstick) */
+  bonusCritMult: number;
+  /** If true, this spell triggers the GCD */
+  triggersGcd: boolean;
+  /** Required talent key (empty string = always available) */
+  requiresTalent: string;
+  /** Required hero tree (empty string = either) */
+  requiresHero: string;
+  /** Tip of the Spear: does this ability consume ToTS stacks? */
+  consumesTots: boolean;
+  /** Does Kill Command grant ToTS stacks? */
+  grantsTotsStack: boolean;
+  /** Mongoose Fury: does this ability consume/interact with MF? */
+  consumesMfStacks: boolean;
+  grantsMfStack: boolean;
+}
+
+export interface DotInfo {
+  key: string;
+  spellKey: string;
+  pandemic: boolean;
+  durationMs: number;
+  tickIntervalMs: number;
+  apCoef: number;           // per tick
+  snapshots: ("ap" | "crit" | "vers" | "mastery")[];
+  school: DamageSchool;
+  bypassesArmor: boolean;
+  aoeTargetCap: number;
+}
+
+// ── Spell Registry ────────────────────────────────────────────
+
+export const SPELL_DB: Record<string, SpellInfo> = {
+  auto_attack: {
+    id: 0, key: "auto_attack", label: "Auto Attack",
+    apCoef: 0.85, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  raptor_strike: {
+    id: 186270, key: "raptor_strike", label: "Raptor Strike",
+    apCoef: 2.86, focusCost: 30, cooldownMs: 0, charges: 0,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "", requiresHero: "",
+    consumesTots: true, grantsTotsStack: false,
+    consumesMfStacks: true, grantsMfStack: false,
+  },
+  mongoose_bite: {
+    id: 259387, key: "mongoose_bite", label: "Mongoose Bite",
+    apCoef: 2.86, focusCost: 30, cooldownMs: 0, charges: 0,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "mongooseBite", requiresHero: "",
+    consumesTots: true, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: true,
+  },
+  kill_command: {
+    id: 259489, key: "kill_command", label: "Kill Command",
+    apCoef: 1.50, focusCost: -20, cooldownMs: 6000, charges: 2,
+    gcdMs: 1500, school: "physical", isPet: true, aoeTargetCap: 1,
+    hasteScalesCPM: true, hasteScalesCD: true, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "", requiresHero: "",
+    consumesTots: false, grantsTotsStack: true,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  wildfire_bomb: {
+    id: 259495, key: "wildfire_bomb", label: "Wildfire Bomb",
+    apCoef: 0.495, focusCost: 0, cooldownMs: 18000, charges: 1,
+    gcdMs: 1500, school: "fire", isPet: false, aoeTargetCap: 8,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  boomstick: {
+    id: 0, key: "boomstick", label: "Boomstick",
+    apCoef: 3.60, focusCost: 0, cooldownMs: 60000, charges: 1,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0.40,
+    triggersGcd: true, requiresTalent: "boomstick", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  takedown: {
+    id: 0, key: "takedown", label: "Takedown",
+    apCoef: 1.80, focusCost: -50, cooldownMs: 90000, charges: 1,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "takedown", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  flanking_strike: {
+    id: 269751, key: "flanking_strike", label: "Flanking Strike",
+    apCoef: 1.40, focusCost: -30, cooldownMs: 30000, charges: 1,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "flankingStrike", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  coordinated_assault: {
+    id: 360952, key: "coordinated_assault", label: "Coordinated Assault",
+    apCoef: 0, focusCost: 0, cooldownMs: 120000, charges: 1,
+    gcdMs: 0, school: "physical", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "coordinatedAssault", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  fury_of_the_eagle: {
+    id: 203415, key: "fury_of_the_eagle", label: "Fury of the Eagle",
+    apCoef: 1.60, focusCost: 0, cooldownMs: 45000, charges: 1,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 99,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "furyOfTheEagle", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  serpent_sting: {
+    id: 259491, key: "serpent_sting", label: "Serpent Sting",
+    apCoef: 0.25, focusCost: 10, cooldownMs: 0, charges: 0,
+    gcdMs: 1500, school: "nature", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "serpentSting", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  butchery: {
+    id: 212436, key: "butchery", label: "Butchery",
+    apCoef: 1.20, focusCost: 30, cooldownMs: 0, charges: 0,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 99,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "butchery", requiresHero: "",
+    consumesTots: true, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  carve: {
+    id: 187708, key: "carve", label: "Carve",
+    apCoef: 0.80, focusCost: 35, cooldownMs: 6000, charges: 1,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "carve", requiresHero: "",
+    consumesTots: true, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  raptor_swipe: {
+    id: 0, key: "raptor_swipe", label: "Raptor Swipe",
+    apCoef: 1.85, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "raptorSwipe", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  strike_as_one: {
+    id: 0, key: "strike_as_one", label: "Strike as One",
+    apCoef: 1.10, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "strikeAsOne", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  // Sentinel hero
+  lunar_storm: {
+    id: 450384, key: "lunar_storm", label: "Lunar Storm",
+    apCoef: 1.20, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "arcane", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "lunarStorm", requiresHero: "sentinel",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  sentinel_owl: {
+    id: 0, key: "sentinel_owl", label: "Sentinel Owl",
+    apCoef: 0.80, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "arcane", isPet: false, aoeTargetCap: 8,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "", requiresHero: "sentinel",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  // Pack Leader hero
+  pack_leader_beasts: {
+    id: 0, key: "pack_leader_beasts", label: "Pack Leader Beasts",
+    apCoef: 2.20, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 3,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "", requiresHero: "pack_leader",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  vicious_wound: {
+    id: 0, key: "vicious_wound", label: "Vicious Wound",
+    apCoef: 0, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "viciousHunt", requiresHero: "pack_leader",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  pack_coordination: {
+    id: 0, key: "pack_coordination", label: "Pack Coordination",
+    apCoef: 0.50, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "packCoordination", requiresHero: "pack_leader",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+};
+
+// ── DoT Registry ──────────────────────────────────────────────
+
+export const DOT_DB: Record<string, DotInfo> = {
+  serpent_sting: {
+    key: "serpent_sting", spellKey: "serpent_sting",
+    pandemic: true, durationMs: 12000, tickIntervalMs: 3000,
+    apCoef: 0.25, snapshots: ["ap"], school: "nature",
+    bypassesArmor: true, aoeTargetCap: 1,
+  },
+  wildfire_bomb_dot: {
+    key: "wildfire_bomb_dot", spellKey: "wildfire_bomb",
+    pandemic: true, durationMs: 6000, tickIntervalMs: 1000,
+    apCoef: 0.165, snapshots: ["ap"], school: "fire",
+    bypassesArmor: true, aoeTargetCap: 8,
+  },
+  shrapnel_bomb_dot: {
+    key: "shrapnel_bomb_dot", spellKey: "wildfire_bomb",
+    pandemic: true, durationMs: 6000, tickIntervalMs: 1000,
+    apCoef: 0.18, snapshots: ["ap"], school: "physical",
+    bypassesArmor: false, aoeTargetCap: 8,
+  },
+  internal_bleeding: {
+    key: "internal_bleeding", spellKey: "raptor_strike",
+    pandemic: false, durationMs: 9000, tickIntervalMs: 3000,
+    apCoef: 0.15, snapshots: [], school: "physical",
+    bypassesArmor: true, aoeTargetCap: 1,
+  },
+  vicious_wound_dot: {
+    key: "vicious_wound_dot", spellKey: "vicious_wound",
+    pandemic: false, durationMs: 12000, tickIntervalMs: 3000,
+    apCoef: 0.50, snapshots: ["ap"], school: "physical",
+    bypassesArmor: true, aoeTargetCap: 1,
+  },
+  lunar_storm_dot: {
+    key: "lunar_storm_dot", spellKey: "lunar_storm",
+    pandemic: false, durationMs: 8000, tickIntervalMs: 1000,
+    apCoef: 0.30, snapshots: [], school: "arcane",
+    bypassesArmor: true, aoeTargetCap: 5,
+  },
+};
+
+// ── Multi-Target Rules ────────────────────────────────────────
+
+export interface AoeRule {
+  targetCap: number;  // 99 = uncapped
+  /** If true, damage splits among targets. If false, full damage to each. */
+  splitDamage: boolean;
+}
+
+export const AOE_RULES: Record<string, AoeRule> = {
+  raptor_strike:      { targetCap: 1, splitDamage: false },
+  mongoose_bite:      { targetCap: 1, splitDamage: false },
+  kill_command:       { targetCap: 1, splitDamage: false },
+  wildfire_bomb:      { targetCap: 8, splitDamage: false },
+  butchery:           { targetCap: 99, splitDamage: false },
+  carve:              { targetCap: 5, splitDamage: false },
+  fury_of_the_eagle:  { targetCap: 99, splitDamage: false },
+  sentinel_owl:       { targetCap: 8, splitDamage: false },
+  lunar_storm:        { targetCap: 5, splitDamage: false },
+  pack_leader_beasts: { targetCap: 3, splitDamage: false },
+  serpent_sting:      { targetCap: 1, splitDamage: false },
+  boomstick:          { targetCap: 5, splitDamage: false },
+  raptor_swipe:       { targetCap: 5, splitDamage: false },
+  strike_as_one:      { targetCap: 1, splitDamage: false },
+};

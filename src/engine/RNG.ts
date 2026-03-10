@@ -120,11 +120,12 @@ export class RNG {
   /** Returns a float in [0, 1). */
   roll(): number {
     const v = this.next();
-    // Use upper 53 bits for double precision
+    // Combine both 32-bit halves into a 53-bit double
+    // hi provides the upper 32 bits, lo the lower 21 bits
     const hi = v[0] >>> 0;
     const lo = v[1] >>> 0;
-    // (hi * 2^21 + lo >>> 11) / 2^53
-    return ((hi >>> 11) * 4194304 + (lo >>> 11)) / 9007199254740992;
+    // Use hi as the top 26 bits and lo as the bottom 27 bits
+    return ((hi >>> 6) * 134217728 + (lo >>> 5)) / 9007199254740992;
   }
 
   /** Returns an integer in [min, max] inclusive. */
