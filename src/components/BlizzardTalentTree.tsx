@@ -478,6 +478,7 @@ function TalentNodeGrid({ node, mediaMap, selectedKeys, selectedChoices, canSele
     return (
       <div
         style={{
+          position: "relative",
           width: NODE_D, height: NODE_D, borderRadius: "50%",
           border: `2px solid ${borderColor}`, boxShadow: glowShadow,
           overflow: "hidden", cursor: isLocked ? "not-allowed" : "pointer",
@@ -507,9 +508,10 @@ function TalentNodeGrid({ node, mediaMap, selectedKeys, selectedChoices, canSele
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => onHover(null, 0, 0)}
       style={{
+        position: "relative",
         width: NODE_D, height: NODE_D, borderRadius: "50%",
         border: `2px solid ${borderColor}`, boxShadow: glowShadow,
-        overflow: "hidden", cursor: isCore ? "default" : isLocked ? "not-allowed" : "pointer",
+        cursor: isCore ? "default" : isLocked ? "not-allowed" : "pointer",
         transition: "border-color .15s, box-shadow .15s", background: "#0a1520",
       }}
       title={entry?.spell_tooltip?.spell?.name}
@@ -683,6 +685,7 @@ function TalentSection({
                 style={{
                   gridRow:    rowMap.get(node.display_row) ?? 1,
                   gridColumn: colMap.get(node.display_col) ?? 1,
+                  position: "relative",
                 }}
               >
                 <TalentNodeGrid
