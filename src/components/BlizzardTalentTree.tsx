@@ -57,10 +57,10 @@ const PAD = 32;
 const NODE_R = 24;
 
 // Compact size (Hero trees + Apex)
-const CW_C = 50;
-const RH_C = 56;
-const PAD_C = 22;
-const NODE_R_C = 22;
+const CW_C = 42;
+const RH_C = 50;
+const PAD_C = 16;
+const NODE_R_C = 20;
 
 function gridBounds(nodes: TalentNodeDef[], compact = false) {
   const cw = compact ? CW_C : CW;
@@ -566,7 +566,7 @@ export function BlizzardTalentTree({
                 onClick={handleHeroSwitch}
                 title={`Switch to ${isSentinel ? "Pack Leader" : "Sentinel"}`}
                 style={{
-                  width: 80, height: 80, borderRadius: "50%",
+                  width: 100, height: 100, borderRadius: "50%",
                   border: `3px solid ${isSentinel ? "#7dd3fc" : "#d8b4fe"}`,
                   background: `radial-gradient(circle at 40% 35%, ${isSentinel ? "#1e3a5f" : "#3b1a5c"} 0%, #0a0a12 80%)`,
                   boxShadow: `0 0 20px 4px ${isSentinel ? "rgba(125,211,252,.3)" : "rgba(216,180,254,.3)"}, 0 0 0 2px ${isSentinel ? "rgba(125,211,252,.15)" : "rgba(216,180,254,.15)"}`,
