@@ -512,10 +512,15 @@ export function BlizzardTalentTree({
           justifyContent: "center",
           minWidth: "fit-content", padding: "8px 8px 16px",
         }}>
-          {/* SPEC TREE */}
-          <SpecTreeSection onTotalChange={setSpecTotalPts} />
+          {/* HUNTER CLASS TREE (left) */}
+          <TreeSection
+            label="HUNTER"
+            nodes={HUNTER_NODES}
+            maxPts={CLASS_MAX_PTS}
+            rowGates={CLASS_ROW_GATES}
+          />
 
-          {/* HERO TREE */}
+          {/* HERO TREE (center) */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* Hero switcher */}
             <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
@@ -556,6 +561,9 @@ export function BlizzardTalentTree({
               externalGateMet={heroGateMet}
             />
           </div>
+
+          {/* SURVIVAL SPEC TREE (right) */}
+          <SpecTreeSection onTotalChange={setSpecTotalPts} />
         </div>
       </div>
 
