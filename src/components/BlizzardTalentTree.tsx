@@ -8,14 +8,14 @@
  */
 import React, { useState, useCallback, useMemo, useRef } from "react";
 import {
-  SURVIVAL_NODES, SENTINEL_NODES, PACK_LEADER_NODES, HUNTER_NODES,
+  SURVIVAL_NODES, SENTINEL_NODES, PACK_LEADER_NODES, HUNTER_NODES, APEX_NODES,
   SPEC_ROW_GATES, CLASS_ROW_GATES, HERO_UNLOCK_THRESHOLD,
   SPEC_MAX_PTS, CLASS_MAX_PTS, HERO_MAX_PTS,
   WOWHEAD_ICON_FALLBACKS,
   SIM_TALENT_MAP,
   type TalentNodeDef, type NodeState,
 } from "@/lib/talentData";
-import { useTalentTree } from "@/hooks/useTalentTree";
+import { useTalentTree, type UseTalentTreeReturn } from "@/hooks/useTalentTree";
 
 // ── Visual constants ─────────────────────────────────────────
 const GOLD        = "#C8A84B";
@@ -188,8 +188,9 @@ function InteractiveTalentNode({
 }) {
   const isChoice = node.type === 'choice';
   const isApex = node.type === 'apex';
+  const isTier = node.id.startsWith('apex_tier');
   const isCapstone = node.row === 5 && node.parents.length >= 3;
-  const sz = isApex ? 52 : 40;
+  const sz = isApex ? 52 : isTier ? 28 : 40;
 
   const ringColor = nodeState === 'SELECTED' ? GOLD
     : nodeState === 'PARTIAL' ? GOLD
@@ -504,6 +505,17 @@ export function BlizzardTalentTree({
     else setInternalHeroKey(newKey);
   }, [activeHeroKey, onHeroChange]);
 
+  // Combined survival + apex nodes share 34-pt budget
+  const allSpecNodes = useMemo(() => [...SURVIVAL_NODES, ...APEX_NODES], []);
+  const specTree = useTalentTree(allSpecNodes, SPEC_MAX_PTS, SPEC_ROW_GATES, true);
+
+  // Report total points for hero gate
+  const prevTotal = useRef(0);
+  if (specTree.totalPoints !== prevTotal.current) {
+    prevTotal.current = specTree.totalPoints;
+    setTimeout(() => setSpecTotalPts(specTree.totalPoints), 0);
+  }
+
   return (
     <div style={{ userSelect: "none" }}>
       <div style={{ overflowX: "auto", overflowY: "visible" }}>
@@ -520,7 +532,7 @@ export function BlizzardTalentTree({
             rowGates={CLASS_ROW_GATES}
           />
 
-          {/* HERO TREE (center) */}
+          {/* HERO TREE + APEX (center) */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* Hero switcher */}
             <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
@@ -560,10 +572,13 @@ export function BlizzardTalentTree({
               rowGates={HERO_ROW_GATES}
               externalGateMet={heroGateMet}
             />
+
+            {/* APEX TALENT (under hero tree) */}
+            <ApexSection tree={specTree} />
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
-          <SpecTreeSection onTotalChange={setSpecTotalPts} />
+          <SpecTreeSection tree={specTree} />
         </div>
       </div>
 
@@ -574,18 +589,79 @@ export function BlizzardTalentTree({
   );
 }
 
-// Wrapper for spec tree that reports total points upward
-function SpecTreeSection({ onTotalChange }: { onTotalChange: (pts: number) => void }) {
-  const tree = useTalentTree(SURVIVAL_NODES, SPEC_MAX_PTS, SPEC_ROW_GATES, true);
-  const { minRow, minCol, w, h } = useMemo(() => gridBounds(SURVIVAL_NODES), []);
+// Apex section rendered under the Hero tree
+function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
+  const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES), []);
+  const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
+  const tipTimer = useRef<number>();
 
-  // Report total points changes
-  const prevTotal = useRef(0);
-  if (tree.totalPoints !== prevTotal.current) {
-    prevTotal.current = tree.totalPoints;
-    // Use setTimeout to avoid setState during render
-    setTimeout(() => onTotalChange(tree.totalPoints), 0);
-  }
+  const handleHover = useCallback((info: TooltipInfo | null, x: number, y: number) => {
+    clearTimeout(tipTimer.current);
+    if (!info) {
+      tipTimer.current = window.setTimeout(() => setTooltip(null), 80);
+    } else {
+      setTooltip({ info, x, y });
+    }
+  }, []);
+
+  // Count apex points for display
+  const apexPts = APEX_NODES.reduce((sum, n) => sum + (tree.state.points[n.id] ?? 0), 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+          letterSpacing: 2, color: GOLD, textTransform: "uppercase" }}>APEX</span>
+        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700,
+          color: apexPts > 0 ? GOLD : "#666" }}>
+          {apexPts} / 4
+        </span>
+      </div>
+
+      <div style={{ position: "relative", width: w, height: h, background: "transparent" }}>
+        <ConnectionLines
+          nodes={APEX_NODES} minRow={minRow} minCol={minCol}
+          w={w} h={h} pointsMap={tree.state.points}
+        />
+
+        {APEX_NODES.map(node => {
+          const pos = nodePos(node, minRow, minCol);
+          const nodeState = tree.getNodeState(node);
+          const pts = tree.state.points[node.id] ?? 0;
+          const isApex = node.type === 'apex';
+          const isTier = node.id.startsWith('apex_tier');
+          const sz = isApex ? 52 : (isTier ? 28 : 40);
+
+          return (
+            <div key={node.id} style={{
+              position: "absolute",
+              left: pos.x - sz / 2,
+              top: pos.y - sz / 2,
+              zIndex: 3,
+            }}>
+              <InteractiveTalentNode
+                node={node}
+                nodeState={nodeState}
+                pts={pts}
+                choiceSide={undefined}
+                onLeftClick={() => tree.allocatePoint(node.id)}
+                onRightClick={(e) => { e.preventDefault(); tree.deallocatePoint(node.id); }}
+                onChoiceClick={() => {}}
+                onHover={handleHover}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {tooltip && <TalentTooltip info={tooltip.info} x={tooltip.x} y={tooltip.y} />}
+    </div>
+  );
+}
+
+// Survival spec tree (uses shared tree state from parent)
+function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
+  const { minRow, minCol, w, h } = useMemo(() => gridBounds(SURVIVAL_NODES), []);
 
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
@@ -646,8 +722,7 @@ function SpecTreeSection({ onTotalChange }: { onTotalChange: (pts: number) => vo
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
-          const isApex = node.type === 'apex';
-          const sz = isApex ? 52 : 40;
+          const sz = 40;
 
           return (
             <div key={node.id} style={{

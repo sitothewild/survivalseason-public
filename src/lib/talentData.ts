@@ -17,6 +17,8 @@ export interface TalentNodeDef {
   /** For choice nodes: two options */
   choiceA?: { name: string; spellId: number; desc: string };
   choiceB?: { name: string; spellId: number; desc: string };
+  /** Visual hint: render as small tier dot */
+  tier?: boolean;
 }
 
 export type NodeState = 'LOCKED' | 'AVAILABLE' | 'SELECTED' | 'PARTIAL';
@@ -24,7 +26,7 @@ export type NodeState = 'LOCKED' | 'AVAILABLE' | 'SELECTED' | 'PARTIAL';
 // ── ROW GATE THRESHOLDS ──────────────────────────────────────
 
 export const SPEC_ROW_GATES: Record<number, number> = {
-  1: 0, 2: 1, 3: 2, 4: 4, 5: 6, 6: 8, 7: 10, 8: 14, 9: 20, 10: 26, 12: 30,
+  1: 0, 2: 1, 3: 2, 4: 4, 5: 6, 6: 8, 7: 10, 8: 14, 9: 20, 10: 26,
 };
 
 export const CLASS_ROW_GATES: Record<number, number> = {
@@ -130,10 +132,18 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
     parents:['savagery'], desc:'Wildfire Bomb detonates for bonus damage when its DoT expires or is refreshed.' },
   { id:'primal_surge', spellId:1272154, name:'Primal Surge', type:'passive', maxPts:1, row:10, col:7,
     parents:['wfb_infusion'], desc:'Takedown cooldown reduced. Kill Command resets generate Focus.' },
-  // APEX
-  { id:'raptor_swipe', spellId:1259019, name:'Raptor Swipe', type:'apex', maxPts:4, row:12, col:4,
-    parents:['grenade_juggler','wildfire_imbuement','flanked','lethal_calibration','primal_surge'],
-    desc:'APEX TALENT. Raptor Strike has a chance to become Raptor Swipe (AoE cleave). Each rank increases proc chance and damage.' },
+];
+
+// ── APEX TALENT (standalone, shares Survival 34-pt budget) ───
+export const APEX_NODES: TalentNodeDef[] = [
+  { id:'raptor_swipe', spellId:1259019, name:'Raptor Swipe', type:'apex', maxPts:1, row:0, col:2,
+    parents:[], desc:'APEX TALENT. Raptor Strike has a chance to become Raptor Swipe, an AoE cleave.' },
+  { id:'apex_tier_1', spellId:1259019, name:'Raptor Swipe II', type:'passive', maxPts:1, row:1, col:1,
+    parents:['raptor_swipe'], desc:'Increases Raptor Swipe proc chance and damage.' },
+  { id:'apex_tier_2', spellId:1259019, name:'Raptor Swipe III', type:'passive', maxPts:1, row:1, col:2,
+    parents:['raptor_swipe'], desc:'Further increases Raptor Swipe proc chance and damage.' },
+  { id:'apex_tier_3', spellId:1259019, name:'Raptor Swipe IV', type:'passive', maxPts:1, row:1, col:3,
+    parents:['raptor_swipe'], desc:'Maximizes Raptor Swipe proc chance and damage.' },
 ];
 
 // ── SENTINEL HERO TREE (Midnight 12.0.1) ─────────────────────
