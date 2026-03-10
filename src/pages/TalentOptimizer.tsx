@@ -44,7 +44,7 @@ export default function TalentOptimizer() {
   }, []);
 
   return (
-    <div style={{ minHeight:"100vh", background:`url(${talentOptimizerBg}) center/cover fixed, ${C.pageBg}`, color:C.textPri,
+    <div style={{ minHeight:"100vh", background:C.pageBg, color:C.textPri,
       fontFamily:"'Rajdhani','Segoe UI',sans-serif" }}>
 
       <style>{`
@@ -119,7 +119,7 @@ export default function TalentOptimizer() {
         }}>
           {/* Inner lighter panel with the talent tree */}
           <div style={{
-            background:"linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)",
+            background:`url(${talentOptimizerBg}) center/cover no-repeat, linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)`,
             border:`1px solid #2e3a50`,
             borderRadius:10,
             padding:"24px 16px 32px",
