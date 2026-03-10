@@ -447,10 +447,8 @@ interface ConnectionLinesProps {
   colMap: Map<number, number>;
   w: number;
   h: number;
-  minRow: number;
-  minCol: number;
   selectedKeys: Set<string>;
-  selectedChoices: Record<number, number>;
+  coreKeys: Set<string>;
 }
 
 function ConnectionLines({ nodes, nodeMap, rowMap, colMap, selectedKeys, coreKeys }: ConnectionLinesProps) {
