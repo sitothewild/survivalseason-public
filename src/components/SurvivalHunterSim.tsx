@@ -1508,7 +1508,7 @@ export default function SurvivalHunterSim() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;}
-        .tab-btn{background:transparent;border:none;border-bottom:3px solid transparent;padding:12px 24px;color:#64748b;font-family:"Rajdhani",sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+        .tab-btn{background:transparent;border:none;border-bottom:3px solid transparent;padding:12px 24px;color:#38bdf8;font-family:"Orbitron",sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
         .tab-btn.active{color:#fbbf24;border-bottom-color:#d97706;}
         .site-nav-link{font-family:"Rajdhani",sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;color:#64748b;padding:10px 18px;border-bottom:3px solid transparent;transition:color .2s,border-color .2s;display:inline-block;}
         .site-nav-link:hover{color:#94a3b8;}
