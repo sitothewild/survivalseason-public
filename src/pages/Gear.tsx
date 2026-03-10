@@ -54,8 +54,13 @@ export default function Gear() {
 
   const handleBiSHover = useCallback((slot: string, e: React.MouseEvent) => {
     if (bisHideTimer.current) { window.clearTimeout(bisHideTimer.current); bisHideTimer.current = null; }
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setBisTooltipPos({ x: rect.right + 10, y: rect.top });
+    const row = e.currentTarget as HTMLElement;
+    const rect = row.getBoundingClientRect();
+    // Find the "Hero ilvl" cell (3rd td) to align X near it
+    const cells = row.querySelectorAll("td");
+    const heroCell = cells[2]; // Hero ilvl column
+    const cellRect = heroCell ? heroCell.getBoundingClientRect() : rect;
+    setBisTooltipPos({ x: cellRect.left, y: rect.top + rect.height / 2 });
     setHoveredBiS(slot);
   }, []);
 
@@ -811,8 +816,10 @@ export default function Gear() {
         const sourceBase  = sourceParts[0];
         const sourceBoss  = sourceParts.slice(1).join(" — ");
 
-        const tipX = Math.min(bisTooltipPos.x, window.innerWidth - 360);
-        const tipY = Math.max(8, Math.min(bisTooltipPos.y, window.innerHeight - 520));
+        const tipW = 340;
+        const tipH = 480; // approximate tooltip height
+        const tipX = Math.min(bisTooltipPos.x - tipW - 12, window.innerWidth - tipW - 8);
+        const tipY = Math.max(8, Math.min(bisTooltipPos.y - tipH / 2, window.innerHeight - tipH - 8));
 
         const Divider = () => (
           <div style={{ borderTop:`1px solid ${C.borderSub}`, margin:"10px 0" }} />
@@ -828,7 +835,7 @@ export default function Gear() {
           <div style={{
             position:"fixed", zIndex:9999, pointerEvents:"none",
             left: tipX, top: tipY,
-            width: 340,
+            width: tipW,
             background:"linear-gradient(180deg,#141c2a 0%,#0c1220 100%)",
             border:"1px solid #2e4a6a",
             borderRadius:12, padding:"16px 18px",
