@@ -404,17 +404,4 @@ function initChoices(nodes: MappedTalentNode[]): Record<number, number | null> {
   return state;
 }
 
-/** Convert a Blizzard API restriction row number to our 0-indexed grid row.
- *  Finds the closest mapped node with that displayRow and returns its gridRow. */
-function apiRowToGridRow(apiRow: number, nodes: MappedTalentNode[]): number {
-  // The restriction row marks the FIRST locked row.
-  // So the gate sits AFTER the row before it.
-  // Find the highest gridRow that is still BELOW the restricted apiRow.
-  let bestGridRow = 0;
-  for (const node of nodes) {
-    if (node.displayRow < apiRow && node.gridRow > bestGridRow) {
-      bestGridRow = node.gridRow;
-    }
-  }
-  return bestGridRow;
-}
+// No more apiRowToGridRow needed — we use display_row values directly
