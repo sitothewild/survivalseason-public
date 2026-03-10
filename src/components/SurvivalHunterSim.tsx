@@ -1013,6 +1013,28 @@ export default function SurvivalHunterSim() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Modal tree auto-scale effect
+  useEffect(() => {
+    if (editingSlot === null) { setModalTreeScale(1); return; }
+    const container = modalTreeContainerRef.current;
+    const inner = modalTreeInnerRef.current;
+    if (!container || !inner) return;
+
+    const measure = () => {
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      const iw = inner.scrollWidth;
+      const ih = inner.scrollHeight;
+      if (iw > 0 && ih > 0) {
+        setModalTreeScale(Math.max(0.35, Math.min(cw / iw, ch / ih, 1)));
+      }
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(container);
+    requestAnimationFrame(measure);
+    return () => ro.disconnect();
+  }, [editingSlot, editDraft?.heroKey]);
+
   const handleTalentHover = useCallback((talent: TalentPill, e: React.MouseEvent) => {
     if (talentHideTimer.current) { window.clearTimeout(talentHideTimer.current); talentHideTimer.current = null; }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
