@@ -596,6 +596,7 @@ export function BlizzardTalentTree({
             nodes={HUNTER_NODES}
             maxPts={CLASS_MAX_PTS}
             rowGates={CLASS_ROW_GATES}
+            onGlobalHover={handleGlobalHover}
           />
 
           {/* HERO TREE + APEX (center) */}
