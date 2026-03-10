@@ -100,27 +100,34 @@ const FALLBACK_SENTINEL_NODES: BzTalentNode[] = [
 ];
 
 const FALLBACK_PACK_LEADER_NODES: BzTalentNode[] = [
-  { id: 94985, display_row: 1, display_col: 1, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472358, name: "Vicious Hunt" }, description: "Kill Command can summon a dire beast to attack." } }] },
-  { id: 94962, display_row: 1, display_col: 3, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472357, name: "Pack Coordination" }, description: "Pet damage increased while fighting alongside it." } }] },
-  { id: 94979, display_row: 1, display_col: 4, node_type: { id: 2, type: "SELECTION" }, entries: [
-    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472719, name: "Howl of the Pack" }, description: "Pet's Basic Attack generates Focus for you." } },
-    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472720, name: "Den Recovery" }, description: "Aspect of the Turtle heals pet to full." } },
+  // Row 1 — auto-selected keystone (center col 4)
+  { id: 96001, display_row: 1, display_col: 4, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 471876, name: "Vicious Hunt" }, description: "Your pet gains Vicious Hunt, savagely attacking your target." } }] },
+  // Row 2 — 4 nodes (cols 1,3,5,7)
+  { id: 96002, display_row: 2, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472358, name: "Lone Wolf" }, description: "Increases damage dealt when your pet is active." } }] },
+  { id: 96003, display_row: 2, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472352, name: "Horn" }, description: "Your pet's attacks have a chance to gore the target." } }] },
+  { id: 96004, display_row: 2, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472357, name: "Pathfinding" }, description: "Increases movement speed while your pet is nearby." } }] },
+  { id: 96005, display_row: 2, display_col: 7, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 96001 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472719, name: "Slicked Shoes" }, description: "Harpoon's cooldown is reduced and grants brief movement speed." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472720, name: "Masterful Call" }, description: "Master's Call also grants damage reduction for a short time." } },
   ] },
-  { id: 94972, display_row: 2, display_col: 1, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 94985 }], entries: [
+  // Row 3 — 4 nodes (cols 1,3,5,7)
+  { id: 96006, display_row: 3, display_col: 1, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 96002 }], entries: [
     { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472476, name: "Ursine Fury" }, description: "Kill Command deals increased damage, can reset cooldown." } },
-    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472524, name: "Sharpened Claws" }, description: "Pet crit strikes deal increased damage." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472524, name: "Sharpened Claws" }, description: "Pet critical strikes deal increased damage." } },
   ] },
-  { id: 94984, display_row: 2, display_col: 2, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94985 }, { id: 94962 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472550, name: "Wild Attacks" }, description: "Pet's Basic Attack can trigger a bonus attack." } }] },
-  { id: 94988, display_row: 2, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94962 }, { id: 94979 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472639, name: "Cornered Prey" }, description: "Kill Command damage increased on targets below 20% health." } }] },
-  { id: 109803, display_row: 2, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94979 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264781, name: "Frenzied Tear" }, description: "Pet enters frenzy after Kill Command." } }] },
-  { id: 94969, display_row: 3, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94972 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472660, name: "Go for the Throat" }, description: "Kill Command generates additional Focus." } }] },
-  { id: 94967, display_row: 3, display_col: 2, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94984 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472707, name: "Furious Assault" }, description: "Melee attacks can trigger additional pet attack." } }] },
-  { id: 109804, display_row: 3, display_col: 3, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 94988 }], entries: [
-    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264797, name: "Scattered Prey" }, description: "Kill Command hits additional nearby targets." } },
+  { id: 96007, display_row: 3, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96003 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472550, name: "Cat Charge" }, description: "Your pet charges to the target, stunning briefly." } }] },
+  { id: 96008, display_row: 3, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96004 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472639, name: "Boar Head" }, description: "Kill Command damage increased on targets below 20% health." } }] },
+  { id: 96009, display_row: 3, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96005 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264781, name: "Critical Shot" }, description: "Pet enters frenzy after Kill Command crits." } }] },
+  // Row 4 — 4 nodes (cols 1,3,5,7)
+  { id: 96010, display_row: 4, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96006 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472660, name: "Go for the Throat" }, description: "Kill Command generates additional Focus." } }] },
+  { id: 96011, display_row: 4, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96007 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472707, name: "Turtle" }, description: "Melee attacks can trigger additional pet attack." } }] },
+  { id: 96012, display_row: 4, display_col: 5, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 96008 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264797, name: "Hoof and Blade" }, description: "Kill Command hits additional nearby targets." } },
     { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264792, name: "Wyvern's Gaze" }, description: "Pet stuns targets periodically." } },
   ] },
-  { id: 109802, display_row: 3, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 109803 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264775, name: "Claw Frenzy" }, description: "Pet attack speed increased per active bleed." } }] },
-  { id: 94966, display_row: 4, display_col: 2, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94969 }, { id: 94967 }, { id: 109804 }, { id: 109802 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472741, name: "Pack Assault" }, description: "Capstone: Takedown triggers Pack Assault — all beasts attack." } }] },
+  { id: 96013, display_row: 4, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96009 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264775, name: "Monster Fang" }, description: "Pet attack speed increased per active bleed." } }] },
+  // Row 5 — capstone (center col 4)
+  { id: 96014, display_row: 5, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96010 }, { id: 96011 }, { id: 96012 }, { id: 96013 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472741, name: "Bestial Discipline" }, description: "Capstone: Ultimate Pack Leader power unleashed." } }] },
 ];
 
 const FALLBACK_HERO_TREES: BzHeroTree[] = [
