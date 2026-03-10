@@ -88,7 +88,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
       <div
         className="
           flex items-center justify-between px-4 py-3
-          bg-[#1c2333]/70 border border-[#2e3a50]
+          bg-card/70 border border-border
           rounded-t-lg
         "
       >
