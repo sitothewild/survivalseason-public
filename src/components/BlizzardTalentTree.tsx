@@ -868,7 +868,77 @@ export function BlizzardTalentTree({
       heroNodeIdSet.add(n.id);
     }
   }
-  const specNodes = (specTree.spec_talent_nodes ?? []).filter((n: BzTalentNode) => !heroNodeIdSet.has(n.id));
+  const rawSpecNodes = (specTree.spec_talent_nodes ?? []).filter((n: BzTalentNode) => !heroNodeIdSet.has(n.id));
+
+  // Keep only the largest connected component to remove stray hero nodes that leaked into spec list
+  let specNodes = rawSpecNodes;
+  if (rawSpecNodes.length >= 3) {
+    const idSet = new Set(rawSpecNodes.map((n) => n.id));
+    const adj = new Map<number, Set<number>>();
+    rawSpecNodes.forEach((n) => {
+      if (!adj.has(n.id)) adj.set(n.id, new Set());
+      (n.prerequisite_nodes ?? []).forEach((p) => {
+        if (idSet.has(p.id)) {
+          adj.get(n.id)!.add(p.id);
+          if (!adj.has(p.id)) adj.set(p.id, new Set());
+          adj.get(p.id)!.add(n.id);
+        }
+      });
+    });
+    const visited = new Set<number>();
+    const components: number[][] = [];
+    rawSpecNodes.forEach((n) => {
+      if (visited.has(n.id)) return;
+      const comp: number[] = [];
+      const queue = [n.id];
+      while (queue.length) {
+        const cur = queue.pop()!;
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        comp.push(cur);
+        adj.get(cur)?.forEach((nb) => { if (!visited.has(nb)) queue.push(nb); });
+      }
+      components.push(comp);
+    });
+    const largest = components.reduce((a, b) => a.length >= b.length ? a : b, []);
+    const largestSet = new Set(largest);
+    specNodes = rawSpecNodes.filter((n) => largestSet.has(n.id));
+  }
+
+  // Same connectivity filter for class nodes
+  let classNodesFinal = classNodes;
+  if (classNodes.length >= 3) {
+    const idSet = new Set(classNodes.map((n: BzTalentNode) => n.id));
+    const adj = new Map<number, Set<number>>();
+    classNodes.forEach((n: BzTalentNode) => {
+      if (!adj.has(n.id)) adj.set(n.id, new Set());
+      (n.prerequisite_nodes ?? []).forEach((p: any) => {
+        if (idSet.has(p.id)) {
+          adj.get(n.id)!.add(p.id);
+          if (!adj.has(p.id)) adj.set(p.id, new Set());
+          adj.get(p.id)!.add(n.id);
+        }
+      });
+    });
+    const visited = new Set<number>();
+    const components: number[][] = [];
+    classNodes.forEach((n: BzTalentNode) => {
+      if (visited.has(n.id)) return;
+      const comp: number[] = [];
+      const queue = [n.id];
+      while (queue.length) {
+        const cur = queue.pop()!;
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        comp.push(cur);
+        adj.get(cur)?.forEach((nb) => { if (!visited.has(nb)) queue.push(nb); });
+      }
+      components.push(comp);
+    });
+    const largest = components.reduce((a, b) => a.length >= b.length ? a : b, []);
+    const largestSet = new Set(largest);
+    classNodesFinal = classNodes.filter((n: BzTalentNode) => largestSet.has(n.id));
+  }
 
   const classBudget = specTree.talent_point_budget?.class_points ?? 31;
   const specBudget  = specTree.talent_point_budget?.spec_points  ?? 31;
