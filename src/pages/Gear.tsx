@@ -398,6 +398,103 @@ export default function Gear() {
         </div>
 
         {/* ═══════════════════════════════════════════════════
+            SECTION — BiS Gear List
+        ═══════════════════════════════════════════════════ */}
+        <Card style={{ marginBottom:20 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+            flexWrap:"wrap", gap:10, marginBottom:20 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ fontSize:20 }}>⚔</span>
+              <h2 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:13, letterSpacing:3,
+                color:heroClr, textTransform:"uppercase", margin:0, fontWeight:700 }}>
+                BiS Gear List — {isSent ? "Sentinel (2H Polearm)" : "Pack Leader (Dual Wield)"} · Hero 276 → Myth 289
+              </h2>
+            </div>
+            <button onClick={() => setBisOpen(o => !o)} style={{
+              fontFamily:"'Rajdhani',sans-serif", fontWeight:700, fontSize:13,
+              background: bisOpen ? heroBg : C.surface2,
+              border:`1px solid ${bisOpen ? heroBdr : C.border}`,
+              color: bisOpen ? heroClr : C.textMid,
+              borderRadius:8, padding:"7px 16px", cursor:"pointer" }}>
+              {bisOpen ? "▲ Collapse" : "▼ Expand"}
+            </button>
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom: bisOpen ? 20 : 0 }}>
+            {["Head","Shoulders","Chest","Hands","Legs"].map(slot => (
+              <span key={slot} style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8,
+                color:C.goldLight, background:C.goldBg, borderRadius:4, padding:"3px 8px",
+                border:`1px solid rgba(217,119,6,.3)`, letterSpacing:1 }}>
+                🏆 {slot}: Tier
+              </span>
+            ))}
+            <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
+              alignSelf:"center" }}>
+              — Complete the 4pc before chasing off-set upgrades.
+            </span>
+          </div>
+          {bisOpen && (
+            <div style={{ overflowX:"auto" }}>
+              <table className="bis-table" style={{ width:"100%", borderCollapse:"collapse",
+                fontFamily:"'Rajdhani',sans-serif", fontSize:13 }}>
+                <thead>
+                  <tr style={{ borderBottom:`1px solid ${C.border}` }}>
+                    {["Slot","Item","Hero ilvl","Myth ilvl","Key Stats"].map(h => (
+                      <th key={h} style={{ textAlign:"left", padding:"8px 12px",
+                        fontFamily:"'Orbitron',sans-serif", fontSize:8, color:C.textDim,
+                        letterSpacing:2, whiteSpace:"nowrap", fontWeight:700 }}>{h}</th>
+                    ))}
+                    <th style={{ padding:"8px 12px", fontFamily:"'Orbitron',sans-serif",
+                      fontSize:8, color:C.textDim, letterSpacing:2, fontWeight:700, textAlign:"right" }}>
+                      HOVER FOR DETAILS
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bisList.map((row, i) => {
+                    const isTier    = ["Head","Shoulders","Chest","Hands","Legs"].includes(row.slot);
+                    const isHovered = hoveredBiS === row.slot;
+                    return (
+                      <tr key={row.slot}
+                        onMouseEnter={e => handleBiSHover(row.slot, e)}
+                        onMouseLeave={handleBiSLeave}
+                        style={{
+                          borderBottom:`1px solid ${C.borderSub}`,
+                          background: isHovered
+                            ? (isTier ? "#3d2a06" : heroBg)
+                            : (isTier ? C.goldBg : i%2===0 ? "transparent" : C.surface2),
+                          cursor:"default",
+                          transition:"background .1s",
+                        }}>
+                        <td style={{ padding:"8px 12px", color:heroClr,
+                          fontWeight:700, whiteSpace:"nowrap" }}>{row.slot}</td>
+                        <td style={{ padding:"8px 12px", color:C.textPri, fontWeight:600 }}>
+                          {isTier && <span style={{ color:C.goldLight, marginRight:6 }}>🏆</span>}
+                          {row.itemName}
+                        </td>
+                        <td style={{ padding:"8px 12px", color:"#a855f7",
+                          fontFamily:"'IBM Plex Mono',monospace", fontWeight:700,
+                          whiteSpace:"nowrap" }}>{row.ilvl}</td>
+                        <td style={{ padding:"8px 12px", color:C.goldLight,
+                          fontFamily:"'IBM Plex Mono',monospace", fontWeight:700,
+                          whiteSpace:"nowrap" }}>{row.mythIlvl ?? "—"}</td>
+                        <td style={{ padding:"8px 12px", color:C.goldLight,
+                          whiteSpace:"nowrap" }}>{row.keyStats}</td>
+                        <td style={{ padding:"8px 12px", textAlign:"right" }}>
+                          <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
+                            color: isHovered ? heroClr : C.textDim, letterSpacing:1 }}>
+                            {isHovered ? "▶ details" : "···"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* ═══════════════════════════════════════════════════
             SECTION 2 — Trinket Rankings
         ═══════════════════════════════════════════════════ */}
         <Card style={{ marginBottom:20 }}>
@@ -675,106 +772,6 @@ export default function Gear() {
               <span style={{ color:C.textSec }}>{tierAnalysis.statPriorityShift}</span>
             </span>
           </div>
-        </Card>
-
-        {/* ═══════════════════════════════════════════════════
-            SECTION 5 — BiS Gear List
-        ═══════════════════════════════════════════════════ */}
-        <Card>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
-            flexWrap:"wrap", gap:10, marginBottom:20 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <span style={{ fontSize:20 }}>⚔</span>
-              <h2 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:13, letterSpacing:3,
-                color:heroClr, textTransform:"uppercase", margin:0, fontWeight:700 }}>
-                BiS Gear List — {isSent ? "Sentinel (2H Polearm)" : "Pack Leader (Dual Wield)"} · Hero 276 → Myth 289
-              </h2>
-            </div>
-            <button onClick={() => setBisOpen(o => !o)} style={{
-              fontFamily:"'Rajdhani',sans-serif", fontWeight:700, fontSize:13,
-              background: bisOpen ? heroBg : C.surface2,
-              border:`1px solid ${bisOpen ? heroBdr : C.border}`,
-              color: bisOpen ? heroClr : C.textMid,
-              borderRadius:8, padding:"7px 16px", cursor:"pointer" }}>
-              {bisOpen ? "▲ Collapse" : "▼ Expand"}
-            </button>
-          </div>
-
-          {/* Always-visible summary row */}
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom: bisOpen ? 20 : 0 }}>
-            {["Head","Shoulders","Chest","Hands","Legs"].map(slot => (
-              <span key={slot} style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8,
-                color:C.goldLight, background:C.goldBg, borderRadius:4, padding:"3px 8px",
-                border:`1px solid rgba(217,119,6,.3)`, letterSpacing:1 }}>
-                🏆 {slot}: Tier
-              </span>
-            ))}
-            <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
-              alignSelf:"center" }}>
-              — Complete the 4pc before chasing off-set upgrades.
-            </span>
-          </div>
-
-          {bisOpen && (
-            <div style={{ overflowX:"auto" }}>
-              <table className="bis-table" style={{ width:"100%", borderCollapse:"collapse",
-                fontFamily:"'Rajdhani',sans-serif", fontSize:13 }}>
-                <thead>
-                  <tr style={{ borderBottom:`1px solid ${C.border}` }}>
-                    {["Slot","Item","Hero ilvl","Myth ilvl","Key Stats"].map(h => (
-                      <th key={h} style={{ textAlign:"left", padding:"8px 12px",
-                        fontFamily:"'Orbitron',sans-serif", fontSize:8, color:C.textDim,
-                        letterSpacing:2, whiteSpace:"nowrap", fontWeight:700 }}>{h}</th>
-                    ))}
-                    <th style={{ padding:"8px 12px", fontFamily:"'Orbitron',sans-serif",
-                      fontSize:8, color:C.textDim, letterSpacing:2, fontWeight:700, textAlign:"right" }}>
-                      HOVER FOR DETAILS
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bisList.map((row, i) => {
-                    const isTier    = ["Head","Shoulders","Chest","Hands","Legs"].includes(row.slot);
-                    const isHovered = hoveredBiS === row.slot;
-                    return (
-                      <tr key={row.slot}
-                        onMouseEnter={e => handleBiSHover(row.slot, e)}
-                        onMouseLeave={handleBiSLeave}
-                        style={{
-                          borderBottom:`1px solid ${C.borderSub}`,
-                          background: isHovered
-                            ? (isTier ? "#3d2a06" : heroBg)
-                            : (isTier ? C.goldBg : i%2===0 ? "transparent" : C.surface2),
-                          cursor:"default",
-                          transition:"background .1s",
-                        }}>
-                        <td style={{ padding:"8px 12px", color:heroClr,
-                          fontWeight:700, whiteSpace:"nowrap" }}>{row.slot}</td>
-                        <td style={{ padding:"8px 12px", color:C.textPri, fontWeight:600 }}>
-                          {isTier && <span style={{ color:C.goldLight, marginRight:6 }}>🏆</span>}
-                          {row.itemName}
-                        </td>
-                        <td style={{ padding:"8px 12px", color:"#a855f7",
-                          fontFamily:"'IBM Plex Mono',monospace", fontWeight:700,
-                          whiteSpace:"nowrap" }}>{row.ilvl}</td>
-                        <td style={{ padding:"8px 12px", color:C.goldLight,
-                          fontFamily:"'IBM Plex Mono',monospace", fontWeight:700,
-                          whiteSpace:"nowrap" }}>{row.mythIlvl ?? "—"}</td>
-                        <td style={{ padding:"8px 12px", color:C.goldLight,
-                          whiteSpace:"nowrap" }}>{row.keyStats}</td>
-                        <td style={{ padding:"8px 12px", textAlign:"right" }}>
-                          <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
-                            color: isHovered ? heroClr : C.textDim, letterSpacing:1 }}>
-                            {isHovered ? "▶ details" : "···"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
         </Card>
       </main>
 
