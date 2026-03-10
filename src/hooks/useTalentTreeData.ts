@@ -12,12 +12,6 @@ import type {
 import {
   HUNTER_TREE_ID,
   SURVIVAL_SPEC_ID,
-  SENTINEL_HERO_ID,
-  PACK_LEADER_HERO_ID,
-  HUNTER_CLASS_ROW_COUNTS,
-  SURVIVAL_SPEC_ROW_COUNTS,
-  SENTINEL_HERO_ROW_COUNTS,
-  PACK_LEADER_HERO_ROW_COUNTS,
 } from "../types/talentTreeTypes";
 import {
   mapTalentTree,
