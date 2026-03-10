@@ -217,9 +217,14 @@ function InteractiveTalentNode({
     : LOCKED_RING;
 
   const fillColor = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') ? NODE_FILL_SEL : NODE_FILL;
+  const emboss = isApex
+    ? `0 0 0 3px ${GOLD_GLOW}, 0 4px 12px 2px rgba(0,0,0,.7), inset 0 2px 4px rgba(200,168,75,.25), inset 0 -2px 4px rgba(0,0,0,.5), 0 0 24px 6px ${GOLD_GLOW}`
+    : undefined;
   const glow = nodeState === 'SELECTED'
-    ? `0 0 0 3px ${GOLD_GLOW}, 0 0 18px 5px ${GOLD_GLOW}`
-    : `0 0 0 1px rgba(122,90,32,.3), 0 0 8px 2px rgba(122,90,32,.15)`;
+    ? (isApex ? emboss! : `0 0 0 3px ${GOLD_GLOW}, 0 0 18px 5px ${GOLD_GLOW}`)
+    : isApex
+      ? `0 0 0 2px rgba(122,90,32,.4), 0 4px 10px 2px rgba(0,0,0,.6), inset 0 2px 3px rgba(200,168,75,.15), inset 0 -2px 3px rgba(0,0,0,.4), 0 0 16px 4px rgba(122,90,32,.2)`
+      : `0 0 0 1px rgba(122,90,32,.3), 0 0 8px 2px rgba(122,90,32,.15)`;
   const imgFilter = (nodeState === 'SELECTED') ? 'none' : 'grayscale(1) brightness(0.75)';
   const cursor = nodeState === 'LOCKED' ? 'not-allowed'
     : (nodeState === 'AVAILABLE' || nodeState === 'PARTIAL') ? 'pointer'
@@ -424,10 +429,10 @@ function TreeSection({
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", width: "100%" }}>
-        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700,
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%" }}>
+        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700,
           letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>{label}</span>
-        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 700,
+        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700,
           color: pointColor(tree.totalPoints, maxPts) }}>
           {tree.totalPoints} / {maxPts}
         </span>
@@ -590,7 +595,7 @@ export function BlizzardTalentTree({
                 />
               </button>
               <span style={{
-                fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700,
+                fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700,
                 letterSpacing: 2, color: isSentinel ? "#7dd3fc" : "#d8b4fe",
                 marginTop: 6, textTransform: "uppercase",
                 transition: "color .3s ease",
@@ -648,9 +653,9 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginTop: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-          letterSpacing: 2, color: GOLD, textTransform: "uppercase" }}>APEX</span>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700,
+          letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>APEX</span>
         <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700,
           color: apexPts > 0 ? GOLD : "#666" }}>
           {apexPts} / 4
@@ -669,7 +674,7 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
           const pts = tree.state.points[node.id] ?? 0;
           const isApex = node.type === 'apex';
           const isTier = node.id.startsWith('apex_tier');
-          const sz = isApex ? 44 : (isTier ? 24 : 36);
+          const sz = isApex ? 58 : (isTier ? 28 : 36);
 
           return (
             <div key={node.id} style={{
@@ -724,10 +729,10 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", width: "100%" }}>
-        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700,
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%" }}>
+        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700,
           letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>SURVIVAL</span>
-        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 700,
+        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700,
           color: pointColor(tree.totalPoints, SPEC_MAX_PTS) }}>
           {tree.totalPoints} / {SPEC_MAX_PTS}
         </span>
