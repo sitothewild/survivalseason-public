@@ -959,6 +959,29 @@ export function BlizzardTalentTree({
     }
   }, [heroTrees, onHeroChange]);
 
+  // Compact mode: measure inner content and scale to fit container
+  const compactRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [compactScale, setCompactScale] = useState(1);
+
+  useEffect(() => {
+    if (!compact || !compactRef.current || !innerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      const containerW = compactRef.current?.clientWidth ?? 0;
+      const innerW = innerRef.current?.scrollWidth ?? 0;
+      if (innerW > 0 && containerW > 0) {
+        setCompactScale(Math.min(1, containerW / innerW));
+      }
+    });
+    observer.observe(compactRef.current);
+    const containerW = compactRef.current?.clientWidth ?? 0;
+    const innerW = innerRef.current?.scrollWidth ?? 0;
+    if (innerW > 0 && containerW > 0) {
+      setCompactScale(Math.min(1, containerW / innerW));
+    }
+    return () => observer.disconnect();
+  }, [compact, treeData]);
+
   // ── Render ────────────────────────────────────────────────────────────────
   if (isLoading) return <TreeSkeleton />;
 
@@ -980,42 +1003,16 @@ export function BlizzardTalentTree({
   const classNodes = specTree.class_talent_nodes ?? [];
   const specNodes  = specTree.spec_talent_nodes ?? [];
 
-  // Point budgets from API or sensible defaults
   const classBudget = specTree.talent_point_budget?.class_points ?? 31;
   const specBudget  = specTree.talent_point_budget?.spec_points  ?? 31;
   const heroBudget  = 10;
 
-  // Class core keys: map by name to detect always-taken nodes
   const classCoreKeys = new Set(
     classNodes
       .filter((n) => CORE_CLASS.has(nodeSpellName(n) ?? ""))
       .map((n) => nodeTalentKey(n))
       .filter(Boolean) as string[]
   );
-
-  // Compact mode: measure inner content and scale to fit container
-  const compactRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [compactScale, setCompactScale] = useState(1);
-
-  useEffect(() => {
-    if (!compact || !compactRef.current || !innerRef.current) return;
-    const observer = new ResizeObserver(() => {
-      const containerW = compactRef.current?.clientWidth ?? 0;
-      const innerW = innerRef.current?.scrollWidth ?? 0;
-      if (innerW > 0 && containerW > 0) {
-        setCompactScale(Math.min(1, containerW / innerW));
-      }
-    });
-    observer.observe(compactRef.current);
-    // Also measure on first render
-    const containerW = compactRef.current?.clientWidth ?? 0;
-    const innerW = innerRef.current?.scrollWidth ?? 0;
-    if (innerW > 0 && containerW > 0) {
-      setCompactScale(Math.min(1, containerW / innerW));
-    }
-    return () => observer.disconnect();
-  }, [compact, treeData]);
 
   const innerH = innerRef.current?.scrollHeight ?? 0;
 
