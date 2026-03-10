@@ -55,12 +55,11 @@ export default function Gear() {
   const handleBiSHover = useCallback((slot: string, e: React.MouseEvent) => {
     if (bisHideTimer.current) { window.clearTimeout(bisHideTimer.current); bisHideTimer.current = null; }
     const row = e.currentTarget as HTMLElement;
-    const rect = row.getBoundingClientRect();
-    // Position after the Myth ilvl column (4th td)
+    // Only update X position from the Myth ilvl column; Y stays fixed at viewport center
     const cells = row.querySelectorAll("td");
     const mythCell = cells[3];
-    const cellRect = mythCell ? mythCell.getBoundingClientRect() : rect;
-    setBisTooltipPos({ x: cellRect.right + 8, y: rect.top + rect.height / 2 });
+    const cellRect = mythCell ? mythCell.getBoundingClientRect() : row.getBoundingClientRect();
+    setBisTooltipPos(prev => ({ x: cellRect.right + 8, y: prev.y || 0 }));
     setHoveredBiS(slot);
   }, []);
 
