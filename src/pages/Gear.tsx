@@ -56,11 +56,7 @@ export default function Gear() {
     if (bisHideTimer.current) { window.clearTimeout(bisHideTimer.current); bisHideTimer.current = null; }
     const row = e.currentTarget as HTMLElement;
     const rect = row.getBoundingClientRect();
-    // Find the "Hero ilvl" cell (3rd td) to align X near it
-    const cells = row.querySelectorAll("td");
-    const heroCell = cells[2]; // Hero ilvl column
-    const cellRect = heroCell ? heroCell.getBoundingClientRect() : rect;
-    setBisTooltipPos({ x: cellRect.left, y: rect.top + rect.height / 2 });
+    setBisTooltipPos({ x: rect.right, y: rect.top + rect.height / 2 });
     setHoveredBiS(slot);
   }, []);
 
