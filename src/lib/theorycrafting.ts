@@ -108,6 +108,21 @@ export interface TalentConfig {
   clawFrenzy: boolean;           // node 109802, spell 1264775 — col 3 (pet atk spd per bleed)
   // Row 4 capstone
   packAssault: boolean;          // node 94966, spell 472741 — capstone (Takedown → Pack Assault burst)
+  // ─ Hunter class tree — DPS-relevant nodes ─
+  alphaPredator: boolean;        // Kill Command deals 15% increased damage
+  keenEyesight: boolean;         // Critical strike chance increased by 2%
+  masterMarksman: boolean;       // Critical hits with special shots deal 7% increased damage (2pt)
+  serratedShots: boolean;        // Serpent Sting and bleed effects deal 10% increased damage
+  deathChakram: boolean;         // Throw a chakram that bounces, dealing damage + generating Focus
+  killerInstinct: boolean;       // Kill Command deals 50% increased damage against targets below 35% HP
+  steelTrap: boolean;            // Steel Trap: immobilize + bleed
+  hydrasBite: boolean;           // Serpent Sting spreads to 2 additional nearby enemies
+  spittingCobra: boolean;        // Summon a Spitting Cobra for 20 sec
+  barrage: boolean;              // Rapid fire AoE (choice A)
+  volley: boolean;               // Raining arrows AoE (choice B)
+  bloodshed: boolean;            // Pet bleeds target (choice A)
+  murderOfCrows: boolean;        // Bird swarm DoT (choice B)
+  wailingArrow: boolean;         // Devastating arrow that silences enemies in an area
 }
 
 export interface AbilityDpsResult {
