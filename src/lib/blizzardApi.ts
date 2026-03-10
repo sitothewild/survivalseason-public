@@ -259,33 +259,67 @@ export function equipmentToSimData(fullData: any, region = "us") {
     talents: (() => {
       // The Blizzard /specializations endpoint returns:
       // { active_specialization: { id, name, ... }, specializations: [ { specialization: { id }, loadouts: [ { is_active, talent_loadout_code } ] } ] }
-      // active_specialization does NOT have loadouts — we must find the matching spec in specializations[].
+      // NOTE: As of WoW 11.2+ (Midnight), Blizzard has a known API bug where talent_loadout_code
+      // and loadouts may be missing from the specializations response entirely.
       const specs = fullData?.specializations;
       const activeSpecId = specs?.active_specialization?.id;
+
+      console.log('[Armory Talent Debug] specializations response keys:', specs ? Object.keys(specs) : 'null');
+      console.log('[Armory Talent Debug] active_specialization:', JSON.stringify(specs?.active_specialization)?.slice(0, 200));
 
       // Primary path: find the active spec entry and prefer its active loadout
       if (Array.isArray(specs?.specializations) && activeSpecId) {
         const activeEntry = specs.specializations.find((s: any) => s?.specialization?.id === activeSpecId);
+        console.log('[Armory Talent Debug] activeEntry keys:', activeEntry ? Object.keys(activeEntry) : 'not found');
+        
         if (activeEntry?.loadouts?.length) {
           const activeLd = activeEntry.loadouts.find((l: any) => l.is_active);
           const code = activeLd?.talent_loadout_code ?? activeEntry.loadouts[0]?.talent_loadout_code;
-          if (code) return code;
+          if (code) {
+            console.log('[Armory Talent Debug] Found talent_loadout_code from active loadout');
+            return code;
+          }
+        }
+
+        // Fallback: check for selected_class_talents / selected_spec_talents (newer API format)
+        if (activeEntry?.selected_class_talents || activeEntry?.selected_spec_talents) {
+          console.log('[Armory Talent Debug] Found selected_class_talents/selected_spec_talents');
+          return {
+            classTalents: activeEntry.selected_class_talents || [],
+            specTalents: activeEntry.selected_spec_talents || [],
+            heroTalents: activeEntry.selected_hero_talents || [],
+          };
+        }
+
+        // Check for talent_loadout_code directly on the spec entry
+        if (activeEntry?.talent_loadout_code) {
+          console.log('[Armory Talent Debug] Found talent_loadout_code on spec entry');
+          return activeEntry.talent_loadout_code;
         }
       }
 
       // Fallback: any spec entry that has a loadout code
       if (Array.isArray(specs?.specializations)) {
         for (const s of specs.specializations) {
+          console.log('[Armory Talent Debug] Checking spec entry:', s?.specialization?.name, 'keys:', s ? Object.keys(s) : []);
           const activeLd = s?.loadouts?.find((l: any) => l.is_active);
           const code = activeLd?.talent_loadout_code ?? s?.loadouts?.[0]?.talent_loadout_code;
           if (code) return code;
+          if (s?.talent_loadout_code) return s.talent_loadout_code;
+          if (s?.selected_class_talents || s?.selected_spec_talents) {
+            return {
+              classTalents: s.selected_class_talents || [],
+              specTalents: s.selected_spec_talents || [],
+              heroTalents: s.selected_hero_talents || [],
+            };
+          }
         }
       }
 
       // Last resort: top-level talent_loadout_code (some older response shapes)
       if (specs?.talent_loadout_code) return specs.talent_loadout_code;
 
-      console.warn('[Armory Talent Debug] Could not find talent_loadout_code in:', JSON.stringify(specs, null, 2)?.slice(0, 500));
+      console.warn('[Armory Talent Debug] Could not find talent data. This is likely due to a known Blizzard API bug (11.2+). Full specializations response:', JSON.stringify(specs, null, 2)?.slice(0, 1000));
       return null;
     })(),
     valid: true,
