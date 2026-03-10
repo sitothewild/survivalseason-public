@@ -1985,48 +1985,22 @@ export default function SurvivalHunterSim() {
                       {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
                     </div>
                     {parsedChar && parsedChar.gear.length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }} onMouseLeave={handleItemLeave}>
-                        {parsedChar.gear.map((g, i) => {
-                          const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
-                          return (
-                            <div key={i} style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default", animation: "staggerFadeUp .3s ease forwards", animationDelay: `${i * 50}ms` }}
-                              onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, fontWeight: 500 }}>{g.slotLabel}</span>
-                              <div style={{ textAlign: "center" }}>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: qualityColor, fontWeight: 600, display: "block" }}>{g.name || `Item`}</span>
-                                {g.nameDescription && (
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#1eff00', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                    {g.nameDescription}
-                                  </span>
-                                )}
-                                {g.enchantments?.length > 0 && g.enchantments.map((enc: any, ei: number) => {
-                                  const enchantLabel = formatEnchantLabel(enc);
-                                  return enchantLabel ? (
-                                    <span key={ei} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                      ✦ {enchantLabel}
-                                    </span>
-                                  ) : null;
-                                })}
-                                {!g.enchantments?.length && g.enchant && (
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#4ade80', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                    ✦ {g.enchant}
-                                  </span>
-                                )}
-                                {g.sockets?.length > 0 && g.sockets.map((s: any, si: number) => (
-                                  <span key={si} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                    💎 {s.name || s.display}
-                                  </span>
-                                ))}
-                                {!g.sockets?.length && g.gemId && (
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: '#60a5fa', fontWeight: 500, display: "block", marginTop: 1 }}>
-                                    💎 Gem
-                                  </span>
-                                )}
-                              </div>
-                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: qualityColor, fontWeight: 700, textAlign: "right", minWidth: 32 }}>{g.ilvl || "—"}</span>
-                            </div>
-                          );
-                        })}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
+                        {[parsedChar.gear.slice(0, Math.ceil(parsedChar.gear.length / 2)), parsedChar.gear.slice(Math.ceil(parsedChar.gear.length / 2))].map((col, ci) => (
+                          <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                            {col.map((g, i) => {
+                              const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
+                              return (
+                                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 6px", borderRadius: 4, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default", animation: "staggerFadeUp .3s ease forwards", animationDelay: `${i * 40}ms` }}
+                                  onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 52, flexShrink: 0 }}>{g.slotLabel}</span>
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 4 }}>{g.name || "—"}</span>
+                                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: qualityColor, fontWeight: 700, minWidth: 28, textAlign: "right", paddingLeft: 4, flexShrink: 0 }}>{g.ilvl || "—"}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       /* Empty gear slots placeholder */
