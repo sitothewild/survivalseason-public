@@ -168,7 +168,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
         </div>
 
         {/* ─── COLUMN DIVIDER ─── */}
-        <div className="self-stretch w-px bg-[#2e3a50]/50 flex-shrink-0" />
+        <div className="self-stretch w-px bg-border/50 flex-shrink-0" />
 
         {/* ─── CENTER COLUMN: Hero Tree with Toggle ─── */}
         <div className="flex-shrink-0 flex flex-col items-center">
