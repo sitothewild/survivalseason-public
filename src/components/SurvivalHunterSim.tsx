@@ -978,6 +978,10 @@ export default function SurvivalHunterSim() {
   const [customSlots, setCustomSlots] = useState<(CustomLoadout | null)[]>([null, null]);
   const [editingSlot, setEditingSlot] = useState<0 | 1 | null>(null);
   const [editDraft, setEditDraft] = useState<CustomLoadout | null>(null);
+  // Modal talent tree scaling
+  const modalTreeContainerRef = useRef<HTMLDivElement>(null);
+  const modalTreeInnerRef = useRef<HTMLDivElement>(null);
+  const [modalTreeScale, setModalTreeScale] = useState(1);
   // Armory
   const [armoryRealm, setArmoryRealm] = useState('');
   const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
@@ -1008,6 +1012,28 @@ export default function SurvivalHunterSim() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Modal tree auto-scale effect
+  useEffect(() => {
+    if (editingSlot === null) { setModalTreeScale(1); return; }
+    const container = modalTreeContainerRef.current;
+    const inner = modalTreeInnerRef.current;
+    if (!container || !inner) return;
+
+    const measure = () => {
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      const iw = inner.scrollWidth;
+      const ih = inner.scrollHeight;
+      if (iw > 0 && ih > 0) {
+        setModalTreeScale(Math.max(0.35, Math.min(cw / iw, ch / ih, 1)));
+      }
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(container);
+    requestAnimationFrame(measure);
+    return () => ro.disconnect();
+  }, [editingSlot, editDraft?.heroKey]);
 
   const handleTalentHover = useCallback((talent: TalentPill, e: React.MouseEvent) => {
     if (talentHideTimer.current) { window.clearTimeout(talentHideTimer.current); talentHideTimer.current = null; }
@@ -2136,92 +2162,54 @@ export default function SurvivalHunterSim() {
                             </div>
 
                             {/* ── TALENT TREE (auto-scaled to fit) ── */}
-                            {(() => {
-                              const treeContainerRef = useRef<HTMLDivElement>(null);
-                              const treeInnerRef = useRef<HTMLDivElement>(null);
-                              const [treeScale, setTreeScale] = useState(1);
-
-                              useEffect(() => {
-                                const container = treeContainerRef.current;
-                                const inner = treeInnerRef.current;
-                                if (!container || !inner) return;
-
-                                const ro = new ResizeObserver(() => {
-                                  const cw = container.clientWidth;
-                                  const ch = container.clientHeight;
-                                  const iw = inner.scrollWidth;
-                                  const ih = inner.scrollHeight;
-                                  if (iw > 0 && ih > 0) {
-                                    const s = Math.min(cw / iw, ch / ih, 1);
-                                    setTreeScale(Math.max(0.35, s));
-                                  }
-                                });
-                                ro.observe(container);
-                                // Also measure inner on next frame
-                                requestAnimationFrame(() => {
-                                  const cw = container.clientWidth;
-                                  const ch = container.clientHeight;
-                                  const iw = inner.scrollWidth;
-                                  const ih = inner.scrollHeight;
-                                  if (iw > 0 && ih > 0) {
-                                    const s = Math.min(cw / iw, ch / ih, 1);
-                                    setTreeScale(Math.max(0.35, s));
-                                  }
-                                });
-                                return () => ro.disconnect();
-                              }, [editDraft?.heroKey]);
-
-                              return (
-                                <div
-                                  ref={treeContainerRef}
-                                  style={{ flex: 1, overflow: "hidden", position: "relative" }}
-                                >
-                                  <div
-                                    ref={treeInnerRef}
-                                    style={{
-                                      transformOrigin: "top center",
-                                      transform: `scale(${treeScale})`,
-                                      display: "inline-flex",
-                                      justifyContent: "center",
-                                      width: "100%",
-                                      minWidth: "fit-content",
-                                    }}
-                                  >
-                                    <BlizzardTalentTree
-                                      specSelectedKeys={editDraft.enabledTalents}
-                                      onSpecToggle={(key, selected) => {
-                                        setEditDraft(d => {
-                                          if (!d) return d;
-                                          if (selected) {
-                                            return { ...d, enabledTalents: [...d.enabledTalents, key] };
-                                          } else {
-                                            return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
-                                          }
-                                        });
-                                      }}
-                                      heroKey={editDraft.heroKey}
-                                      onHeroChange={(hero) => {
-                                        if (editDraft.enabledHeroTalents.length > 0) {
-                                          if (!window.confirm(`Switch to ${hero === 'sentinel' ? 'Sentinel' : 'Pack Leader'}? Hero talent selections will be reset.`)) return;
-                                        }
-                                        setEditDraft(d => d ? { ...d, heroKey: hero, enabledHeroTalents: [] } : d);
-                                      }}
-                                      heroSelectedKeys={editDraft.enabledHeroTalents}
-                                      onHeroToggle={(key, selected) => {
-                                        setEditDraft(d => {
-                                          if (!d) return d;
-                                          if (selected) {
-                                            return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
-                                          } else {
-                                            return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
-                                          }
-                                        });
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            })()}
+                            <div
+                              ref={modalTreeContainerRef}
+                              style={{ flex: 1, overflow: "hidden", position: "relative" }}
+                            >
+                              <div
+                                ref={modalTreeInnerRef}
+                                style={{
+                                  transformOrigin: "top center",
+                                  transform: `scale(${modalTreeScale})`,
+                                  display: "inline-flex",
+                                  justifyContent: "center",
+                                  width: "100%",
+                                  minWidth: "fit-content",
+                                }}
+                              >
+                                <BlizzardTalentTree
+                                  specSelectedKeys={editDraft.enabledTalents}
+                                  onSpecToggle={(key, selected) => {
+                                    setEditDraft(d => {
+                                      if (!d) return d;
+                                      if (selected) {
+                                        return { ...d, enabledTalents: [...d.enabledTalents, key] };
+                                      } else {
+                                        return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
+                                      }
+                                    });
+                                  }}
+                                  heroKey={editDraft.heroKey}
+                                  onHeroChange={(hero) => {
+                                    if (editDraft.enabledHeroTalents.length > 0) {
+                                      if (!window.confirm(`Switch to ${hero === 'sentinel' ? 'Sentinel' : 'Pack Leader'}? Hero talent selections will be reset.`)) return;
+                                    }
+                                    setEditDraft(d => d ? { ...d, heroKey: hero, enabledHeroTalents: [] } : d);
+                                  }}
+                                  heroSelectedKeys={editDraft.enabledHeroTalents}
+                                  onHeroToggle={(key, selected) => {
+                                    setEditDraft(d => {
+                                      if (!d) return d;
+                                      if (selected) {
+                                        return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
+                                      } else {
+                                        return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
+                                      }
+                                    });
+                                  }}
+                                />
+                              </div>
+                            </div>
 
                             {/* ── FOOTER ── */}
                             <div style={{
