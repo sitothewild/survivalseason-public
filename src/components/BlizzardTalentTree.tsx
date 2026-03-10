@@ -532,14 +532,19 @@ export interface BlizzardTalentTreeProps {
   fightStyle?: FightStyle;
 }
 
-export function BlizzardTalentTree({
+export interface BlizzardTalentTreeHandle {
+  getSelectedTalents: () => { nodeId: string; spellId: number; name: string; rank: number; section: "class" | "spec" | "hero" }[];
+  getActiveHeroKey: () => "sentinel" | "packLeader";
+}
+
+export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardTalentTreeProps>(function BlizzardTalentTree({
   heroKey: heroKeyProp,
   onHeroChange,
   onTalentConfigChange,
   onClassToggle,
   classSelectedKeys,
   fightStyle,
-}: BlizzardTalentTreeProps) {
+}, ref) {
   const [internalHeroKey, setInternalHeroKey] = useState<"sentinel" | "packLeader">("sentinel");
   const activeHeroKey = heroKeyProp ?? internalHeroKey;
 
