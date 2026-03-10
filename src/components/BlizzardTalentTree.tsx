@@ -980,7 +980,23 @@ export function BlizzardTalentTree({
 
   const { specTree, mediaMap } = treeData;
   const classNodes = specTree.class_talent_nodes ?? [];
-  const specNodes  = specTree.spec_talent_nodes ?? [];
+  
+  // Build set of all hero node IDs to filter them out of spec nodes
+  // (Blizzard API sometimes includes hero nodes in spec_talent_nodes)
+  const heroNodeIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const ht of heroTrees) {
+      for (const n of (ht.hero_talent_nodes ?? ht.spec_talent_nodes ?? ht.class_talent_nodes ?? [])) {
+        ids.add(n.id);
+      }
+    }
+    return ids;
+  }, [heroTrees]);
+  
+  const specNodes = useMemo(() => 
+    (specTree.spec_talent_nodes ?? []).filter((n: BzTalentNode) => !heroNodeIds.has(n.id)),
+    [specTree, heroNodeIds]
+  );
 
   const classBudget = specTree.talent_point_budget?.class_points ?? 31;
   const specBudget  = specTree.talent_point_budget?.spec_points  ?? 31;
