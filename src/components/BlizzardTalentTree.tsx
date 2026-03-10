@@ -541,15 +541,19 @@ function TalentSection({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // normalizeHeroLayout — remap hero nodes to canonical 1-4-4-4-1 diamond
-// The Blizzard API returns hero nodes with cols 1-4 and rows 1-N.
-// We remap to: Row 1-3 cols 1,2,4,5 (skip center col 3) and capstone at col 3.
+// Fallback data already uses cols 1,3,5,7 (center=4). API data uses cols 1-4.
+// We detect which scheme is in use and remap API cols → 1,3,5,7 if needed.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function normalizeHeroLayout(nodes: BzTalentNode[]): BzTalentNode[] {
   if (nodes.length < 3) return nodes;
 
-  // Column remap: API cols 1,2,3,4 → display cols 1,2,4,5 (gap at 3 = center)
-  const COL_REMAP: Record<number, number> = { 1: 1, 2: 2, 3: 4, 4: 5 };
+  // Detect if nodes already use the wide col scheme (cols > 4 present = fallback data)
+  const maxCol = Math.max(...nodes.map((n) => n.display_col));
+  if (maxCol >= 5) return nodes; // Already in correct layout
+
+  // API cols 1,2,3,4 → display cols 1,3,5,7 (diamond with center gap at 4)
+  const COL_REMAP: Record<number, number> = { 1: 1, 2: 3, 3: 5, 4: 7 };
 
   // Group by original display_row to detect single-node (capstone) rows
   const rowMap = new Map<number, BzTalentNode[]>();
@@ -558,17 +562,12 @@ function normalizeHeroLayout(nodes: BzTalentNode[]): BzTalentNode[] {
     if (!rowMap.has(r)) rowMap.set(r, []);
     rowMap.get(r)!.push(n);
   });
-  const rowKeys = [...rowMap.keys()].sort((a, b) => a - b);
-
-  // Find the min row (used to calculate offset)
-  const minRow = rowKeys[0] ?? 0;
 
   return nodes.map((n) => {
     const rowNodes = rowMap.get(n.display_row)!;
     const isSingleNodeRow = rowNodes.length === 1;
-    const newRow = n.display_row - minRow;
-    const newCol = isSingleNodeRow ? 3 : (COL_REMAP[n.display_col] ?? n.display_col);
-    return { ...n, display_row: newRow, display_col: newCol };
+    const newCol = isSingleNodeRow ? 4 : (COL_REMAP[n.display_col] ?? n.display_col);
+    return { ...n, display_col: newCol };
   });
 }
 
