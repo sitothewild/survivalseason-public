@@ -59,7 +59,7 @@ const PAD = 32;
 const NODE_R = 24;
 
 // Compact size (Hero trees + Apex)
-const CW_C = 38;
+const CW_C = 32;
 const RH_C = 56;
 const PAD_C = 16;
 const NODE_R_C = 20;
