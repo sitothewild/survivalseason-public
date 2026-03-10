@@ -162,6 +162,7 @@ export default function TalentOptimizer() {
                 <BlizzardTalentTree fightStyle={fightStyle} />
               </div>
             </div>
+            </div>
           </div>
         </div>
       </main>
