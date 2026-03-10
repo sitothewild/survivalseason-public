@@ -234,7 +234,6 @@ function FightStyleToggle({ active, onChange }: { active: FightStyle; onChange: 
 
   return (
     <div style={{
-      position: "absolute", top: 10, right: 14, zIndex: 10,
       display: "flex", borderRadius: 6, overflow: "hidden",
       border: "1px solid #2e3a50",
     }}>
