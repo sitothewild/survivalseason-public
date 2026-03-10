@@ -16,7 +16,7 @@ import survivalIconImg from "@/assets/survival-icon.png";
 
 // ── Shared colour palette (mirrors SurvivalHunterSim) ────────
 const C = {
-  pageBg:"#0d1117", surface:"#1c2333", surface2:"#242d3f", surface3:"#2c3750",
+  pageBg:"#d4dae2", surface:"#1c2333", surface2:"#242d3f", surface3:"#2c3750",
   border:"#2e3a50", borderSub:"#1a2236",
   textPri:"#f1f5f9", textSec:"#cbd5e1", textMid:"#94a3b8", textDim:"#5a6a82",
   gold:"#d97706", goldLight:"#fbbf24", goldBg:"#2a1f08",

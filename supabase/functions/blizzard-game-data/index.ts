@@ -152,6 +152,52 @@ serve(async (req) => {
         break;
       }
 
+      // Get a single spell by ID
+      case "spell": {
+        const { spellId } = params;
+        if (!spellId) throw new Error("spellId is required");
+        result = await blizzardGet(`/data/wow/spell/${spellId}`, region, "static");
+        break;
+      }
+
+      // Search spells by name
+      case "spell-search": {
+        const { name, page = 1 } = params;
+        if (!name) throw new Error("name is required");
+        const token = await getAccessToken(region);
+        const host = `${region}.api.blizzard.com`;
+        const url = `https://${host}/data/wow/search/spell?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&orderby=id:desc&_page=${page}`;
+        const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`Spell search failed: ${resp.status} ${text}`);
+        }
+        result = await resp.json();
+        break;
+      }
+
+      // Get talent tree index
+      case "talent-tree-index": {
+        result = await blizzardGet("/data/wow/talent-tree/index", region, "static");
+        break;
+      }
+
+      // Get talent tree for a spec
+      case "talent-tree": {
+        const { treeId, specId } = params;
+        if (!treeId || !specId) throw new Error("treeId and specId are required");
+        result = await blizzardGet(`/data/wow/talent-tree/${treeId}/playable-specialization/${specId}`, region, "static");
+        break;
+      }
+
+      // Get hero talent tree (sub-tree)
+      case "talent-tree-nodes": {
+        const { treeId } = params;
+        if (!treeId) throw new Error("treeId is required");
+        result = await blizzardGet(`/data/wow/talent-tree/${treeId}`, region, "static");
+        break;
+      }
+
       // Batch: fetch multiple items at once (up to 20)
       case "items-batch": {
         const { itemIds } = params;
@@ -169,8 +215,8 @@ serve(async (req) => {
                 return { id, error: `${resp.status}: ${text}` };
               }
               return await resp.json();
-            } catch (e) {
-              return { id, error: e.message };
+            } catch (e: unknown) {
+              return { id, error: (e as Error).message };
             }
           })
         );
@@ -179,14 +225,14 @@ serve(async (req) => {
       }
 
       default:
-        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
+        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, spell, spell-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
     }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

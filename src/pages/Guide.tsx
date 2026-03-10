@@ -9,10 +9,11 @@ import {
   HERO_TALENT_TREES,
   ROW_GATES,
 } from "@/lib/theorycrafting";
+import HeroTalentTree from "@/components/HeroTalentTree";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 const C = {
-  pageBg:"#0d1117", surface:"#1c2333", surface2:"#242d3f", surface3:"#2c3750",
+  pageBg:"#d4dae2", surface:"#1c2333", surface2:"#242d3f", surface3:"#2c3750",
   border:"#2e3a50", borderSub:"#1a2236",
   textPri:"#f1f5f9", textSec:"#cbd5e1", textMid:"#94a3b8", textDim:"#5a6a82",
   gold:"#d97706", goldLight:"#fbbf24", goldBg:"#2a1f08",
@@ -585,6 +586,8 @@ export default function Guide() {
                   );
                 })}
               </div>
+              {/* ── Interactive Hero Talent Tree ────────────── */}
+              <HeroTalentTree heroKey={hero} />
 
               {/* ── Gateway talent callout ───────────────────── */}
               <div style={{ background:'#1c1505', border:'1px solid #f59e0b55',

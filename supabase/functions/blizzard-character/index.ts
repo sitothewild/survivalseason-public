@@ -120,8 +120,8 @@ serve(async (req) => {
           const itemUrl = `https://${host}/data/wow/item/19019?namespace=static-${region}&locale=en_US`;
           const itemResp = await fetch(itemUrl, { headers: { Authorization: `Bearer ${token}` } });
           gameDataTest = `status=${itemResp.status} body=${(await itemResp.text()).substring(0, 200)}`;
-        } catch (e) {
-          tokenDebug += ` error: ${e.message}`;
+        } catch (e: unknown) {
+          tokenDebug += ` error: ${(e as Error).message}`;
         }
         result = {
           clientId: clientId ? `${clientId.substring(0, 8)}...` : "MISSING",
@@ -227,8 +227,8 @@ serve(async (req) => {
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -881,7 +881,7 @@ export function estimateTrinketDps(
   // On-use secondary stat
   if (trinket.onUseStat && trinket.onUseAmount && trinket.onUseDuration && trinket.onUseCD) {
     const uptime = trinket.onUseDuration / trinket.onUseCD;
-    const statDps = trinket.onUseAmount * uptime * weights[`${trinket.onUseStat}Dps` as keyof StatWeights] as number;
+    const statDps = trinket.onUseAmount * uptime * (weights[`${trinket.onUseStat}Dps` as keyof StatWeights] as number);
     const burstBonus = trinket.burstAlignable ? 1.12 : 1.0;
     dps += statDps * burstBonus;
   }
