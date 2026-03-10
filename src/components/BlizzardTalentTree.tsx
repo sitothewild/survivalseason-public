@@ -673,21 +673,19 @@ export function BlizzardTalentTree({
 }
 
 // Apex section rendered under the Hero tree
-function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
+function ApexSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void }) {
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES, true), []);
-  const [hoveredInfo, setHoveredInfo] = useState<TooltipInfo | null>(null);
   const tipTimer = useRef<number>();
 
   const handleHover = useCallback((info: TooltipInfo | null, _x: number, _y: number) => {
     clearTimeout(tipTimer.current);
     if (!info) {
-      tipTimer.current = window.setTimeout(() => setHoveredInfo(null), 120);
+      tipTimer.current = window.setTimeout(() => onGlobalHover?.(null), 120);
     } else {
-      setHoveredInfo(info);
+      onGlobalHover?.(info);
     }
-  }, []);
+  }, [onGlobalHover]);
 
-  // Count apex points for display
   const apexPts = APEX_NODES.reduce((sum, n) => sum + (tree.state.points[n.id] ?? 0), 0);
 
   return (
@@ -736,10 +734,9 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
           );
         })}
       </div>
-
-      {/* Static tooltip panel below Apex */}
-      <StaticTooltipPanel info={hoveredInfo} />
     </div>
+  );
+}
   );
 }
 
