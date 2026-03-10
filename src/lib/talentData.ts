@@ -190,11 +190,11 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
   { id:'tip_of_spear', apiNodeId:102263, spellId:260285, name:'Tip of the Spear', type:'passive', maxPts:1, row:3, col:5,
     parents:['raptor_strike'], desc:'Kill Command increases the direct damage of your other abilities by 15%, stacking up to 3 times.' },
   // ROW 4 (API row 5)
-  { id:'lunge', spellId:378934, name:'Lunge', type:'passive', maxPts:1, row:4, col:2,
+  { id:'lunge', apiNodeId:102272, spellId:378934, name:'Lunge', type:'passive', maxPts:1, row:4, col:2,
     parents:['guerrilla_tactics'], desc:'The damage of your auto-attacks is increased by 25%. The cooldown of Wildfire Bomb is reduced by 1.0 sec.' },
-  { id:'boomstick', spellId:1261193, name:'Boomstick', type:'active', maxPts:1, row:4, col:4,
+  { id:'boomstick', apiNodeId:109324, spellId:1261193, name:'Boomstick', type:'active', maxPts:1, row:4, col:4,
     parents:['tip_of_spear','guerrilla_tactics'], desc:'Unload a series of 4 shotgun blasts 20 yds in front of you, dealing Physical damage over 2.7 sec. Deals reduced damage beyond 8 targets.' },
-  { id:'strike_as_one', spellId:1251717, name:'Strike as One', type:'passive', maxPts:1, row:4, col:6,
+  { id:'strike_as_one', apiNodeId:109321, spellId:1251717, name:'Strike as One', type:'passive', maxPts:1, row:4, col:6,
     parents:['tip_of_spear'], desc:'Consuming Tip of the Spear provokes your pet to attack your target. All damage dealt by your pet is increased by 30%.' },
   // ROW 5 (API row 6) — GATE: 8 spec pts
   { id:'bomb_choice', spellId:null, name:'Shrapnel Bomb / Flamebreak', type:'choice', maxPts:1, row:5, col:1,
