@@ -740,7 +740,7 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
-          const sz = 36;
+          const sz = 40;
 
           return (
             <div key={node.id} style={{
