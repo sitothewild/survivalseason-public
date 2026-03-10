@@ -588,6 +588,7 @@ export function BlizzardTalentTree({
               maxPts={HERO_MAX_PTS}
               rowGates={HERO_ROW_GATES}
               externalGateMet={heroGateMet}
+              compact
             />
 
             {/* APEX TALENT (under hero tree) */}
