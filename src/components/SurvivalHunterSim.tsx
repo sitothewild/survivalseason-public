@@ -19,6 +19,10 @@ import {
 import { MIDNIGHT_ENCHANTS } from "@/lib/gearOptimizer";
 import { FULL_RAID_OPTIONS, MPLUS_CASUAL_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
 import type { SimOptions } from "@/engine/types";
+import { charToSimInput } from "@/engine/adapters/charToSimInput";
+import { simResultToLegacy } from "@/engine/adapters/simResultToLegacy";
+import { getWorkerPool } from "@/engine/WorkerPool";
+import type { HeroTree } from "@/engine/types";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -1518,36 +1522,78 @@ export default function SurvivalHunterSim() {
     };
   }, [raidBuffs, consumables, weaponEnhancement, augmentRune, enchantMode, manualEnchants, gemSockets, gemPrimaryStat, hasBlasphemite, has2pc, has4pc]);
 
-  const handleSim = useCallback(() => {
-    if (!parsedChar) return; setIsSimming(true); setSimResults(null); setUserSimResult(null); setOptimalSimResult(null);
+  const handleSim = useCallback(async () => {
+    if (!parsedChar) return;
+    setIsSimming(true); setSimResults(null); setUserSimResult(null); setOptimalSimResult(null);
 
-    // Compute externalMult from SimOptions for the analytical sim (legacy path)
-    let externalMult = 1.0;
-    externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
-    // Raid buffs
-    if (currentSimOptions.raidBuffs.battleShout) externalMult *= 1.05;
-    if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
-    if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
-    if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
-    // Consumables — approximate from engine data
-    if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'alchemical_chaos' ? 1.035 : 1.03;
-    if (currentSimOptions.food !== 'none') externalMult *= 1.02;
-    if (currentSimOptions.potion !== 'none') externalMult *= currentSimOptions.potion === 'potion_of_unwavering_focus' ? 1.025 : 1.02;
-    // Weapon enhancement
-    if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
-    // Augment rune
-    if (currentSimOptions.augmentRune) externalMult *= 1.005;
+    const targets = getTargets();
+    const primaryTarget = targets[0];
+    const pool = getWorkerPool();
 
-    setTimeout(() => {
-      const targets = getTargets();
-      const primaryTarget = targets[0];
+    try {
+      // Build SimInput for each target count and run via WorkerPool
+      const engineResults = await Promise.all(
+        targets.map(async (t) => {
+          const input = charToSimInput(
+            parsedChar,
+            heroTalent as HeroTree,
+            t,
+            fightDuration,
+            currentSimOptions,
+          );
+          const result = await pool.runSim(input);
+          return simResultToLegacy(result, heroTalent as HeroTree, t, fightDuration);
+        }),
+      );
+
+      // Stat weights — kept analytical (fast, no engine run needed)
       const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
-
-      // Run main results (all targets, user's selected hero)
-      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData, aplData));
+      // Compute externalMult for the analytical stat weights path
+      let externalMult = 1.0;
+      externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
+      if (currentSimOptions.raidBuffs.battleShout) externalMult *= 1.05;
+      if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
+      if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
+      if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
+      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'alchemical_chaos' ? 1.035 : 1.03;
+      if (currentSimOptions.food !== 'none') externalMult *= 1.02;
+      if (currentSimOptions.potion !== 'none') externalMult *= currentSimOptions.potion === 'potion_of_unwavering_focus' ? 1.025 : 1.02;
+      if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
+      if (currentSimOptions.augmentRune) externalMult *= 1.005;
       const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
 
-      // Run user vs optimal single-target comparison
+      // User vs optimal comparison — run via engine
+      const uHeroKey = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent) as HeroTree;
+      const [userEngineResult, optEngineResult] = await Promise.all([
+        pool.runSim(charToSimInput(parsedChar, uHeroKey, primaryTarget, fightDuration, currentSimOptions)),
+        pool.runSim(charToSimInput(parsedChar, 'sentinel', primaryTarget, fightDuration, currentSimOptions)),
+      ]);
+      const userResult = simResultToLegacy(userEngineResult, uHeroKey, primaryTarget, fightDuration);
+      const optResult = simResultToLegacy(optEngineResult, 'sentinel', primaryTarget, fightDuration);
+
+      setStatWeights(sw);
+      setSimResults(engineResults);
+      setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
+      setUserSimResult(userResult);
+      setOptimalSimResult(optResult);
+    } catch (err) {
+      console.error("Sim engine error:", err);
+      // Fallback to legacy analytical sim if engine fails
+      let externalMult = 1.0;
+      externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
+      if (currentSimOptions.raidBuffs.battleShout) externalMult *= 1.05;
+      if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
+      if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
+      if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
+      if (currentSimOptions.phial !== 'none') externalMult *= 1.035;
+      if (currentSimOptions.food !== 'none') externalMult *= 1.02;
+      if (currentSimOptions.potion !== 'none') externalMult *= 1.02;
+      if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
+      if (currentSimOptions.augmentRune) externalMult *= 1.005;
+
+      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData, aplData));
+      const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
+      const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
       const uHeroKey = detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent;
       const userResult = runSimulation(parsedChar, primaryTarget, fightDuration, uHeroKey, primaryBuild, externalMult, simcLiveData, aplData);
       const optResult = runSimulation(parsedChar, primaryTarget, fightDuration, 'sentinel', primaryBuild, externalMult, simcLiveData, aplData);
@@ -1557,8 +1603,9 @@ export default function SurvivalHunterSim() {
       setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
       setUserSimResult(userResult);
       setOptimalSimResult(optResult);
+    } finally {
       setIsSimming(false);
-    }, 1200);
+    }
   }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, currentSimOptions, simcLiveData, detectedHeroTalent, aplData]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
