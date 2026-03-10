@@ -107,7 +107,7 @@ export interface TalentTreeFullResponse {
 
 /** Fetch Survival Hunter talent tree (class + spec nodes) plus both hero trees and all spell icons. */
 export async function getSurvivalTalentTree(
-  treeId = 786,
+  treeId = 774,
   specId = 255,
   region = "us"
 ): Promise<TalentTreeFullResponse> {
