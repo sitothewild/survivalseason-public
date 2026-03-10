@@ -105,7 +105,7 @@ const CORE_CLASS = new Set([
 // ─────────────────────────────────────────────────────────────────────────────
 
 function nodeSpellName(node: BzTalentNode): string | null {
-  return node.entries[0]?.spell_tooltip?.spell?.name ?? null;
+  return node.entries?.[0]?.spell_tooltip?.spell?.name ?? null;
 }
 
 function nodeTalentKey(node: BzTalentNode): string | null {
