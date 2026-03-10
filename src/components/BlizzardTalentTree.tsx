@@ -600,7 +600,7 @@ export function BlizzardTalentTree({
           />
 
           {/* HERO TREE + APEX (center) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
             {/* Hero switcher — single large circle toggle */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12 }}>
               <button
@@ -656,8 +656,10 @@ export function BlizzardTalentTree({
             {/* APEX TALENT (under hero tree) */}
             <ApexSection tree={specTree} onGlobalHover={handleGlobalHover} />
 
-            {/* Static tooltip panel — shows hovered talent from any tree */}
-            <StaticTooltipPanel info={globalTooltip} />
+            {/* Floating tooltip panel — positioned absolutely so it doesn't affect layout */}
+            <div style={{ position: "absolute", bottom: -110, left: "50%", transform: "translateX(-50%)", zIndex: 50, pointerEvents: "none" }}>
+              <StaticTooltipPanel info={globalTooltip} />
+            </div>
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
@@ -738,23 +740,24 @@ function ApexSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlo
   );
 }
 
-// Static tooltip panel rendered in the empty space below Apex
+// Floating tooltip panel — renders above layout, doesn't affect sizing
 function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
   return (
     <div style={{
-      width: 240, minHeight: 90, marginTop: 8,
-      background: "linear-gradient(160deg,#1c1005 0%,#0d0a02 100%)",
-      border: `1px solid ${info ? GOLD_DIM : "#1a1408"}`,
-      borderTop: `2px solid ${info ? GOLD : "#2a1a08"}`,
-      borderRadius: 4, padding: "10px 14px",
-      boxShadow: info
-        ? `0 0 16px rgba(0,0,0,.6),inset 0 1px 0 ${GOLD_DIM}60`
-        : `0 0 8px rgba(0,0,0,.3)`,
-      transition: "border-color .2s, box-shadow .2s",
+      width: 260,
+      opacity: info ? 1 : 0,
+      transform: info ? "translateY(0)" : "translateY(4px)",
+      transition: "opacity .15s ease, transform .15s ease",
+      background: "linear-gradient(160deg, rgba(20,14,5,.97) 0%, rgba(10,8,2,.98) 100%)",
+      border: `1px solid ${GOLD_DIM}`,
+      borderTop: `2px solid ${GOLD}`,
+      borderRadius: 6,
+      padding: "12px 14px",
+      boxShadow: `0 8px 32px rgba(0,0,0,.7), 0 0 1px ${GOLD_DIM}, inset 0 1px 0 ${GOLD_DIM}40`,
+      backdropFilter: "blur(8px)",
     }}>
-      {info ? (
+      {info && (
         <>
-          {/* Icon + Name */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             {info.spellId && (
               <img
@@ -776,7 +779,6 @@ function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
               )}
             </div>
           </div>
-          {/* Description */}
           <div style={{ fontSize: 11, color: "#b8a878", lineHeight: 1.5,
             fontFamily: "'Rajdhani',sans-serif", whiteSpace: "pre-line" }}>
             {info.desc}
@@ -787,14 +789,6 @@ function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
             </div>
           )}
         </>
-      ) : (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center",
-          height: "100%", minHeight: 60 }}>
-          <span style={{ fontSize: 11, color: "#3a2a08", fontFamily: "'Rajdhani',sans-serif",
-            fontStyle: "italic", letterSpacing: 0.5 }}>
-            Hover a talent to see details
-          </span>
-        </div>
       )}
     </div>
   );
