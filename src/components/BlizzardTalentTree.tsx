@@ -272,7 +272,7 @@ function NodeTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number }
           Rank {info.rank ?? 0} / {info.maxRank}
         </div>
       )}
-      <div style={{ fontSize: 12, color: "#b8a878", lineHeight: 1.55, fontFamily: "'Rajdhani',sans-serif" }}>
+      <div style={{ fontSize: 12, color: "#b8a878", lineHeight: 1.55, fontFamily: "'Rajdhani',sans-serif", whiteSpace: "pre-line" }}>
         {info.description}
       </div>
     </div>
