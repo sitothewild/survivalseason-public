@@ -24,8 +24,8 @@ const GOLD_GLOW   = "rgba(200,168,75,.45)";
 const NODE_FILL   = "#0e0a04";
 const NODE_FILL_SEL = "#1a1200";
 const LOCKED_RING = "#3a3a3a";
-const LINE_LOCKED = "#2a2a2a";
-const LINE_HALF   = "#5a3a10";
+const LINE_LOCKED = "#555555";
+const LINE_HALF   = "#8a6a30";
 const LINE_ACTIVE = "#C8A84B";
 
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3C/svg%3E";
