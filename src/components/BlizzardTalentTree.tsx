@@ -253,8 +253,8 @@ function InteractiveTalentNode({
   if (isChoice) {
     const iconA = resolveIcon(node.choiceA?.spellId);
     const iconB = resolveIcon(node.choiceB?.spellId);
-    const filterA = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 0 ? 'none' : 'grayscale(1) brightness(0.5)';
-    const filterB = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 1 ? 'none' : 'grayscale(1) brightness(0.5)';
+    const filterA = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 0 ? 'none' : 'grayscale(1) brightness(0.75)';
+    const filterB = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 1 ? 'none' : 'grayscale(1) brightness(0.75)';
 
     return (
       <div
