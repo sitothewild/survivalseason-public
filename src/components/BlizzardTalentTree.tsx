@@ -669,7 +669,7 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
           const pts = tree.state.points[node.id] ?? 0;
           const isApex = node.type === 'apex';
           const isTier = node.id.startsWith('apex_tier');
-          const sz = isApex ? 44 : (isTier ? 24 : 36);
+          const sz = isApex ? 58 : (isTier ? 28 : 36);
 
           return (
             <div key={node.id} style={{
