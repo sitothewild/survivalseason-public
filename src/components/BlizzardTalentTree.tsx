@@ -27,6 +27,45 @@ const LINE_DIM  = "#3a2a08";    // inner ring / dim line color
 
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3C/svg%3E";
 
+// Wowhead icon fallbacks for hero talent spells (keyed by spell ID)
+// These provide icons when the Blizzard media API returns 404
+const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
+  // Sentinel
+  1253599: "https://wow.zamimg.com/images/wow/icons/large/ability_racial_dvinewardenofthelightofthestar.jpg", // Lunar Storm
+  450373:  "https://wow.zamimg.com/images/wow/icons/large/inv_polearm_2h_felfireraid_d_01.jpg", // Sanctified Armaments
+  1253825: "https://wow.zamimg.com/images/wow/icons/large/spell_arcane_starfire.jpg", // Lunar Inspiration
+  1253831: "https://wow.zamimg.com/images/wow/icons/large/ability_upgrademoonglaive.jpg", // Moonlight Chakram
+  1264902: "https://wow.zamimg.com/images/wow/icons/large/ability_upgrademoonglaive.jpg", // Chakram Passback
+  1253751: "https://wow.zamimg.com/images/wow/icons/large/spell_frost_stun.jpg", // Stargazer (choice)
+  1253807: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_resistanceisfutile.jpg", // Open Fire (choice)
+  1253830: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_markedfordeath.jpg", // Sentinel's Mark
+  450379:  "https://wow.zamimg.com/images/wow/icons/large/spell_frost_stun.jpg", // Stargazer
+  1264904: "https://wow.zamimg.com/images/wow/icons/large/spell_shadow_requiem.jpg", // Twilight Requiem (choice)
+  1266069: "https://wow.zamimg.com/images/wow/icons/large/ability_rogue_stalkandstrike.jpg", // Stalk and Strike (choice)
+  1253846: "https://wow.zamimg.com/images/wow/icons/large/spell_frost_arcticwinds.jpg", // Ice Claw
+  1253852: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_eagleeye.jpg", // Sentinel Owl
+  450376:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg", // Conditioning (choice)
+  450380:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mastermarksman.jpg", // Scout's Vigil (choice)
+  1264903: "https://wow.zamimg.com/images/wow/icons/large/inv_glaive_1h_npc_d_01.jpg", // Glaive Passive
+  1253732: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_lunarguidance.jpg", // Moon and Stars
+  // Pack Leader
+  472358:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Vicious Hunt
+  472357:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_beastwithin.jpg", // Pack Coordination
+  472719:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg", // Howl of the Pack (choice)
+  472720:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mendpet.jpg", // Den Recovery (choice)
+  472476:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg", // Ursine Fury (choice)
+  472524:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_rake.jpg", // Sharpened Claws (choice)
+  472550:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_wildattack.jpg", // Wild Attacks
+  472639:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_corneredprey.jpg", // Cornered Prey
+  1264781: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_mangle.jpg", // Frenzied Tear
+  472660:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg", // Go for the Throat
+  472707:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_rapidregeneration.jpg", // Furious Assault
+  1264797: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_multishot.jpg", // Scattered Prey (choice)
+  1264792: "https://wow.zamimg.com/images/wow/icons/large/ability_creature_poison_06.jpg", // Wyvern's Gaze (choice)
+  1264775: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_rake.jpg", // Claw Frenzy
+  472741:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Pack Assault
+};
+
 // ── Hardcoded fallback hero trees ────────────────────────────────────────────
 // Sentinel: 1-4-4-4-1 diamond layout — rows 1-5, cols 1,3,5,7 (center=4)
 const FALLBACK_SENTINEL_NODES: BzTalentNode[] = [
