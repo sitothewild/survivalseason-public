@@ -962,24 +962,24 @@ export function BlizzardTalentTree({
   // Compact mode: measure inner content and scale to fit container
   const compactRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const [compactScale, setCompactScale] = useState(1);
+  const [compactScale, setCompactScale] = useState(0.45);
+  const [compactHeight, setCompactHeight] = useState<number>(400);
 
   useEffect(() => {
-    if (!compact || !compactRef.current || !innerRef.current) return;
-    const observer = new ResizeObserver(() => {
-      const containerW = compactRef.current?.clientWidth ?? 0;
-      const innerW = innerRef.current?.scrollWidth ?? 0;
+    if (!compact) return;
+    // Delay measurement to allow tree to fully render
+    const timer = setTimeout(() => {
+      if (!compactRef.current || !innerRef.current) return;
+      const containerW = compactRef.current.clientWidth;
+      const innerW = innerRef.current.scrollWidth;
+      const innerH = innerRef.current.scrollHeight;
       if (innerW > 0 && containerW > 0) {
-        setCompactScale(Math.min(1, containerW / innerW));
+        const s = Math.min(1, containerW / innerW);
+        setCompactScale(s);
+        if (innerH > 0) setCompactHeight(innerH * s);
       }
-    });
-    observer.observe(compactRef.current);
-    const containerW = compactRef.current?.clientWidth ?? 0;
-    const innerW = innerRef.current?.scrollWidth ?? 0;
-    if (innerW > 0 && containerW > 0) {
-      setCompactScale(Math.min(1, containerW / innerW));
-    }
-    return () => observer.disconnect();
+    }, 200);
+    return () => clearTimeout(timer);
   }, [compact, treeData]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1014,8 +1014,6 @@ export function BlizzardTalentTree({
       .filter(Boolean) as string[]
   );
 
-  const innerH = innerRef.current?.scrollHeight ?? 0;
-
   return (
     <div ref={compactRef} style={{ userSelect: "none", ...(compact ? { overflow: "hidden" } : {}) }}>
       {/* ── Scroll wrapper ─────────────────────────────────────────────── */}
@@ -1023,7 +1021,7 @@ export function BlizzardTalentTree({
         ref={innerRef}
         style={{
           ...(compact
-            ? { transform: `scale(${compactScale})`, transformOrigin: "top left", height: innerH * compactScale || "auto" }
+            ? { transform: `scale(${compactScale})`, transformOrigin: "top left", ...(compactHeight ? { height: compactHeight } : {}) }
             : { overflowX: "auto", overflowY: "visible" }),
         }}
       >
