@@ -783,6 +783,8 @@ export interface BlizzardTalentTreeProps {
   heroSelectedKeys?: string[];
   /** Called when hero node toggled */
   onHeroToggle?: (key: string, selected: boolean) => void;
+  /** Compact mode — scales down to fit in smaller containers */
+  compact?: boolean;
 }
 
 export function BlizzardTalentTree({
