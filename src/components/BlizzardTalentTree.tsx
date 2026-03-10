@@ -570,22 +570,24 @@ export function BlizzardTalentTree({
                 style={{
                   width: 100, height: 100, borderRadius: "50%",
                   border: `3px solid ${isSentinel ? "#7dd3fc" : "#d8b4fe"}`,
-                  background: `radial-gradient(circle at 40% 35%, ${isSentinel ? "#1e3a5f" : "#3b1a5c"} 0%, #0a0a12 80%)`,
+                  background: "#0a0a12",
                   boxShadow: `0 0 20px 4px ${isSentinel ? "rgba(125,211,252,.3)" : "rgba(216,180,254,.3)"}, 0 0 0 2px ${isSentinel ? "rgba(125,211,252,.15)" : "rgba(216,180,254,.15)"}`,
                   cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all .3s ease",
                   position: "relative",
                   overflow: "hidden",
+                  padding: 0,
                 }}
               >
-                <span style={{
-                  fontSize: 28, 
-                  filter: "drop-shadow(0 0 6px rgba(255,255,255,.3))",
-                  transition: "transform .3s ease",
-                }}>
-                  {isSentinel ? "🌙" : "🐺"}
-                </span>
+                <img
+                  src={isSentinel ? heroSentinelImg : heroPackLeaderImg}
+                  alt={isSentinel ? "Sentinel" : "Pack Leader"}
+                  style={{
+                    width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
+                    transition: "opacity .3s ease",
+                  }}
+                />
               </button>
               <span style={{
                 fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700,
