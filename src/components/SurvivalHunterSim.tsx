@@ -22,6 +22,23 @@ import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 
 const SURVIVAL_ICON = survivalIconImg;
 
+// Blizzard CDN icon filenames for professions
+const PROFESSION_ICONS: Record<string, string> = {
+  'Blacksmithing': 'trade_blacksmithing',
+  'Leatherworking': 'trade_leatherworking',
+  'Tailoring': 'trade_tailoring',
+  'Engineering': 'trade_engineering',
+  'Enchanting': 'trade_engraving',
+  'Alchemy': 'trade_alchemy',
+  'Inscription': 'inv_inscription_tradeskill01',
+  'Jewelcrafting': 'inv_misc_gem_01',
+  'Mining': 'trade_mining',
+  'Herbalism': 'trade_herbalism',
+  'Skinning': 'inv_misc_pelt_wolf_01',
+  'Cooking': 'inv_misc_food_15',
+  'Fishing': 'trade_fishing',
+};
+
 const MIDNIGHT_DATA = {
   classAura: 1.20,
   petApScaling: 0.60,
