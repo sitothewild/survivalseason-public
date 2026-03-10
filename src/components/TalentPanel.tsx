@@ -131,6 +131,26 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
             >
               Reset All
             </button>
+            {/* Fight style toggle */}
+            <div className="flex rounded overflow-hidden border border-slate-700">
+              {(["st", "cleave", "aoe"] as FightStyle[]).map((fs) => (
+                <button
+                  key={fs}
+                  className={`
+                    text-[9px] px-2 py-1 font-['Rajdhani',sans-serif] uppercase tracking-wider
+                    transition-colors focus:outline-none
+                    ${exportFightStyle === fs
+                      ? "bg-amber-900/40 text-amber-400 border-r border-amber-700/50"
+                      : "bg-slate-800/60 text-slate-600 hover:text-slate-400 border-r border-slate-700 last:border-r-0"
+                    }
+                  `}
+                  onClick={() => setExportFightStyle(fs)}
+                >
+                  {fs === "st" ? "ST" : fs === "cleave" ? "Cleave" : "AoE"}
+                </button>
+              ))}
+            </div>
+
             <button
               className="
                 text-[9px] px-2.5 py-1 rounded
@@ -140,7 +160,13 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
               "
               onClick={() => {
                 const talents = tree.getSelectedTalents();
-                console.log("Selected talents for SimC:", talents);
+                const result = buildSimcProfile(talents, {
+                  heroTree: tree.activeHeroTree,
+                  fightStyle: exportFightStyle,
+                });
+                setExportResult(result);
+                setExportModalOpen(true);
+                setCopied(false);
               }}
             >
               Export to SimC
