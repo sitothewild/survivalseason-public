@@ -475,6 +475,8 @@ export interface BlizzardTalentTreeProps {
   onHeroChange?: (hero: "sentinel" | "packLeader") => void;
   heroSelectedKeys?: string[];
   onHeroToggle?: (key: string, selected: boolean) => void;
+  classSelectedKeys?: string[];
+  onClassToggle?: (key: string, selected: boolean) => void;
   onTalentConfigChange?: (config: Record<string, any>) => void;
 }
 
@@ -482,6 +484,8 @@ export function BlizzardTalentTree({
   heroKey: heroKeyProp,
   onHeroChange,
   onTalentConfigChange,
+  onClassToggle,
+  classSelectedKeys,
 }: BlizzardTalentTreeProps) {
   const [internalHeroKey, setInternalHeroKey] = useState<"sentinel" | "packLeader">("sentinel");
   const activeHeroKey = heroKeyProp ?? internalHeroKey;

@@ -574,6 +574,7 @@ interface CustomLoadout {
   simMode: 'single' | 'cleave' | 'multi';
   enabledTalents: string[];     // keys of toggled-on optional spec talents (from TalentNode.key)
   enabledHeroTalents: string[]; // keys of toggled-on hero sub-talents
+  enabledClassTalents: string[]; // keys of toggled-on class tree talents
 }
 
 // Spec tree optional budget: 4 variable nodes across the 4 WoWHead builds.
