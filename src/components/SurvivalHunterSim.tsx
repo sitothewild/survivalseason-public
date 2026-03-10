@@ -1884,10 +1884,18 @@ export default function SurvivalHunterSim() {
                   <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>PROFESSIONS</div>
                     {professions && professions.filter((p: any) => !p.secondary).length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {professions.filter((p: any) => !p.secondary).map((p: any, i: number) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: C.goldLight, minWidth: 110 }}>
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            {p.professionId && (
+                              <img
+                                src={`https://render.worldofwarcraft.com/us/icons/56/${PROFESSION_ICONS[p.name] || 'trade_blacksmithing'}.jpg`}
+                                alt={p.name}
+                                style={{ width: 22, height: 22, borderRadius: 4, border: `1px solid ${C.border}`, flexShrink: 0 }}
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            )}
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: C.goldLight, minWidth: 100 }}>
                               {p.name}
                             </span>
                             <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textSec }}>
@@ -1899,7 +1907,7 @@ export default function SurvivalHunterSim() {
                                   <span key={j} style={{
                                     fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 600,
                                     color: C.sentClr, background: C.surface, border: `1px solid ${C.borderSub}`,
-                                    borderRadius: 4, padding: "1px 6px",
+                                    borderRadius: 4, padding: "1px 6px", letterSpacing: 0.5,
                                   }}>{s}</span>
                                 ))}
                               </div>
