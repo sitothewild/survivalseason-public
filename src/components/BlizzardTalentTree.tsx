@@ -219,7 +219,7 @@ function InteractiveTalentNode({
     ? `0 0 0 3px ${GOLD_GLOW}, 0 0 18px 5px ${GOLD_GLOW}` 
     : nodeState === 'AVAILABLE' ? `0 0 0 1px rgba(122,90,32,.3), 0 0 8px 2px rgba(122,90,32,.15)` 
     : nodeState === 'LOCKED' ? `0 0 0 1px rgba(0,0,0,.6)` : undefined;
-  const imgFilter = nodeState === 'SELECTED' ? 'none' : nodeState === 'PARTIAL' ? 'saturate(0.5)' : nodeState === 'AVAILABLE' ? 'grayscale(1) brightness(0.7)' : 'grayscale(1) brightness(0.35)';
+  const imgFilter = (nodeState === 'SELECTED') ? 'none' : 'grayscale(1) brightness(0.75)';
   const cursor = nodeState === 'LOCKED' ? 'not-allowed'
     : (nodeState === 'AVAILABLE' || nodeState === 'PARTIAL') ? 'pointer'
     : 'pointer'; // SELECTED can be right-clicked
@@ -253,8 +253,8 @@ function InteractiveTalentNode({
   if (isChoice) {
     const iconA = resolveIcon(node.choiceA?.spellId);
     const iconB = resolveIcon(node.choiceB?.spellId);
-    const filterA = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 0 ? 'none' : 'grayscale(1) brightness(0.5)';
-    const filterB = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 1 ? 'none' : 'grayscale(1) brightness(0.5)';
+    const filterA = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 0 ? 'none' : 'grayscale(1) brightness(0.75)';
+    const filterB = (nodeState === 'SELECTED' || nodeState === 'PARTIAL') && choiceSide === 1 ? 'none' : 'grayscale(1) brightness(0.75)';
 
     return (
       <div
