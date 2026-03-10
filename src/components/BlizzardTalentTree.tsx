@@ -50,16 +50,16 @@ function pointColor(pts: number, max: number): string {
 
 // ── Grid layout calculation ──────────────────────────────────
 // Standard size (Hunter class + Survival spec)
-const CW = 52;  // col step
-const RH = 56;  // row step
-const PAD = 30;
-const NODE_R = 20;
+const CW = 62;  // col step
+const RH = 66;  // row step
+const PAD = 32;
+const NODE_R = 24;
 
 // Compact size (Hero trees + Apex)
-const CW_C = 42;
-const RH_C = 48;
-const PAD_C = 20;
-const NODE_R_C = 18;
+const CW_C = 50;
+const RH_C = 56;
+const PAD_C = 22;
+const NODE_R_C = 22;
 
 function gridBounds(nodes: TalentNodeDef[], compact = false) {
   const cw = compact ? CW_C : CW;
