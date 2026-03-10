@@ -247,13 +247,13 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
   { id:'killer_companion', apiNodeId:109312, spellId:378955, name:'Killer Companion', type:'passive', maxPts:2, row:8, col:6,
     parents:['shower_of_blood','vuln_choice'], desc:'Kill Command damage increased. Pet flanks on Kill Command.' },
   // ROW 9 (API row 10)
-  { id:'flamefang', spellId:1251592, name:'Flamefang Pitch', type:'active', maxPts:1, row:9, col:2,
+  { id:'flamefang', apiNodeId:102252, spellId:1251592, name:'Flamefang Pitch', type:'active', maxPts:1, row:9, col:2,
     parents:['explosives_expert'], desc:'Toss a fiery concoction that explodes violently upon reaching its destination, dealing Fire damage to enemies in its area. Ignites nearby terrain for additional Fire damage over 8 sec.' },
-  { id:'twin_fangs', spellId:1272139, name:'Twin Fangs', type:'passive', maxPts:1, row:9, col:3,
+  { id:'twin_fangs', apiNodeId:109320, spellId:1272139, name:'Twin Fangs', type:'passive', maxPts:1, row:9, col:3,
     parents:['takedown'], desc:'Takedown grants 3 stacks of Tip of the Spear.' },
-  { id:'savagery', spellId:1251790, name:'Savagery', type:'passive', maxPts:2, row:9, col:5,
+  { id:'savagery', apiNodeId:109470, spellId:1251790, name:'Savagery', type:'passive', maxPts:2, row:9, col:5,
     parents:['takedown'], desc:'Takedown cooldown reduced by 15 sec.' },
-  { id:'wfb_infusion', spellId:460198, name:'Wildfire Infusion', type:'passive', maxPts:1, row:9, col:6,
+  { id:'wfb_infusion', apiNodeId:102268, spellId:460198, name:'Wildfire Infusion', type:'passive', maxPts:1, row:9, col:6,
     parents:['killer_companion'], desc:'Kill Command damage increased by 15%. Kill Command reduces the cooldown of Wildfire Bomb by 1.0 sec.' },
   // ROW 10 (API row 11)
   { id:'grenade_juggler', spellId:459843, name:'Grenade Juggler', type:'passive', maxPts:1, row:10, col:1,
