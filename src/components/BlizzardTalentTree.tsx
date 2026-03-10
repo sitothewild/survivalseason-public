@@ -366,13 +366,29 @@ function TalentNode({
   const cursor = isCore ? "default" : isLocked ? "not-allowed" : "pointer";
 
   const handleEnter = (e: React.MouseEvent) => {
-    const entry = node.entries[isChoice ? chosenIdx : 0];
-    onHover({
-      name: entry?.spell_tooltip?.spell?.name ?? "?",
-      description: entry?.spell_tooltip?.description ?? "",
-      rank: isSelected ? (entry?.max_rank ?? 1) : 0,
-      maxRank: entry?.max_rank ?? 1,
-    }, e.clientX, e.clientY);
+    if (isChoice) {
+      const e0 = node.entries[0];
+      const e1 = node.entries[1];
+      const name0 = e0?.spell_tooltip?.spell?.name ?? "?";
+      const name1 = e1?.spell_tooltip?.spell?.name ?? "?";
+      const chosen = node.entries[chosenIdx];
+      onHover({
+        name: `${name0} / ${name1}`,
+        description: chosenIdx === 0
+          ? `► ${name0}: ${e0?.spell_tooltip?.description ?? ""}\n\n${name1}: ${e1?.spell_tooltip?.description ?? ""}`
+          : `${name0}: ${e0?.spell_tooltip?.description ?? ""}\n\n► ${name1}: ${e1?.spell_tooltip?.description ?? ""}`,
+        rank: isSelected ? 1 : 0,
+        maxRank: 1,
+      }, e.clientX, e.clientY);
+    } else {
+      const entry = node.entries[0];
+      onHover({
+        name: entry?.spell_tooltip?.spell?.name ?? "?",
+        description: entry?.spell_tooltip?.description ?? "",
+        rank: isSelected ? (entry?.max_rank ?? 1) : 0,
+        maxRank: entry?.max_rank ?? 1,
+      }, e.clientX, e.clientY);
+    }
   };
 
   // ── Choice node: split-icon with dashed vertical divider ────────────────
