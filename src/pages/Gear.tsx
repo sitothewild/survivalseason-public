@@ -219,14 +219,6 @@ export default function Gear() {
               color:heroClr, letterSpacing:3, margin:0, textTransform:"uppercase" }}>
               {heroIcon} {heroName} — Gear &amp; Optimizer
             </h1>
-            <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:15, color:C.textMid,
-              marginTop:8, maxWidth:640 }}>
-              BiS gear list, trinket rankings, enchants, gems, rings and tier set analysis
-              for <strong style={{ color:heroClr }}>Midnight Season 1</strong>
-              {" "}· Hero track{" "}<strong style={{ color:"#a855f7" }}>276</strong>
-              {" "}→ Myth track{" "}<strong style={{ color:C.goldLight }}>289</strong>.
-              All DPS values computed from first-principles stat weights — no guessing.
-            </p>
           </div>
           <div className="gear-hero-toggle" style={{ display:"flex", gap:10 }}>
             {(["sentinel","packLeader"] as const).map(h => (
