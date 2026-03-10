@@ -609,7 +609,7 @@ export function BlizzardTalentTree({
 
 // Apex section rendered under the Hero tree
 function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
-  const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES), []);
+  const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES, true), []);
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
 
