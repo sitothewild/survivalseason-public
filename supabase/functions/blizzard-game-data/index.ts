@@ -224,8 +224,74 @@ serve(async (req) => {
         break;
       }
 
+      // Fetch full Survival Hunter talent tree: spec tree + linked hero trees + all spell icons
+      // Returns { specTree, heroTrees[], mediaMap{ spellId → iconUrl } }
+      case "talent-tree-full": {
+        const treeId = (params as any).treeId ?? 786;
+        const specId = (params as any).specId ?? 255;
+        const specTree = await blizzardGet(
+          `/data/wow/talent-tree/${treeId}/playable-specialization/${specId}`,
+          region, "static"
+        );
+        if (!specTree) throw new Error(`Spec talent tree ${treeId}/${specId} not found`);
+
+        // Fetch hero trees linked in the spec tree response
+        const heroTreeRefs: Array<{ id: number; name: string }> = specTree.hero_talent_trees ?? [];
+        const heroTrees = await Promise.all(
+          heroTreeRefs.map(async (ht) => {
+            try {
+              return await blizzardGet(
+                `/data/wow/talent-tree/${ht.id}/playable-specialization/${specId}`,
+                region, "static"
+              );
+            } catch {
+              return null;
+            }
+          })
+        );
+        const validHeroTrees = heroTrees.filter(Boolean);
+
+        // Collect all nodes across class, spec, and hero trees
+        const allNodes: any[] = [
+          ...(specTree.class_talent_nodes ?? []),
+          ...(specTree.spec_talent_nodes ?? []),
+          ...validHeroTrees.flatMap((ht: any) =>
+            ht.spec_talent_nodes ?? ht.class_talent_nodes ?? ht.hero_talent_nodes ?? []
+          ),
+        ];
+
+        // Gather unique spell IDs from every node entry
+        const spellIds = [
+          ...new Set(
+            allNodes.flatMap((n: any) =>
+              (n.entries ?? [])
+                .map((e: any) => e.spell_tooltip?.spell?.id)
+                .filter(Boolean)
+            )
+          ),
+        ] as number[];
+
+        // Batch-fetch all spell media icons in parallel
+        const mediaResults = await Promise.allSettled(
+          spellIds.map((id) =>
+            blizzardGet(`/data/wow/media/spell/${id}`, region, "static")
+          )
+        );
+        const mediaMap: Record<number, string> = {};
+        spellIds.forEach((id, i) => {
+          const r = mediaResults[i];
+          if (r.status === "fulfilled" && r.value?.assets) {
+            const icon = (r.value.assets as any[]).find((a) => a.key === "icon");
+            if (icon?.value) mediaMap[id] = icon.value;
+          }
+        });
+
+        result = { specTree, heroTrees: validHeroTrees, mediaMap };
+        break;
+      }
+
       default:
-        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, spell, spell-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch`);
+        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, spell, spell-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch, talent-tree-index, talent-tree, talent-tree-nodes, talent-tree-full`);
     }
 
     return new Response(JSON.stringify(result), {

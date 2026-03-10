@@ -12,6 +12,7 @@ import {
   SURVIVAL_SPEC_TREE, HERO_TALENT_TREES,
   type GearProfile, type TierSetConfig, type TalentNode,
 } from "@/lib/theorycrafting";
+import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -802,57 +803,7 @@ const CONSUMABLES = {
   potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'tempered', label: 'Tempered Potion', mult: 1.02 },{ key: 'frontLoaded', label: 'Unwavering Focus', mult: 1.025 }] },
 };
 
-// ============================================================
-// TALENT TREE GRID — 2D visual tree (7 cols × 11 rows)
-// Nodes are positioned by (col, row), SVG lines connect prereqs.
-// ============================================================
-const TREE_CELL_W = 72;
-const TREE_CELL_H = 48;
-const TREE_PAD_X  = 6;
-const TREE_PAD_Y  = 10;
-const TREE_COLS   = 7;
-const TREE_ROWS   = 11;
-const TREE_TOTAL_W = TREE_PAD_X * 2 + TREE_COLS * TREE_CELL_W; // 516
-const TREE_TOTAL_H = TREE_PAD_Y * 2 + TREE_ROWS * TREE_CELL_H; // 548
-
-const CAT_CLR: Record<string, string> = {
-  core: '#60a5fa', st: '#4ade80', aoe: '#f97316', gateway: '#c084fc',
-};
-
-function treeCellCenter(col: number, row: number) {
-  return {
-    x: TREE_PAD_X + col * TREE_CELL_W + TREE_CELL_W / 2,
-    y: TREE_PAD_Y + (row - 1) * TREE_CELL_H + TREE_CELL_H / 2,
-  };
-}
-
-function getNodeState(
-  node: TalentNode,
-  selectedKeys: string[],
-  usedPts: number,
-  maxPts: number,
-): 'core' | 'selected' | 'available' | 'locked-prereq' | 'locked-gate' | 'locked-budget' {
-  if (node.dpsCategory === 'core') return 'core';
-  if (selectedKeys.includes(node.key)) return 'selected';
-
-  // Row gate: count points from core nodes + selected optional nodes in earlier rows
-  const ptsBefore = SURVIVAL_SPEC_TREE.filter(n => n.row < node.row).reduce((s, n) => {
-    if (n.dpsCategory === 'core') return s + n.pointCost;
-    if (selectedKeys.includes(n.key)) return s + n.pointCost;
-    return s;
-  }, 0);
-  if (ptsBefore < node.gateRow) return 'locked-gate';
-
-  // Prerequisites
-  for (const prereq of node.prerequisites) {
-    const prereqNode = SURVIVAL_SPEC_TREE.find(n => n.key === prereq);
-    const met = prereqNode?.dpsCategory === 'core' || selectedKeys.includes(prereq);
-    if (!met) return 'locked-prereq';
-  }
-
-  if (usedPts + node.pointCost > maxPts) return 'locked-budget';
-  return 'available';
-}
+// (TalentTreeGrid and its constants removed — replaced by BlizzardTalentTree component)
 
 // Cascade-deselect: when removing key, also remove any nodes that depended on it
 function cascadeRemove(keyToRemove: string, currentSelected: string[]): string[] {
@@ -871,121 +822,7 @@ function cascadeRemove(keyToRemove: string, currentSelected: string[]): string[]
   return currentSelected.filter(k => !toRemove.has(k));
 }
 
-interface TalentTreeGridProps {
-  selectedKeys: string[];
-  usedPts: number;
-  maxPts: number;
-  onToggle: (key: string, nowSelected: boolean) => void;
-  onNodeHover: (node: TalentNode, e: React.MouseEvent) => void;
-  onNodeLeave: () => void;
-}
-
-function TalentTreeGrid({ selectedKeys, usedPts, maxPts, onToggle, onNodeHover, onNodeLeave }: TalentTreeGridProps) {
-  return (
-    <div style={{ position: 'relative', width: TREE_TOTAL_W, height: TREE_TOTAL_H, flexShrink: 0, margin: '0 auto' }}>
-      {/* SVG prerequisite connection lines */}
-      <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
-        width={TREE_TOTAL_W} height={TREE_TOTAL_H}>
-        {SURVIVAL_SPEC_TREE.flatMap(node =>
-          node.prerequisites.map(prereqKey => {
-            const prereqNode = SURVIVAL_SPEC_TREE.find(n => n.key === prereqKey);
-            if (!prereqNode) return null;
-            const from = treeCellCenter(prereqNode.col, prereqNode.row);
-            const to   = treeCellCenter(node.col, node.row);
-            const prereqOn = prereqNode.dpsCategory === 'core' || selectedKeys.includes(prereqKey);
-            const nodeOn   = node.dpsCategory === 'core' || selectedKeys.includes(node.key);
-            const active   = prereqOn && nodeOn;
-            return (
-              <line key={`${prereqKey}→${node.key}`}
-                x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                stroke={active ? '#fbbf2488' : '#1e2d3d'}
-                strokeWidth={active ? 2 : 1.5}
-                strokeDasharray={active ? undefined : '4 3'}
-              />
-            );
-          })
-        )}
-      </svg>
-
-      {/* Talent nodes */}
-      {SURVIVAL_SPEC_TREE.map(node => {
-        const state  = getNodeState(node, selectedKeys, usedPts, maxPts);
-        const isOn   = state === 'core' || state === 'selected';
-        const locked = state.startsWith('locked');
-        const catClr = CAT_CLR[node.dpsCategory] || '#94a3b8';
-        const lockTitle =
-          state === 'locked-gate'   ? `Row ${node.row} locked — spend ${node.gateRow} pts in earlier rows first` :
-          state === 'locked-prereq' ? `Requires: ${node.prerequisites.map(p => SURVIVAL_SPEC_TREE.find(n => n.key === p)?.label ?? p).join(' + ')}` :
-          state === 'locked-budget' ? `Over ${maxPts}-pt optional budget` : '';
-
-        const btnBg  = isOn
-          ? (node.dpsCategory === 'core' ? '#0a1c3d'
-           : node.dpsCategory === 'st'   ? '#092a18'
-           : node.dpsCategory === 'aoe'  ? '#1f0e00'
-           : '#17082e')
-          : locked ? '#0c111a' : '#131c2b';
-        const btnBdr = isOn ? catClr + 'bb' : locked ? '#1e293b' : '#2d3e52';
-        const btnClr = isOn ? catClr : locked ? '#2d3e52' : '#4b6070';
-
-        const x = TREE_PAD_X + node.col * TREE_CELL_W;
-        const y = TREE_PAD_Y + (node.row - 1) * TREE_CELL_H;
-
-        return (
-          <button key={node.key}
-            onClick={() => !locked && state !== 'core' && onToggle(node.key, !isOn)}
-            onMouseEnter={e => onNodeHover(node, e)}
-            onMouseLeave={onNodeLeave}
-            title={locked ? lockTitle : node.label}
-            style={{
-              position: 'absolute',
-              left: x + 4, top: y + 5,
-              width: TREE_CELL_W - 8, height: TREE_CELL_H - 10,
-              background: btnBg,
-              border: `2px solid ${btnBdr}`,
-              borderRadius: 7,
-              color: btnClr,
-              fontSize: 10,
-              fontWeight: isOn ? 700 : 400,
-              fontFamily: "'Rajdhani',sans-serif",
-              textAlign: 'center',
-              lineHeight: 1.2,
-              cursor: state === 'core' ? 'default' : locked ? 'not-allowed' : 'pointer',
-              opacity: locked ? 0.38 : 1,
-              padding: '3px 4px',
-              zIndex: 1,
-              transition: 'border-color .12s, background .12s',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-              boxShadow: isOn && !locked ? `0 0 6px ${catClr}44` : undefined,
-            }}>
-            <span style={{ fontSize: 10, lineHeight: 1.2, display: 'block' }}>{node.label}</span>
-            <span style={{ fontSize: 8, opacity: 0.75, display: 'flex', gap: 3, alignItems: 'center' }}>
-              <span>{node.pointCost === 2 ? '·· 2pt' : '· 1pt'}</span>
-              {state === 'core'    && <span style={{ color: '#60a5fa88' }}>🔒</span>}
-              {node.isGateway      && <span style={{ color: '#c084fc99' }}>⚡</span>}
-              {node.isApex         && <span style={{ color: '#fbbf2499' }}>★</span>}
-            </span>
-          </button>
-        );
-      })}
-
-      {/* Row gate labels on the left */}
-      {[1,2,3,4,5,6,7,8,9,10,11].map(row => {
-        const gate = [0,1,2,3,4,5,6,7,8,9,10][row-1];
-        const y = TREE_PAD_Y + (row - 1) * TREE_CELL_H;
-        return (
-          <div key={row} style={{
-            position: 'absolute', left: -2, top: y + TREE_CELL_H / 2 - 7,
-            fontSize: 8, color: '#2d4460', fontFamily: "'IBM Plex Mono',monospace",
-            lineHeight: 1, width: TREE_PAD_X, textAlign: 'right', whiteSpace: 'nowrap',
-            transform: 'translateX(-100%)', paddingRight: 4,
-          }}>
-            {gate > 0 ? `${gate}+` : 'R1'}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+// TalentTreeGrid removed — see BlizzardTalentTree component
 
 // ============================================================
 // MINI TALENT TREE — compact dot-tree for loadout card previews
@@ -2270,142 +2107,41 @@ export default function SurvivalHunterSim() {
                             </div>
                           </div>
 
-                          {/* ── 2D SPEC TALENT TREE ─────────────────────────── */}
-                          {(() => {
-                            const usedOpt = editDraft.enabledTalents.reduce((sum, key) => {
-                              const n = SURVIVAL_SPEC_TREE.find(x => x.key === key);
-                              return sum + (n?.pointCost ?? 1);
-                            }, 0);
-                            const pct = Math.min(usedOpt / MAX_OPTIONAL_POINTS, 1);
-                            const overBudget = usedOpt > MAX_OPTIONAL_POINTS;
-                            return (
-                              <div style={{ marginBottom: 10 }}>
-                                {/* Budget bar header */}
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim }}>
-                                    SPEC TALENT TREE
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0, marginLeft: 6, color: '#4b6070' }}>
-                                      🔒 = core (always on) · click optional nodes to toggle
-                                    </span>
-                                  </div>
-                                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10,
-                                    color: overBudget ? C.red : usedOpt === MAX_OPTIONAL_POINTS ? C.green : C.textMid,
-                                    fontWeight: 700 }}>
-                                    {usedOpt} / {MAX_OPTIONAL_POINTS} optional pts
-                                  </div>
-                                </div>
-                                <div style={{ height: 3, borderRadius: 2, background: C.surface3, marginBottom: 10, overflow: "hidden" }}>
-                                  <div style={{ height: "100%", borderRadius: 2, transition: "width .2s, background .2s",
-                                    width: `${pct * 100}%`,
-                                    background: overBudget ? C.red : usedOpt === MAX_OPTIONAL_POINTS ? C.green : C.sentClr }} />
-                                </div>
-                                {/* Category legend */}
-                                <div style={{ display: "flex", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                                  {([['core','#60a5fa','Core (always on)'],['st','#4ade80','ST path'],['aoe','#f97316','AoE path'],['gateway','#c084fc','Gateway (forced pick)']] as const).map(([cat, clr, lbl]) => (
-                                    <span key={cat} style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: clr, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <span style={{ width: 8, height: 8, borderRadius: 2, background: clr, display: 'inline-block' }} />{lbl}
-                                    </span>
-                                  ))}
-                                </div>
-                                {/* The 2D tree */}
-                                <div style={{ overflowX: 'auto', paddingLeft: 28 }}>
-                                  <TalentTreeGrid
-                                    selectedKeys={editDraft.enabledTalents}
-                                    usedPts={usedOpt}
-                                    maxPts={MAX_OPTIONAL_POINTS}
-                                    onToggle={(key, nowSelected) => {
-                                      setEditDraft(d => {
-                                        if (!d) return d;
-                                        if (nowSelected) {
-                                          return { ...d, enabledTalents: [...d.enabledTalents, key] };
-                                        } else {
-                                          return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
-                                        }
-                                      });
-                                    }}
-                                    onNodeHover={(node, e) => {
-                                      const pill: TalentPill = {
-                                        name: node.label,
-                                        type: node.dpsCategory === 'gateway' ? 'aoe' : node.dpsCategory as any,
-                                        points: node.pointCost,
-                                        desc: node.gatewayNote || node.label,
-                                      };
-                                      handleTalentHover(pill, e);
-                                    }}
-                                    onNodeLeave={handleTalentLeave}
-                                  />
-                                </div>
-                                {overBudget && (
-                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.red, marginTop: 6 }}>
-                                    ⚠ Over {MAX_OPTIONAL_POINTS}-pt optional budget — deselect a node to continue.
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-
-                          {/* ── HERO TALENT CHAIN ───────────────────────────── */}
-                          {(() => {
-                            const heroTree = HERO_TALENT_TREES[editDraft.heroKey];
-                            const usedHero = editDraft.enabledHeroTalents.length;
-                            return (
-                              <div style={{ marginBottom: 12 }}>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: heroClrE, opacity: .8 }}>
-                                    HERO TALENT CHAIN
-                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0, marginLeft: 6, opacity: .6 }}>sequential — unlock in order</span>
-                                  </div>
-                                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10,
-                                    color: usedHero === MAX_HERO_POINTS ? heroClrE : C.textMid, fontWeight: 700 }}>
-                                    {usedHero} / {MAX_HERO_POINTS} pts
-                                  </div>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                  {heroTree.map((hn, idx) => {
-                                    const isOn = editDraft.enabledHeroTalents.includes(hn.key);
-                                    const prevOn = idx === 0 || editDraft.enabledHeroTalents.includes(heroTree[idx - 1].key);
-                                    const locked = !prevOn && !isOn;
-                                    const wouldExceed = !isOn && usedHero >= MAX_HERO_POINTS;
-                                    return (
-                                      <Fragment key={hn.key}>
-                                        {idx > 0 && (
-                                          <span style={{ color: isOn ? heroClrE : '#2d3e52', fontSize: 14, flexShrink: 0 }}>▶</span>
-                                        )}
-                                        <button
-                                          disabled={locked || wouldExceed}
-                                          onClick={() => setEditDraft(d => {
-                                            if (!d || locked) return d;
-                                            if (isOn) {
-                                              // Remove this and all subsequent nodes
-                                              const keysToRemove = heroTree.slice(idx).map(x => x.key);
-                                              return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => !keysToRemove.includes(k)) };
-                                            } else {
-                                              return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, hn.key] };
-                                            }
-                                          })}
-                                          style={{
-                                            flex: 1, padding: "6px 8px", borderRadius: 7, cursor: locked || wouldExceed ? "not-allowed" : "pointer",
-                                            background: isOn ? heroBgE : locked ? '#0c111a' : C.surface3,
-                                            border: `2px solid ${isOn ? heroBdrE : locked ? '#1e293b' : C.border}`,
-                                            color: isOn ? heroClrE : locked ? '#2d3e52' : C.textMid,
-                                            fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: isOn ? 700 : 400,
-                                            textAlign: 'center', lineHeight: 1.3,
-                                            opacity: locked ? 0.4 : 1,
-                                            transition: "all .12s",
-                                            boxShadow: isOn ? `0 0 6px ${heroClrE}44` : undefined,
-                                          }}>
-                                          <div>{hn.label}</div>
-                                          <div style={{ fontSize: 8, opacity: 0.65, marginTop: 2 }}>
-                                            {idx === 0 ? '① First' : idx === 1 ? '② Requires ①' : '③ Capstone'}
-                                          </div>
-                                        </button>
-                                      </Fragment>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })()}
+                          {/* ── BLIZZARD TALENT TREE (class + hero + spec) ──── */}
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>
+                              TALENT TREE
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0, marginLeft: 6, color: '#4b6070' }}>
+                                click nodes to toggle · hero toggle above center column
+                              </span>
+                            </div>
+                            <BlizzardTalentTree
+                              specSelectedKeys={editDraft.enabledTalents}
+                              onSpecToggle={(key, selected) => {
+                                setEditDraft(d => {
+                                  if (!d) return d;
+                                  if (selected) {
+                                    return { ...d, enabledTalents: [...d.enabledTalents, key] };
+                                  } else {
+                                    return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
+                                  }
+                                });
+                              }}
+                              heroKey={editDraft.heroKey}
+                              onHeroChange={(hero) => setEditDraft(d => d ? { ...d, heroKey: hero, enabledHeroTalents: [] } : d)}
+                              heroSelectedKeys={editDraft.enabledHeroTalents}
+                              onHeroToggle={(key, selected) => {
+                                setEditDraft(d => {
+                                  if (!d) return d;
+                                  if (selected) {
+                                    return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
+                                  } else {
+                                    return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
+                                  }
+                                });
+                              }}
+                            />
+                          </div>
 
                           {/* Save / Cancel */}
                           <div style={{ display: "flex", gap: 8 }}>

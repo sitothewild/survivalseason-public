@@ -62,6 +62,63 @@ export async function getFullCharacter(realmSlug: string, characterName: string,
   return invokeFunction("blizzard-character", { action: "full", realmSlug, characterName, region });
 }
 
+// ===================== TALENT TREE APIs =====================
+
+export interface BzSpellTooltip {
+  spell: { id: number; name: string };
+  description: string;
+  cast_time?: string;
+  cooldown?: string;
+}
+export interface BzEntry {
+  id: number;
+  type: string;
+  max_rank: number;
+  spell_tooltip: BzSpellTooltip;
+}
+export interface BzTalentNode {
+  id: number;
+  display_row: number;
+  display_col: number;
+  node_type: { id: number; type: string }; // SINGLE | TIERED | SELECTION
+  prerequisite_nodes?: Array<{ id: number }>;
+  entries: BzEntry[];
+}
+export interface BzSpecTree {
+  id: number;
+  name: string;
+  class_talent_nodes: BzTalentNode[];
+  spec_talent_nodes: BzTalentNode[];
+  hero_talent_trees?: Array<{ id: number; name: string }>;
+  talent_point_budget?: { class_points?: number; spec_points?: number };
+}
+export interface BzHeroTree {
+  id: number;
+  name: string;
+  spec_talent_nodes?: BzTalentNode[];
+  hero_talent_nodes?: BzTalentNode[];
+  class_talent_nodes?: BzTalentNode[];
+}
+export interface TalentTreeFullResponse {
+  specTree: BzSpecTree;
+  heroTrees: BzHeroTree[];
+  mediaMap: Record<number, string>; // spellId → icon URL
+}
+
+/** Fetch Survival Hunter talent tree (class + spec nodes) plus both hero trees and all spell icons. */
+export async function getSurvivalTalentTree(
+  treeId = 786,
+  specId = 255,
+  region = "us"
+): Promise<TalentTreeFullResponse> {
+  return invokeFunction("blizzard-game-data", {
+    action: "talent-tree-full",
+    treeId,
+    specId,
+    region,
+  });
+}
+
 // ===================== HELPERS =====================
 
 /** Convert Blizzard API equipment response to sim-compatible format */
