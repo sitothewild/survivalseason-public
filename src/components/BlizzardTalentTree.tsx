@@ -661,15 +661,15 @@ export function BlizzardTalentTree({
 // Apex section rendered under the Hero tree
 function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES, true), []);
-  const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
+  const [hoveredInfo, setHoveredInfo] = useState<TooltipInfo | null>(null);
   const tipTimer = useRef<number>();
 
-  const handleHover = useCallback((info: TooltipInfo | null, x: number, y: number) => {
+  const handleHover = useCallback((info: TooltipInfo | null, _x: number, _y: number) => {
     clearTimeout(tipTimer.current);
     if (!info) {
-      tipTimer.current = window.setTimeout(() => setTooltip(null), 80);
+      tipTimer.current = window.setTimeout(() => setHoveredInfo(null), 120);
     } else {
-      setTooltip({ info, x, y });
+      setHoveredInfo(info);
     }
   }, []);
 
@@ -723,7 +723,70 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
         })}
       </div>
 
-      {tooltip && <TalentTooltip info={tooltip.info} x={tooltip.x} y={tooltip.y} />}
+      {/* Static tooltip panel below Apex */}
+      <StaticTooltipPanel info={hoveredInfo} />
+    </div>
+  );
+}
+
+// Static tooltip panel rendered in the empty space below Apex
+function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
+  return (
+    <div style={{
+      width: 240, minHeight: 90, marginTop: 8,
+      background: "linear-gradient(160deg,#1c1005 0%,#0d0a02 100%)",
+      border: `1px solid ${info ? GOLD_DIM : "#1a1408"}`,
+      borderTop: `2px solid ${info ? GOLD : "#2a1a08"}`,
+      borderRadius: 4, padding: "10px 14px",
+      boxShadow: info
+        ? `0 0 16px rgba(0,0,0,.6),inset 0 1px 0 ${GOLD_DIM}60`
+        : `0 0 8px rgba(0,0,0,.3)`,
+      transition: "border-color .2s, box-shadow .2s",
+    }}>
+      {info ? (
+        <>
+          {/* Icon + Name */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            {info.spellId && (
+              <img
+                src={resolveIcon(info.spellId)}
+                alt=""
+                style={{ width: 28, height: 28, borderRadius: 4, border: `1px solid ${GOLD_DIM}`, objectFit: "cover" }}
+                draggable={false}
+              />
+            )}
+            <div>
+              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 700,
+                color: GOLD, letterSpacing: 0.5 }}>
+                {info.name}
+              </div>
+              {info.maxPts > 1 && (
+                <div style={{ fontSize: 10, color: GOLD_DIM, fontFamily: "monospace" }}>
+                  {info.pts} / {info.maxPts}
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Description */}
+          <div style={{ fontSize: 11, color: "#b8a878", lineHeight: 1.5,
+            fontFamily: "'Rajdhani',sans-serif", whiteSpace: "pre-line" }}>
+            {info.desc}
+          </div>
+          {info.state === 'LOCKED' && info.ptsNeeded !== undefined && info.ptsNeeded > 0 && (
+            <div style={{ fontSize: 11, color: "#f87171", marginTop: 6, fontFamily: "'Rajdhani',sans-serif" }}>
+              Requires {info.ptsNeeded} more talent points
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center",
+          height: "100%", minHeight: 60 }}>
+          <span style={{ fontSize: 11, color: "#3a2a08", fontFamily: "'Rajdhani',sans-serif",
+            fontStyle: "italic", letterSpacing: 0.5 }}>
+            Hover a talent to see details
+          </span>
+        </div>
+      )}
     </div>
   );
 }
