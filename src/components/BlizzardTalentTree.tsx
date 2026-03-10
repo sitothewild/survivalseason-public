@@ -421,11 +421,7 @@ function TreeSection({
       {/* Tree panel */}
       <div style={{
         position: "relative", width: w, height: h,
-        background: "linear-gradient(180deg,rgba(22,12,4,.95) 0%,rgba(10,5,2,.98) 100%)",
-        border: `1px solid ${GOLD_DIM}50`,
-        borderTop: `2px solid ${GOLD}40`,
-        borderRadius: 6,
-        boxShadow: `0 0 40px rgba(200,168,75,.05),inset 0 1px 0 ${GOLD_DIM}20`,
+        background: "transparent",
       }}>
         <ConnectionLines
           nodes={nodes} minRow={minRow} minCol={minCol}
