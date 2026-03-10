@@ -1239,6 +1239,7 @@ export default function SurvivalHunterSim() {
       setParsedChar(null);
       setImportedTalentSource(null);
       setImportedTalentString('');
+      setProfessions(null);
     }
     setSimResults(null);
   }, [simcInput]);
