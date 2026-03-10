@@ -1883,150 +1883,108 @@ export default function SurvivalHunterSim() {
                     </div>
                   )}
                 </CARD>
-              </div>
 
-              {/* ═══ MIDDLE COLUMN — Permanent Character Box (1fr) ═══ */}
-              <div className="sim-mid-col" style={{ height: "100%" }}>
-                <div style={{
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 12,
-                  padding: 20,
-                  minHeight: 500,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  ...(parsedChar ? {} : { animation: "waitPulse 3s ease-in-out infinite" }),
-                }}>
-                  {/* Header bar */}
+                {/* ── Character Stats (2×3 compact grid) ── */}
+                <CARD style={{ padding: 14 }}>
                   {parsedChar ? (
-                    <div style={{ background: C.greenBg, padding: "10px 16px", borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: C.green, fontSize: 13 }}>✓</span>
-                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
+                    <div style={{ background: C.greenBg, padding: "8px 12px", borderRadius: 8, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ color: C.green, fontSize: 12 }}>✓</span>
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
                     </div>
                   ) : (
-                    <div style={{ textAlign: "center", padding: "12px 0 8px", marginBottom: 14 }}>
-                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: "#2e3a50" }}>IMPORT VIA ARMORY OR SIMC TO POPULATE</div>
+                    <div style={{ textAlign: "center", padding: "8px 0 6px", marginBottom: 10 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: "#2e3a50" }}>IMPORT VIA ARMORY OR SIMC</div>
                     </div>
                   )}
 
-                  {/* Character info */}
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 12 }}>
-                      {parsedChar ? (
-                        [["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
-                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline", animation: "staggerFadeUp .3s ease forwards" }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: bold ? 700 : 500, color: c }}>{v}</span>
-                          </div>
-                        ))
-                      ) : (
-                        [["Name", "— — —"], ["Level", "—"], ["Race", "—"], ["Avg iLvl", "—"]].map(([l, v]) => (
-                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 500, color: "#2e3a50" }}>{v}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Stats */}
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>STATS</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px", gap: 6 }}>
-                      {parsedChar ? (
-                        [["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c], idx) => (
-                          <Fragment key={l}>
-                            <div className="stat-chip" style={idx === 0 ? { gridColumn: "1" } : undefined}>
-                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
-                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: c, fontWeight: 700, animation: "staggerFadeUp .3s ease forwards", animationDelay: `${idx * 50}ms` }}>{v}</div>
-                            </div>
-                            {idx === 0 && (
-                              <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                {parsedChar.media?.assets ? (
-                                  <WowModelViewer renderUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'main-raw')?.value || parsedChar.media?.assets?.find((a: any) => a.key === 'main')?.value} fallbackUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'avatar')?.value} width={150} height={180} />
-                                ) : (
-                                  <div style={{ width: "100%", height: 160, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 38, height: 38, borderRadius: 8, overflow: "hidden", opacity: .18 }}>
-                                      <img src={SURVIVAL_ICON} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    </div>
-                                    <div style={{ position: "relative", zIndex: 1, fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, textAlign: "center" }}>CHARACTER<br />RENDER</div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </Fragment>
-                        ))
-                      ) : (
-                        [["AGI", "—"], ["AP", "—"], ["Haste", "—"], ["Crit", "—"], ["Mastery", "—"], ["Vers", "—"]].map(([l, v], idx) => (
-                          <Fragment key={l}>
-                            <div className="stat-chip" style={idx === 0 ? { gridColumn: "1" } : undefined}>
-                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
-                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: "#2e3a50", fontWeight: 700 }}>{v}</div>
-                            </div>
-                            {idx === 0 && (
-                              <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                <div style={{ width: "100%", height: 160, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 38, height: 38, borderRadius: 8, overflow: "hidden", opacity: .10 }}>
-                                    <img src={SURVIVAL_ICON} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                  </div>
-                                  <div style={{ position: "relative", zIndex: 1, fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: "#2e3a50", textAlign: "center" }}>CHARACTER<br />RENDER</div>
-                                </div>
-                              </div>
-                            )}
-                          </Fragment>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Gear list */}
-                  <div style={{ flex: 1, overflowY: "auto" }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>
-                      {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
-                    </div>
-                    {parsedChar && parsedChar.gear.length > 0 ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
-                        {[parsedChar.gear.slice(0, Math.ceil(parsedChar.gear.length / 2)), parsedChar.gear.slice(Math.ceil(parsedChar.gear.length / 2))].map((col, ci) => (
-                          <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
-                            {col.map((g, i) => {
-                              const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
-                              return (
-                                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 6px", borderRadius: 4, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default", animation: "staggerFadeUp .3s ease forwards", animationDelay: `${i * 40}ms` }}
-                                  onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 52, flexShrink: 0 }}>{g.slotLabel}</span>
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 4 }}>{g.name || "—"}</span>
-                                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: qualityColor, fontWeight: 700, minWidth: 28, textAlign: "right", paddingLeft: 4, flexShrink: 0 }}>{g.ilvl || "—"}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
+                  {/* Character info row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px", marginBottom: 10 }}>
+                    {parsedChar ? (
+                      [["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
+                        <div key={l} style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, minWidth: 44 }}>{l}:</span>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: bold ? 700 : 500, color: c }}>{v}</span>
+                        </div>
+                      ))
                     ) : (
-                      /* Empty gear slots placeholder */
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }}>
-                        {[
-                          ["Head","Neck","Shoulders","Back","Chest","Wrist","Hands","Waist"],
-                          ["Legs","Feet","Ring 1","Ring 2","Trinket 1","Trinket 2","Main Hand","Off Hand"]
-                        ].map((col, ci) => (
-                          <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
-                            {col.map((slot, i) => (
-                              <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 6px", borderRadius: 4, background: i % 2 === 0 ? "transparent" : C.borderSub }}>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#5a6a82", fontWeight: 500, minWidth: 52 }}>{slot}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#2e3a50", fontWeight: 600 }}>—</span>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
+                      [["Name", "— — —"], ["Level", "—"], ["Race", "—"], ["Avg iLvl", "—"]].map(([l, v]) => (
+                        <div key={l} style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, minWidth: 44 }}>{l}:</span>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 500, color: "#2e3a50" }}>{v}</span>
+                        </div>
+                      ))
                     )}
                   </div>
-                </div>
+
+                  {/* Stats — 2×3 compact grid */}
+                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>STATS</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+                    {parsedChar ? (
+                      [["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c]) => (
+                        <div key={l} className="stat-chip" style={{ padding: "6px 8px" }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 1 }}>{l}</div>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: c, fontWeight: 700 }}>{v}</div>
+                        </div>
+                      ))
+                    ) : (
+                      [["AGI", "—"], ["AP", "—"], ["Haste", "—"], ["Crit", "—"], ["Mastery", "—"], ["Vers", "—"]].map(([l, v]) => (
+                        <div key={l} className="stat-chip" style={{ padding: "6px 8px" }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 1 }}>{l}</div>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: "#2e3a50", fontWeight: 700 }}>{v}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CARD>
+
+                {/* ── Gear list (2-column, compact h-8 rows) ── */}
+                <CARD style={{ padding: 14 }}>
+                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>
+                    {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
+                  </div>
+                  {parsedChar && parsedChar.gear.length > 0 ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
+                      {[
+                        parsedChar.gear.filter((g: any) => ['head','neck','shoulders','back','chest','wrist','hands','waist'].includes(g.slot)),
+                        parsedChar.gear.filter((g: any) => ['legs','feet','finger1','finger2','trinket1','trinket2','main_hand','off_hand'].includes(g.slot)),
+                      ].map((col, ci) => (
+                        <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                          {col.map((g, i) => {
+                            const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
+                            return (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default" }}
+                                onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 48, flexShrink: 0 }}>{g.slotLabel}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 2 }}>{g.name || "—"}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }}>
+                      {[
+                        ["Head","Neck","Shoulders","Back","Chest","Wrist","Hands","Waist"],
+                        ["Legs","Feet","Ring 1","Ring 2","Trinket 1","Trinket 2","Main Hand","Off Hand"]
+                      ].map((col, ci) => (
+                        <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                          {col.map((slot, i) => (
+                            <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#5a6a82", fontWeight: 500, minWidth: 48 }}>{slot}</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#2e3a50", fontWeight: 600 }}>—</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CARD>
               </div>
 
-              {/* ═══ RIGHT COLUMN — Simulation Config (320px, sticky) ═══ */}
-              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", width: 420, height: "100%" }}>
-                <CARD style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+              {/* ═══ RIGHT COLUMN — Simulation Config (65%) ═══ */}
+              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}>
+                <CARD style={{ display: "flex", flexDirection: "column" }}>
                   <LBL>⚙ Simulation Config</LBL>
 
                   {/* Current Talents — always visible */}
