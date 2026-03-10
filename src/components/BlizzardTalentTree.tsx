@@ -260,7 +260,7 @@ function InteractiveTalentNode({
       <div
         style={{
           width: sz, height: sz, borderRadius: "50%",
-          border: `1.5px solid ${ringColor}`, boxShadow: glow,
+          border: `2.5px solid ${ringColor}`, boxShadow: glow,
           overflow: "hidden", cursor, position: "relative",
           background: fillColor, display: "flex",
         }}
