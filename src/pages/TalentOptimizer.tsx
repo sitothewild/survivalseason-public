@@ -1,5 +1,7 @@
 // @ts-nocheck
 import { NavLink } from "@/components/NavLink";
+import TalentPanel from "@/components/TalentPanel";
+import { fetchTalentTreeRaw } from "@/lib/blizzardApi";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 const C = {
@@ -79,15 +81,13 @@ export default function TalentOptimizer() {
         </div>
       </header>
 
-      {/* ── Page body (empty template) ─────────────────────── */}
+      {/* ── Page body ─────────────────────────────────────── */}
       <main style={{ maxWidth:1400, margin:"0 auto", padding:"32px 28px 64px" }}>
         <h1 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:22, fontWeight:900,
-          color:C.sentClr, letterSpacing:3, margin:0, textTransform:"uppercase" }}>
-          🧬 Talent Optimizer
+          color:C.sentClr, letterSpacing:3, margin:0, marginBottom:24, textTransform:"uppercase" }}>
+          Talent Optimizer
         </h1>
-        <p style={{ color:C.textMid, marginTop:12, fontSize:15 }}>
-          Coming soon — this page will house the talent optimization calculator.
-        </p>
+        <TalentPanel fetchTalentTree={fetchTalentTreeRaw} />
       </main>
     </div>
   );

@@ -105,6 +105,21 @@ export interface TalentTreeFullResponse {
   mediaMap: Record<number, string>; // spellId → icon URL
 }
 
+/** Fetch the raw Blizzard talent tree response (ranks format, no transformations).
+ *  This is used by TalentPanel / useTalentTreeData which expects BlizzardTalentTreeResponse. */
+export async function fetchTalentTreeRaw(
+  treeId = 774,
+  specId = 255,
+  region = "us"
+) {
+  return invokeFunction("blizzard-game-data", {
+    action: "talent-tree",
+    treeId,
+    specId,
+    region,
+  });
+}
+
 /** Fetch Survival Hunter talent tree (class + spec nodes) plus both hero trees and all spell icons. */
 export async function getSurvivalTalentTree(
   treeId = 774,
