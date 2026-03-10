@@ -478,6 +478,7 @@ function TalentNodeGrid({ node, mediaMap, selectedKeys, selectedChoices, canSele
     return (
       <div
         style={{
+          position: "relative",
           width: NODE_D, height: NODE_D, borderRadius: "50%",
           border: `2px solid ${borderColor}`, boxShadow: glowShadow,
           overflow: "hidden", cursor: isLocked ? "not-allowed" : "pointer",
