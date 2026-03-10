@@ -2893,7 +2893,7 @@ export default function SurvivalHunterSim() {
             {/* ═══ SECTION 1: OPTIMAL BUILDS ═══ */}
             <div>
               <LBL>🌿 Optimal Talent Builds</LBL>
-              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
+              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
 
               {/* Legend */}
               <div style={{ display: "flex", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
