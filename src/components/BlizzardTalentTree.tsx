@@ -263,7 +263,7 @@ function InteractiveTalentNode({
           width: sz, height: sz, borderRadius: "50%",
           border: `2.5px solid ${ringColor}`, boxShadow: glow,
           overflow: "hidden", cursor, position: "relative",
-          background: fillColor, display: "flex",
+          background: "transparent", display: "flex",
         }}
         onMouseEnter={handleEnter}
         onMouseMove={(e) => handleEnter(e)}
