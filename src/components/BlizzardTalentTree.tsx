@@ -324,7 +324,7 @@ function InteractiveTalentNode({
       <img src={iconUrl} alt="" loading="lazy" draggable={false}
         onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
         style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
-          filter: `brightness(${brightness})`, transition: "filter .15s" }} />
+          filter: imgFilter, transition: "filter .15s" }} />
       {/* Inner ring */}
       <div style={{ position: "absolute", inset: isApex ? 6 : 4, borderRadius: "50%",
         border: `1px solid #3a2a08`, pointerEvents: "none" }} />
