@@ -240,11 +240,11 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
   { id:'outland_venom', apiNodeId:109306, spellId:459939, name:'Outland Venom', type:'passive', maxPts:1, row:7, col:7,
     parents:['sic_em'], desc:'Each damage over time effect on a target increases the critical strike damage they receive from you by 4%.' },
   // ROW 8 (API row 9) — GATE: 20 spec pts
-  { id:'explosives_expert', spellId:378937, name:'Explosives Expert', type:'passive', maxPts:2, row:8, col:2,
+  { id:'explosives_expert', apiNodeId:102281, spellId:378937, name:'Explosives Expert', type:'passive', maxPts:2, row:8, col:2,
     parents:['improved_wfb','bloody_claws'], desc:'Wildfire Bomb damage increased and cooldown reduced.' },
-  { id:'takedown', spellId:1250646, name:'Takedown', type:'active', maxPts:1, row:8, col:4,
+  { id:'takedown', apiNodeId:109323, spellId:1250646, name:'Takedown', type:'active', maxPts:1, row:8, col:4,
     parents:['bonding','sweeping_spear','vuln_choice'], desc:'Leap to your target with your pet. Increases all damage for 8 sec. Primary cooldown.' },
-  { id:'killer_companion', spellId:378955, name:'Killer Companion', type:'passive', maxPts:2, row:8, col:6,
+  { id:'killer_companion', apiNodeId:109312, spellId:378955, name:'Killer Companion', type:'passive', maxPts:2, row:8, col:6,
     parents:['shower_of_blood','vuln_choice'], desc:'Kill Command damage increased. Pet flanks on Kill Command.' },
   // ROW 9 (API row 10)
   { id:'flamefang', spellId:1251592, name:'Flamefang Pitch', type:'active', maxPts:1, row:9, col:2,
