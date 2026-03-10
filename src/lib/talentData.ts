@@ -270,7 +270,7 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
 
 // ── APEX TALENT (standalone, shares Survival 34-pt budget) ───
 export const APEX_NODES: TalentNodeDef[] = [
-  { id:'raptor_swipe', spellId:1259003, name:'Raptor Swipe', type:'apex', maxPts:1, row:0, col:2,
+  { id:'raptor_swipe', apiNodeId:110429, spellId:1259003, name:'Raptor Swipe', type:'apex', maxPts:1, row:0, col:2,
     parents:[], desc:'APEX TALENT. Raptor Strike has a 25% chance to upgrade itself to a Raptor Swipe, dealing Physical damage to all enemies within 15 yds in front of you. Damage reduced beyond 5 targets.' },
   { id:'apex_tier_1', spellId:1259003, name:'Raptor Swipe II', type:'passive', maxPts:1, row:1, col:1,
     parents:['raptor_swipe'], desc:'Increases Raptor Swipe proc chance and damage.' },
