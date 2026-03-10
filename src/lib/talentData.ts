@@ -418,7 +418,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   1253830: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_markedfordeath.jpg",
   450379: "https://wow.zamimg.com/images/wow/icons/large/spell_holy_divineillumination.jpg",
   1264904: "https://wow.zamimg.com/images/wow/icons/large/spell_shadow_requiem.jpg",
-  1266069: "https://wow.zamimg.com/images/wow/icons/large/ability_rogue_stalkandstrike.jpg",
+  1266069: "https://wow.zamimg.com/images/wow/icons/large/ability_ambush.jpg",
   1253846: "https://wow.zamimg.com/images/wow/icons/large/spell_frost_arcticwinds.jpg",
   1253852: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_lunarguidance.jpg",
   1253887: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg",
