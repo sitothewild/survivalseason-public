@@ -1994,7 +1994,7 @@ export default function SurvivalHunterSim() {
                               <button
                                 onClick={() => {
                                   setEditingSlot(slotIdx);
-                                  setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [] });
+                                  setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [], enabledClassTalents: [] });
                                 }}
                                 style={{
                                   width: "100%", height: "100%", minHeight: 80, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
