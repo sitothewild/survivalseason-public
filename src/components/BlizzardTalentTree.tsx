@@ -480,13 +480,13 @@ function TalentSection({
         boxShadow: `0 0 40px rgba(200,168,75,0.05), inset 0 1px 0 ${GOLD_DIM}20`,
       }}>
         <ConnectionLines
-          nodes={validNodes} nodeMap={nodeMap}
+          nodes={nodes} nodeMap={nodeMap}
           minRow={minRow} minCol={minCol}
           w={w} h={h}
           selectedKeys={selectedKeys} coreKeys={coreKeys}
         />
 
-        {validNodes.map((node) => {
+        {nodes.map((node) => {
           const key = nodeTalentKey(node);
           const isCore = !!(key && coreKeys.has(key));
           const prereqsMet = (node.prerequisite_nodes ?? []).every((p) => {
