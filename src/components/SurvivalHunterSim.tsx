@@ -2046,7 +2046,7 @@ export default function SurvivalHunterSim() {
                             tabIndex={-1}
                             onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
                             style={{
-                              position: "fixed", inset: "16px 5%", zIndex: 9991,
+                              position: "fixed", inset: "24px 8%", zIndex: 9991,
                               display: "flex", flexDirection: "column",
                               background: "#0d1117", border: `1px solid ${C.border}`,
                               borderRadius: 14, overflow: "hidden",
