@@ -69,6 +69,9 @@ const COL_STEP    = 74;   // horizontal spacing (center to center)
 const ROW_STEP    = 74;   // vertical spacing
 const PAD         = 20;   // padding inside each section
 const SECTION_GAP = 36;   // gap between class / hero / spec columns
+const CELL        = NODE_D; // grid cell size
+const STEP        = NODE_D + 22; // grid step (cell + gap)
+const GAP         = 22;   // gap between grid cells
 
 const GOLD = "#fbbf24";
 const GOLD_DIM = "#92620d";
@@ -202,35 +205,7 @@ function gridDimensions(nodes: BzTalentNode[]) {
     w: numCols * STEP - GAP,
     h: numRows * STEP - GAP,
     rowMap, colMap,
-// Convert API display_row/col → pixel center in a section
-function nodeCenter(node: BzTalentNode, minRow: number, minCol: number) {
-  return {
-    cx: PAD + (node.display_col - minCol) * COL_STEP + NODE_D / 2,
-    cy: PAD + (node.display_row - minRow) * ROW_STEP + NODE_D / 2,
   };
-}
-
-// Pixel bounds of a section
-function sectionSize(nodes: BzTalentNode[]) {
-  if (!nodes.length) return { w: 0, h: 0, minRow: 0, minCol: 0 };
-  const rows = nodes.map((n) => n.display_row);
-  const cols = nodes.map((n) => n.display_col);
-  const minRow = Math.min(...rows);
-  const maxRow = Math.max(...rows);
-  const minCol = Math.min(...cols);
-  const maxCol = Math.max(...cols);
-  return {
-    w: (maxCol - minCol) * COL_STEP + NODE_D + PAD * 2,
-    h: (maxRow - minRow) * ROW_STEP + NODE_D + PAD * 2,
-    minRow,
-    minCol,
-  };
-}
-
-function buildNodeMap(nodes: BzTalentNode[]) {
-  const m = new Map<number, BzTalentNode>();
-  nodes.forEach((n) => m.set(n.id, n));
-  return m;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -462,6 +437,93 @@ const FALLBACK_ICON =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' fill='%23222'/><text x='50%25' y='55%25' text-anchor='middle' dominant-baseline='middle' fill='%23888' font-size='22'>?</text></svg>";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TalentNodeGrid — renders one node in CSS Grid context (no absolute pos)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TalentNodeGrid({ node, mediaMap, selectedKeys, selectedChoices, canSelect, isCore, onClick, onChoiceClick, onHover }: {
+  node: BzTalentNode; mediaMap: Record<number, string>;
+  selectedKeys: Set<string>; selectedChoices: Record<number, number>;
+  canSelect: boolean; isCore: boolean;
+  onClick: () => void; onChoiceClick: (idx: number) => void;
+  onHover: (info: TooltipInfo | null, x: number, y: number) => void;
+}) {
+  if (!node.entries?.length || !node.node_type) return null;
+  const isChoice = node.node_type.type === "SELECTION";
+  const key = nodeTalentKey(node);
+  const isSelected = key ? (selectedKeys.has(key) || isCore) : isCore;
+  const isLocked = !isCore && !isSelected && !canSelect;
+  const borderColor = isSelected ? GOLD : isLocked ? "#1e2d3d" : "#3a4f68";
+  const glowShadow = isSelected ? `0 0 0 2px ${GOLD_GLOW}, 0 0 12px 2px ${GOLD_GLOW}` : undefined;
+  const brightness = isSelected ? 1 : isLocked ? 0.3 : 0.65;
+  const entry = node.entries[0];
+  const spellId = entry?.spell_tooltip?.spell?.id;
+  const iconUrl = spellId ? (mediaMap[spellId] ?? FALLBACK_ICON) : FALLBACK_ICON;
+  const maxRank = entry?.max_rank ?? 1;
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    const chosenIdx = selectedChoices[node.id] ?? 0;
+    const e2 = node.entries[chosenIdx] ?? entry;
+    onHover({
+      name: e2?.spell_tooltip?.spell?.name ?? "?",
+      description: e2?.spell_tooltip?.description ?? "",
+      castTime: e2?.spell_tooltip?.cast_time,
+      cooldown: e2?.spell_tooltip?.cooldown,
+      rank: isSelected ? (e2?.max_rank ?? 1) : 0,
+      maxRank: e2?.max_rank ?? 1,
+    }, e.clientX, e.clientY);
+  };
+
+  if (isChoice && node.entries.length >= 2) {
+    const chosenIdx = selectedChoices[node.id] ?? 0;
+    return (
+      <div
+        style={{
+          width: NODE_D, height: NODE_D, borderRadius: "50%",
+          border: `2px solid ${borderColor}`, boxShadow: glowShadow,
+          overflow: "hidden", cursor: isLocked ? "not-allowed" : "pointer",
+          display: "flex", transition: "border-color .15s, box-shadow .15s",
+        }}
+        title={node.entries.map(e => e.spell_tooltip?.spell?.name).join(" / ")}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => onHover(null, 0, 0)}
+      >
+        <div style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative" }}
+          onClick={() => { if (!isLocked) onChoiceClick(0); }}>
+          <ChoiceIcon entry={node.entries[0]} mediaMap={mediaMap} active={isSelected && chosenIdx === 0} brightness={brightness} clipLeft />
+        </div>
+        <div style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative" }}
+          onClick={() => { if (!isLocked) onChoiceClick(1); }}>
+          <ChoiceIcon entry={node.entries[1]} mediaMap={mediaMap} active={isSelected && chosenIdx === 1} brightness={brightness} clipRight />
+        </div>
+        <div style={{ position: "absolute", left: "50%", top: 0, width: 1, height: "100%", background: "#000", opacity: 0.6, pointerEvents: "none" }} />
+        {isSelected && <div style={RANK_BADGE_STYLE}>1/1</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => { if (!isCore && canSelect) onClick(); }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => onHover(null, 0, 0)}
+      style={{
+        width: NODE_D, height: NODE_D, borderRadius: "50%",
+        border: `2px solid ${borderColor}`, boxShadow: glowShadow,
+        overflow: "hidden", cursor: isCore ? "default" : isLocked ? "not-allowed" : "pointer",
+        transition: "border-color .15s, box-shadow .15s", background: "#0a1520",
+      }}
+      title={entry?.spell_tooltip?.spell?.name}
+    >
+      <img src={iconUrl} alt="" loading="lazy" draggable={false}
+        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", filter: `brightness(${brightness})`, transition: "filter .15s", borderRadius: "50%" }}
+      />
+      {(maxRank > 1 || isSelected) && <div style={RANK_BADGE_STYLE}>{isSelected ? maxRank : 0}/{maxRank}</div>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ConnectionLines — SVG lines between prerequisite nodes
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -472,14 +534,11 @@ interface ConnectionLinesProps {
   colMap: Map<number, number>;
   w: number;
   h: number;
-  minRow: number;
-  minCol: number;
   selectedKeys: Set<string>;
-  selectedChoices: Record<number, number>;
+  coreKeys: Set<string>;
 }
 
-function ConnectionLines({ nodes, nodeMap, rowMap, colMap, w, h, selectedKeys, coreKeys }: ConnectionLinesProps) {
-function ConnectionLines({ nodes, nodeMap, minRow, minCol, selectedKeys, selectedChoices }: ConnectionLinesProps) {
+function ConnectionLines({ nodes, nodeMap, rowMap, colMap, selectedKeys, coreKeys }: ConnectionLinesProps) {
   const lines = useMemo(() => {
     const result: Array<{ key: string; x1: number; y1: number; x2: number; y2: number; active: boolean }> = [];
     for (const node of nodes) {
@@ -492,23 +551,16 @@ function ConnectionLines({ nodes, nodeMap, minRow, minCol, selectedKeys, selecte
         const nk = nodeTalentKey(node);
         const prereqOn = pk ? (coreKeys.has(pk) || selectedKeys.has(pk)) : false;
         const nodeOn   = nk ? (coreKeys.has(nk) || selectedKeys.has(nk)) : false;
-        const from = nodeCenter(prereqNode, minRow, minCol);
-        const to   = nodeCenter(node,       minRow, minCol);
-        const prereqKey = nodeTalentKey(prereqNode);
-        const nodeKey   = nodeTalentKey(node);
-        const prereqOn  = prereqKey ? selectedKeys.has(prereqKey) : false;
-        const nodeOn    = nodeKey   ? selectedKeys.has(nodeKey)   : false;
         result.push({
           key:    `${prereq.id}-${node.id}`,
-          x1: from.cx, y1: from.cy,
-          x2: to.cx,   y2: to.cy,
+          x1: from.x, y1: from.y,
+          x2: to.x,   y2: to.y,
           active: prereqOn && nodeOn,
         });
       }
     }
     return result;
   }, [nodes, nodeMap, rowMap, colMap, selectedKeys, coreKeys]);
-  }, [nodes, nodeMap, minRow, minCol, selectedKeys]);
 
   return (
     <svg
@@ -556,7 +608,7 @@ function TalentSection({
   const { numRows, numCols, w, h, rowMap, colMap } = useMemo(
     () => gridDimensions(nodes), [nodes],
   );
-  const { w, h, minRow, minCol } = sectionSize(nodes);
+  
   const nodeMap = useMemo(() => buildNodeMap(nodes), [nodes]);
 
   // Compute usedPts from non-core selected nodes
@@ -633,7 +685,7 @@ function TalentSection({
                   gridColumn: colMap.get(node.display_col) ?? 1,
                 }}
               >
-                <TalentNode
+                <TalentNodeGrid
                   node={node}
                   mediaMap={mediaMap}
                   selectedKeys={selectedKeys}
@@ -648,46 +700,6 @@ function TalentSection({
             );
           })}
         </div>
-          nodes={nodes}
-          nodeMap={nodeMap}
-          minRow={minRow}
-          minCol={minCol}
-          selectedKeys={selectedKeys}
-          selectedChoices={selectedChoices}
-        />
-
-        {/* Nodes */}
-        {nodes.map((node) => {
-          const key = nodeTalentKey(node);
-          const isCore = !!(key && coreKeys.has(key));
-          // Can select if prereqs met and under budget
-          const prereqsMet = (node.prerequisite_nodes ?? []).every((p) => {
-            const pNode = nodeMap.get(p.id);
-            if (!pNode) return true;
-            const pk = nodeTalentKey(pNode);
-            return pk ? (coreKeys.has(pk) || selectedKeys.has(pk)) : false;
-          });
-          const canSelect = prereqsMet && (
-            isCore || (selectedKeys.has(key ?? "") ? true : usedPts < pointBudget)
-          );
-
-          return (
-            <TalentNodeCircle
-              key={node.id}
-              node={node}
-              minRow={minRow}
-              minCol={minCol}
-              mediaMap={mediaMap}
-              selectedKeys={selectedKeys}
-              selectedChoices={selectedChoices}
-              canSelect={canSelect}
-              isCore={isCore}
-              onClick={() => onToggle(node)}
-              onChoiceClick={(idx) => onChoiceSelect(node, idx)}
-              onHover={onHover}
-            />
-          );
-        })}
       </div>
     </div>
   );
