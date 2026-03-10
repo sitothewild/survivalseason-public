@@ -1277,6 +1277,30 @@ export default function SurvivalHunterSim() {
       setImportedTalentSource('armory');
       setImportedTalentString(simData?.talents || '');
       setSimResults(null);
+      // Extract professions data
+      if (fullData.professions?.primaries || fullData.professions?.secondaries) {
+        const profs: any[] = [];
+        for (const p of (fullData.professions?.primaries || [])) {
+          profs.push({
+            name: p.profession?.name || 'Unknown',
+            skillPoints: p.tiers?.[p.tiers.length - 1]?.skill_points ?? 0,
+            maxSkillPoints: p.tiers?.[p.tiers.length - 1]?.max_skill_points ?? 0,
+            specializations: (p.specializations || []).map((s: any) => s.name || s.specialization?.name).filter(Boolean),
+          });
+        }
+        for (const p of (fullData.professions?.secondaries || [])) {
+          profs.push({
+            name: p.profession?.name || 'Unknown',
+            skillPoints: p.tiers?.[p.tiers.length - 1]?.skill_points ?? 0,
+            maxSkillPoints: p.tiers?.[p.tiers.length - 1]?.max_skill_points ?? 0,
+            specializations: [],
+            secondary: true,
+          });
+        }
+        setProfessions(profs);
+      } else {
+        setProfessions(null);
+      }
       // Auto-scroll to sim config after successful armory load
       setTimeout(() => {
         document.getElementById("sim-config")?.scrollIntoView({ behavior: "smooth" });
