@@ -598,8 +598,6 @@ export default function Guide() {
                 })}
               </div>
 
-              {/* Keep interactive hero talent tree below */}
-              <HeroTalentTree heroKey={hero} />
 
               {/* ── Gateway callout ───────────────────────── */}
               <div style={{ background:'#1c1505', border:'1px solid #f59e0b55',
