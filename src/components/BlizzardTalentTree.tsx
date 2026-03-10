@@ -190,7 +190,7 @@ function InteractiveTalentNode({
   const isApex = node.type === 'apex';
   const isTier = node.id.startsWith('apex_tier');
   const isCapstone = node.row === 5 && node.parents.length >= 3;
-  const sz = isApex ? 52 : isTier ? 28 : 40;
+  const sz = isApex ? 44 : isTier ? 24 : 36;
 
   const ringColor = nodeState === 'SELECTED' ? GOLD
     : nodeState === 'PARTIAL' ? GOLD
