@@ -160,6 +160,14 @@ serve(async (req) => {
         break;
       }
 
+      // Get spell media (icon URL)
+      case "spell-media": {
+        const { spellId } = params;
+        if (!spellId) throw new Error("spellId is required");
+        result = await blizzardGet(`/data/wow/media/spell/${spellId}`, region, "static");
+        break;
+      }
+
       // Search spells by name
       case "spell-search": {
         const { name, page = 1 } = params;
