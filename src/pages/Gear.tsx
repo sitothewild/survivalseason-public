@@ -835,7 +835,7 @@ export default function Gear() {
           <div style={{
             position:"fixed", zIndex:9999, pointerEvents:"none",
             left: tipX, top: tipY,
-            width: 340,
+            width: tipW,
             background:"linear-gradient(180deg,#141c2a 0%,#0c1220 100%)",
             border:"1px solid #2e4a6a",
             borderRadius:12, padding:"16px 18px",
