@@ -993,16 +993,49 @@ export function BlizzardTalentTree({
       .filter(Boolean) as string[]
   );
 
+  // Compact mode: measure inner content and scale to fit container
+  const compactRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [compactScale, setCompactScale] = useState(1);
+
+  useEffect(() => {
+    if (!compact || !compactRef.current || !innerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      const containerW = compactRef.current?.clientWidth ?? 0;
+      const innerW = innerRef.current?.scrollWidth ?? 0;
+      if (innerW > 0 && containerW > 0) {
+        setCompactScale(Math.min(1, containerW / innerW));
+      }
+    });
+    observer.observe(compactRef.current);
+    // Also measure on first render
+    const containerW = compactRef.current?.clientWidth ?? 0;
+    const innerW = innerRef.current?.scrollWidth ?? 0;
+    if (innerW > 0 && containerW > 0) {
+      setCompactScale(Math.min(1, containerW / innerW));
+    }
+    return () => observer.disconnect();
+  }, [compact, treeData]);
+
+  const innerH = innerRef.current?.scrollHeight ?? 0;
+
   return (
-    <div style={{ userSelect: "none" }}>
+    <div ref={compactRef} style={{ userSelect: "none", ...(compact ? { overflow: "hidden" } : {}) }}>
       {/* ── Scroll wrapper ─────────────────────────────────────────────── */}
-      <div style={{ overflowX: "auto", overflowY: "visible" }}>
+      <div
+        ref={innerRef}
+        style={{
+          ...(compact
+            ? { transform: `scale(${compactScale})`, transformOrigin: "top left", height: innerH * compactScale || "auto" }
+            : { overflowX: "auto", overflowY: "visible" }),
+        }}
+      >
         <div style={{
           display: "flex",
-          gap: SECTION_GAP,
+          gap: compact ? SECTION_GAP * 0.6 : SECTION_GAP,
           alignItems: "flex-start",
           minWidth: "fit-content",
-          padding: "8px 4px 16px",
+          padding: compact ? "4px 2px 8px" : "8px 4px 16px",
         }}>
           {/* CLASS TREE */}
           <TalentSection
