@@ -9,6 +9,7 @@ import {
   HERO_TALENT_TREES,
   ROW_GATES,
 } from "@/lib/theorycrafting";
+import HeroTalentTree from "@/components/HeroTalentTree";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 const C = {
