@@ -8,6 +8,8 @@
  * parent prerequisites, choice nodes, cascade deselection, reset buttons.
  */
 import React, { useState, useCallback, useMemo, useRef } from "react";
+import heroSentinelImg from "@/assets/hero-sentinel.png";
+import heroPackLeaderImg from "@/assets/hero-pack-leader.png";
 import {
   SURVIVAL_NODES, SENTINEL_NODES, PACK_LEADER_NODES, HUNTER_NODES, APEX_NODES,
   SPEC_ROW_GATES, CLASS_ROW_GATES, HERO_UNLOCK_THRESHOLD,
