@@ -418,3 +418,14 @@ function PointBadge({
     </div>
   );
 }
+
+// ─── EXPORT BADGE ───────────────────────────────────────────
+
+function ExportBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#0f1520] border border-[#2e3a50]">
+      <span className="text-[8px] text-slate-600 font-['Rajdhani',sans-serif] uppercase">{label}</span>
+      <span className="text-[10px] text-amber-400 font-bold font-mono">{value}</span>
+    </div>
+  );
+}
