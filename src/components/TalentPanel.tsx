@@ -144,9 +144,9 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
           ═══════════════════════════════════════════════════════ */}
       <div
         className="
-          flex items-start justify-center gap-4 p-4
-          bg-[#0f1520]
-          border-x border-b border-[#2e3a50]
+          flex items-start justify-center gap-6 p-6
+          bg-card
+          border-x border-b border-border
           rounded-b-lg
           overflow-x-auto
         "
