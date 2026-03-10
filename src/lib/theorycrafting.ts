@@ -915,6 +915,11 @@ function buildSentinelST(): TalentConfig {
     ursineFury: false, sharpenedClaws: false, wildAttacks: false, corneredPrey: false, frenziedTear: false,
     goForTheThroat: false, furiousAssault: false, scatteredPrey: false, wyvernGaze: false, clawFrenzy: false,
     packAssault: false,
+    // ── Hunter class tree (DPS-relevant, common across builds) ──
+    alphaPredator: true, keenEyesight: true, masterMarksman: true, serratedShots: true,
+    deathChakram: true, killerInstinct: true, steelTrap: false, hydrasBite: false,
+    spittingCobra: false, barrage: false, volley: false, bloodshed: false, murderOfCrows: false,
+    wailingArrow: false,
   };
 }
 
