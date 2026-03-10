@@ -7,7 +7,7 @@
  * Implements: click to select, right-click to deselect, row gates,
  * parent prerequisites, choice nodes, cascade deselection, reset buttons.
  */
-import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import heroSentinelImg from "@/assets/hero-sentinel.png";
 import heroPackLeaderImg from "@/assets/hero-pack-leader.png";
 import {
