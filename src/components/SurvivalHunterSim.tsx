@@ -2071,7 +2071,6 @@ export default function SurvivalHunterSim() {
                         return (
                           <div key={slotIdx} style={{ flex: 1 }}>
                             {slot ? (
-                              /* ── Filled slot: mini tree card ── */
                               <div
                                 onClick={() => {
                                   setSelectedLoadoutId(`custom-${slotIdx}`);
@@ -2079,67 +2078,58 @@ export default function SurvivalHunterSim() {
                                   setSimMode(slot.simMode);
                                 }}
                                 style={{
-                                  borderRadius: 10,
-                                  padding: "10px 8px 8px",
-                                  cursor: "pointer",
+                                  borderRadius: 10, padding: "10px 10px 8px", cursor: "pointer",
                                   background: isActive ? slotHeroBg : C.surface2,
-                                  border: `2px solid ${isActive ? slotHeroBdr : slotHeroBdr + '44'}`,
-                                  boxShadow: isActive ? `0 0 12px ${slotHeroClr}22` : undefined,
+                                  border: `2px solid ${isActive ? slotHeroBdr : slotHeroBdr + '33'}`,
+                                  boxShadow: isActive ? `0 0 14px ${slotHeroClr}22` : undefined,
                                   transition: "all .15s",
-                                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                                  display: "flex", flexDirection: "column", gap: 4,
                                 }}>
-                                {/* Name + mode row */}
-                                <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                  <div>
-                                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7.5, fontWeight: 700, color: slotHeroClr, letterSpacing: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{slot.name}</div>
-                                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: C.textDim, marginTop: 1 }}>
-                                      {slot.heroKey === 'sentinel' ? '🌙 Sentinel' : '🐺 Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}
-                                    </div>
-                                  </div>
-                                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                                    <button
-                                      onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
-                                      title="Edit loadout"
-                                      style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✏</button>
-                                    <button
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
-                                        if (isActive) setSelectedLoadoutId('sentinel-st');
-                                        if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
-                                      }}
-                                      title="Remove loadout"
-                                      style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✕</button>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ fontSize: 13, lineHeight: 1 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
+                                    color: isActive ? slotHeroClr : C.textSec, letterSpacing: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>
+                                    {slot.name}
+                                  </span>
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
+                                    background: '#1a1a2e', color: '#818cf8', border: '1px solid #818cf844',
+                                    borderRadius: 3, padding: "0 4px" }}>CUSTOM</span>
+                                  {isActive && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
+                                    background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
+                                    borderRadius: 3, padding: "0 4px" }}>ACTIVE</span>}
+                                </div>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    <button onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
+                                      title="Edit" style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✏</button>
+                                    <button onClick={e => {
+                                      e.stopPropagation();
+                                      setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
+                                      if (isActive) setSelectedLoadoutId('sentinel-st');
+                                      if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
+                                    }}
+                                      title="Remove" style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✕</button>
                                   </div>
                                 </div>
-                                {/* Mini tree */}
-                                <MiniTalentTree
-                                  selectedKeys={slot.enabledTalents}
-                                  heroKey={slot.heroKey}
-                                  heroSelectedKeys={slot.enabledHeroTalents}
-                                  onDot={(node, e) => handleTalentHover(nodeToPill(node), e)}
-                                  offDot={handleTalentLeave}
-                                />
-                                {isActive && (
-                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: slotHeroClr, letterSpacing: 1, opacity: .8 }}>● ACTIVE</div>
-                                )}
                               </div>
                             ) : (
-                              /* ── Empty slot ── */
                               <button
                                 onClick={() => {
                                   setEditingSlot(slotIdx);
                                   setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [] });
                                 }}
                                 style={{
-                                  width: "100%", minHeight: 200, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
+                                  width: "100%", height: "100%", minHeight: 80, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
                                   background: isEditing ? C.surface3 : C.surface2,
                                   border: `2px dashed ${isEditing ? C.textMid : C.border}`,
                                   color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
-                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
                                 }}>
-                                <span style={{ fontSize: 22, opacity: .35 }}>+</span>
-                                <span style={{ fontSize: 10, letterSpacing: 1, fontFamily: "'Orbitron',sans-serif", opacity: .5 }}>ADD CUSTOM{'\n'}LOADOUT</span>
+                                <span style={{ fontSize: 16, opacity: .35 }}>+</span>
+                                <span style={{ fontSize: 8, letterSpacing: 1, fontFamily: "'Orbitron',sans-serif", opacity: .5 }}>ADD CUSTOM</span>
                               </button>
                             )}
                           </div>
