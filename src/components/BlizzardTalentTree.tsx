@@ -263,7 +263,7 @@ function InteractiveTalentNode({
           width: sz, height: sz, borderRadius: "50%",
           border: `2.5px solid ${ringColor}`, boxShadow: glow,
           overflow: "hidden", cursor, position: "relative",
-          background: fillColor, display: "flex",
+          background: "transparent", display: "flex",
         }}
         onMouseEnter={handleEnter}
         onMouseMove={(e) => handleEnter(e)}
@@ -322,7 +322,7 @@ function InteractiveTalentNode({
         boxShadow: glow ?? ((isCapstone || isApex) && nodeState === 'SELECTED'
           ? `0 0 18px 4px ${GOLD_GLOW}` : undefined),
         cursor, position: "relative", overflow: "hidden",
-        background: fillColor, transition: "border-color .15s,box-shadow .15s",
+        background: "transparent", transition: "border-color .15s,box-shadow .15s",
       }}
     >
       <img src={iconUrl} alt="" loading="lazy" draggable={false}
