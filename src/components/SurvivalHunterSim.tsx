@@ -1552,53 +1552,51 @@ export default function SurvivalHunterSim() {
       `}</style>
 
       {/* HEADER */}
-      <div className="site-header" style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", padding: "18px 28px", borderBottom: `1px solid ${C.border}` }}>
-        <div className="site-header-inner" style={{ maxWidth: 1300, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 54, height: 54, borderRadius: 12, overflow: "hidden", border: "2px solid #2a4a2a", animation: "iconGlow 3s ease-in-out infinite", flexShrink: 0 }}>
-              <img src={SURVIVAL_ICON} alt="Survival Hunter" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      <header className="site-header" style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", borderBottom: `1px solid ${C.border}`, padding: "16px 28px" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+          <div className="site-header-inner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", border: `2px solid ${C.sentBdr}`, flexShrink: 0 }}>
+                <img src={SURVIVAL_ICON} alt="Survival Hunter" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </div>
+              <div>
+                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 16, fontWeight: 700, color: C.textPri, letterSpacing: 2 }}>SURVIVAL HUNTER</div>
+                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, marginTop: 3 }}>MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR</div>
+              </div>
             </div>
-            <div>
-              <h1 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: "clamp(14px,2vw,22px)", fontWeight: 900, letterSpacing: 4, color: C.textPri, margin: 0, lineHeight: 1 }}>SURVIVAL HUNTER</h1>
-              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, marginTop: 5 }}>MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR</div>
+            <div className="header-badges" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
+              <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
+              <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
+              <button onClick={() => handleSimcSync(true)} disabled={simcSyncStatus === 'loading'}
+                title={simcSyncInfo}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20,
+                  fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, fontWeight: 600, cursor: simcSyncStatus === 'loading' ? 'not-allowed' : 'pointer',
+                  border: `1px solid ${simcSyncStatus === 'synced' ? 'rgba(56,189,248,.4)' : simcSyncStatus === 'error' ? 'rgba(248,113,113,.4)' : C.border}`,
+                  background: simcSyncStatus === 'synced' ? '#0c1e35' : simcSyncStatus === 'error' ? '#2a0f0f' : C.surface2,
+                  color: simcSyncStatus === 'synced' ? '#38bdf8' : simcSyncStatus === 'error' ? '#f87171' : C.textMid,
+                  transition: 'all .2s', whiteSpace: 'nowrap',
+                }}>
+                {simcSyncStatus === 'loading' ? (
+                  <><span style={{ width: 8, height: 8, border: "1.5px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> SYNCING</>
+                ) : simcSyncStatus === 'synced' ? (
+                  <>🔄 SIMC LIVE</>
+                ) : simcSyncStatus === 'error' ? (
+                  <>⚠ SYNC</>
+                ) : (
+                  <>🔄 SYNC SIMC</>
+                )}
+              </button>
             </div>
           </div>
-          <div className="header-badges" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
-            <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
-            <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
-            <button onClick={() => handleSimcSync(true)} disabled={simcSyncStatus === 'loading'}
-              title={simcSyncInfo}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20,
-                fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, fontWeight: 600, cursor: simcSyncStatus === 'loading' ? 'not-allowed' : 'pointer',
-                border: `1px solid ${simcSyncStatus === 'synced' ? 'rgba(56,189,248,.4)' : simcSyncStatus === 'error' ? 'rgba(248,113,113,.4)' : C.border}`,
-                background: simcSyncStatus === 'synced' ? '#0c1e35' : simcSyncStatus === 'error' ? '#2a0f0f' : C.surface2,
-                color: simcSyncStatus === 'synced' ? '#38bdf8' : simcSyncStatus === 'error' ? '#f87171' : C.textMid,
-                transition: 'all .2s', whiteSpace: 'nowrap',
-              }}>
-              {simcSyncStatus === 'loading' ? (
-                <><span style={{ width: 8, height: 8, border: "1.5px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> SYNCING</>
-              ) : simcSyncStatus === 'synced' ? (
-                <>🔄 SIMC LIVE</>
-              ) : simcSyncStatus === 'error' ? (
-                <>⚠ SYNC</>
-              ) : (
-                <>🔄 SYNC SIMC</>
-              )}
-            </button>
-          </div>
+          <nav style={{ display: "flex", borderBottom: `1px solid ${C.border}` }}>
+            <NavLink to="/"      className="site-nav-link" activeClassName="active" end>⚔ Simulator</NavLink>
+            <NavLink to="/gear"  className="site-nav-link" activeClassName="active">⚗ Gear</NavLink>
+            <NavLink to="/guide" className="site-nav-link" activeClassName="active">📖 Guide</NavLink>
+          </nav>
         </div>
-      </div>
-
-      {/* ── Site-wide nav bar ── */}
-      <div style={{ background: "#0d1117", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", paddingLeft: 10, display: "flex" }}>
-          <NavLink to="/"      className="site-nav-link" activeClassName="active" end>⚔ Simulator</NavLink>
-          <NavLink to="/gear"  className="site-nav-link" activeClassName="active">⚗ Gear</NavLink>
-          <NavLink to="/guide" className="site-nav-link" activeClassName="active">📖 Guide</NavLink>
-        </div>
-      </div>
+      </header>
 
       <div className="site-main" style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
