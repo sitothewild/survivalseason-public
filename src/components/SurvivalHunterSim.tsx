@@ -1283,10 +1283,12 @@ export default function SurvivalHunterSim() {
       if (fullData.professions?.primaries || fullData.professions?.secondaries) {
         const profs: any[] = [];
         for (const p of (fullData.professions?.primaries || [])) {
+          const latestTier = p.tiers?.[p.tiers.length - 1];
           profs.push({
             name: p.profession?.name || 'Unknown',
-            skillPoints: p.tiers?.[p.tiers.length - 1]?.skill_points ?? 0,
-            maxSkillPoints: p.tiers?.[p.tiers.length - 1]?.max_skill_points ?? 0,
+            professionId: p.profession?.id,
+            skillPoints: latestTier?.skill_points ?? 0,
+            maxSkillPoints: latestTier?.max_skill_points ?? 0,
             specializations: (p.specializations || []).map((s: any) => s.name || s.specialization?.name).filter(Boolean),
           });
         }
