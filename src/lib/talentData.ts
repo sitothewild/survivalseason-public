@@ -215,7 +215,129 @@ export const PACK_LEADER_NODES: TalentNodeDef[] = [
     desc:'CAPSTONE. All beast procs deal 20% increased damage. Reduces beast proc cooldowns.' },
 ];
 
-// ── WOWHEAD ICON FALLBACKS ───────────────────────────────────
+// ── HUNTER CLASS TREE ────────────────────────────────────────
+
+export const HUNTER_NODES: TalentNodeDef[] = [
+  // ROW 0 (3 nodes: cols 2,4,6)
+  { id:'h_kill_shot', spellId:53351, name:'Kill Shot', type:'active', maxPts:1, row:0, col:2,
+    parents:[], desc:'Fire a shot at a wounded target, dealing massive damage. Usable on targets below 20% HP.' },
+  { id:'h_arcane_shot', spellId:185358, name:'Arcane Shot', type:'active', maxPts:1, row:0, col:4,
+    parents:[], desc:'A quick shot that deals Arcane damage.' },
+  { id:'h_steady_shot', spellId:56641, name:'Steady Shot', type:'active', maxPts:1, row:0, col:6,
+    parents:[], desc:'A steady, focused shot that generates Focus.' },
+
+  // ROW 1 (3 nodes: cols 2,4,6)
+  { id:'h_disengage', spellId:781, name:'Disengage', type:'active', maxPts:1, row:1, col:2,
+    parents:['h_kill_shot'], desc:'Leap backwards, clearing movement impairing effects.' },
+  { id:'h_hunters_mark', spellId:257284, name:"Hunter's Mark", type:'active', maxPts:1, row:1, col:4,
+    parents:['h_arcane_shot'], desc:'Mark a target, increasing all damage dealt to them by 5%.' },
+  { id:'h_tar_trap', spellId:187698, name:'Tar Trap', type:'active', maxPts:1, row:1, col:6,
+    parents:['h_steady_shot'], desc:'Place a trap that creates a tar pool, slowing enemies.' },
+
+  // ROW 2 (4 nodes: cols 1,3,5,7)
+  { id:'h_survival_tactics', spellId:378994, name:'Survival Tactics', type:'passive', maxPts:1, row:2, col:1,
+    parents:['h_disengage'], desc:'Feign Death removes harmful effects and reduces damage taken briefly.' },
+  { id:'h_explosive_shot', spellId:212431, name:'Explosive Shot', type:'active', maxPts:1, row:2, col:3,
+    parents:['h_disengage','h_hunters_mark'], desc:'Fire an explosive shot that deals AoE Fire damage.' },
+  { id:'h_scatter_shot', spellId:213691, name:'Scatter Shot', type:'active', maxPts:1, row:2, col:5,
+    parents:['h_hunters_mark','h_tar_trap'], desc:'Disorient a target for 4 sec. Damage breaks the effect.' },
+  { id:'h_counter_shot', spellId:147362, name:'Counter Shot', type:'active', maxPts:1, row:2, col:7,
+    parents:['h_tar_trap'], desc:'Interrupt spellcasting, preventing any spell in that school for 3 sec.' },
+
+  // ROW 3 (3 nodes: cols 2,4,6)
+  { id:'h_posthaste', spellId:109215, name:'Posthaste', type:'passive', maxPts:1, row:3, col:2,
+    parents:['h_survival_tactics','h_explosive_shot'], desc:'Disengage also frees you from movement effects and increases speed by 50%.' },
+  { id:'h_trueshot_aura', spellId:264735, name:'Trueshot Aura', type:'passive', maxPts:1, row:3, col:4,
+    parents:['h_explosive_shot','h_scatter_shot'], desc:'Increases critical strike chance for you and your pet.' },
+  { id:'h_binding_shot', spellId:109248, name:'Binding Shot', type:'active', maxPts:1, row:3, col:6,
+    parents:['h_scatter_shot','h_counter_shot'], desc:'Fire a magical shot that tethers enemies to the landing location.' },
+
+  // ROW 4 (5 nodes: cols 1,3,4,5,7)
+  { id:'h_born_to_be_wild', spellId:266921, name:'Born To Be Wild', type:'passive', maxPts:2, row:4, col:1,
+    parents:['h_posthaste'], desc:'Reduces the cooldowns of Aspect abilities by 7% per point.' },
+  { id:'h_alpha_predator', spellId:269737, name:'Alpha Predator', type:'passive', maxPts:1, row:4, col:3,
+    parents:['h_posthaste','h_trueshot_aura'], desc:'Kill Command deals 15% increased damage.' },
+  { id:'h_beast_master', spellId:267116, name:'Beast Master', type:'passive', maxPts:1, row:4, col:4,
+    parents:['h_trueshot_aura'], desc:'Pet damage increased by 10%. Pet attacks have a chance to reset Kill Command.' },
+  { id:'h_keen_eyesight', spellId:378004, name:'Keen Eyesight', type:'passive', maxPts:1, row:4, col:5,
+    parents:['h_trueshot_aura','h_binding_shot'], desc:'Critical strike chance increased by 2%.' },
+  { id:'h_improved_traps', spellId:343247, name:'Improved Traps', type:'passive', maxPts:2, row:4, col:7,
+    parents:['h_binding_shot'], desc:'Trap cooldowns reduced by 5 sec per point.' },
+
+  // ROW 5 GATE 1 — (7 nodes: cols 1,2,3,4,5,6,7) — choice at cols 1,4
+  { id:'h_aspect_choice', spellId:null, name:'Aspect of the Eagle / Aspect of the Chameleon', type:'choice', maxPts:1, row:5, col:1,
+    parents:['h_born_to_be_wild'], desc:'Eagle: increases melee range. Chameleon: random Aspect buffs.',
+    choiceA: { name:'Aspect of the Eagle', spellId:186289, desc:'Increases melee range by 40% for 15 sec.' },
+    choiceB: { name:'Aspect of the Chameleon', spellId:61648, desc:'Grants random Aspect buffs periodically.' } },
+  { id:'h_natural_mending', spellId:270581, name:'Natural Mending', type:'passive', maxPts:1, row:5, col:2,
+    parents:['h_born_to_be_wild','h_alpha_predator'], desc:'Focus spending reduces Exhilaration cooldown.' },
+  { id:'h_pathfinding', spellId:378002, name:'Pathfinding', type:'passive', maxPts:1, row:5, col:3,
+    parents:['h_alpha_predator'], desc:'Movement speed increased by 4%.' },
+  { id:'h_stamina_choice', spellId:null, name:'Thick Hide / Wilderness Medicine', type:'choice', maxPts:1, row:5, col:4,
+    parents:['h_beast_master'], desc:'Thick Hide: damage reduction. Wilderness Medicine: heal on Exhilaration.',
+    choiceA: { name:'Thick Hide', spellId:378436, desc:'Damage taken reduced by 6%.' },
+    choiceB: { name:'Wilderness Medicine', spellId:343242, desc:'Exhilaration heals for 20% more.' } },
+  { id:'h_serrated_shots', spellId:389882, name:'Serrated Shots', type:'passive', maxPts:1, row:5, col:5,
+    parents:['h_keen_eyesight'], desc:'Serpent Sting and bleed effects deal 10% increased damage.' },
+  { id:'h_steel_trap', spellId:162488, name:'Steel Trap', type:'active', maxPts:1, row:5, col:6,
+    parents:['h_keen_eyesight','h_improved_traps'], desc:'Place a Steel Trap that immobilizes and bleeds the first enemy.' },
+  { id:'h_camouflage', spellId:199483, name:'Camouflage', type:'active', maxPts:1, row:5, col:7,
+    parents:['h_improved_traps'], desc:'Become invisible for 1 min. Heals 2% HP every 1 sec while active.' },
+
+  // ROW 6 (3 nodes: cols 2,4,6)
+  { id:'h_misdirection', spellId:34477, name:'Misdirection', type:'active', maxPts:1, row:6, col:2,
+    parents:['h_natural_mending','h_pathfinding'], desc:'Redirect threat to your pet or an ally for 8 sec.' },
+  { id:'h_aspect_of_beast', spellId:191384, name:'Aspect of the Beast', type:'passive', maxPts:1, row:6, col:4,
+    parents:['h_stamina_choice','h_serrated_shots'], desc:'Kill Command deals increased damage and has additional effects.' },
+  { id:'h_tranq_shot', spellId:19801, name:'Tranquilizing Shot', type:'active', maxPts:1, row:6, col:6,
+    parents:['h_serrated_shots','h_steel_trap'], desc:'Remove 1 Enrage and 1 Magic effect from an enemy.' },
+
+  // ROW 7 (7 nodes: cols 1,2,3,4,5,6,7) — choice at col 7
+  { id:'h_sentinel', spellId:389866, name:'Sentinel', type:'passive', maxPts:1, row:7, col:1,
+    parents:['h_misdirection'], desc:'Your abilities apply Sentinel stacks. At 5 stacks, deal bonus damage.' },
+  { id:'h_lone_survivor', spellId:388039, name:'Lone Survivor', type:'passive', maxPts:1, row:7, col:2,
+    parents:['h_misdirection'], desc:'Disengage and Feign Death cooldowns reduced.' },
+  { id:'h_improved_kc', spellId:378010, name:'Improved Kill Command', type:'passive', maxPts:1, row:7, col:3,
+    parents:['h_misdirection','h_aspect_of_beast'], desc:'Kill Command damage increased by 5%.' },
+  { id:'h_master_marksman', spellId:260309, name:'Master Marksman', type:'passive', maxPts:2, row:7, col:4,
+    parents:['h_aspect_of_beast'], desc:'Critical hits with special shots deal 7% increased damage per point.' },
+  { id:'h_rejuvenating_wind', spellId:385539, name:'Rejuvenating Wind', type:'passive', maxPts:1, row:7, col:5,
+    parents:['h_aspect_of_beast','h_tranq_shot'], desc:'Max HP increased by 4%. Exhilaration heals 12% more.' },
+  { id:'h_death_chakram', spellId:375891, name:'Death Chakram', type:'active', maxPts:1, row:7, col:6,
+    parents:['h_tranq_shot'], desc:'Throw a chakram that bounces between targets, dealing damage and generating Focus.' },
+  { id:'h_utility_choice', spellId:null, name:'Roar of Sacrifice / Fortitude of the Bear', type:'choice', maxPts:1, row:7, col:7,
+    parents:['h_tranq_shot','h_camouflage'], desc:'Roar: pet absorbs 20% damage. Fortitude: party HP buff.',
+    choiceA: { name:'Roar of Sacrifice', spellId:53480, desc:'Your pet absorbs 20% of damage dealt to a party member.' },
+    choiceB: { name:'Fortitude of the Bear', spellId:388035, desc:'Increase max HP of party members by 5%.' } },
+
+  // ROW 8 (6 nodes: cols 1,2,3,5,6,7) — choice at cols 2,6
+  { id:'h_killer_instinct', spellId:273887, name:'Killer Instinct', type:'passive', maxPts:1, row:8, col:1,
+    parents:['h_sentinel','h_lone_survivor'], desc:'Kill Command deals 50% increased damage against targets below 35% HP.' },
+  { id:'h_row8_choice_l', spellId:null, name:'Barrage / Volley', type:'choice', maxPts:1, row:8, col:2,
+    parents:['h_lone_survivor','h_improved_kc'], desc:'Barrage: rapid fire AoE. Volley: raining arrows AoE.',
+    choiceA: { name:'Barrage', spellId:120360, desc:'Rapidly fire a barrage of shots at all enemies in front.' },
+    choiceB: { name:'Volley', spellId:260243, desc:'Rain a volley of arrows on an area for sustained AoE damage.' } },
+  { id:'h_hydras_bite', spellId:260241, name:"Hydra's Bite", type:'passive', maxPts:1, row:8, col:3,
+    parents:['h_improved_kc','h_master_marksman'], desc:'Serpent Sting spreads to 2 additional nearby enemies.' },
+  { id:'h_spitting_cobra', spellId:194407, name:'Spitting Cobra', type:'active', maxPts:1, row:8, col:5,
+    parents:['h_master_marksman','h_rejuvenating_wind'], desc:'Summon a Spitting Cobra for 20 sec that attacks your target.' },
+  { id:'h_row8_choice_r', spellId:null, name:'Bloodshed / A Murder of Crows', type:'choice', maxPts:1, row:8, col:6,
+    parents:['h_rejuvenating_wind','h_death_chakram'], desc:'Bloodshed: pet bleeds target. Crows: bird swarm DoT.',
+    choiceA: { name:'Bloodshed', spellId:321530, desc:'Your pet tears into the target, causing a heavy bleed.' },
+    choiceB: { name:'A Murder of Crows', spellId:131894, desc:'Summon a flock of crows to attack the target for 15 sec.' } },
+  { id:'h_wailing_arrow', spellId:392060, name:'Wailing Arrow', type:'active', maxPts:1, row:8, col:7,
+    parents:['h_death_chakram','h_utility_choice'], desc:'Fire a devastating arrow that silences enemies in an area.' },
+
+  // ROW 9 (3 nodes: cols 2,4,6)
+  { id:'h_killer_accuracy', spellId:378765, name:'Killer Accuracy', type:'passive', maxPts:1, row:9, col:2,
+    parents:['h_killer_instinct','h_row8_choice_l','h_hydras_bite'], desc:'Kill Shot critical strike chance increased by 20%.' },
+  { id:'h_omega_training', spellId:390220, name:'Omega Training', type:'passive', maxPts:1, row:9, col:4,
+    parents:['h_hydras_bite','h_spitting_cobra','h_row8_choice_r'], desc:'Pet damage increased by 10%. Focus generation improved.' },
+  { id:'h_legacy_of_hunt', spellId:392060, name:'Legacy of the Windrunners', type:'passive', maxPts:1, row:9, col:6,
+    parents:['h_row8_choice_r','h_wailing_arrow'], desc:'Wailing Arrow and Death Chakram deal 15% increased damage.' },
+];
+
+
 
 export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   // Survival spec
