@@ -467,7 +467,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   459983: "https://wow.zamimg.com/images/wow/icons/large/spell_nature_drowsy.jpg",
   459991: "https://wow.zamimg.com/images/wow/icons/large/spell_nature_drowsy.jpg",
   459506: "https://wow.zamimg.com/images/wow/icons/large/spell_fire_flare.jpg",
-  459534: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_rapidkill.jpg",
+  459534: "https://wow.zamimg.com/images/wow/icons/large/inv_10_engineering2_pvpflaregun_color1.jpg",
   187698: "https://wow.zamimg.com/images/wow/icons/large/spell_yorsahj_bloodboil_black.jpg",
   1513: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_cower.jpg",
   1258402: "https://wow.zamimg.com/images/wow/icons/large/inv_misc_herb_07.jpg",
