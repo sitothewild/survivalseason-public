@@ -756,12 +756,11 @@ export function BlizzardTalentTree({
     [heroTrees, activeHeroTreeId],
   );
 
-  const heroNodes: BzTalentNode[] = useMemo(
-    () => activeHeroTree
-      ? (activeHeroTree.spec_talent_nodes ?? activeHeroTree.hero_talent_nodes ?? activeHeroTree.class_talent_nodes ?? [])
-      : [],
-    [activeHeroTree],
-  );
+  const heroNodes: BzTalentNode[] = useMemo(() => {
+    if (!activeHeroTree) return [];
+    const raw = activeHeroTree.spec_talent_nodes ?? activeHeroTree.hero_talent_nodes ?? activeHeroTree.class_talent_nodes ?? [];
+    return normalizeHeroLayout(raw);
+  }, [activeHeroTree]);
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
