@@ -978,6 +978,10 @@ export default function SurvivalHunterSim() {
   const [customSlots, setCustomSlots] = useState<(CustomLoadout | null)[]>([null, null]);
   const [editingSlot, setEditingSlot] = useState<0 | 1 | null>(null);
   const [editDraft, setEditDraft] = useState<CustomLoadout | null>(null);
+  // Modal talent tree scaling
+  const modalTreeContainerRef = useRef<HTMLDivElement>(null);
+  const modalTreeInnerRef = useRef<HTMLDivElement>(null);
+  const [modalTreeScale, setModalTreeScale] = useState(1);
   // Armory
   const [armoryRealm, setArmoryRealm] = useState('');
   const [armoryRealmSearch, setArmoryRealmSearch] = useState('');
@@ -1008,6 +1012,28 @@ export default function SurvivalHunterSim() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Modal tree auto-scale effect
+  useEffect(() => {
+    if (editingSlot === null) { setModalTreeScale(1); return; }
+    const container = modalTreeContainerRef.current;
+    const inner = modalTreeInnerRef.current;
+    if (!container || !inner) return;
+
+    const measure = () => {
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      const iw = inner.scrollWidth;
+      const ih = inner.scrollHeight;
+      if (iw > 0 && ih > 0) {
+        setModalTreeScale(Math.max(0.35, Math.min(cw / iw, ch / ih, 1)));
+      }
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(container);
+    requestAnimationFrame(measure);
+    return () => ro.disconnect();
+  }, [editingSlot, editDraft?.heroKey]);
 
   const handleTalentHover = useCallback((talent: TalentPill, e: React.MouseEvent) => {
     if (talentHideTimer.current) { window.clearTimeout(talentHideTimer.current); talentHideTimer.current = null; }
@@ -1985,149 +2011,239 @@ export default function SurvivalHunterSim() {
                       })}
                     </div>
 
-                    {/* Custom Slot Inline Editor */}
+                    {/* Custom Slot Modal Editor — Full Screen */}
                     {editingSlot !== null && editDraft && (() => {
                       const heroClrE  = editDraft.heroKey === 'sentinel' ? C.sentClr : C.packClr;
                       const heroBgE   = editDraft.heroKey === 'sentinel' ? C.sentBg  : C.packBg;
                       const heroBdrE  = editDraft.heroKey === 'sentinel' ? C.sentBdr : C.packBdr;
-                      const heroTals  = editDraft.heroKey === 'sentinel' ? SENTINEL_HERO : PACK_LEADER_HERO;
-                      const allOptional = [...ST_TALENTS, ...AOE_TALENTS].filter((t, i, arr) => arr.findIndex(x => x.name === t.name) === i);
-                      const PILL_CLR_E: Record<string,string> = { core:'#60a5fa', st:'#4ade80', aoe:'#f97316', hero: heroClrE, hybrid:'#c084fc' };
+
+                      // Point counters (25 core spec talents are always active; 3 core class talents always taken)
+                      const specTotalSelected = editDraft.enabledTalents.length + 25;
+                      const heroTotalSelected = editDraft.enabledHeroTalents.length;
+                      const classTotalSelected = 3;
+                      const specBudget = 31;
+                      const heroBudgetVal = 10;
+                      const classBudget = 31;
+
+                      const closeModal = () => { setEditingSlot(null); setEditDraft(null); };
+
                       return (
-                        <div style={{
-                          marginBottom: 12, borderRadius: 10, padding: "14px 16px",
-                          background: C.surface2, border: `1px solid ${heroBdrE}`,
-                        }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: heroClrE, marginBottom: 10 }}>
-                            {customSlots[editingSlot] ? 'EDIT LOADOUT' : 'NEW LOADOUT'} — SLOT {editingSlot + 1}
-                          </div>
+                        <>
+                          {/* Backdrop */}
+                          <div
+                            onClick={closeModal}
+                            onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
+                            style={{
+                              position: "fixed", inset: 0, zIndex: 9990,
+                              background: "rgba(0,0,0,.8)", backdropFilter: "blur(6px)",
+                            }}
+                          />
+                          {/* ESC key listener */}
+                          <div
+                            ref={el => { if (el) el.focus(); }}
+                            tabIndex={-1}
+                            onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
+                            style={{
+                              position: "fixed", inset: 16, zIndex: 9991,
+                              display: "flex", flexDirection: "column",
+                              background: "#0d1117", border: `1px solid ${C.border}`,
+                              borderRadius: 14, overflow: "hidden",
+                              boxShadow: "0 24px 80px rgba(0,0,0,.7)",
+                              outline: "none",
+                            }}
+                          >
+                            {/* ── HEADER ── */}
+                            <div style={{
+                              padding: "16px 24px 12px",
+                              borderBottom: `1px solid ${C.border}`,
+                              background: C.surface2,
+                            }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 12, letterSpacing: 2, color: heroClrE }}>
+                                  CONFIGURE TALENTS — {editDraft.name || `SLOT ${editingSlot + 1}`}
+                                </div>
+                              </div>
 
-                          {/* Name */}
-                          <div style={{ marginBottom: 10 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 5 }}>NAME</div>
-                            <input
-                              value={editDraft.name}
-                              onChange={e => setEditDraft(d => d ? { ...d, name: e.target.value } : d)}
-                              placeholder="e.g. AoE Pack Leader"
-                              maxLength={32}
-                              style={{
-                                width: "100%", background: C.surface3, border: `1px solid ${C.border}`,
-                                borderRadius: 6, padding: "6px 10px", color: C.textPri,
-                                fontFamily: "'Rajdhani',sans-serif", fontSize: 13, outline: "none",
-                                boxSizing: "border-box",
-                              }}
-                            />
-                          </div>
+                              {/* Controls row */}
+                              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+                                {/* Name */}
+                                <div style={{ flex: "1 1 180px" }}>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 4 }}>NAME</div>
+                                  <input
+                                    value={editDraft.name}
+                                    onChange={e => setEditDraft(d => d ? { ...d, name: e.target.value } : d)}
+                                    placeholder="e.g. AoE Pack Leader"
+                                    maxLength={32}
+                                    style={{
+                                      width: "100%", background: C.surface3, border: `1px solid ${C.border}`,
+                                      borderRadius: 6, padding: "6px 10px", color: C.textPri,
+                                      fontFamily: "'Rajdhani',sans-serif", fontSize: 13, outline: "none",
+                                      boxSizing: "border-box",
+                                    }}
+                                  />
+                                </div>
 
-                          {/* Hero Talent */}
-                          <div style={{ marginBottom: 10 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 5 }}>HERO TALENT</div>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              {([['sentinel','🌙','Sentinel',C.sentClr,C.sentBg,C.sentBdr],['packLeader','🐺','Pack Leader',C.packClr,C.packBg,C.packBdr]] as const).map(([k,icon,label,clr,bg,bdr]) => (
-                                <button key={k}
-                                  onClick={() => setEditDraft(d => d ? { ...d, heroKey: k as 'sentinel'|'packLeader', enabledHeroTalents: [] } : d)}
-                                  style={{
-                                    flex: 1, padding: "6px 8px", borderRadius: 7, cursor: "pointer",
-                                    background: editDraft.heroKey === k ? bg : C.surface3,
-                                    border: `1px solid ${editDraft.heroKey === k ? bdr : C.border}`,
-                                    color: editDraft.heroKey === k ? clr : C.textMid,
-                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 600,
-                                    display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                                {/* Scenario tabs */}
+                                <div>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 4 }}>SCENARIO</div>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    {([['single','🎯','Raid ST'],['cleave','⚔','Cleave'],['multi','💥','M+ AoE']] as const).map(([m,icon,label]) => (
+                                      <button key={m}
+                                        onClick={() => setEditDraft(d => d ? { ...d, simMode: m } : d)}
+                                        style={{
+                                          padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                                          background: editDraft.simMode === m ? C.surface3 : "transparent",
+                                          border: `1px solid ${editDraft.simMode === m ? C.textMid : C.border}`,
+                                          color: editDraft.simMode === m ? C.textPri : C.textDim,
+                                          fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
+                                        }}>
+                                        {icon} {label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Hero toggle */}
+                                <div>
+                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 4 }}>HERO TALENT</div>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    {([['sentinel','🌙','Sentinel',C.sentClr,C.sentBg,C.sentBdr],['packLeader','🐺','Pack Leader',C.packClr,C.packBg,C.packBdr]] as const).map(([k,icon,label,clr,bg,bdr]) => {
+                                      const isActive = editDraft.heroKey === k;
+                                      return (
+                                        <button key={k}
+                                          onClick={() => {
+                                            if (isActive) return;
+                                            if (editDraft.enabledHeroTalents.length > 0) {
+                                              if (!window.confirm(`Switch to ${label}? Hero talent selections will be reset.`)) return;
+                                            }
+                                            setEditDraft(d => d ? { ...d, heroKey: k as 'sentinel'|'packLeader', enabledHeroTalents: [] } : d);
+                                          }}
+                                          style={{
+                                            padding: "5px 12px", borderRadius: 7, cursor: isActive ? "default" : "pointer",
+                                            background: isActive ? bg : "transparent",
+                                            border: `1px solid ${isActive ? bdr : C.border}`,
+                                            color: isActive ? clr : C.textDim,
+                                            fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 600,
+                                            display: "flex", alignItems: "center", gap: 5,
+                                            transition: "all .15s",
+                                          }}>
+                                          <span>{icon}</span><span>{label}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* ── POINT COUNTERS BAR ── */}
+                            <div style={{
+                              display: "flex", justifyContent: "center", gap: 32, padding: "8px 24px",
+                              background: C.surface, borderBottom: `1px solid ${C.border}`,
+                            }}>
+                              {[
+                                { label: "CLASS", count: classTotalSelected, budget: classBudget, color: "#60a5fa" },
+                                { label: "HERO", count: heroTotalSelected, budget: heroBudgetVal, color: heroClrE },
+                                { label: "SPEC", count: specTotalSelected, budget: specBudget, color: "#4ade80" },
+                              ].map(p => (
+                                <div key={p.label} style={{
+                                  background: C.surface2, borderRadius: 999, padding: "4px 16px",
+                                  display: "flex", alignItems: "center", gap: 8,
+                                }}>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase" }}>{p.label}</span>
+                                  <span style={{
+                                    fontFamily: "'IBM Plex Mono',monospace", fontSize: 16, fontWeight: 700,
+                                    color: p.count > p.budget ? C.red : p.color,
                                   }}>
-                                  <span>{icon}</span><span>{label}</span>
-                                </button>
+                                    {p.count} <span style={{ color: C.textDim, fontSize: 12 }}>/</span> {p.budget}
+                                  </span>
+                                </div>
                               ))}
                             </div>
-                          </div>
 
-                          {/* Sim Mode */}
-                          <div style={{ marginBottom: 10 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 5 }}>SCENARIO</div>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              {([['single','🎯','Raid ST'],['cleave','⚔','Cleave'],['multi','💥','M+ AoE']] as const).map(([m,icon,label]) => (
-                                <button key={m}
-                                  onClick={() => setEditDraft(d => d ? { ...d, simMode: m } : d)}
-                                  style={{
-                                    flex: 1, padding: "5px 4px", borderRadius: 6, cursor: "pointer",
-                                    background: editDraft.simMode === m ? C.surface3 : "transparent",
-                                    border: `1px solid ${editDraft.simMode === m ? C.textMid : C.border}`,
-                                    color: editDraft.simMode === m ? C.textPri : C.textDim,
-                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 11,
-                                  }}>
-                                  {icon} {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* ── BLIZZARD TALENT TREE (class + hero + spec) ──── */}
-                          <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>
-                              TALENT TREE
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, letterSpacing: 0, marginLeft: 6, color: '#4b6070' }}>
-                                click nodes to toggle · hero toggle above center column
-                              </span>
-                            </div>
-                            <div style={{ overflowX: "auto", overflowY: "visible", borderRadius: 8 }}>
-                              <BlizzardTalentTree
-                                specSelectedKeys={editDraft.enabledTalents}
-                                onSpecToggle={(key, selected) => {
-                                  setEditDraft(d => {
-                                    if (!d) return d;
-                                    if (selected) {
-                                      return { ...d, enabledTalents: [...d.enabledTalents, key] };
-                                    } else {
-                                      return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
-                                    }
-                                  });
+                            {/* ── TALENT TREE (auto-scaled to fit) ── */}
+                            <div
+                              ref={modalTreeContainerRef}
+                              style={{ flex: 1, overflow: "hidden", position: "relative" }}
+                            >
+                              <div
+                                ref={modalTreeInnerRef}
+                                style={{
+                                  transformOrigin: "top center",
+                                  transform: `scale(${modalTreeScale})`,
+                                  display: "inline-flex",
+                                  justifyContent: "center",
+                                  width: "100%",
+                                  minWidth: "fit-content",
                                 }}
-                                heroKey={editDraft.heroKey}
-                                onHeroChange={(hero) => setEditDraft(d => d ? { ...d, heroKey: hero, enabledHeroTalents: [] } : d)}
-                                heroSelectedKeys={editDraft.enabledHeroTalents}
-                                onHeroToggle={(key, selected) => {
-                                  setEditDraft(d => {
-                                    if (!d) return d;
-                                    if (selected) {
-                                      return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
-                                    } else {
-                                      return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
+                              >
+                                <BlizzardTalentTree
+                                  specSelectedKeys={editDraft.enabledTalents}
+                                  onSpecToggle={(key, selected) => {
+                                    setEditDraft(d => {
+                                      if (!d) return d;
+                                      if (selected) {
+                                        return { ...d, enabledTalents: [...d.enabledTalents, key] };
+                                      } else {
+                                        return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
+                                      }
+                                    });
+                                  }}
+                                  heroKey={editDraft.heroKey}
+                                  onHeroChange={(hero) => {
+                                    if (editDraft.enabledHeroTalents.length > 0) {
+                                      if (!window.confirm(`Switch to ${hero === 'sentinel' ? 'Sentinel' : 'Pack Leader'}? Hero talent selections will be reset.`)) return;
                                     }
-                                  });
+                                    setEditDraft(d => d ? { ...d, heroKey: hero, enabledHeroTalents: [] } : d);
+                                  }}
+                                  heroSelectedKeys={editDraft.enabledHeroTalents}
+                                  onHeroToggle={(key, selected) => {
+                                    setEditDraft(d => {
+                                      if (!d) return d;
+                                      if (selected) {
+                                        return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
+                                      } else {
+                                        return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
+                                      }
+                                    });
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* ── FOOTER ── */}
+                            <div style={{
+                              display: "flex", gap: 8, padding: "12px 24px",
+                              borderTop: `1px solid ${C.border}`, background: C.surface2,
+                            }}>
+                              <button
+                                onClick={() => {
+                                  if (!editDraft.name.trim()) return;
+                                  setCustomSlots(prev => { const c = [...prev]; c[editingSlot] = { ...editDraft }; return c; });
+                                  setSelectedLoadoutId(`custom-${editingSlot}`);
+                                  setHeroTalent(editDraft.heroKey);
+                                  setSimMode(editDraft.simMode);
+                                  closeModal();
                                 }}
-                              />
+                                style={{
+                                  flex: 1, padding: "12px 0", borderRadius: 7, cursor: "pointer",
+                                  background: heroBgE, border: `1px solid ${heroBdrE}`,
+                                  color: heroClrE, fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 1.5,
+                                }}>
+                                ✓ SAVE TALENT SELECTION
+                              </button>
+                              <button
+                                onClick={closeModal}
+                                style={{
+                                  padding: "12px 24px", borderRadius: 7, cursor: "pointer",
+                                  background: "transparent", border: `1px solid ${C.border}`,
+                                  color: C.textMid, fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 1.5,
+                                }}>
+                                CANCEL
+                              </button>
                             </div>
                           </div>
-
-                          {/* Save / Cancel */}
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button
-                              onClick={() => {
-                                if (!editDraft.name.trim()) return;
-                                setCustomSlots(prev => { const c = [...prev]; c[editingSlot] = { ...editDraft }; return c; });
-                                setSelectedLoadoutId(`custom-${editingSlot}`);
-                                setHeroTalent(editDraft.heroKey);
-                                setSimMode(editDraft.simMode);
-                                setEditingSlot(null);
-                                setEditDraft(null);
-                              }}
-                              style={{
-                                flex: 1, padding: "8px 0", borderRadius: 7, cursor: "pointer",
-                                background: heroBgE, border: `1px solid ${heroBdrE}`,
-                                color: heroClrE, fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5,
-                              }}>
-                              ✓ SAVE LOADOUT
-                            </button>
-                            <button
-                              onClick={() => { setEditingSlot(null); setEditDraft(null); }}
-                              style={{
-                                padding: "8px 14px", borderRadius: 7, cursor: "pointer",
-                                background: "transparent", border: `1px solid ${C.border}`,
-                                color: C.textMid, fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5,
-                              }}>
-                              CANCEL
-                            </button>
-                          </div>
-                        </div>
+                        </>
                       );
                     })()}
 
