@@ -210,70 +210,414 @@ export default function Guide() {
         </div>
 
         {/* ═══════════════════════════════════════════════════
-            ROW 1 — Static reference cards (2-col)
+            SECTION — Talent Tree (WoWHead-style visual)
         ═══════════════════════════════════════════════════ */}
-        <div className="g-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr",
-          gap:20, marginBottom:20 }}>
+        {(() => {
+          const heroTree = HERO_TALENT_TREES[hero];
+          const CAT_CLR: Record<string,string> = { core:'#60a5fa', st:'#4ade80', aoe:'#f97316', gateway:'#f59e0b' };
+          const CAT_BG:  Record<string,string> = { core:'#0c1a2e', st:'#0f2a1a', aoe:'#1f1000', gateway:'#2a1f08' };
+          const CAT_LBL: Record<string,string> = { core:'CORE', st:'ST', aoe:'AoE', gateway:'GATEWAY' };
+          const heroClrL = hero === 'sentinel' ? C.sentClr : C.packClr;
+          const heroBgL  = hero === 'sentinel' ? C.sentBg  : C.packBg;
+          const heroBdrL = hero === 'sentinel' ? C.sentBdr : C.packBdr;
 
-          {/* How to Use */}
-          <Card>
-            <Lbl>📋 How to Use the Simulator</Lbl>
-            <Step n="1" title="Install SimulationCraft Addon"  desc="Get it from CurseForge or WoWInterface. Keep it updated." />
-            <Step n="2" title="Export Your Character"          desc="In-game: type /simc → press Enter. A window appears with your full character string." />
-            <Step n="3" title="Copy & Paste"                   desc="Ctrl+A, Ctrl+C to copy the entire string. Paste it into the Import box on the Simulator page." />
-            <Step n="4" title="Configure & Simulate"           desc="Choose Hero Talent, fight duration, and target count. Click Run Simulation." />
-            <Step n="5" title="Read Results"                   desc="DPS breakdown by ability, stat weights, talent export string, and APL priority order." />
-            <div style={{ marginTop:14, padding:"10px 14px", background:heroBg,
-              border:`1px solid ${heroBdr}`, borderRadius:8,
-              fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textMid }}>
-              Tip: paste your SimC string once then bookmark the page — your import is remembered in-session while you tweak talents and fight settings.
-            </div>
-          </Card>
+          const stPts  = SURVIVAL_SPEC_TREE.filter(n => n.inSTBuild).reduce((s,n) => s+n.pointCost, 0);
+          const aoePts = SURVIVAL_SPEC_TREE.filter(n => n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
+          const heroPts = heroTree.length;
+          const gatewayPts = SURVIVAL_SPEC_TREE.filter(n => n.isGateway && n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
 
-          {/* M+ Tips */}
-          <Card>
-            <Lbl>🏰 Mythic+ Tips</Lbl>
-            {[
-              { icon:"🎯", tip:"Pull around Takedown", desc:"Your burst cycle is ~60–90s. Chain pulls so Takedown is off cooldown when the pack lands." },
-              { icon:"💣", tip:"Pool WFB charges for packs", desc:"Never let Wildfire Bomb sit at 2 charges — WFB is your highest AoE priority. Throw it immediately as the pack lands." },
-              { icon:"⚡", tip:"Lunar Storm positioning",  desc:"Position so your Sentinel Mark Lunar Storm AoE hits the full pack. It bounces — one missed target is real loss." },
-              { icon:"🐾", tip:"Misdirect on every CD", desc:"MD your tank every 30s. Automate this with a macro: /cast [@focus] Misdirection." },
-              { icon:"🌀", tip:"Hold Boomstick for packs", desc:"If a new pack is incoming in <10s, delay Boomstick so it fires into grouped targets." },
-            ].map((t, i) => (
-              <div key={i} style={{ display:"flex", gap:10, marginBottom:12, alignItems:"flex-start" }}>
-                <span style={{ fontSize:14, flexShrink:0, width:22, textAlign:"center" }}>{t.icon}</span>
-                <div>
-                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
-                    color:C.goldLight, fontWeight:700, marginBottom:2 }}>{t.tip}</div>
-                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
-                    color:C.textMid, lineHeight:1.5 }}>{t.desc}</div>
+          // ── Spec tree grid config ───────────────────────
+          const SPEC_COLS = 7;  // cols 0-6
+          const SPEC_ROWS = 11; // rows 1-11
+          const NODE_SIZE = 48;
+          const COL_GAP = 14;
+          const ROW_GAP = 12;
+          const gridW = SPEC_COLS * NODE_SIZE + (SPEC_COLS - 1) * COL_GAP;
+          const gridH = SPEC_ROWS * NODE_SIZE + (SPEC_ROWS - 1) * ROW_GAP;
+
+          const nodePos = (row: number, col: number) => ({
+            x: col * (NODE_SIZE + COL_GAP) + NODE_SIZE / 2,
+            y: (row - 1) * (NODE_SIZE + ROW_GAP) + NODE_SIZE / 2,
+          });
+
+          // ── Hero tree grid config ───────────────────────
+          const HERO_COLS = 4;
+          const HERO_ROWS = 4;
+          const HERO_NODE = 52;
+          const HERO_COL_GAP = 20;
+          const HERO_ROW_GAP = 16;
+          const heroGridW = HERO_COLS * HERO_NODE + (HERO_COLS - 1) * HERO_COL_GAP;
+          const heroGridH = HERO_ROWS * HERO_NODE + (HERO_ROWS - 1) * HERO_ROW_GAP;
+
+          const heroNodePos = (row: number, col: number) => ({
+            x: col * (HERO_NODE + HERO_COL_GAP) + HERO_NODE / 2,
+            y: (row - 1) * (HERO_NODE + HERO_ROW_GAP) + HERO_NODE / 2,
+          });
+
+          // Deduplicate hero choice nodes (show only first of each position)
+          const heroNodesDeduped = heroTree.filter((n, i, arr) => {
+            if (!n.isChoice) return true;
+            return arr.findIndex(x => x.row === n.row && x.col === n.col) === i;
+          });
+
+          // Short labels for compact nodes
+          const shortLabel = (label: string) => {
+            const map: Record<string, string> = {
+              'Kill Command': 'KC', 'Wildfire Bomb': 'WFB', 'Raptor Strike': 'RS',
+              'Guerrilla Tactics': 'GT', 'Tip of the Spear': 'TotS', 'Lunge': 'Lunge',
+              'Boomstick': 'Boom', 'Strike as One': 'SaO', 'Flamebreak': 'FB',
+              'Bloodseeker': 'BS', 'Quick Reload': 'QR', "Flanker's Advantage": 'FA',
+              'Two Against Many': 'TAM', 'Mongoose Fury': 'MF', 'Wildfire Shells': 'WFS',
+              'Shellshock': 'SS', 'Wallop': 'Wall', 'Bonding': 'Bond',
+              'Sweeping Spear': 'SwSp', 'Blackrock Munitions': 'BRM', 'Takedown': 'TD',
+              'Killer Companion': 'KComp', 'Twin Fangs': 'TF', 'Savagery': 'Sav',
+              'Wildfire Infusion': 'WFI', 'Flanked': 'Flnk', 'Lethal Calibration': 'LC',
+              'Primal Surge': 'PS', 'Raptor Swipe': 'RSwp',
+            };
+            return map[label] || label.split(' ').map(w => w[0]).join('');
+          };
+
+          return (
+            <Card span style={{ marginBottom:20 }}>
+              <Lbl>🌲 Talent Tree — {isSent ? 'Sentinel' : 'Pack Leader'}</Lbl>
+
+              {/* ── Budget summary ──────────────────────────── */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:24 }}>
+                {[
+                  { label:"ST Build", val:`${stPts} pts`, sub:"spec DPS nodes", clr:C.sentClr },
+                  { label:"AoE Build", val:`${aoePts} pts`, clr:'#f97316', sub:`incl. ${gatewayPts} gateway` },
+                  { label:"Hero Tree", val:`${heroPts} pts`, clr: heroClrL, sub:"all nodes · separate budget" },
+                  { label:"Total Tree", val:"~30 pts", clr:C.textMid, sub:"~11 pts for utility/class" },
+                ].map(s => (
+                  <div key={s.label} style={{ background:C.surface2, borderRadius:8,
+                    padding:"10px 12px", border:`1px solid ${C.border}`, textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7, color:C.textDim,
+                      letterSpacing:1.5, marginBottom:4 }}>{s.label}</div>
+                    <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:16,
+                      color:s.clr, marginBottom:2 }}>{s.val}</div>
+                    <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10, color:C.textDim }}>{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Legend ──────────────────────────────────── */}
+              <div style={{ display:"flex", gap:14, marginBottom:16, flexWrap:"wrap", alignItems:"center" }}>
+                {[
+                  { clr:'#60a5fa', label:'Core' }, { clr:'#4ade80', label:'ST' },
+                  { clr:'#f97316', label:'AoE' }, { clr:'#f59e0b', label:'Gateway' },
+                ].map(l => (
+                  <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                    <div style={{ width:10, height:10, borderRadius:"50%", background:l.clr, border:`2px solid ${l.clr}` }} />
+                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textMid }}>{l.label}</span>
+                  </div>
+                ))}
+                <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ width:10, height:10, borderRadius:"50%", border:"2px dashed #64748b" }} />
+                  <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textMid }}>2pt node</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:5, marginLeft:8 }}>
+                  <div style={{ width:12, height:12, transform:"rotate(45deg)", border:"2px solid #fbbf24", background:"#2a1f08" }} />
+                  <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textMid }}>Choice node</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:5, marginLeft:8 }}>
+                  <div style={{ width:14, height:14, borderRadius:"50%", background:"linear-gradient(135deg,#fbbf24,#f97316)", border:"2px solid #fbbf24" }} />
+                  <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textMid }}>Apex</span>
                 </div>
               </div>
-            ))}
-          </Card>
+
+              {/* ═══ SIDE-BY-SIDE LAYOUT: Spec + Hero ═══ */}
+              <div style={{ display:"flex", gap:28, alignItems:"flex-start", flexWrap:"wrap" }}>
+
+                {/* ── LEFT: SPEC TALENT TREE ── */}
+                <div style={{ flex:"1 1 auto", minWidth:gridW + 20 }}>
+                  <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:2.5,
+                    color:C.textSec, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ color:'#60a5fa' }}>◆</span> SPECIALIZATION TREE
+                    <div style={{ flex:1, height:1, background:C.border }} />
+                  </div>
+
+                  <div style={{ position:"relative", width:gridW, height:gridH, margin:"0 auto",
+                    background:`linear-gradient(180deg, ${C.surface2} 0%, ${C.surface} 100%)`,
+                    borderRadius:12, border:`1px solid ${C.border}`, padding:0, overflow:"visible" }}>
+
+                    {/* SVG prerequisite lines */}
+                    <svg style={{ position:"absolute", top:0, left:0, width:gridW, height:gridH,
+                      pointerEvents:"none", zIndex:1 }}>
+                      <defs>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.5" />
+                          <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.15" />
+                        </linearGradient>
+                      </defs>
+                      {SURVIVAL_SPEC_TREE.map(node =>
+                        node.prerequisites.map(prereq => {
+                          const parent = SURVIVAL_SPEC_TREE.find(n => n.key === prereq);
+                          if (!parent) return null;
+                          const from = nodePos(parent.row, parent.col);
+                          const to   = nodePos(node.row, node.col);
+                          return (
+                            <line key={`${prereq}-${node.key}`}
+                              x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                              stroke="url(#lineGrad)" strokeWidth={1.5}
+                              strokeDasharray={node.isGateway ? "4,3" : "none"}
+                              opacity={0.7} />
+                          );
+                        })
+                      )}
+                    </svg>
+
+                    {/* Nodes */}
+                    {SURVIVAL_SPEC_TREE.map(node => {
+                      const pos = nodePos(node.row, node.col);
+                      const clr = CAT_CLR[node.dpsCategory];
+                      const isApex = node.isApex;
+                      const isMultiPt = node.pointCost >= 2;
+                      const isChoice = node.gatewayNote?.startsWith('Choice node');
+                      const size = isApex ? 56 : NODE_SIZE;
+                      const inBuild = node.inSTBuild;
+
+                      return (
+                        <div key={node.key} title={`${node.label} (${node.pointCost}pt) — ${CAT_LBL[node.dpsCategory]}${node.gatewayNote ? '\n' + node.gatewayNote : ''}`}
+                          style={{
+                            position:"absolute", zIndex:3,
+                            left: pos.x - size/2, top: pos.y - size/2,
+                            width:size, height:size,
+                            display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                            cursor:"default",
+                            transition:"transform .15s, box-shadow .15s",
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.15)"; (e.currentTarget as HTMLElement).style.zIndex = "10"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.zIndex = "3"; }}
+                        >
+                          <div style={{
+                            width: isApex ? 46 : isMultiPt ? 40 : 36,
+                            height: isApex ? 46 : isMultiPt ? 40 : 36,
+                            borderRadius: isChoice ? 4 : "50%",
+                            transform: isChoice ? "rotate(45deg)" : "none",
+                            background: isApex
+                              ? "linear-gradient(135deg,#2a1f08,#1c1505)"
+                              : inBuild
+                                ? `radial-gradient(circle at 30% 30%, ${clr}33, ${CAT_BG[node.dpsCategory]})`
+                                : C.surface3,
+                            border: `2px solid ${inBuild ? clr : '#3e4a5e'}`,
+                            boxShadow: inBuild
+                              ? `0 0 ${isApex ? 16 : 10}px ${clr}44, inset 0 0 8px ${clr}22`
+                              : 'none',
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                          }}>
+                            <span style={{
+                              fontFamily:"'Orbitron',sans-serif",
+                              fontSize: isApex ? 10 : isMultiPt ? 9 : 8,
+                              fontWeight:700,
+                              color: inBuild ? clr : '#5a6a82',
+                              letterSpacing: 0.5,
+                              transform: isChoice ? "rotate(-45deg)" : "none",
+                              textAlign:"center", lineHeight:1.1,
+                            }}>
+                              {shortLabel(node.label)}
+                            </span>
+                          </div>
+
+                          <div style={{
+                            position:"absolute", bottom: isApex ? -14 : -12,
+                            fontFamily:"'Rajdhani',sans-serif", fontSize:8, fontWeight:600,
+                            color: inBuild ? C.textMid : '#3e4a5e',
+                            whiteSpace:"nowrap", textAlign:"center",
+                            maxWidth:60, overflow:"hidden", textOverflow:"ellipsis",
+                          }}>
+                            {node.label}
+                          </div>
+
+                          {isMultiPt && (
+                            <div style={{
+                              position:"absolute", top:-3, right:-3,
+                              width:16, height:16, borderRadius:"50%",
+                              background: isApex ? '#f59e0b' : '#fbbf24',
+                              color:"#000", fontFamily:"'Orbitron',sans-serif",
+                              fontSize:8, fontWeight:900,
+                              display:"flex", alignItems:"center", justifyContent:"center",
+                              border:"1.5px solid #000",
+                            }}>
+                              {node.pointCost}
+                            </div>
+                          )}
+
+                          <div style={{ position:"absolute", bottom: isApex ? -22 : -20,
+                            display:"flex", gap:3 }}>
+                            {node.inSTBuild && <div style={{ width:5, height:5, borderRadius:"50%", background:C.green }} />}
+                            {node.inAoEBuild && <div style={{ width:5, height:5, borderRadius:"50%", background:'#f97316' }} />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── RIGHT: HERO TALENT TREE ── */}
+                <div style={{ flex:"0 0 auto", minWidth:heroGridW + 20 }}>
+                  <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:2.5,
+                    color: heroClrL, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+                    <span>{hero === 'sentinel' ? '🌙' : '🐺'}</span>
+                    {hero === 'sentinel' ? 'SENTINEL' : 'PACK LEADER'} TREE
+                    <div style={{ flex:1, height:1, background:heroBdrL }} />
+                  </div>
+
+                  <div style={{ position:"relative", width:heroGridW, height:heroGridH, margin:"0 auto",
+                    background:`linear-gradient(180deg, ${heroBgL}cc 0%, ${C.surface} 100%)`,
+                    borderRadius:12, border:`1px solid ${heroBdrL}`, padding:0 }}>
+
+                    {/* SVG lines */}
+                    <svg style={{ position:"absolute", top:0, left:0, width:heroGridW, height:heroGridH,
+                      pointerEvents:"none", zIndex:1 }}>
+                      {[0,1,2,3].map(col => {
+                        const lines: any[] = [];
+                        for (let r = 1; r < 4; r++) {
+                          const fromNode = heroNodesDeduped.find(n => n.row === r && n.col === col);
+                          const toNode   = heroNodesDeduped.find(n => n.row === r+1 && n.col === col);
+                          if (fromNode && toNode) {
+                            const from = heroNodePos(r, col);
+                            const to   = heroNodePos(r+1, col);
+                            lines.push(
+                              <line key={`hero-${r}-${col}`}
+                                x1={from.x} y1={from.y + HERO_NODE/2 - 4}
+                                x2={to.x} y2={to.y - HERO_NODE/2 + 4}
+                                stroke={heroClrL} strokeWidth={1.5} opacity={0.35} />
+                            );
+                          }
+                        }
+                        if (col === 1) {
+                          const capstone = heroNodesDeduped.find(n => n.row === 4);
+                          if (capstone) {
+                            [0,1,2,3].forEach(srcCol => {
+                              const srcNode = heroNodesDeduped.find(n => n.row === 3 && n.col === srcCol);
+                              if (srcNode) {
+                                const from = heroNodePos(3, srcCol);
+                                const to   = heroNodePos(4, capstone.col);
+                                lines.push(
+                                  <line key={`hero-cap-${srcCol}`}
+                                    x1={from.x} y1={from.y + HERO_NODE/2 - 4}
+                                    x2={to.x} y2={to.y - HERO_NODE/2 + 4}
+                                    stroke={heroClrL} strokeWidth={1.5} opacity={0.25}
+                                    strokeDasharray="3,3" />
+                                );
+                              }
+                            });
+                          }
+                        }
+                        return lines;
+                      })}
+                    </svg>
+
+                    {/* Hero nodes */}
+                    {heroNodesDeduped.map(node => {
+                      const pos = heroNodePos(node.row, node.col);
+                      const isCapstone = node.row === 4;
+                      const isChoice = node.isChoice;
+                      const choicePartner = isChoice
+                        ? heroTree.find(n => n.row === node.row && n.col === node.col && n.key !== node.key)
+                        : null;
+                      const size = isCapstone ? 58 : HERO_NODE;
+
+                      return (
+                        <div key={node.key}
+                          title={`${node.label}${isChoice && choicePartner ? ' / ' + choicePartner.label : ''}${node.desc ? '\n' + node.desc : ''}`}
+                          style={{
+                            position:"absolute", zIndex:3,
+                            left: pos.x - size/2, top: pos.y - size/2,
+                            width:size, height:size,
+                            display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                            cursor:"default",
+                            transition:"transform .15s",
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.12)"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+                        >
+                          <div style={{
+                            width: isCapstone ? 48 : isChoice ? 38 : 40,
+                            height: isCapstone ? 48 : isChoice ? 38 : 40,
+                            borderRadius: isChoice ? 6 : "50%",
+                            transform: isChoice ? "rotate(45deg)" : "none",
+                            background: isCapstone
+                              ? `radial-gradient(circle at 30% 30%, ${heroClrL}44, ${heroBgL})`
+                              : `radial-gradient(circle at 30% 30%, ${heroClrL}22, ${heroBgL})`,
+                            border: `2px solid ${isCapstone ? heroClrL : heroBdrL}`,
+                            boxShadow: isCapstone
+                              ? `0 0 18px ${heroClrL}55, inset 0 0 10px ${heroClrL}22`
+                              : `0 0 8px ${heroClrL}22`,
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                          }}>
+                            <span style={{
+                              fontFamily:"'Orbitron',sans-serif",
+                              fontSize: isCapstone ? 8 : 7,
+                              fontWeight:700,
+                              color: heroClrL,
+                              transform: isChoice ? "rotate(-45deg)" : "none",
+                              textAlign:"center", lineHeight:1,
+                              letterSpacing:0.3,
+                            }}>
+                              {node.label.split(' ').map(w => w[0]).join('')}
+                            </span>
+                          </div>
+
+                          <div style={{
+                            position:"absolute", bottom: isCapstone ? -16 : -13,
+                            fontFamily:"'Rajdhani',sans-serif", fontSize:8, fontWeight:600,
+                            color: heroClrL, whiteSpace:"nowrap", textAlign:"center",
+                            maxWidth:70, overflow:"hidden", textOverflow:"ellipsis",
+                            opacity:0.8,
+                          }}>
+                            {node.label}
+                          </div>
+
+                          {isChoice && choicePartner && (
+                            <div style={{
+                              position:"absolute", top:-8,
+                              fontFamily:"'Rajdhani',sans-serif", fontSize:7,
+                              color:C.goldLight, background:C.goldBg,
+                              borderRadius:3, padding:"0 4px",
+                              border:"1px solid rgba(217,119,6,.4)",
+                            }}>
+                              ↔
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })()}
+
+        {/* ═══════════════════════════════════════════════════
+            ROW — Consumables, Rotation Priority, M+ Tips (3-col compact)
+        ═══════════════════════════════════════════════════ */}
+        <div className="g-3col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr",
+          gap:16, marginBottom:20 }}>
 
           {/* Consumables */}
           <Card>
-            <Lbl>🧪 Consumables (Midnight 12.0.1)</Lbl>
+            <Lbl>🧪 Consumables</Lbl>
             {[
-              { icon:"🧪", label:"Flask",         item:"Flask of the Magisters",        note:"Best Agility flask. 60-min duration, persists through death." },
-              { icon:"⚗️", label:"Combat Potion", item:"Draught of Rampant Abandon",    note:"Use on pull. Second pot during Takedown burst window at ~3–4 min." },
-              { icon:"🗡️", label:"Weapon Oil",    item:"Thalassian Phoenix Oil",         note:"Fire damage proc — synergises with Flamebreak's all-fire-damage +15% bonus." },
-              { icon:"🍖", label:"Food",          item:"Silvermoon Parade (Agility)",    note:"Always use Agility food. Vers food is a meaningful step down." },
-              { icon:"💎", label:"Meta Gem",      item:"Eversong Diamond",              note:"Agility proc. Socket in helm — highest priority socket." },
-              { icon:"🔮", label:"Augment Rune",  item:"Crystalline Augment Rune",      note:"Use on pull for every prog attempt or parse attempt." },
+              { icon:"🧪", label:"Flask",         item:"Flask of the Magisters",        note:"Best Agi flask. 60-min, persists through death." },
+              { icon:"⚗️", label:"Combat Potion", item:"Draught of Rampant Abandon",    note:"Use on pull. 2nd pot during Takedown burst." },
+              { icon:"🗡️", label:"Weapon Oil",    item:"Thalassian Phoenix Oil",         note:"Fire proc — synergises with Flamebreak +15%." },
+              { icon:"🍖", label:"Food",          item:"Silvermoon Parade (Agi)",        note:"Always Agi food. Vers is a step down." },
+              { icon:"💎", label:"Meta Gem",      item:"Eversong Diamond",              note:"Agi proc. Socket in helm first." },
+              { icon:"🔮", label:"Augment Rune",  item:"Crystalline Augment Rune",      note:"Use on every prog/parse attempt." },
             ].map((c, i) => (
-              <div key={i} style={{ display:"flex", gap:10, marginBottom:12, alignItems:"flex-start" }}>
-                <span style={{ fontSize:14, flexShrink:0, width:22, textAlign:"center" }}>{c.icon}</span>
+              <div key={i} style={{ display:"flex", gap:8, marginBottom:8, alignItems:"flex-start" }}>
+                <span style={{ fontSize:12, flexShrink:0, width:18, textAlign:"center" }}>{c.icon}</span>
                 <div>
-                  <div style={{ display:"flex", gap:8, alignItems:"baseline", marginBottom:2 }}>
-                    <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8,
+                  <div style={{ display:"flex", gap:6, alignItems:"baseline", marginBottom:1 }}>
+                    <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
                       color:C.textDim, letterSpacing:1 }}>{c.label}</span>
-                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
+                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
                       color:C.goldLight, fontWeight:600 }}>{c.item}</span>
                   </div>
-                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
-                    color:C.textMid, lineHeight:1.5 }}>{c.note}</div>
+                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
+                    color:C.textMid, lineHeight:1.4 }}>{c.note}</div>
                 </div>
               </div>
             ))}
@@ -281,20 +625,42 @@ export default function Guide() {
 
           {/* Rotation Priority */}
           <Card>
-            <Lbl>🔄 Rotation Priority Notes</Lbl>
-            <div style={{ marginBottom:12, padding:"8px 12px", background:heroBg,
+            <Lbl>🔄 Rotation Priority</Lbl>
+            <div style={{ marginBottom:8, padding:"6px 10px", background:heroBg,
               border:`1px solid ${heroBdr}`, borderRadius:8,
-              fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textSec }}>
+              fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textSec }}>
               {isSent
-                ? "Sentinel: RS → Sentinel Mark procs → Lunar Storm. KC crits are the 2pc engine. Never delay KC."
-                : "Pack Leader: KC first, always. Every KC is a potential beast spawn. Takedown → Stampede capstone."}
+                ? "Sentinel: RS → Sentinel Mark procs → Lunar Storm. Never delay KC."
+                : "Pack Leader: KC first, always. Every KC = potential beast spawn."}
             </div>
             {theory.rotationNotes.map((n, i) => (
-              <div key={i} style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
-                color:C.textSec, padding:"8px 12px", marginBottom:8,
+              <div key={i} style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
+                color:C.textSec, padding:"5px 10px", marginBottom:5,
                 background:C.surface2, borderRadius:6,
-                border:`1px solid ${C.border}`, lineHeight:1.5 }}>
-                <span style={{ color:heroClr, marginRight:8 }}>→</span>{n}
+                border:`1px solid ${C.border}`, lineHeight:1.4 }}>
+                <span style={{ color:heroClr, marginRight:6 }}>→</span>{n}
+              </div>
+            ))}
+          </Card>
+
+          {/* M+ Tips */}
+          <Card>
+            <Lbl>🏰 Mythic+ Tips</Lbl>
+            {[
+              { icon:"🎯", tip:"Pull around Takedown", desc:"Chain pulls so Takedown is off CD when packs land." },
+              { icon:"💣", tip:"Pool WFB charges", desc:"Never let WFB sit at 2 charges — throw immediately on pack." },
+              { icon:"⚡", tip:"Lunar Storm positioning",  desc:"Position so Sentinel Mark AoE hits the full pack." },
+              { icon:"🐾", tip:"Misdirect on every CD", desc:"MD tank every 30s. Macro: /cast [@focus] Misdirection." },
+              { icon:"🌀", tip:"Hold Boomstick for packs", desc:"If new pack in <10s, delay for grouped targets." },
+            ].map((t, i) => (
+              <div key={i} style={{ display:"flex", gap:8, marginBottom:8, alignItems:"flex-start" }}>
+                <span style={{ fontSize:12, flexShrink:0, width:18, textAlign:"center" }}>{t.icon}</span>
+                <div>
+                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
+                    color:C.goldLight, fontWeight:700, marginBottom:1 }}>{t.tip}</div>
+                  <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
+                    color:C.textMid, lineHeight:1.4 }}>{t.desc}</div>
+                </div>
               </div>
             ))}
           </Card>
@@ -416,209 +782,6 @@ export default function Guide() {
             ))}
           </div>
         </Card>
-
-        {/* ═══════════════════════════════════════════════════
-            SECTION — Talent Tree Path & Constraints
-        ═══════════════════════════════════════════════════ */}
-        {(() => {
-          const heroTree = HERO_TALENT_TREES[hero];
-          const rows = [1,2,3,4,5,6,7];
-          const CAT_CLR:  Record<string,string> = { core:'#60a5fa', st:'#4ade80', aoe:'#f97316', gateway:'#f59e0b' };
-          const CAT_BG:   Record<string,string> = { core:'#0c1a2e', st:'#0f2a1a', aoe:'#1f1000', gateway:'#2a1f08' };
-          const CAT_LBL:  Record<string,string> = { core:'CORE', st:'ST', aoe:'AoE', gateway:'GATEWAY' };
-          const heroClrL  = hero === 'sentinel' ? C.sentClr : C.packClr;
-          const heroBgL   = hero === 'sentinel' ? C.sentBg  : C.packBg;
-          const heroBdrL  = hero === 'sentinel' ? C.sentBdr : C.packBdr;
-
-          // Point totals for the selected build
-          const specNodes = SURVIVAL_SPEC_TREE.filter(n =>
-            hero === 'sentinel' ? n.inSTBuild : n.inSTBuild  // default to ST build display
-          );
-          const stPts  = SURVIVAL_SPEC_TREE.filter(n => n.inSTBuild).reduce((s,n) => s+n.pointCost, 0);
-          const aoePts = SURVIVAL_SPEC_TREE.filter(n => n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
-          const heroPts = heroTree.length; // all 13 hero nodes, 1pt each
-          const gatewayPts = SURVIVAL_SPEC_TREE.filter(n => n.isGateway && n.inAoEBuild).reduce((s,n) => s+n.pointCost, 0);
-
-          return (
-            <Card span style={{ marginBottom:20 }}>
-              <Lbl>🌲 Spec Talent Tree — Path, Gates & Forced Picks</Lbl>
-              <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:C.textDim,
-                marginTop:0, marginBottom:14, lineHeight:1.6 }}>
-                Blizzard's talent tree enforces two constraints: <strong style={{color:C.textSec}}>row gates</strong> (you must spend N
-                points in earlier rows to unlock deeper nodes) and <strong style={{color:C.textSec}}>prerequisite links</strong> (some talents
-                require a specific prior node). This means certain <strong style={{color:'#f59e0b'}}>gateway talents</strong> must be taken
-                not for their own value, but to open the path to better nodes.
-              </p>
-
-              {/* ── Budget summary ──────────────────────────── */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:18 }}>
-                {[
-                  { label:"ST Build Total", val:`${stPts} pts`, sub:"spec tree (DPS nodes)", clr:C.sentClr },
-                  { label:"AoE Build Total", val:`${aoePts} pts`, clr:'#f97316',
-                    sub:`incl. ${gatewayPts} gateway pts` },
-                  { label:"Hero Talent Tree", val:`${heroPts} pts`, clr: heroClrL,
-                    sub:"separate budget · all 13 nodes" },
-                  { label:"Full 30-pt Tree", val:"~30 pts", clr:C.textMid,
-                    sub:"rem. ~11 pts = utility + class tree" },
-                ].map(s => (
-                  <div key={s.label} style={{ background:C.surface2, borderRadius:8,
-                    padding:"12px 14px", border:`1px solid ${C.border}`, textAlign:"center" }}>
-                    <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7, color:C.textDim,
-                      letterSpacing:1.5, marginBottom:6 }}>{s.label}</div>
-                    <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:18,
-                      color:s.clr, marginBottom:4 }}>{s.val}</div>
-                    <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:C.textDim }}>{s.sub}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* ── Row-by-row spec tree ─────────────────────── */}
-              <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
-                color:C.textDim, marginBottom:10 }}>SPEC TALENT TREE — ROW BY ROW</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:20 }}>
-                {rows.map(row => {
-                  const nodes = SURVIVAL_SPEC_TREE.filter(n => n.row === row);
-                  const gate  = ROW_GATES[row];
-                  return (
-                    <div key={row} style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
-                      {/* Row label */}
-                      <div style={{ width:72, flexShrink:0, paddingTop:10 }}>
-                        <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
-                          color:C.textDim, letterSpacing:1 }}>ROW {row}</div>
-                        <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
-                          color: gate === 0 ? C.green : C.textDim, marginTop:2 }}>
-                          {gate === 0 ? 'FREE' : `≥${gate}pt`}
-                        </div>
-                      </div>
-                      {/* Talent nodes */}
-                      <div style={{ display:"flex", flexWrap:"wrap", gap:6, flex:1 }}>
-                        {nodes.map(node => {
-                          const clr = CAT_CLR[node.dpsCategory];
-                          const bg  = CAT_BG[node.dpsCategory];
-                          const hasNote = node.isGateway || node.isApex || (node.pointCost === 2 && node.dpsCategory !== 'gateway');
-                          return (
-                            <div key={node.key} style={{
-                              borderRadius:8, padding:"8px 12px",
-                              background: node.isGateway ? '#1c1505' : bg,
-                              border:`1px solid ${node.isGateway ? '#f59e0b66' : clr+'44'}`,
-                              minWidth:160, maxWidth:260, flex:"1 1 160px",
-                            }}>
-                              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-                                <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
-                                  fontWeight:700, color:clr }}>
-                                  {node.label}
-                                </span>
-                                <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
-                                  color: node.pointCost === 2 ? '#fbbf24' : C.textDim,
-                                  background: node.pointCost === 2 ? '#2a1f08' : C.surface3,
-                                  borderRadius:3, padding:"1px 5px",
-                                  fontWeight: node.pointCost === 2 ? 700 : 400 }}>
-                                  {node.pointCost}pt
-                                </span>
-                                <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
-                                  color:clr, background:bg, border:`1px solid ${clr}44`,
-                                  borderRadius:3, padding:"1px 5px", letterSpacing:1 }}>
-                                  {node.isApex ? 'APEX' : CAT_LBL[node.dpsCategory]}
-                                </span>
-                              </div>
-                              {node.prerequisites.length > 0 && (
-                                <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10,
-                                  color:C.textDim, marginBottom:3 }}>
-                                  🔗 requires:{" "}
-                                  {node.prerequisites.map(p => {
-                                    const pn = SURVIVAL_SPEC_TREE.find(x => x.key === p);
-                                    return pn?.label ?? p;
-                                  }).join(' + ')}
-                                </div>
-                              )}
-                              {/* ST / AoE build membership */}
-                              <div style={{ display:"flex", gap:4, marginBottom: hasNote ? 5 : 0 }}>
-                                {node.inSTBuild  && <span style={{ fontSize:9, color:C.green,  background:C.greenBg, borderRadius:3, padding:"0 5px" }}>✓ ST</span>}
-                                {node.inAoEBuild && <span style={{ fontSize:9, color:'#f97316', background:'#1f1000', borderRadius:3, padding:"0 5px" }}>✓ AoE</span>}
-                                {!node.inSTBuild && !node.inAoEBuild && <span style={{ fontSize:9, color:C.textDim }}>situational</span>}
-                              </div>
-                              {hasNote && node.gatewayNote && (
-                                <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10,
-                                  color: node.isGateway ? '#f59e0b' : '#60a5fa',
-                                  lineHeight:1.4,
-                                  borderTop:`1px solid ${C.borderSub}`, paddingTop:4, marginTop:4 }}>
-                                  {node.isGateway ? '⚠ ' : 'ℹ '}{node.gatewayNote}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* ── Hero talent tree path ────────────────────── */}
-              <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
-                color: heroClrL, marginBottom:10 }}>
-                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT TREE (13 pts · WoWHead-verified)
-              </div>
-              {/* 4-row × 4-col grid matching actual WoWHead tree layout */}
-              <div style={{
-                display:"grid", gridTemplateColumns:"repeat(4, 1fr)",
-                gridTemplateRows:"repeat(4, auto)", gap:8, marginBottom:14
-              }}>
-                {heroTree.map((node) => {
-                  const isCapstone = node.row === 4;
-                  return (
-                    <div key={node.key} style={{
-                      gridColumn: node.col + 1,
-                      gridRow: node.row,
-                      borderRadius:8, padding:"10px 12px",
-                      background: isCapstone ? heroBgL : C.surface2,
-                      border:`1px solid ${isCapstone ? heroClrL : heroBdrL}`,
-                    }}>
-                      <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:7,
-                        color: isCapstone ? heroClrL : C.textDim, letterSpacing:1.5, marginBottom:3 }}>
-                        {isCapstone ? 'CAPSTONE' : `ROW ${node.row}`} · 1pt
-                      </div>
-                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
-                        fontWeight:700, color:heroClrL, marginBottom:4 }}>{node.label}</div>
-                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11,
-                        color:C.textMid, lineHeight:1.4 }}>{node.desc}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* ── Interactive Hero Talent Tree ────────────── */}
-              <HeroTalentTree heroKey={hero} />
-
-              {/* ── Gateway talent callout ───────────────────── */}
-              <div style={{ background:'#1c1505', border:'1px solid #f59e0b55',
-                borderRadius:10, padding:"12px 16px" }}>
-                <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:'#f59e0b',
-                  letterSpacing:2, marginBottom:8 }}>⚠ GATEWAY / FORCED PICKS EXPLAINED</div>
-                <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13, color:'#fbbf24',
-                  margin:"0 0 8px", lineHeight:1.5 }}>
-                  Some talents in the AoE path exist primarily as path gates — their standalone DPS value
-                  is lower than what you'd choose if points were unrestricted, but the tree path forces
-                  them to reach higher-value nodes.
-                </p>
-                {SURVIVAL_SPEC_TREE.filter(n => n.isGateway).map(node => (
-                  <div key={node.key} style={{ display:"flex", gap:10, padding:"8px 0",
-                    borderTop:`1px solid ${C.borderSub}` }}>
-                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13,
-                      fontWeight:700, color:'#f59e0b', minWidth:140 }}>{node.label}</span>
-                    <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12,
-                      color:C.textMid, lineHeight:1.5 }}>{node.gatewayNote}</span>
-                  </div>
-                ))}
-                <div style={{ marginTop:10, fontFamily:"'Rajdhani',sans-serif", fontSize:12,
-                  color:C.textDim, borderTop:`1px solid ${C.borderSub}`, paddingTop:8 }}>
-                  The DPS delta table on the right accounts for gateway picks — their removal cost
-                  reflects both their own value <em>and</em> the fact that removing them collapses
-                  the entire downstream path.
-                </div>
-              </div>
-            </Card>
-          );
-        })()}
 
         {/* ═══════════════════════════════════════════════════
             SECTION — Talent Delta Table
