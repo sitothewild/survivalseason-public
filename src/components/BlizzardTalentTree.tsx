@@ -520,7 +520,7 @@ function TalentSection({
   const { numRows, numCols, w, h, rowMap, colMap } = useMemo(
     () => gridDimensions(nodes), [nodes],
   );
-  const { w, h, minRow, minCol } = sectionSize(nodes);
+  
   const nodeMap = useMemo(() => buildNodeMap(nodes), [nodes]);
 
   // Compute usedPts from non-core selected nodes
