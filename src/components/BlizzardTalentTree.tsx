@@ -401,9 +401,7 @@ function TalentNode({
           style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative", flexShrink: 0 }}
         >
           <img
-            src={node.entries[1]?.spell_tooltip?.spell?.id
-              ? (mediaMap[node.entries[1].spell_tooltip.spell.id] ?? FALLBACK_ICON)
-              : FALLBACK_ICON}
+            src={resolveIcon(node.entries[1]?.spell_tooltip?.spell?.id, mediaMap)}
             alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
             style={{
