@@ -802,6 +802,38 @@ function computeAbilityDps(
     dmgPerCast *= 1 + takedownUptime * 0.20;
   }
 
+  // ── Class talent: Alpha Predator ──
+  if (key === 'killCommand' && talents.alphaPredator) {
+    dmgPerCast *= 1.15;
+    notes.push('Alpha Predator: KC +15% dmg');
+  }
+
+  // ── Class talent: Keen Eyesight (global crit bonus handled via critPct already; note it) ──
+  // Keen Eyesight adds +2% crit chance — modeled as already baked into gear critPct
+
+  // ── Class talent: Master Marksman ──
+  if (talents.masterMarksman) {
+    critMult += 0.07;
+    // Already applied via critScalar above? No — critScalar was computed earlier.
+    // Re-apply: we need to recompute. For simplicity, apply as flat bonus.
+    dmgPerCast *= 1 + (critFrac * 0.07);
+    notes.push('Master Marksman: +7% crit dmg');
+  }
+
+  // ── Class talent: Serrated Shots ──
+  if (spell.isBleed && talents.serratedShots) {
+    dmgPerCast *= 1.10;
+    notes.push('Serrated Shots: bleed +10% dmg');
+  }
+
+  // ── Class talent: Killer Instinct ──
+  // KC deals 50% increased damage against targets below 35% HP
+  // Model as ~17.5% average bonus (35% × 50%)
+  if (key === 'killCommand' && talents.killerInstinct) {
+    dmgPerCast *= 1.175;
+    notes.push('Killer Instinct: KC +17.5% avg (35% HP threshold)');
+  }
+
   // ── Flanker's Advantage: Kill Command damage bonus ──
   // Pet attacks from flanking position grant KC increased damage.
   // Estimated: ~12% avg KC damage increase at ~70% flank uptime.
