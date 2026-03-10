@@ -4,7 +4,7 @@
 // Pre-allocated for hot-loop performance (no allocations per event).
 // ─────────────────────────────────────────────────────────────
 
-import type { HeroTree, PlayerStats } from "./types";
+import type { HeroTree, PlayerStats, ResolvedBuffMultipliers } from "./types";
 
 // ── Aura (buff/debuff) ────────────────────────────────────────
 
@@ -221,10 +221,21 @@ export class CombatState {
   hero: HeroTree;
   numTargets: number;
 
-  constructor(stats: PlayerStats, hero: HeroTree, numTargets: number) {
+  // External buff multipliers (from SimOptions)
+  /** Multiplicative damage modifier from raid debuffs (Mystic Touch, Hunter's Mark) */
+  externalDmgMult: number = 1.0;
+  /** Additive versatility % bonus from raid buffs (Mark of the Wild) */
+  externalVersPctBonus: number = 0;
+
+  constructor(stats: PlayerStats, hero: HeroTree, numTargets: number, buffMults?: ResolvedBuffMultipliers) {
     this.baseStats = stats;
     this.hero = hero;
     this.numTargets = numTargets;
+
+    if (buffMults) {
+      this.externalDmgMult = buffMults.dmgMult;
+      this.externalVersPctBonus = buffMults.versPctBonus;
+    }
 
     // Initialize targets
     for (let i = 0; i < numTargets; i++) {
@@ -263,7 +274,7 @@ export class CombatState {
     this.currentCritPct = (s.critRating + bonusCrit) / 180 + 5; // base 5% crit
     this.currentHastePct = (s.hasteRating + bonusHaste) / 170;
     this.currentMasteryPct = (s.masteryRating + bonusMastery) / 180;
-    this.currentVersPct = (s.versatilityRating + bonusVers) / 205;
+    this.currentVersPct = (s.versatilityRating + bonusVers) / 205 + this.externalVersPctBonus;
   }
 
   /** Apply an aura to the player */
@@ -336,13 +347,14 @@ export class CombatState {
     this.focus = Math.min(this.maxFocus, this.focus + elapsedSec * hasteRegen);
   }
 
-  /** Record damage dealt */
+  /** Record damage dealt (applies external damage multipliers from raid buffs) */
   recordDamage(abilityKey: string, damage: number, isCrit: boolean, targetId: number): void {
-    this.totalDamage += damage;
-    this.breakdown.add(abilityKey, damage, isCrit);
+    const finalDmg = damage * this.externalDmgMult;
+    this.totalDamage += finalDmg;
+    this.breakdown.add(abilityKey, finalDmg, isCrit);
     if (targetId >= 0 && targetId < this.targets.length) {
-      this.targets[targetId].damage += damage;
-      this.perTargetDamage.set(targetId, (this.perTargetDamage.get(targetId) ?? 0) + damage);
+      this.targets[targetId].damage += finalDmg;
+      this.perTargetDamage.set(targetId, (this.perTargetDamage.get(targetId) ?? 0) + finalDmg);
     }
   }
 

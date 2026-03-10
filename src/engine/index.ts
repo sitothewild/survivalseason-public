@@ -7,6 +7,8 @@ export type {
   SimInput,
   SimResult,
   SimConfig,
+  SimOptions,
+  ResolvedBuffMultipliers,
   PlayerStats,
   TalentState,
   EquippedTrinket,
@@ -44,6 +46,28 @@ export { runSimulation } from "./SimLoop";
 
 // Builder
 export { buildSimInput, addStatRating, addPrimaryStat } from "./buildSimInput";
+
+// Advanced Options
+export { applySimOptions } from "./applySimOptions";
+export {
+  DEFAULT_SIM_OPTIONS,
+  FULL_RAID_OPTIONS,
+  MPLUS_CASUAL_OPTIONS,
+  NAKED_OPTIONS,
+  createSimOptions,
+} from "./simOptionsPresets";
+
+// Consumable data
+export {
+  PHIALS,
+  FOOD_BUFFS,
+  POTIONS,
+  WEAPON_ENHANCEMENTS,
+  AUGMENT_RUNES,
+  RAID_BUFFS,
+  calcEnchantStats,
+  calcGemStats,
+} from "./consumables";
 
 // Worker pool
 export { WorkerPool, getWorkerPool } from "./WorkerPool";

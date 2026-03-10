@@ -99,6 +99,23 @@ export interface SimInput {
   stats: PlayerStats;
   talents: TalentState;
   trinkets: [EquippedTrinket, EquippedTrinket];
+  /** Advanced options: buffs, consumables, enchants, gems, enhancements.
+   *  If undefined, DEFAULT_SIM_OPTIONS (full raid) is used. */
+  simOptions?: SimOptions;
+  /** Pre-resolved multipliers from raid buffs. Applied in damage calc. */
+  buffMults?: ResolvedBuffMultipliers;
+  /** Weapon enhancement damage proc (resolved from SimOptions) */
+  weaponProc?: {
+    dmgApCoef: number;
+    dmgCPM: number;
+    school: string;
+  };
+  /** Potion aura to apply at pull (resolved from SimOptions) */
+  potionAura?: {
+    stat: string;
+    amount: number;
+    durationMs: number;
+  };
 }
 
 // ── SimResult ─────────────────────────────────────────────────
@@ -153,6 +170,59 @@ export interface DamageInstance {
   isCrit: boolean;
   target: number;
   tMs: number;
+}
+
+// ── SimOptions (Advanced Options) ────────────────────────────
+// Toggleable buffs, consumables, enchants, gems, weapon enhancements.
+// All values inject real stat ratings into PlayerStats before the sim runs.
+
+export interface SimOptions {
+  // ── Raid Buffs (toggleable) ─────────────────────────────
+  raidBuffs: {
+    battleShout: boolean;     // +5% AP
+    markOfTheWild: boolean;   // +3% Vers
+    mysticTouch: boolean;     // +5% phys damage taken
+    huntersMark: boolean;     // +5% damage to target
+  };
+
+  // ── Consumables ─────────────────────────────────────────
+  /** Phial/flask key from PHIALS array, or "none" */
+  phial: string;
+  /** Food key from FOOD_BUFFS array, or "none" */
+  food: string;
+  /** Potion key from POTIONS array, or "none" */
+  potion: string;
+
+  // ── Weapon Enhancement ──────────────────────────────────
+  /** Weapon enhancement key from WEAPON_ENHANCEMENTS, or "none" */
+  weaponEnhancement: string;
+
+  // ── Augment Rune ────────────────────────────────────────
+  augmentRune: boolean;
+
+  // ── Enchants ────────────────────────────────────────────
+  /** Per-slot enchant selection. Key = slot name, value = enchant name.
+   *  If "auto", applies BiS enchants for the hero spec. */
+  enchants: "auto" | Record<string, string>;
+
+  // ── Gems ────────────────────────────────────────────────
+  gems: {
+    totalSockets: number;
+    primaryStat: "crit" | "haste" | "mastery" | "vers";
+    hasBlasphemite: boolean;
+  };
+
+  // ── Tier Set ────────────────────────────────────────────
+  has2pc: boolean;
+  has4pc: boolean;
+}
+
+// ── Resolved multipliers from raid buffs ─────────────────────
+
+export interface ResolvedBuffMultipliers {
+  apMult: number;       // multiplicative AP modifier (Battle Shout)
+  dmgMult: number;      // multiplicative damage modifier (Mystic Touch, Hunter's Mark)
+  versPctBonus: number; // additive vers % (Mark of the Wild)
 }
 
 // ── Stat Weight Result ────────────────────────────────────────

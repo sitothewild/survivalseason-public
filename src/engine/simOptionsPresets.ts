@@ -1,0 +1,94 @@
+// ─────────────────────────────────────────────────────────────
+// engine/simOptionsPresets.ts
+// Default SimOptions presets for common scenarios.
+// ─────────────────────────────────────────────────────────────
+
+import type { SimOptions } from "./types";
+
+/** Full raid: all buffs, BiS consumables, BiS enchants/gems, augment rune */
+export const FULL_RAID_OPTIONS: SimOptions = {
+  raidBuffs: {
+    battleShout: true,
+    markOfTheWild: true,
+    mysticTouch: true,
+    huntersMark: true,
+  },
+  phial: "alchemical_chaos",
+  food: "mastery_food",
+  potion: "tempered_potion",
+  weaponEnhancement: "ironclaw_whetstone",
+  augmentRune: true,
+  enchants: "auto",
+  gems: {
+    totalSockets: 6,
+    primaryStat: "mastery",
+    hasBlasphemite: true,
+  },
+  has2pc: true,
+  has4pc: true,
+};
+
+/** M+ casual: most buffs, basic consumables, enchants/gems */
+export const MPLUS_CASUAL_OPTIONS: SimOptions = {
+  raidBuffs: {
+    battleShout: true,
+    markOfTheWild: true,
+    mysticTouch: false,   // no monk in many groups
+    huntersMark: true,
+  },
+  phial: "alchemical_chaos",
+  food: "mastery_food",
+  potion: "none",
+  weaponEnhancement: "algari_mana_oil",
+  augmentRune: false,
+  enchants: "auto",
+  gems: {
+    totalSockets: 6,
+    primaryStat: "mastery",
+    hasBlasphemite: true,
+  },
+  has2pc: true,
+  has4pc: true,
+};
+
+/** Naked: no external buffs, no consumables, no enhancements */
+export const NAKED_OPTIONS: SimOptions = {
+  raidBuffs: {
+    battleShout: false,
+    markOfTheWild: false,
+    mysticTouch: false,
+    huntersMark: false,
+  },
+  phial: "none",
+  food: "none",
+  potion: "none",
+  weaponEnhancement: "none",
+  augmentRune: false,
+  enchants: "auto",
+  gems: {
+    totalSockets: 6,
+    primaryStat: "mastery",
+    hasBlasphemite: true,
+  },
+  has2pc: true,
+  has4pc: true,
+};
+
+/** Default = full raid */
+export const DEFAULT_SIM_OPTIONS: SimOptions = FULL_RAID_OPTIONS;
+
+/** Create a copy with specific overrides */
+export function createSimOptions(overrides: Partial<SimOptions>): SimOptions {
+  return {
+    ...FULL_RAID_OPTIONS,
+    ...overrides,
+    raidBuffs: {
+      ...FULL_RAID_OPTIONS.raidBuffs,
+      ...(overrides.raidBuffs ?? {}),
+    },
+    gems: {
+      ...FULL_RAID_OPTIONS.gems,
+      ...(overrides.gems ?? {}),
+    },
+  };
+}

@@ -105,7 +105,7 @@ export function runSimulation(input: SimInput): SimResult {
     const rng = new RNG(seed);
     const prdState = createPRDState();
 
-    const state = new CombatState(stats, config.hero, config.targets);
+    const state = new CombatState(stats, config.hero, config.targets, input.buffMults);
 
     // Initialize cooldowns
     initializeCooldowns(state, talents);
@@ -226,6 +226,14 @@ function runIteration(
   scheduleAutoAttack(queue, 0, input.stats.weapon.mainHandSpeed * 1000);
   queue.enqueue({ tMs: 0, priority: EventPriority.GCD_READY, type: "gcd_ready" });
 
+  // Apply pre-pot at pull (potion aura from SimOptions)
+  if (input.potionAura) {
+    const { stat, amount, durationMs } = input.potionAura;
+    state.applyAura("potion", durationMs, 1, { [stat]: amount });
+    // Second use at ~50% fight or during burst — schedule cooldown
+    state.cooldowns.init("potion", 1, endMs); // single charge, CD = fight length (only 1 use modeled)
+  }
+
   // Main event loop
   while (queue.size > 0) {
     const event = queue.dequeue()!;
@@ -259,6 +267,11 @@ function runIteration(
 
     // Process trinket procs on every event
     processTrinkets(state, rng, input, event.type);
+
+    // Process weapon enhancement damage procs
+    if (input.weaponProc && event.type === "auto_attack") {
+      processWeaponProc(state, rng, input);
+    }
   }
 
   return { timeline: captureTimeline ? timeline : undefined };
@@ -817,6 +830,31 @@ function processTrinkets(
         }
         break;
     }
+  }
+}
+
+// ── Weapon enhancement proc ──────────────────────────────────
+
+function processWeaponProc(
+  state: CombatState,
+  rng: RNG,
+  input: SimInput,
+): void {
+  const wp = input.weaponProc;
+  if (!wp) return;
+
+  const hasteMult = 1 + state.currentHastePct / 100;
+  const autoSpeed = MELEE_SWING_MS / hasteMult / 1000;
+  const chancePerAttack = (wp.dmgCPM / 60) * autoSpeed;
+
+  if (rng.roll() < chancePerAttack) {
+    let dmg = state.currentAP * wp.dmgApCoef;
+    // Non-physical procs bypass armor
+    if (wp.school === "physical") {
+      const mitigation = computeArmorMitigation(BOSS_ARMOR, ARMOR_K);
+      dmg *= (1 - mitigation);
+    }
+    state.recordDamage("weapon_enhancement", dmg, false, 0);
   }
 }
 

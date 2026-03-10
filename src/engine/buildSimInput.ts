@@ -4,22 +4,29 @@
 // TalentPanel, stat weight runner, and talent comparison ALL call this.
 // ─────────────────────────────────────────────────────────────
 
-import type { SimInput, SimConfig, FightStyle, HeroTree } from "./types";
+import type { SimInput, SimConfig, SimOptions, FightStyle, HeroTree } from "./types";
 import { gearToPlayerStats } from "./adapters/gearToStats";
 import { buildTalentStateFromConfig } from "./adapters/talentsToEngine";
 import { getEquippedTrinkets } from "./adapters/trinketsToEngine";
 import { DEFAULT_APLS, getDefaultAPLKey } from "./APLEngine";
+import { applySimOptions } from "./applySimOptions";
+import { DEFAULT_SIM_OPTIONS } from "./simOptionsPresets";
 
 export function buildSimInput(
   hero: HeroTree,
   fightStyle: FightStyle,
   options?: Partial<SimConfig>,
+  simOptions?: SimOptions,
 ): SimInput {
   const isAoe = fightStyle !== "raid_st";
   const talents = buildTalentStateFromConfig(hero, isAoe ? "aoe" : "st");
   const useMythIlvl = options?.features?.useMythIlvl ?? false;
-  const stats = gearToPlayerStats(hero, useMythIlvl);
+  const baseStats = gearToPlayerStats(hero, useMythIlvl);
   const trinkets = getEquippedTrinkets(hero);
+
+  // Apply advanced options (enchants, gems, consumables, buffs)
+  const resolvedOptions = simOptions ?? DEFAULT_SIM_OPTIONS;
+  const { stats, buffMults, weaponProc, potionAura } = applySimOptions(baseStats, resolvedOptions, hero);
 
   const aplKey = getDefaultAPLKey(hero, fightStyle);
   const apl = DEFAULT_APLS[aplKey] ?? "";
@@ -46,7 +53,16 @@ export function buildSimInput(
     ...options,
   };
 
-  return { config, stats, talents, trinkets };
+  return {
+    config,
+    stats,
+    talents,
+    trinkets,
+    simOptions: resolvedOptions,
+    buffMults,
+    weaponProc,
+    potionAura,
+  };
 }
 
 /**
