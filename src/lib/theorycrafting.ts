@@ -1023,6 +1023,11 @@ function buildPackLeaderAoE(): TalentConfig {
     ursineFury: true, sharpenedClaws: false, wildAttacks: true, corneredPrey: true, frenziedTear: true,
     goForTheThroat: true, furiousAssault: true, scatteredPrey: true, wyvernGaze: false, clawFrenzy: true,
     packAssault: true,
+    // ── Hunter class tree ──
+    alphaPredator: true, keenEyesight: true, masterMarksman: true, serratedShots: true,
+    deathChakram: true, killerInstinct: true, steelTrap: false, hydrasBite: true,
+    spittingCobra: false, barrage: true, volley: false, bloodshed: false, murderOfCrows: true,
+    wailingArrow: true,
   };
 }
 
