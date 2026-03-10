@@ -227,7 +227,7 @@ serve(async (req) => {
       // Fetch full Survival Hunter talent tree: spec tree + linked hero trees + all spell icons
       // Returns { specTree, heroTrees[], mediaMap{ spellId → iconUrl } }
       case "talent-tree-full": {
-        const treeId = (params as any).treeId ?? 786;
+        const treeId = (params as any).treeId ?? 774;
         const specId = (params as any).specId ?? 255;
         const specTree = await blizzardGet(
           `/data/wow/talent-tree/${treeId}/playable-specialization/${specId}`,
