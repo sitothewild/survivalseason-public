@@ -106,7 +106,7 @@ export default function TalentOptimizer() {
       </header>
 
       {/* ── Page body ─────────────────────────────────────── */}
-      <main style={{ maxWidth:1400, margin:"0 auto", padding:"32px 28px 64px" }}>
+      <main style={{ maxWidth:1470, margin:"0 auto", padding:"32px 28px 64px" }}>
         <h1 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:22, fontWeight:900,
           color:C.sentClr, letterSpacing:3, margin:0, marginBottom:24, textTransform:"uppercase" }}>
           Talent Optimizer
