@@ -177,7 +177,7 @@ export const HUNTER_NODES: TalentNodeDef[] = [
 
 export const SURVIVAL_NODES: TalentNodeDef[] = [
   // ROW 1 (API row 2, col 18→4)
-  { id:'kill_command', spellId:259489, name:'Kill Command', type:'active', maxPts:1, row:1, col:4,
+  { id:'kill_command', apiNodeId:102255, spellId:259489, name:'Kill Command', type:'active', maxPts:1, row:1, col:4,
     parents:[], desc:'Give the command to kill, causing your pet to savagely deal Physical damage to the enemy. Generates 15 Focus.' },
   // ROW 2 (API row 3)
   { id:'wildfire_bomb', spellId:259495, name:'Wildfire Bomb', type:'active', maxPts:1, row:2, col:3,
