@@ -431,7 +431,7 @@ function TalentNode({
   // ── Standard node: icon + double-ring (matches HTML) ────────────────────
   const entry = node.entries[0];
   const spellId = entry?.spell_tooltip?.spell?.id;
-  const iconUrl = spellId && mediaMap[spellId] ? mediaMap[spellId] : FALLBACK_ICON;
+  const iconUrl = resolveIcon(spellId, mediaMap);
   const maxRank = entry?.max_rank ?? 1;
 
   return (
