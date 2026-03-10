@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useRef, useState, useEffect } from "react";
+import type { FightStyle } from "@/utils/simcProfileBuilder";
 import { NavLink } from "@/components/NavLink";
 import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 import survivalIconImg from "@/assets/survival-icon.png";
