@@ -1780,11 +1780,11 @@ export default function SurvivalHunterSim() {
         {/* ═══ SIM TAB ═══ */}
         {activeTab === "sim" && (
           <>
-            {/* 3-COLUMN GRID */}
-            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "260px minmax(340px, 1fr) 420px", gap: 20, alignItems: "stretch" }}>
+            {/* 2-COLUMN GRID */}
+            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "35% 65%", gap: 16, alignItems: "start" }}>
 
-              {/* ═══ LEFT COLUMN — Inputs Only (260px) ═══ */}
-              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%" }}>
+              {/* ═══ LEFT COLUMN — Inputs + Character + Gear (35%) ═══ */}
+              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {/* Armory / SimC — tabbed single card */}
                 <CARD style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
                   {/* Tab bar */}
