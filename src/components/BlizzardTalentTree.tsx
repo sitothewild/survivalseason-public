@@ -39,109 +39,111 @@ const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 // col 1–7 map to x = PAD + (col-1)*CW   row 1–N map to y = PAD + (row-1)*RH
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface ChoiceEntry { spellId: number; name: string; key?: string }
-interface LayoutNode {
-  id: string;
-  spellId: number;        // 0 = unknown / will be resolved from live API
-  name: string;           // canonical spell name used to match live API node
-  type: "active" | "passive" | "choice" | "apex";
-  maxPts: number;
-  row: number;
-  col: number;
-  entryA?: ChoiceEntry;   // only for type==="choice"
-  entryB?: ChoiceEntry;
-  autoSelected?: boolean;
-  capstone?: boolean;
-  talentKey?: string;     // TalentConfig key override (if name→key not obvious)
-}
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3C/svg%3E";
 
-// ── SURVIVAL SPEC TREE ───────────────────────────────────────────────────────
-const SURVIVAL_NODES: LayoutNode[] = [
-  // ── ROW 1 ──
-  { id: "kill_command",    spellId: 259489,  name: "Kill Command",             type: "active",  maxPts: 1, row: 1, col: 4 },
-  // ── ROW 2 ──
-  { id: "raptor_strike",   spellId: 186270,  name: "Raptor Strike",            type: "active",  maxPts: 1, row: 2, col: 5 },
-  { id: "wildfire_bomb",   spellId: 259495,  name: "Wildfire Bomb",            type: "active",  maxPts: 1, row: 2, col: 3 },
-  // ── ROW 3 ──
-  { id: "tip_of_spear",    spellId: 260285,  name: "Tip of the Spear",         type: "passive", maxPts: 1, row: 3, col: 5 },
-  { id: "volatile_bomb",   spellId: 264332,  name: "Volatile Bomb",            type: "passive", maxPts: 1, row: 3, col: 3 },
-  // ── ROW 4 ──
-  { id: "harpoon_passive", spellId: 378934,  name: "Harpoon",                  type: "passive", maxPts: 1, row: 4, col: 2, talentKey: "lunge" },
-  { id: "boomstick",       spellId: 1261193, name: "Boomstick",                type: "active",  maxPts: 1, row: 4, col: 4 },
-  { id: "coord_assault",   spellId: 1251717, name: "Coordinated Assault",      type: "passive", maxPts: 1, row: 4, col: 6, talentKey: "strikeAsOne" },
-  // ── ROW 5 ──
-  { id: "bomb_choice",     spellId: 0,       name: "Shrapnel Bomb / Flamebreak",   type: "choice",  maxPts: 1, row: 5, col: 1,
-    entryA: { spellId: 270335,  name: "Shrapnel Bomb" },
-    entryB: { spellId: 1253176, name: "Flamebreak",    key: "flamebreak" } },
-  { id: "mongoose_fury",   spellId: 260248,  name: "Mongoose Fury",            type: "passive", maxPts: 1, row: 5, col: 3 },
-  { id: "grenade_juggler", spellId: 1272136, name: "Grenade Juggler",          type: "passive", maxPts: 1, row: 5, col: 4 },
-  { id: "pack_tactics",    spellId: 459964,  name: "Pack Tactics",             type: "passive", maxPts: 1, row: 5, col: 5 },
-  { id: "sep_anxiety",     spellId: 1251718, name: "Separation Anxiety",       type: "passive", maxPts: 1, row: 5, col: 7 },
-  // ── ROW 6 ──
-  { id: "mongoose_fury2",  spellId: 1252708, name: "Mongoose Fury II",         type: "passive", maxPts: 1, row: 6, col: 2, talentKey: "mongooseFury" },
-  { id: "ammo_choice",     spellId: 0,       name: "Mongoose Rounds / Wildfire Shells", type: "choice", maxPts: 1, row: 6, col: 3,
-    entryA: { spellId: 1253945, name: "Mongoose Rounds" },
-    entryB: { spellId: 1261229, name: "Wildfire Shells", key: "wildfireShells" } },
-  { id: "spearhead_talent",spellId: 1252931, name: "Spearhead Talent",         type: "passive", maxPts: 1, row: 6, col: 5, talentKey: "primalSurge" },
-  { id: "lethal_barbs",    spellId: 1253137, name: "Lethal Barbs",             type: "passive", maxPts: 1, row: 6, col: 6, talentKey: "lethalCalibration" },
-  // ── ROW 7 ──
-  { id: "bloody_claws",    spellId: 0,       name: "Bloody Claws / Wallop",    type: "choice",  maxPts: 1, row: 7, col: 1,
-    entryA: { spellId: 385737,  name: "Bloody Claws" },
-    entryB: { spellId: 1252738, name: "Wallop",         key: "wallop" } },
-  { id: "explosive_expert",spellId: 321290,  name: "Explosive Expert",         type: "passive", maxPts: 2, row: 7, col: 2 },
-  { id: "beast_field",     spellId: 1262442, name: "Beast of the Field",       type: "passive", maxPts: 1, row: 7, col: 3, talentKey: "killerCompanion" },
-  { id: "tip_stacks",      spellId: 378950,  name: "Tip of Spear Stacks",      type: "passive", maxPts: 2, row: 7, col: 4, talentKey: "tipOfTheSpear" },
-  { id: "vuln_choice",     spellId: 0,       name: "Vulnerability / Blackrock Munitions", type: "choice", maxPts: 1, row: 7, col: 5,
-    entryA: { spellId: 1257011, name: "Vulnerability" },
-    entryB: { spellId: 462036,  name: "Blackrock Munitions", key: "blackrockMunitions" } },
-  { id: "ruthless",        spellId: 1253053, name: "Ruthless Marauder",        type: "passive", maxPts: 2, row: 7, col: 6 },
-  { id: "potent_venom",    spellId: 459939,  name: "Potent Venom",             type: "passive", maxPts: 1, row: 7, col: 7 },
-  // ── ROW 8 ──
-  { id: "explosive_force", spellId: 378937,  name: "Explosive Force",          type: "passive", maxPts: 2, row: 8, col: 2 },
-  { id: "takedown",        spellId: 1250646, name: "Takedown",                 type: "active",  maxPts: 1, row: 8, col: 4 },
-  { id: "flanking_strike", spellId: 378955,  name: "Flanking Strike",          type: "passive", maxPts: 2, row: 8, col: 6, talentKey: "flanked" },
-  // ── ROW 9 ──
-  { id: "flamefang",       spellId: 1251592, name: "Flamefang Pitch",          type: "active",  maxPts: 1, row: 9, col: 2 },
-  { id: "spearhead",       spellId: 1272139, name: "Spearhead",                type: "passive", maxPts: 1, row: 9, col: 3 },
-  { id: "pack_mentality",  spellId: 1251790, name: "Pack Mentality",           type: "passive", maxPts: 2, row: 9, col: 5 },
-  { id: "wfb_infusion",    spellId: 460198,  name: "Wildfire Infusion",        type: "passive", maxPts: 1, row: 9, col: 6, talentKey: "wildfireInfusion" },
-  // ── ROW 10 ──
-  { id: "frenzy_strikes",  spellId: 459843,  name: "Frenzy Strikes",           type: "passive", maxPts: 1, row: 10, col: 1 },
-  { id: "tip_capstone",    spellId: 1252943, name: "Tip Capstone",             type: "passive", maxPts: 1, row: 10, col: 3, talentKey: "tipOfTheSpear" },
-  { id: "invigoration",    spellId: 1256938, name: "Invigoration",             type: "passive", maxPts: 1, row: 10, col: 4 },
-  { id: "bomb_burst",      spellId: 1262409, name: "Bomb Burst",               type: "passive", maxPts: 1, row: 10, col: 5 },
-  { id: "longevity",       spellId: 1272154, name: "Longevity",                type: "passive", maxPts: 1, row: 10, col: 7 },
-  // ── APEX (row 12 — large circle below tree) ──
-  { id: "raptor_swipe",    spellId: 1259003, name: "Raptor Swipe",             type: "apex",    maxPts: 4, row: 12, col: 4, talentKey: "raptorSwipe" },
+// Wowhead icon fallbacks for hero talent spells (keyed by spell ID)
+// These provide icons when the Blizzard media API returns 404
+const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
+  // Sentinel
+  1253599: "https://wow.zamimg.com/images/wow/icons/large/ability_racial_dvinewardenofthelightofthestar.jpg", // Lunar Storm
+  450373:  "https://wow.zamimg.com/images/wow/icons/large/inv_polearm_2h_felfireraid_d_01.jpg", // Sanctified Armaments
+  1253825: "https://wow.zamimg.com/images/wow/icons/large/spell_arcane_starfire.jpg", // Lunar Inspiration
+  1253831: "https://wow.zamimg.com/images/wow/icons/large/ability_upgrademoonglaive.jpg", // Moonlight Chakram
+  1264902: "https://wow.zamimg.com/images/wow/icons/large/ability_upgrademoonglaive.jpg", // Chakram Passback
+  1253751: "https://wow.zamimg.com/images/wow/icons/large/spell_frost_stun.jpg", // Stargazer (choice)
+  1253807: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_resistanceisfutile.jpg", // Open Fire (choice)
+  1253830: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_markedfordeath.jpg", // Sentinel's Mark
+  450379:  "https://wow.zamimg.com/images/wow/icons/large/spell_frost_stun.jpg", // Stargazer
+  1264904: "https://wow.zamimg.com/images/wow/icons/large/spell_shadow_requiem.jpg", // Twilight Requiem (choice)
+  1266069: "https://wow.zamimg.com/images/wow/icons/large/ability_rogue_stalkandstrike.jpg", // Stalk and Strike (choice)
+  1253846: "https://wow.zamimg.com/images/wow/icons/large/spell_frost_arcticwinds.jpg", // Ice Claw
+  1253852: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_eagleeye.jpg", // Sentinel Owl
+  450376:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg", // Conditioning (choice)
+  450380:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mastermarksman.jpg", // Scout's Vigil (choice)
+  1264903: "https://wow.zamimg.com/images/wow/icons/large/inv_glaive_1h_npc_d_01.jpg", // Glaive Passive
+  1253732: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_lunarguidance.jpg", // Moon and Stars
+  // Pack Leader
+  471876:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Vicious Hunt (keystone)
+  472358:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_lonewolf.jpg", // Lone Wolf
+  472352:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_beastwithin.jpg", // Horn
+  472357:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_pathfinding2.jpg", // Pathfinding
+  472719:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg", // Slicked Shoes (choice)
+  472720:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mendpet.jpg", // Masterful Call (choice)
+  472476:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg", // Ursine Fury (choice)
+  472524:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_rake.jpg", // Sharpened Claws (choice)
+  472550:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_wildattack.jpg", // Cat Charge
+  472639:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_corneredprey.jpg", // Boar Head
+  1264781: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_mangle.jpg", // Critical Shot
+  472660:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg", // Go for the Throat
+  472707:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_rapidregeneration.jpg", // Turtle
+  1264797: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_multishot.jpg", // Hoof and Blade (choice)
+  1264792: "https://wow.zamimg.com/images/wow/icons/large/ability_creature_poison_06.jpg", // Wyvern's Gaze (choice)
+  1264775: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_rake.jpg", // Monster Fang
+  472741:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Bestial Discipline (capstone)
+};
+
+// ── Hardcoded fallback hero trees ────────────────────────────────────────────
+// Sentinel: 1-4-4-4-1 diamond layout — rows 1-5, cols 1,3,5,7 (center=4)
+const FALLBACK_SENTINEL_NODES: BzTalentNode[] = [
+  // Row 1 — auto-selected keystone
+  { id: 95001, display_row: 1, display_col: 4, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253599, name: "Lunar Storm" }, description: "Sentinel Mark consumption triggers Lunar Storm AoE." } }] },
+  // Row 2 — 4 passives
+  { id: 94960, display_row: 2, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450373, name: "Sanctified Armaments" }, description: "Harpoon applies Sentinel Mark on impact." } }] },
+  { id: 94973, display_row: 2, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253825, name: "Lunar Inspiration" }, description: "Your Sentinel abilities deal increased Arcane damage." } }] },
+  { id: 95002, display_row: 2, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253831, name: "Moonlight Chakram" }, description: "Moonlight-empowered Chakram deals bonus damage." } }] },
+  { id: 95003, display_row: 2, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264902, name: "Chakram Passback" }, description: "Chakram bounces back for additional damage." } }] },
+  // Row 3 — choice at cols 1 and 7
+  { id: 94958, display_row: 3, display_col: 1, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 94960 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253751, name: "Stargazer" }, description: "Raptor Strike extends Sentinel Mark by 2 sec." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253807, name: "Open Fire" }, description: "Kill Command reduces Sentinel cooldown by 5 sec." } },
+  ] },
+  { id: 95004, display_row: 3, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94973 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253830, name: "Sentinel's Mark" }, description: "Sentinel Mark application improved." } }] },
+  { id: 94971, display_row: 3, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95002 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450379, name: "Stargazer" }, description: "Sentinel Marks have near-permanent uptime." } }] },
+  { id: 110028, display_row: 3, display_col: 7, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 95003 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264904, name: "Twilight Requiem" }, description: "When Sentinel expires, deals Arcane damage to all marked targets." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1266069, name: "Stalk and Strike" }, description: "Mongoose Bite/Raptor Strike damage increased per active Sentinel Mark." } },
+  ] },
+  // Row 4 — choice at col 5
+  { id: 94970, display_row: 4, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94958 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253846, name: "Ice Claw" }, description: "Sentinel Mark damage increased by 10%." } }] },
+  { id: 95005, display_row: 4, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95004 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253852, name: "Sentinel Owl" }, description: "Sentinel Owl patrols the battlefield." } }] },
+  { id: 95006, display_row: 4, display_col: 5, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 94971 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450376, name: "Conditioning" }, description: "Improves Sentinel defensive benefits." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450380, name: "Scout's Vigil" }, description: "Enhanced scouting range and mark duration." } },
+  ] },
+  { id: 109805, display_row: 4, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 110028 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264903, name: "Glaive Passive" }, description: "Sentinel cooldown reduced when you consume Sentinel Marks." } }] },
+  // Row 5 — capstone
+  { id: 95007, display_row: 5, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94970 }, { id: 95005 }, { id: 95006 }, { id: 109805 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253732, name: "Moon and Stars" }, description: "Capstone: Ultimate Sentinel power unleashed." } }] },
 ];
 
-// ── SENTINEL HERO TREE ───────────────────────────────────────────────────────
-const SENTINEL_NODES: LayoutNode[] = [
-  // Row 1 — auto-selected keystone
-  { id: "lunar_storm",       spellId: 1253599, name: "Lunar Storm",           type: "passive", maxPts: 1, row: 1, col: 4, autoSelected: true },
-  // Row 2
-  { id: "sanctified_arms",   spellId: 1253831, name: "Sanctified Armaments",  type: "passive", maxPts: 1, row: 2, col: 1 },
-  { id: "lunar_inspiration", spellId: 1253825, name: "Lunar Inspiration",     type: "passive", maxPts: 1, row: 2, col: 3 },
-  { id: "moonlight_chakram", spellId: 1264902, name: "Moonlight Chakram",     type: "passive", maxPts: 1, row: 2, col: 5 },
-  { id: "chakram_passback",  spellId: 0,       name: "Chakram Passback",      type: "passive", maxPts: 1, row: 2, col: 7 },
-  // Row 3
-  { id: "stargazer_choice",  spellId: 0,       name: "Stargazer / Open Fire", type: "choice",  maxPts: 1, row: 3, col: 1,
-    entryA: { spellId: 1253751, name: "Stargazer",   key: "stargazer" },
-    entryB: { spellId: 1253807, name: "Open Fire",   key: "openFire" } },
-  { id: "sentinel_mark",     spellId: 1253830, name: "Sentinel's Mark",       type: "passive", maxPts: 1, row: 3, col: 3 },
-  { id: "stargazer_buff",    spellId: 450379,  name: "Stargazer",             type: "passive", maxPts: 1, row: 3, col: 5 },
-  { id: "twilight_choice",   spellId: 0,       name: "Twilight Requiem / Stalk and Strike", type: "choice", maxPts: 1, row: 3, col: 7,
-    entryA: { spellId: 1264904, name: "Twilight Requiem", key: "twilightRequiem" },
-    entryB: { spellId: 1266069, name: "Stalk and Strike", key: "stalkAndStrike" } },
-  // Row 4
-  { id: "ice_claw",          spellId: 1253846, name: "Ice Claw",              type: "passive", maxPts: 1, row: 4, col: 1 },
-  { id: "sentinel_owl",      spellId: 1253852, name: "Sentinel Owl",          type: "passive", maxPts: 1, row: 4, col: 3 },
-  { id: "cond_choice",       spellId: 0,       name: "Conditioning / Scout's Vigil", type: "choice", maxPts: 1, row: 4, col: 5,
-    entryA: { spellId: 1253887, name: "Conditioning",  key: "conditioning" },
-    entryB: { spellId: 0,       name: "Scout's Vigil", key: "scoutsVigil" } },
-  { id: "glaive_passive",    spellId: 1264903, name: "Glaive passive",        type: "passive", maxPts: 1, row: 4, col: 7 },
-  // Row 5 — capstone
-  { id: "moon_and_stars",    spellId: 1253732, name: "Moon and Stars",        type: "passive", maxPts: 1, row: 5, col: 4, capstone: true },
+const FALLBACK_PACK_LEADER_NODES: BzTalentNode[] = [
+  // Row 1 — auto-selected keystone (center col 4)
+  { id: 96001, display_row: 1, display_col: 4, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 471876, name: "Vicious Hunt" }, description: "Your pet gains Vicious Hunt, savagely attacking your target." } }] },
+  // Row 2 — 4 nodes (cols 1,3,5,7)
+  { id: 96002, display_row: 2, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472358, name: "Lone Wolf" }, description: "Increases damage dealt when your pet is active." } }] },
+  { id: 96003, display_row: 2, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472352, name: "Horn" }, description: "Your pet's attacks have a chance to gore the target." } }] },
+  { id: 96004, display_row: 2, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472357, name: "Pathfinding" }, description: "Increases movement speed while your pet is nearby." } }] },
+  { id: 96005, display_row: 2, display_col: 7, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 96001 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472719, name: "Slicked Shoes" }, description: "Harpoon's cooldown is reduced and grants brief movement speed." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472720, name: "Masterful Call" }, description: "Master's Call also grants damage reduction for a short time." } },
+  ] },
+  // Row 3 — 4 nodes (cols 1,3,5,7)
+  { id: 96006, display_row: 3, display_col: 1, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 96002 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472476, name: "Ursine Fury" }, description: "Kill Command deals increased damage, can reset cooldown." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472524, name: "Sharpened Claws" }, description: "Pet critical strikes deal increased damage." } },
+  ] },
+  { id: 96007, display_row: 3, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96003 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472550, name: "Cat Charge" }, description: "Your pet charges to the target, stunning briefly." } }] },
+  { id: 96008, display_row: 3, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96004 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472639, name: "Boar Head" }, description: "Kill Command damage increased on targets below 20% health." } }] },
+  { id: 96009, display_row: 3, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96005 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264781, name: "Critical Shot" }, description: "Pet enters frenzy after Kill Command crits." } }] },
+  // Row 4 — 4 nodes (cols 1,3,5,7)
+  { id: 96010, display_row: 4, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96006 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472660, name: "Go for the Throat" }, description: "Kill Command generates additional Focus." } }] },
+  { id: 96011, display_row: 4, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96007 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472707, name: "Turtle" }, description: "Melee attacks can trigger additional pet attack." } }] },
+  { id: 96012, display_row: 4, display_col: 5, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 96008 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264797, name: "Hoof and Blade" }, description: "Kill Command hits additional nearby targets." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264792, name: "Wyvern's Gaze" }, description: "Pet stuns targets periodically." } },
+  ] },
+  { id: 96013, display_row: 4, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96009 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264775, name: "Monster Fang" }, description: "Pet attack speed increased per active bleed." } }] },
+  // Row 5 — capstone (center col 4)
+  { id: 96014, display_row: 5, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96010 }, { id: 96011 }, { id: 96012 }, { id: 96013 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472741, name: "Bestial Discipline" }, description: "Capstone: Ultimate Pack Leader power unleashed." } }] },
 ];
 
 // ── PACK LEADER HERO TREE ─────────────────────────────────────────────────────
@@ -177,75 +179,36 @@ const PACK_LEADER_NODES: LayoutNode[] = [
 // Spell name → TalentConfig key  (used to wire visual selection → DPS sim)
 // ─────────────────────────────────────────────────────────────────────────────
 const NAME_TO_KEY: Record<string, string> = {
-  // Survival spec tree
-  "Kill Command":            "killCommand",
-  "Raptor Strike":           "raptorStrike",
-  "Wildfire Bomb":           "wildfireBomb",
-  "Tip of the Spear":        "tipOfTheSpear",
-  "Tip of Spear Stacks":     "tipOfTheSpear",
-  "Tip Capstone":            "tipOfTheSpear",
-  "Harpoon":                 "lunge",
-  "Boomstick":               "boomstick",
-  "Coordinated Assault":     "strikeAsOne",
-  "Strike as One":           "strikeAsOne",
-  "Shrapnel Bomb":           "wildfireBomb",
-  "Flamebreak":              "flamebreak",
-  "Mongoose Fury":           "mongooseFury",
-  "Mongoose Fury II":        "mongooseFury",
-  "Wildfire Shells":         "wildfireShells",
-  "Spearhead Talent":        "primalSurge",
-  "Lethal Barbs":            "lethalCalibration",
-  "Lethal Calibration":      "lethalCalibration",
-  "Wallop":                  "wallop",
-  "Beast of the Field":      "killerCompanion",
-  "Killer Companion":        "killerCompanion",
-  "Blackrock Munitions":     "blackrockMunitions",
-  "Takedown":                "takedown",
-  "Flanking Strike":         "flanked",
-  "Flanked":                 "flanked",
-  "Wildfire Infusion":       "wildfireInfusion",
-  "Raptor Swipe":            "raptorSwipe",
-  "Twin Fangs":              "twinFangs",
-  "Savagery":                "savagery",
-  "Primal Surge":            "primalSurge",
-  "Flanker's Advantage":     "flankerAdvantage",
-  "Bloodseeker":             "bloodseeker",
-  "Two Against Many":        "twoAgainstMany",
-  "Guerrilla Tactics":       "guerrillaTactics",
-  "Bonding":                 "bonding",
-  "Sweeping Spear":          "sweepingSpear",
-  "Quick Reload":            "quickReload",
-  "Shellshock":              "shellshock",
-  // Sentinel
-  "Stargazer":               "stargazer",
-  "Open Fire":               "openFire",
-  "Lunar Inspiration":       "lunarInspiration",
-  "Extrapolation":           "extrapolation",
-  "Twilight Requiem":        "twilightRequiem",
-  "Stalk and Strike":        "stalkAndStrike",
-  "Don't Look Back":         "dontLookBack",
-  "Catch Out":               "catchOut",
-  "Invigorating Pulse":      "invigoratingPulse",
-  "Eyes Closed":             "eyesClosed",
-  "Lunar Calling":           "lunarCalling",
-  "Release and Reload":      "releaseAndReload",
-  "Lunar Storm":             "lunarStorm",
-  // Pack Leader
-  "Vicious Hunt":            "viciousHunt",
-  "Pack Coordination":       "packCoordination",
-  "Howl of the Pack":        "howlOfThePack",
-  "Den Recovery":            "denRecovery",
-  "Ursine Fury":             "ursineFury",
-  "Sharpened Claws":         "sharpenedClaws",
-  "Wild Attacks":            "wildAttacks",
-  "Cornered Prey":           "corneredPrey",
-  "Frenzied Tear":           "frenziedTear",
-  "Go for the Throat":       "goForTheThroat",
-  "Furious Assault":         "furiousAssault",
-  "Scattered Prey":          "scatteredPrey",
-  "Wyvern's Gaze":           "wyvernGaze",
-  "Claw Frenzy":             "clawFrenzy",
-  "Pack Assault":            "packAssault",
+  "Kill Command": "killCommand", "Wildfire Bomb": "wildfireBomb", "Raptor Strike": "raptorStrike",
+  "Guerrilla Tactics": "guerrillaTactics", "Tip of the Spear": "tipOfTheSpear", "Lunge": "lunge",
+  "Boomstick": "boomstick", "Strike as One": "strikeAsOne", "Flamebreak": "flamebreak",
+  "Quick Reload": "quickReload", "Mongoose Fury": "mongooseFury", "Wildfire Shells": "wildfireShells",
+  "Shellshock": "shellshock", "Wallop": "wallop", "Bonding": "bonding", "Sweeping Spear": "sweepingSpear",
+  "Blackrock Munitions": "blackrockMunitions", "Takedown": "takedown", "Killer Companion": "killerCompanion",
+  "Twin Fangs": "twinFangs", "Savagery": "savagery", "Wildfire Infusion": "wildfireInfusion",
+  "Flanked": "flanked", "Primal Surge": "primalSurge", "Raptor Swipe": "raptorSwipe",
+  "Flanker's Advantage": "flankerAdvantage", "Bloodseeker": "bloodseeker",
+  "Two Against Many": "twoAgainstMany", "Lethal Calibration": "lethalCalibration",
+  "Stargazer": "stargazer", "Open Fire": "openFire", "Lunar Inspiration": "lunarInspiration",
+  "Extrapolation": "extrapolation", "Twilight Requiem": "twilightRequiem",
+  "Stalk and Strike": "stalkAndStrike", "Sanctified Armaments": "sanctifiedArmaments",
+  "Moonlight Chakram": "moonlightChakram", "Chakram Passback": "chakramPassback",
+  "Sentinel's Mark": "sentinelsMark", "Ice Claw": "iceClaw",
+  "Sentinel Owl": "sentinelOwl", "Conditioning": "conditioning",
+  "Scout's Vigil": "scoutsVigil", "Glaive Passive": "glaivePassive",
+  "Moon and Stars": "moonAndStars", "Lunar Storm": "lunarStorm",
+  "Don't Look Back": "dontLookBack", "Catch Out": "catchOut",
+  "Invigorating Pulse": "invigoratingPulse", "Eyes Closed": "eyesClosed",
+  "Lunar Calling": "lunarCalling", "Release and Reload": "releaseAndReload",
+  "Vicious Hunt": "viciousHunt", "Lone Wolf": "loneWolf",
+  "Horn": "horn", "Pathfinding": "pathfinding",
+  "Slicked Shoes": "slickedShoes", "Masterful Call": "masterfulCall",
+  "Ursine Fury": "ursineFury", "Sharpened Claws": "sharpenedClaws",
+  "Cat Charge": "catCharge", "Boar Head": "boarHead",
+  "Critical Shot": "criticalShot", "Go for the Throat": "goForTheThroat",
+  "Turtle": "turtle", "Hoof and Blade": "hoofAndBlade",
+  "Wyvern's Gaze": "wyvernGaze", "Monster Fang": "monsterFang",
+  "Bestial Discipline": "bestialDiscipline",
 };
 
 // Keys that are always on (core spec abilities — never need to be toggled)
@@ -263,17 +226,14 @@ const CORE_SPEC_KEYS = new Set([
 // Enriches from live API node map (name→BzTalentNode) when possible.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type LiveNodeMap = Map<string, BzTalentNode>; // spell name → live node
+/** Resolve icon URL: mediaMap (Blizzard API) → Wowhead fallback → blank fallback */
+function resolveIcon(spellId: number | undefined, mediaMap: Record<number, string>): string {
+  if (!spellId) return FALLBACK_ICON;
+  return mediaMap[spellId] ?? WOWHEAD_ICON_FALLBACKS[spellId] ?? FALLBACK_ICON;
+}
 
-function buildLiveMap(nodes: BzTalentNode[]): LiveNodeMap {
-  const m = new Map<string, BzTalentNode>();
-  for (const n of nodes) {
-    for (const e of (n.entries ?? [])) {
-      const name = e.spell_tooltip?.spell?.name;
-      if (name) m.set(name, n);
-    }
-  }
-  return m;
+function nodeSpellName(node: BzTalentNode): string | null {
+  return node.entries?.[0]?.spell_tooltip?.spell?.name ?? null;
 }
 
 let _nodeIdSeq = 1;
@@ -430,8 +390,8 @@ function NodeTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number }
           Rank {info.rank ?? 0} / {info.maxRank}
         </div>
       )}
-      <div style={{ fontSize: 12, color: "#b8a878", lineHeight: 1.55, fontFamily: "'Rajdhani',sans-serif" }}>
-        {info.description || "No description available."}
+      <div style={{ fontSize: 12, color: "#b8a878", lineHeight: 1.55, fontFamily: "'Rajdhani',sans-serif", whiteSpace: "pre-line" }}>
+        {info.description}
       </div>
     </div>
   );
@@ -518,14 +478,30 @@ function TalentNode({
   const brightness = isSelected ? 1 : isLocked ? 0.2 : 0.5;
   const cursor = (isCore || ext._autoSelected) ? "default" : isLocked ? "not-allowed" : "pointer";
 
-  const handleEnter = (e: React.MouseEvent, entryIdx = 0) => {
-    const entry = node.entries[entryIdx];
-    onHover({
-      name: entry?.spell_tooltip?.spell?.name ?? "?",
-      description: entry?.spell_tooltip?.description ?? "",
-      rank: isSelected ? (entry?.max_rank ?? 1) : 0,
-      maxRank: entry?.max_rank ?? 1,
-    }, e.clientX, e.clientY);
+  const handleEnter = (e: React.MouseEvent) => {
+    if (isChoice) {
+      const e0 = node.entries[0];
+      const e1 = node.entries[1];
+      const name0 = e0?.spell_tooltip?.spell?.name ?? "?";
+      const name1 = e1?.spell_tooltip?.spell?.name ?? "?";
+      const chosen = node.entries[chosenIdx];
+      onHover({
+        name: `${name0} / ${name1}`,
+        description: chosenIdx === 0
+          ? `► ${name0}: ${e0?.spell_tooltip?.description ?? ""}\n\n${name1}: ${e1?.spell_tooltip?.description ?? ""}`
+          : `${name0}: ${e0?.spell_tooltip?.description ?? ""}\n\n► ${name1}: ${e1?.spell_tooltip?.description ?? ""}`,
+        rank: isSelected ? 1 : 0,
+        maxRank: 1,
+      }, e.clientX, e.clientY);
+    } else {
+      const entry = node.entries[0];
+      onHover({
+        name: entry?.spell_tooltip?.spell?.name ?? "?",
+        description: entry?.spell_tooltip?.description ?? "",
+        rank: isSelected ? (entry?.max_rank ?? 1) : 0,
+        maxRank: entry?.max_rank ?? 1,
+      }, e.clientX, e.clientY);
+    }
   };
 
   // ── CHOICE node ────────────────────────────────────────────────────────────
@@ -548,19 +524,27 @@ function TalentNode({
         onMouseEnter={(e) => handleEnter(e, chosenIdx)}
         onMouseLeave={() => onHover(null, 0, 0)}
       >
-        {/* Left half — entry A */}
-        <div onClick={() => { if (!isLocked) onChoiceClick(0); }}
-          style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative", flexShrink: 0 }}>
-          <img src={iconA} alt="" loading="lazy" draggable={false}
+        {/* Left icon half (entry 0) */}
+        <div
+          onClick={() => { if (!isLocked) onChoiceClick(0); }}
+          style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative", flexShrink: 0 }}
+        >
+          <img
+            src={resolveIcon(node.entries[0]?.spell_tooltip?.spell?.id, mediaMap)}
+            alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
             style={{ width: sz, height: sz, objectFit: "cover",
               position: "absolute", left: 0, top: 0,
               filter: `brightness(${brightA})`, transition: "filter .15s" }} />
         </div>
-        {/* Right half — entry B */}
-        <div onClick={() => { if (!isLocked) onChoiceClick(1); }}
-          style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative", flexShrink: 0 }}>
-          <img src={iconB} alt="" loading="lazy" draggable={false}
+        {/* Right icon half (entry 1) */}
+        <div
+          onClick={() => { if (!isLocked) onChoiceClick(1); }}
+          style={{ width: "50%", height: "100%", overflow: "hidden", position: "relative", flexShrink: 0 }}
+        >
+          <img
+            src={resolveIcon(node.entries[1]?.spell_tooltip?.spell?.id, mediaMap)}
+            alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
             style={{ width: sz, height: sz, objectFit: "cover",
               position: "absolute", left: -(sz / 2), top: 0,
@@ -580,10 +564,10 @@ function TalentNode({
     );
   }
 
-  // ── Standard / apex / capstone node ───────────────────────────────────────
-  const entry  = node.entries[0];
-  const spellId = entry?.spell_tooltip?.spell?.id ?? 0;
-  const iconUrl = spellId && mediaMap[spellId] ? mediaMap[spellId] : FALLBACK_ICON;
+  // ── Standard node: icon + double-ring (matches HTML) ────────────────────
+  const entry = node.entries[0];
+  const spellId = entry?.spell_tooltip?.spell?.id;
+  const iconUrl = resolveIcon(spellId, mediaMap);
   const maxRank = entry?.max_rank ?? 1;
 
   const outerStroke = (isCapstone || isApex)
@@ -733,7 +717,40 @@ function TalentSection({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HeroSection — portrait + hero talent nodes (matches sentinel-tree.html)
+// normalizeHeroLayout — remap hero nodes to canonical 1-4-4-4-1 diamond
+// Fallback data already uses cols 1,3,5,7 (center=4). API data uses cols 1-4.
+// We detect which scheme is in use and remap API cols → 1,3,5,7 if needed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function normalizeHeroLayout(nodes: BzTalentNode[]): BzTalentNode[] {
+  if (nodes.length < 3) return nodes;
+
+  // Detect if nodes already use the wide col scheme (cols > 4 present = fallback data)
+  const maxCol = Math.max(...nodes.map((n) => n.display_col));
+  if (maxCol >= 5) return nodes; // Already in correct layout
+
+  // API cols 1,2,3,4 → display cols 1,3,5,7 (diamond with center gap at 4)
+  const COL_REMAP: Record<number, number> = { 1: 1, 2: 3, 3: 5, 4: 7 };
+
+  // Group by original display_row to detect single-node (capstone) rows
+  const rowMap = new Map<number, BzTalentNode[]>();
+  nodes.forEach((n) => {
+    const r = n.display_row;
+    if (!rowMap.has(r)) rowMap.set(r, []);
+    rowMap.get(r)!.push(n);
+  });
+
+  return nodes.map((n) => {
+    const rowNodes = rowMap.get(n.display_row)!;
+    const isSingleNodeRow = rowNodes.length === 1;
+    const newCol = isSingleNodeRow ? 4 : (COL_REMAP[n.display_col] ?? n.display_col);
+    return { ...n, display_col: newCol };
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HeroSection — portrait + toggle + hero talent tree
+// Matches sentinel-tree.html: large portrait circle (R=30) + talent nodes
 // ─────────────────────────────────────────────────────────────────────────────
 function HeroSection({
   heroTrees, activeHeroTreeId, activeHeroKey, heroNodes,
@@ -937,7 +954,16 @@ export function BlizzardTalentTree({
     return match?.id ?? heroTreeRefs[0]?.id ?? 42;
   }, [heroTreeRefs, activeHeroKey]);
 
-  const heroNodes = activeHeroKey === "sentinel" ? sentinelNodes : packLeaderNodes;
+  const activeHeroTree = useMemo(
+    () => heroTrees.find((ht) => ht.id === activeHeroTreeId),
+    [heroTrees, activeHeroTreeId],
+  );
+
+  const heroNodes: BzTalentNode[] = useMemo(() => {
+    if (!activeHeroTree) return [];
+    const raw = activeHeroTree.spec_talent_nodes ?? activeHeroTree.hero_talent_nodes ?? activeHeroTree.class_talent_nodes ?? [];
+    return normalizeHeroLayout(raw);
+  }, [activeHeroTree]);
 
   // ── Tooltip ────────────────────────────────────────────────────────────────
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
@@ -1019,9 +1045,103 @@ export function BlizzardTalentTree({
     );
   }
 
-  const classBudget = apiData?.specTree?.talent_point_budget?.class_points ?? 31;
-  const specBudget  = apiData?.specTree?.talent_point_budget?.spec_points  ?? 31;
-  const classCoreKeys = new Set<string>();
+  if (!treeData) return null;
+
+  const { specTree, mediaMap } = treeData;
+  const classNodes = specTree.class_talent_nodes ?? [];
+
+  // Filter hero node IDs out of spec nodes — check ALL node list keys on each hero tree
+  const heroNodeIdSet = new Set<number>();
+  for (const ht of heroTrees) {
+    for (const n of [
+      ...(ht.hero_talent_nodes ?? []),
+      ...(ht.spec_talent_nodes ?? []),
+      ...(ht.class_talent_nodes ?? []),
+    ]) {
+      heroNodeIdSet.add(n.id);
+    }
+  }
+  const rawSpecNodes = (specTree.spec_talent_nodes ?? []).filter((n: BzTalentNode) => !heroNodeIdSet.has(n.id));
+
+  // Keep only the largest connected component to remove stray hero nodes that leaked into spec list
+  let specNodes = rawSpecNodes;
+  if (rawSpecNodes.length >= 3) {
+    const idSet = new Set(rawSpecNodes.map((n) => n.id));
+    const adj = new Map<number, Set<number>>();
+    rawSpecNodes.forEach((n) => {
+      if (!adj.has(n.id)) adj.set(n.id, new Set());
+      (n.prerequisite_nodes ?? []).forEach((p) => {
+        if (idSet.has(p.id)) {
+          adj.get(n.id)!.add(p.id);
+          if (!adj.has(p.id)) adj.set(p.id, new Set());
+          adj.get(p.id)!.add(n.id);
+        }
+      });
+    });
+    const visited = new Set<number>();
+    const components: number[][] = [];
+    rawSpecNodes.forEach((n) => {
+      if (visited.has(n.id)) return;
+      const comp: number[] = [];
+      const queue = [n.id];
+      while (queue.length) {
+        const cur = queue.pop()!;
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        comp.push(cur);
+        adj.get(cur)?.forEach((nb) => { if (!visited.has(nb)) queue.push(nb); });
+      }
+      components.push(comp);
+    });
+    const largest = components.reduce((a, b) => a.length >= b.length ? a : b, []);
+    const largestSet = new Set(largest);
+    specNodes = rawSpecNodes.filter((n) => largestSet.has(n.id));
+  }
+
+  // Same connectivity filter for class nodes
+  let classNodesFinal = classNodes;
+  if (classNodes.length >= 3) {
+    const idSet = new Set(classNodes.map((n: BzTalentNode) => n.id));
+    const adj = new Map<number, Set<number>>();
+    classNodes.forEach((n: BzTalentNode) => {
+      if (!adj.has(n.id)) adj.set(n.id, new Set());
+      (n.prerequisite_nodes ?? []).forEach((p: any) => {
+        if (idSet.has(p.id)) {
+          adj.get(n.id)!.add(p.id);
+          if (!adj.has(p.id)) adj.set(p.id, new Set());
+          adj.get(p.id)!.add(n.id);
+        }
+      });
+    });
+    const visited = new Set<number>();
+    const components: number[][] = [];
+    classNodes.forEach((n: BzTalentNode) => {
+      if (visited.has(n.id)) return;
+      const comp: number[] = [];
+      const queue = [n.id];
+      while (queue.length) {
+        const cur = queue.pop()!;
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        comp.push(cur);
+        adj.get(cur)?.forEach((nb) => { if (!visited.has(nb)) queue.push(nb); });
+      }
+      components.push(comp);
+    });
+    const largest = components.reduce((a, b) => a.length >= b.length ? a : b, []);
+    const largestSet = new Set(largest);
+    classNodesFinal = classNodes.filter((n: BzTalentNode) => largestSet.has(n.id));
+  }
+
+  const classBudget = specTree.talent_point_budget?.class_points ?? 31;
+  const specBudget  = specTree.talent_point_budget?.spec_points  ?? 31;
+
+  const classCoreKeys = new Set(
+    classNodes
+      .filter((n) => CORE_CLASS.has(nodeSpellName(n) ?? ""))
+      .map((n) => nodeTalentKey(n))
+      .filter(Boolean) as string[]
+  );
 
   return (
     <div style={{ userSelect: "none" }}>
@@ -1031,17 +1151,16 @@ export function BlizzardTalentTree({
           justifyContent: "center",
           minWidth: "fit-content", padding: "8px 8px 16px",
         }}>
-          {/* CLASS TREE — live API data (Hunter class tree) */}
-          {classNodes.length > 0 && (
-            <TalentSection
-              label="HUNTER" pointBudget={classBudget}
-              nodes={classNodes} mediaMap={mediaMap}
-              selectedKeys={selectedKeys} selectedChoices={selectedChoices}
-              coreKeys={classCoreKeys}
-              onToggle={handleSpecToggle} onChoiceSelect={handleChoiceSelect}
-              onHover={handleHover}
-            />
-          )}
+          {/* CLASS TREE */}
+          <TalentSection
+            label="HUNTER"
+            nodes={classNodesFinal} mediaMap={mediaMap}
+            pointBudget={classBudget}
+            selectedKeys={selectedKeys} selectedChoices={selectedChoices}
+            coreKeys={classCoreKeys}
+            onToggle={handleSpecToggle} onChoiceSelect={handleChoiceSelect}
+            onHover={handleHover}
+          />
 
           {/* HERO TREE */}
           <HeroSection
