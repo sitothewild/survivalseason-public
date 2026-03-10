@@ -74,7 +74,7 @@ serve(async (req) => {
     const { action, region = "us", realmSlug, characterName, ...params } = await req.json();
 
     // Validate common params for character endpoints
-    const needsChar = ["profile", "equipment", "stats", "specializations", "media", "hunter-pets", "mythic-keystone", "achievements", "full"];
+    const needsChar = ["profile", "equipment", "stats", "specializations", "media", "hunter-pets", "mythic-keystone", "achievements", "professions", "full"];
     if (needsChar.includes(action)) {
       if (!realmSlug || !characterName) {
         throw new Error("realmSlug and characterName are required");
