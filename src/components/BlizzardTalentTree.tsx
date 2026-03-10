@@ -160,13 +160,15 @@ const NAME_TO_KEY: Record<string, string> = {
   "Don't Look Back": "dontLookBack", "Catch Out": "catchOut",
   "Invigorating Pulse": "invigoratingPulse", "Eyes Closed": "eyesClosed",
   "Lunar Calling": "lunarCalling", "Release and Reload": "releaseAndReload",
-  "Vicious Hunt": "viciousHunt", "Pack Coordination": "packCoordination",
-  "Howl of the Pack": "howlOfThePack", "Den Recovery": "denRecovery",
+  "Vicious Hunt": "viciousHunt", "Lone Wolf": "loneWolf",
+  "Horn": "horn", "Pathfinding": "pathfinding",
+  "Slicked Shoes": "slickedShoes", "Masterful Call": "masterfulCall",
   "Ursine Fury": "ursineFury", "Sharpened Claws": "sharpenedClaws",
-  "Wild Attacks": "wildAttacks", "Cornered Prey": "corneredPrey",
-  "Frenzied Tear": "frenziedTear", "Go for the Throat": "goForTheThroat",
-  "Furious Assault": "furiousAssault", "Scattered Prey": "scatteredPrey",
-  "Wyvern's Gaze": "wyvernGaze", "Claw Frenzy": "clawFrenzy", "Pack Assault": "packAssault",
+  "Cat Charge": "catCharge", "Boar Head": "boarHead",
+  "Critical Shot": "criticalShot", "Go for the Throat": "goForTheThroat",
+  "Turtle": "turtle", "Hoof and Blade": "hoofAndBlade",
+  "Wyvern's Gaze": "wyvernGaze", "Monster Fang": "monsterFang",
+  "Bestial Discipline": "bestialDiscipline",
 };
 
 const CORE_SPEC = new Set([
