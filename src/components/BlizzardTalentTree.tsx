@@ -202,35 +202,7 @@ function gridDimensions(nodes: BzTalentNode[]) {
     w: numCols * STEP - GAP,
     h: numRows * STEP - GAP,
     rowMap, colMap,
-// Convert API display_row/col → pixel center in a section
-function nodeCenter(node: BzTalentNode, minRow: number, minCol: number) {
-  return {
-    cx: PAD + (node.display_col - minCol) * COL_STEP + NODE_D / 2,
-    cy: PAD + (node.display_row - minRow) * ROW_STEP + NODE_D / 2,
   };
-}
-
-// Pixel bounds of a section
-function sectionSize(nodes: BzTalentNode[]) {
-  if (!nodes.length) return { w: 0, h: 0, minRow: 0, minCol: 0 };
-  const rows = nodes.map((n) => n.display_row);
-  const cols = nodes.map((n) => n.display_col);
-  const minRow = Math.min(...rows);
-  const maxRow = Math.max(...rows);
-  const minCol = Math.min(...cols);
-  const maxCol = Math.max(...cols);
-  return {
-    w: (maxCol - minCol) * COL_STEP + NODE_D + PAD * 2,
-    h: (maxRow - minRow) * ROW_STEP + NODE_D + PAD * 2,
-    minRow,
-    minCol,
-  };
-}
-
-function buildNodeMap(nodes: BzTalentNode[]) {
-  const m = new Map<number, BzTalentNode>();
-  nodes.forEach((n) => m.set(n.id, n));
-  return m;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
