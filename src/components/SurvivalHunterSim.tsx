@@ -1692,30 +1692,22 @@ export default function SurvivalHunterSim() {
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
         @keyframes waitPulse{0%,100%{border-color:#2e3a50;}50%{border-color:#3a4a60;}}
         @keyframes staggerFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-        @media(max-width:1024px){.sim-3col{grid-template-columns:260px 1fr !important;}.sim-right-col{grid-column:1 / -1 !important;}}
+        @media(max-width:1024px){.sim-3col{grid-template-columns:1fr !important;}.sim-right-col{position:static !important;max-height:none !important;overflow-y:visible !important;}}
         @media(max-width:900px){.responsive-grid{grid-template-columns:1fr !important;}.tab-btn{flex:1 1 calc(50% - 2px);min-width:0;text-align:center;padding:10px 8px;font-size:13px;}}
         @media(max-width:768px){
           .sim-3col{grid-template-columns:1fr !important;}
-          .sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}
-          /* Fix right column: remove sticky, reset to block flow, override inline width:420 */
+          .sim-left-col,.sim-right-col{grid-column:1 !important;}
           .sim-right-col{position:static !important;max-height:none !important;overflow-y:visible !important;width:100% !important;height:auto !important;}
-          /* Tighten header and page padding */
           .site-header{padding:12px 16px !important;}
           .site-main{padding:14px 12px 32px !important;}
-          /* Hide hover tooltips — touch devices don't hover */
           .item-tooltip{display:none !important;}
-          /* Prevent iOS auto-zoom on inputs (requires font-size >= 16px) */
           .ifield{font-size:16px !important;}
-          /* Hide decorative header badges to free up header space; keep sync button */
           .header-badges .badge{display:none !important;}
-          /* Reduce gap in sim grid on mobile */
           .sim-3col{gap:12px !important;}
         }
         @media(max-width:480px){
-          /* Very small screens: compact tab bar */
           .tab-btn{padding:8px 4px !important;font-size:11px !important;letter-spacing:0 !important;}
           .site-main{padding:10px 8px 24px !important;}
-          /* Stack header title area vertically */
           .site-header-inner{flex-direction:column !important;align-items:flex-start !important;gap:8px !important;}
         }
       `}</style>
