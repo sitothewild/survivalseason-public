@@ -22,7 +22,7 @@ const App = () => (
           <Route path="/gear" element={<Gear />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/talent-optimizer" element={<TalentOptimizer />} />
-          <Route path="/calculator" element={<Calculator />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
