@@ -49,21 +49,23 @@ const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   1264903: "https://wow.zamimg.com/images/wow/icons/large/inv_glaive_1h_npc_d_01.jpg", // Glaive Passive
   1253732: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_lunarguidance.jpg", // Moon and Stars
   // Pack Leader
-  472358:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Vicious Hunt
-  472357:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_beastwithin.jpg", // Pack Coordination
-  472719:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg", // Howl of the Pack (choice)
-  472720:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mendpet.jpg", // Den Recovery (choice)
+  471876:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Vicious Hunt (keystone)
+  472358:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_lonewolf.jpg", // Lone Wolf
+  472352:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_beastwithin.jpg", // Horn
+  472357:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_pathfinding2.jpg", // Pathfinding
+  472719:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg", // Slicked Shoes (choice)
+  472720:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mendpet.jpg", // Masterful Call (choice)
   472476:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg", // Ursine Fury (choice)
   472524:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_rake.jpg", // Sharpened Claws (choice)
-  472550:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_wildattack.jpg", // Wild Attacks
-  472639:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_corneredprey.jpg", // Cornered Prey
-  1264781: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_mangle.jpg", // Frenzied Tear
+  472550:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_wildattack.jpg", // Cat Charge
+  472639:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_corneredprey.jpg", // Boar Head
+  1264781: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_mangle.jpg", // Critical Shot
   472660:  "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg", // Go for the Throat
-  472707:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_rapidregeneration.jpg", // Furious Assault
-  1264797: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_multishot.jpg", // Scattered Prey (choice)
+  472707:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_rapidregeneration.jpg", // Turtle
+  1264797: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_multishot.jpg", // Hoof and Blade (choice)
   1264792: "https://wow.zamimg.com/images/wow/icons/large/ability_creature_poison_06.jpg", // Wyvern's Gaze (choice)
-  1264775: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_rake.jpg", // Claw Frenzy
-  472741:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Pack Assault
+  1264775: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_rake.jpg", // Monster Fang
+  472741:  "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg", // Bestial Discipline (capstone)
 };
 
 // ── Hardcoded fallback hero trees ────────────────────────────────────────────
