@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { useState, useCallback } from "react";
-import type { MappedTalentNode, ChoiceOption } from "../types/talentTreeTypes";
+import type { MappedTalentNode, ChoiceOption } from "@/types/talentTreeTypes";
 
 // ─── PROPS ──────────────────────────────────────────────────
 
