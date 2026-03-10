@@ -600,7 +600,7 @@ export function BlizzardTalentTree({
           />
 
           {/* HERO TREE + APEX (center) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
             {/* Hero switcher — single large circle toggle */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12 }}>
               <button
