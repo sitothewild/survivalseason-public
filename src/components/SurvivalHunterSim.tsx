@@ -167,9 +167,11 @@ function parseSimcString(simcText) {
   };
 
   const slotLabels: Record<string, string> = {
-    head:'Head',neck:'Neck',shoulders:'Shoulders',back:'Back',chest:'Chest',wrist:'Wrist',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',
+    head:'Head',neck:'Neck',shoulders:'Shoulders',shoulder:'Shoulders',back:'Back',chest:'Chest',wrist:'Wrist',wrists:'Wrist',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',
     finger1:'Ring 1',finger2:'Ring 2',trinket1:'Trinket 1',trinket2:'Trinket 2',main_hand:'Main Hand',off_hand:'Off Hand',tabard:'Tabard',shirt:'Shirt'
   };
+  // Canonical slot keys used for display grid mapping
+  const SLOT_ALIASES: Record<string, string> = { shoulder: 'shoulders', wrists: 'wrist' };
   const gearSlotNames = Object.keys(slotLabels).join('|');
   const gearSlotPattern = new RegExp(`^(${gearSlotNames})=`);
   const bagSectionIdx = lines.findIndex(l => /gear from bags/i.test(l));
@@ -179,7 +181,7 @@ function parseSimcString(simcText) {
     if (!gearSlotPattern.test(line)) return;
     const slotMatch = line.match(/^(\w+)=/); if (!slotMatch) return;
     const rawSlot = slotMatch[1];
-    const slotKey = rawSlot.replace(/^shoulder$/, 'shoulders').replace(/^wrists$/, 'wrist');
+    const slotKey = SLOT_ALIASES[rawSlot] || rawSlot;
     if (slotKey === 'tabard' || slotKey === 'shirt') return;
     const idMatch = line.match(/,id=(\d+)/);
     let itemName = slotLabels[slotKey] || slotKey; let ilvl = 0;
@@ -698,8 +700,8 @@ const C = {
   borderSub: "#1a2236",
   textPri:   "#f1f5f9",
   textSec:   "#cbd5e1",
-  textMid:   "#94a3b8",
-  textDim:   "#5a6a82",
+  textMid:   "#c8d1de",
+  textDim:   "#9aa8bc",
   gold:      "#d97706",
   goldLight: "#fbbf24",
   goldBg:    "#2a1f08",
@@ -1529,82 +1531,72 @@ export default function SurvivalHunterSim() {
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
         @keyframes waitPulse{0%,100%{border-color:#2e3a50;}50%{border-color:#3a4a60;}}
         @keyframes staggerFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-        @media(max-width:1024px){.sim-3col{grid-template-columns:260px 1fr !important;}.sim-right-col{grid-column:1 / -1 !important;}}
+        @media(max-width:1024px){.sim-3col{grid-template-columns:1fr !important;}.sim-right-col{position:static !important;max-height:none !important;overflow-y:visible !important;}}
         @media(max-width:900px){.responsive-grid{grid-template-columns:1fr !important;}.tab-btn{flex:1 1 calc(50% - 2px);min-width:0;text-align:center;padding:10px 8px;font-size:13px;}}
         @media(max-width:768px){
           .sim-3col{grid-template-columns:1fr !important;}
-          .sim-left-col,.sim-mid-col,.sim-right-col{grid-column:1 !important;}
-          /* Fix right column: remove sticky, reset to block flow, override inline width:420 */
+          .sim-left-col,.sim-right-col{grid-column:1 !important;}
           .sim-right-col{position:static !important;max-height:none !important;overflow-y:visible !important;width:100% !important;height:auto !important;}
-          /* Tighten header and page padding */
           .site-header{padding:12px 16px !important;}
           .site-main{padding:14px 12px 32px !important;}
-          /* Hide hover tooltips — touch devices don't hover */
           .item-tooltip{display:none !important;}
-          /* Prevent iOS auto-zoom on inputs (requires font-size >= 16px) */
           .ifield{font-size:16px !important;}
-          /* Hide decorative header badges to free up header space; keep sync button */
           .header-badges .badge{display:none !important;}
-          /* Reduce gap in sim grid on mobile */
           .sim-3col{gap:12px !important;}
         }
         @media(max-width:480px){
-          /* Very small screens: compact tab bar */
           .tab-btn{padding:8px 4px !important;font-size:11px !important;letter-spacing:0 !important;}
           .site-main{padding:10px 8px 24px !important;}
-          /* Stack header title area vertically */
           .site-header-inner{flex-direction:column !important;align-items:flex-start !important;gap:8px !important;}
         }
       `}</style>
 
       {/* HEADER */}
-      <div className="site-header" style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", padding: "18px 28px", borderBottom: `1px solid ${C.border}` }}>
-        <div className="site-header-inner" style={{ maxWidth: 1300, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 54, height: 54, borderRadius: 12, overflow: "hidden", border: "2px solid #2a4a2a", animation: "iconGlow 3s ease-in-out infinite", flexShrink: 0 }}>
-              <img src={SURVIVAL_ICON} alt="Survival Hunter" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      <header className="site-header" style={{ background: "linear-gradient(135deg,#0d1117,#1c2333,#0f1a2e)", borderBottom: `1px solid ${C.border}`, padding: "16px 28px" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+          <div className="site-header-inner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", border: `2px solid ${C.sentBdr}`, flexShrink: 0 }}>
+                <img src={SURVIVAL_ICON} alt="Survival Hunter" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </div>
+              <div>
+                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 16, fontWeight: 700, color: C.textPri, letterSpacing: 2 }}>SURVIVAL HUNTER</div>
+                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, marginTop: 3 }}>MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR</div>
+              </div>
             </div>
-            <div>
-              <h1 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: "clamp(14px,2vw,22px)", fontWeight: 900, letterSpacing: 4, color: C.textPri, margin: 0, lineHeight: 1 }}>SURVIVAL HUNTER</h1>
-              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: C.textDim, marginTop: 5 }}>MIDNIGHT 12.0 · PRE-SEASON 1 · TALENT OPTIMIZER & SIMULATOR</div>
+            <div className="header-badges" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
+              <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
+              <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
+              <button onClick={() => handleSimcSync(true)} disabled={simcSyncStatus === 'loading'}
+                title={simcSyncInfo}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20,
+                  fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, fontWeight: 600, cursor: simcSyncStatus === 'loading' ? 'not-allowed' : 'pointer',
+                  border: `1px solid ${simcSyncStatus === 'synced' ? 'rgba(56,189,248,.4)' : simcSyncStatus === 'error' ? 'rgba(248,113,113,.4)' : C.border}`,
+                  background: simcSyncStatus === 'synced' ? '#0c1e35' : simcSyncStatus === 'error' ? '#2a0f0f' : C.surface2,
+                  color: simcSyncStatus === 'synced' ? '#38bdf8' : simcSyncStatus === 'error' ? '#f87171' : C.textMid,
+                  transition: 'all .2s', whiteSpace: 'nowrap',
+                }}>
+                {simcSyncStatus === 'loading' ? (
+                  <><span style={{ width: 8, height: 8, border: "1.5px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> SYNCING</>
+                ) : simcSyncStatus === 'synced' ? (
+                  <>🔄 SIMC LIVE</>
+                ) : simcSyncStatus === 'error' ? (
+                  <>⚠ SYNC</>
+                ) : (
+                  <>🔄 SYNC SIMC</>
+                )}
+              </button>
             </div>
           </div>
-          <div className="header-badges" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid rgba(217,119,6,.4)` }}>★ PRE-SEASON 1</span>
-            <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>PATCH 12.0.1</span>
-            <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr }}>🦉 SENTINEL META</span>
-            <button onClick={() => handleSimcSync(true)} disabled={simcSyncStatus === 'loading'}
-              title={simcSyncInfo}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20,
-                fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, fontWeight: 600, cursor: simcSyncStatus === 'loading' ? 'not-allowed' : 'pointer',
-                border: `1px solid ${simcSyncStatus === 'synced' ? 'rgba(56,189,248,.4)' : simcSyncStatus === 'error' ? 'rgba(248,113,113,.4)' : C.border}`,
-                background: simcSyncStatus === 'synced' ? '#0c1e35' : simcSyncStatus === 'error' ? '#2a0f0f' : C.surface2,
-                color: simcSyncStatus === 'synced' ? '#38bdf8' : simcSyncStatus === 'error' ? '#f87171' : C.textMid,
-                transition: 'all .2s', whiteSpace: 'nowrap',
-              }}>
-              {simcSyncStatus === 'loading' ? (
-                <><span style={{ width: 8, height: 8, border: "1.5px solid #2e3a50", borderTopColor: "#38bdf8", borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> SYNCING</>
-              ) : simcSyncStatus === 'synced' ? (
-                <>🔄 SIMC LIVE</>
-              ) : simcSyncStatus === 'error' ? (
-                <>⚠ SYNC</>
-              ) : (
-                <>🔄 SYNC SIMC</>
-              )}
-            </button>
-          </div>
+          <nav style={{ display: "flex", borderBottom: `1px solid ${C.border}` }}>
+            <NavLink to="/"      className="site-nav-link" activeClassName="active" end>⚔ Simulator</NavLink>
+            <NavLink to="/gear"  className="site-nav-link" activeClassName="active">⚗ Gear</NavLink>
+            <NavLink to="/guide" className="site-nav-link" activeClassName="active">📖 Guide</NavLink>
+          </nav>
         </div>
-      </div>
-
-      {/* ── Site-wide nav bar ── */}
-      <div style={{ background: "#0d1117", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", paddingLeft: 10, display: "flex" }}>
-          <NavLink to="/"      className="site-nav-link" activeClassName="active" end>⚔ Simulator</NavLink>
-          <NavLink to="/gear"  className="site-nav-link" activeClassName="active">⚗ Gear</NavLink>
-          <NavLink to="/guide" className="site-nav-link" activeClassName="active">📖 Guide</NavLink>
-        </div>
-      </div>
+      </header>
 
       <div className="site-main" style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 48px" }}>
         {/* TABS */}
@@ -1617,11 +1609,11 @@ export default function SurvivalHunterSim() {
         {/* ═══ SIM TAB ═══ */}
         {activeTab === "sim" && (
           <>
-            {/* 3-COLUMN GRID */}
-            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "260px minmax(340px, 1fr) 420px", gap: 20, alignItems: "stretch" }}>
+            {/* 2-COLUMN GRID */}
+            <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "35% 65%", gap: 16, alignItems: "start" }}>
 
-              {/* ═══ LEFT COLUMN — Inputs Only (260px) ═══ */}
-              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%" }}>
+              {/* ═══ LEFT COLUMN — Inputs + Character + Gear (35%) ═══ */}
+              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {/* Armory / SimC — tabbed single card */}
                 <CARD style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
                   {/* Tab bar */}
@@ -1714,160 +1706,124 @@ export default function SurvivalHunterSim() {
                         </span>
                         <button onClick={handleLoadSample} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 5, color: C.textMid, fontSize: 11, padding: "3px 8px", cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, whiteSpace: "nowrap" }}>Sample</button>
                       </div>
-                      <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ minHeight: 120, resize: "vertical", lineHeight: 1.6 }} />
+                      <textarea className="ifield" value={simcInput} onChange={e => setSimcInput(e.target.value)} placeholder="Paste your SimulationCraft addon export here..." style={{ minHeight: 140, resize: "vertical", lineHeight: 1.6, width: "100%" }} />
                       {parseError && <div style={{ color: C.red, fontSize: 12, fontFamily: "'Rajdhani',sans-serif" }}>⚠ {parseError}</div>}
                       <button className="parse-btn" onClick={handleParse}>✦ Parse Character Data</button>
                     </div>
                   )}
                 </CARD>
-              </div>
 
-              {/* ═══ MIDDLE COLUMN — Permanent Character Box (1fr) ═══ */}
-              <div className="sim-mid-col" style={{ height: "100%" }}>
-                <div style={{
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 12,
-                  padding: 20,
-                  minHeight: 500,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  ...(parsedChar ? {} : { animation: "waitPulse 3s ease-in-out infinite" }),
-                }}>
-                  {/* Header bar */}
+                {/* ── Character Stats (2×3 compact grid) ── */}
+                <CARD style={{ padding: 14 }}>
                   {parsedChar ? (
-                    <div style={{ background: C.greenBg, padding: "10px 16px", borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: C.green, fontSize: 13 }}>✓</span>
-                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
+                    <div style={{ background: C.greenBg, padding: "8px 12px", borderRadius: 8, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ color: C.green, fontSize: 12 }}>✓</span>
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, color: C.green, letterSpacing: 2, fontWeight: 700 }}>CHARACTER LOADED</span>
                     </div>
                   ) : (
-                    <div style={{ textAlign: "center", padding: "12px 0 8px", marginBottom: 14 }}>
-                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: "#2e3a50" }}>IMPORT VIA ARMORY OR SIMC TO POPULATE</div>
+                    <div style={{ textAlign: "center", padding: "8px 0 6px", marginBottom: 10 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 3, color: "#2e3a50" }}>IMPORT VIA ARMORY OR SIMC</div>
                     </div>
                   )}
 
-                  {/* Character info */}
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 12 }}>
-                      {parsedChar ? (
-                        [["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
-                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline", animation: "staggerFadeUp .3s ease forwards" }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: bold ? 700 : 500, color: c }}>{v}</span>
-                          </div>
-                        ))
-                      ) : (
-                        [["Name", "— — —"], ["Level", "—"], ["Race", "—"], ["Avg iLvl", "—"]].map(([l, v]) => (
-                          <div key={l} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, minWidth: 52 }}>{l}:</span>
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 500, color: "#2e3a50" }}>{v}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Stats */}
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>STATS</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px", gap: 6 }}>
-                      {parsedChar ? (
-                        [["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c], idx) => (
-                          <Fragment key={l}>
-                            <div className="stat-chip" style={idx === 0 ? { gridColumn: "1" } : undefined}>
-                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
-                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: c, fontWeight: 700, animation: "staggerFadeUp .3s ease forwards", animationDelay: `${idx * 50}ms` }}>{v}</div>
-                            </div>
-                            {idx === 0 && (
-                              <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                {parsedChar.media?.assets ? (
-                                  <WowModelViewer renderUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'main-raw')?.value || parsedChar.media?.assets?.find((a: any) => a.key === 'main')?.value} fallbackUrl={parsedChar.media?.assets?.find((a: any) => a.key === 'avatar')?.value} width={150} height={180} />
-                                ) : (
-                                  <div style={{ width: "100%", height: 160, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 38, height: 38, borderRadius: 8, overflow: "hidden", opacity: .18 }}>
-                                      <img src={SURVIVAL_ICON} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    </div>
-                                    <div style={{ position: "relative", zIndex: 1, fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, textAlign: "center" }}>CHARACTER<br />RENDER</div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </Fragment>
-                        ))
-                      ) : (
-                        [["AGI", "—"], ["AP", "—"], ["Haste", "—"], ["Crit", "—"], ["Mastery", "—"], ["Vers", "—"]].map(([l, v], idx) => (
-                          <Fragment key={l}>
-                            <div className="stat-chip" style={idx === 0 ? { gridColumn: "1" } : undefined}>
-                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{l}</div>
-                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: "#2e3a50", fontWeight: 700 }}>{v}</div>
-                            </div>
-                            {idx === 0 && (
-                              <div style={{ gridColumn: "3", gridRow: "1 / 4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                <div style={{ width: "100%", height: 160, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 38, height: 38, borderRadius: 8, overflow: "hidden", opacity: .10 }}>
-                                    <img src={SURVIVAL_ICON} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                  </div>
-                                  <div style={{ position: "relative", zIndex: 1, fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: "#2e3a50", textAlign: "center" }}>CHARACTER<br />RENDER</div>
-                                </div>
-                              </div>
-                            )}
-                          </Fragment>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Gear list */}
-                  <div style={{ flex: 1, overflowY: "auto" }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 10 }}>
-                      {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
-                    </div>
-                    {parsedChar && parsedChar.gear.length > 0 ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
-                        {[parsedChar.gear.slice(0, Math.ceil(parsedChar.gear.length / 2)), parsedChar.gear.slice(Math.ceil(parsedChar.gear.length / 2))].map((col, ci) => (
-                          <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
-                            {col.map((g, i) => {
-                              const qualityColor = getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl);
-                              return (
-                                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 6px", borderRadius: 4, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g.itemId ? "pointer" : "default", animation: "staggerFadeUp .3s ease forwards", animationDelay: `${i * 40}ms` }}
-                                  onMouseEnter={e => g.itemId && handleItemHover(g.itemId, e)}>
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 52, flexShrink: 0 }}>{g.slotLabel}</span>
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 4 }}>{g.name || "—"}</span>
-                                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: qualityColor, fontWeight: 700, minWidth: 28, textAlign: "right", paddingLeft: 4, flexShrink: 0 }}>{g.ilvl || "—"}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
+                  {/* Character info row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px", marginBottom: 10 }}>
+                    {parsedChar ? (
+                      [["Name", parsedChar.character.name, C.textPri, true], ["Level", parsedChar.character.level, C.textSec, false], ["Race", parsedChar.character.race, C.textSec, false], ["Avg iLvl", parsedChar.character.avgIlvl ? `${parsedChar.character.avgIlvl}` : null, C.goldLight, true]].filter(([, v]) => v).map(([l, v, c, bold]) => (
+                        <div key={l} style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, minWidth: 44 }}>{l}:</span>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: bold ? 700 : 500, color: c }}>{v}</span>
+                        </div>
+                      ))
                     ) : (
-                      /* Empty gear slots placeholder */
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }}>
-                        {[
-                          ["Head","Neck","Shoulders","Back","Chest","Wrist","Hands","Waist"],
-                          ["Legs","Feet","Ring 1","Ring 2","Trinket 1","Trinket 2","Main Hand","Off Hand"]
-                        ].map((col, ci) => (
-                          <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
-                            {col.map((slot, i) => (
-                              <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 6px", borderRadius: 4, background: i % 2 === 0 ? "transparent" : C.borderSub }}>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#5a6a82", fontWeight: 500, minWidth: 52 }}>{slot}</span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#2e3a50", fontWeight: 600 }}>—</span>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
+                      [["Name", "— — —"], ["Level", "—"], ["Race", "—"], ["Avg iLvl", "—"]].map(([l, v]) => (
+                        <div key={l} style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, minWidth: 44 }}>{l}:</span>
+                          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 500, color: "#2e3a50" }}>{v}</span>
+                        </div>
+                      ))
                     )}
                   </div>
-                </div>
-              </div>
 
-              {/* ═══ RIGHT COLUMN — Simulation Config (320px, sticky) ═══ */}
-              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto", width: 420, height: "100%" }}>
-                <CARD style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                  <LBL>⚙ Simulation Config</LBL>
+                  {/* Stats — 2×3 compact grid */}
+                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>STATS</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+                    {parsedChar ? (
+                      [["AGI", parsedChar.stats.agility?.toLocaleString(), C.textPri], ["AP", Math.round(parsedChar.stats.attackPower)?.toLocaleString(), C.goldLight], ["Haste", `${parsedChar.stats.haste}%`, "#60a5fa"], ["Crit", `${parsedChar.stats.crit}%`, "#f59e0b"], ["Mastery", `${parsedChar.stats.mastery}%`, "#a78bfa"], ["Vers", `${parsedChar.stats.versatility}%`, "#34d399"]].map(([l, v, c]) => (
+                        <div key={l} className="stat-chip" style={{ padding: "6px 8px" }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 1 }}>{l}</div>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: c, fontWeight: 700 }}>{v}</div>
+                        </div>
+                      ))
+                    ) : (
+                      [["AGI", "—"], ["AP", "—"], ["Haste", "—"], ["Crit", "—"], ["Mastery", "—"], ["Vers", "—"]].map(([l, v]) => (
+                        <div key={l} className="stat-chip" style={{ padding: "6px 8px" }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 1 }}>{l}</div>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: "#2e3a50", fontWeight: 700 }}>{v}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CARD>
 
-                  {/* Current Talents — always visible */}
-                  <div style={{ marginBottom: 16, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                {/* ── Gear list (2-column, compact h-8 rows) ── */}
+                <CARD style={{ padding: 14 }}>
+                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>
+                    {parsedChar ? `GEAR (${parsedChar.gear.length} PIECES)` : "GEAR"}
+                  </div>
+                  {parsedChar && parsedChar.gear.length > 0 ? (
+                    (() => {
+                      const SLOT_ORDER_L = ['head','neck','shoulders','back','chest','wrist','hands','waist'];
+                      const SLOT_ORDER_R = ['legs','feet','finger1','finger2','trinket1','trinket2','main_hand','off_hand'];
+                      const SLOT_LABELS_L = ['Head','Neck','Shoulders','Back','Chest','Wrist','Hands','Waist'];
+                      const SLOT_LABELS_R = ['Legs','Feet','Ring 1','Ring 2','Trinket 1','Trinket 2','Main Hand','Off Hand'];
+                      const gearMap: Record<string, any> = {};
+                      parsedChar.gear.forEach((g: any) => { gearMap[g.slot] = g; });
+                      const cols = [
+                        SLOT_ORDER_L.map((slot, i) => ({ slot, label: SLOT_LABELS_L[i], gear: gearMap[slot] })),
+                        SLOT_ORDER_R.map((slot, i) => ({ slot, label: SLOT_LABELS_R[i], gear: gearMap[slot] })),
+                      ];
+                      return (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }} onMouseLeave={handleItemLeave}>
+                          {cols.map((col, ci) => (
+                            <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                              {col.map(({ slot, label, gear: g }, i) => {
+                                const qualityColor = g ? getItemQualityColor(g.quality, g.ilvl, parsedChar.character?.avgIlvl) : C.textDim;
+                                return (
+                                  <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub, cursor: g?.itemId ? "pointer" : "default" }}
+                                    onMouseEnter={e => g?.itemId && handleItemHover(g.itemId, e)}>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, fontWeight: 500, minWidth: 48, flexShrink: 0 }}>{label}</span>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: qualityColor, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "right", paddingLeft: 2 }}>{g?.name || "—"}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 8px" }}>
+                      {[
+                        ["Head","Neck","Shoulders","Back","Chest","Wrist","Hands","Waist"],
+                        ["Legs","Feet","Ring 1","Ring 2","Trinket 1","Trinket 2","Main Hand","Off Hand"]
+                      ].map((col, ci) => (
+                        <div key={ci} style={{ display: "flex", flexDirection: "column" }}>
+                          {col.map((slot, i) => (
+                            <div key={slot} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 32, padding: "0 4px", borderRadius: 3, background: i % 2 === 0 ? "transparent" : C.borderSub }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#5a6a82", fontWeight: 500, minWidth: 48 }}>{slot}</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#2e3a50", fontWeight: 600 }}>—</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CARD>
+
+                {/* Current Talents — always visible */}
+                <CARD style={{ marginTop: 12 }}>
+                  <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                       {parsedChar ? (
@@ -1917,6 +1873,13 @@ export default function SurvivalHunterSim() {
                       {parsedChar ? (displayedTalentString || 'Talent string unavailable') : '—'}
                     </div>
                   </div>
+                </CARD>
+              </div>
+
+              {/* ═══ RIGHT COLUMN — Simulation Config (65%) ═══ */}
+              <div className="sim-right-col" id="sim-config" style={{ position: "sticky", top: 20, maxHeight: "calc(100vh - 40px)", overflowY: "auto" }}>
+                <CARD style={{ display: "flex", flexDirection: "column" }}>
+                  <LBL>⚙ Simulation Config</LBL>
 
                   {/* ── Hero Talent + Talent Loadout ───────────── */}
                   <div style={{ marginBottom: 16 }}>
@@ -1956,7 +1919,6 @@ export default function SurvivalHunterSim() {
                         return (
                           <div key={slotIdx} style={{ flex: 1 }}>
                             {slot ? (
-                              /* ── Filled slot: mini tree card ── */
                               <div
                                 onClick={() => {
                                   setSelectedLoadoutId(`custom-${slotIdx}`);
@@ -1964,67 +1926,58 @@ export default function SurvivalHunterSim() {
                                   setSimMode(slot.simMode);
                                 }}
                                 style={{
-                                  borderRadius: 10,
-                                  padding: "10px 8px 8px",
-                                  cursor: "pointer",
+                                  borderRadius: 10, padding: "10px 10px 8px", cursor: "pointer",
                                   background: isActive ? slotHeroBg : C.surface2,
-                                  border: `2px solid ${isActive ? slotHeroBdr : slotHeroBdr + '44'}`,
-                                  boxShadow: isActive ? `0 0 12px ${slotHeroClr}22` : undefined,
+                                  border: `2px solid ${isActive ? slotHeroBdr : slotHeroBdr + '33'}`,
+                                  boxShadow: isActive ? `0 0 14px ${slotHeroClr}22` : undefined,
                                   transition: "all .15s",
-                                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                                  display: "flex", flexDirection: "column", gap: 4,
                                 }}>
-                                {/* Name + mode row */}
-                                <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                  <div>
-                                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7.5, fontWeight: 700, color: slotHeroClr, letterSpacing: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{slot.name}</div>
-                                    <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: C.textDim, marginTop: 1 }}>
-                                      {slot.heroKey === 'sentinel' ? '🌙 Sentinel' : '🐺 Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}
-                                    </div>
-                                  </div>
-                                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                                    <button
-                                      onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
-                                      title="Edit loadout"
-                                      style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✏</button>
-                                    <button
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
-                                        if (isActive) setSelectedLoadoutId('sentinel-st');
-                                        if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
-                                      }}
-                                      title="Remove loadout"
-                                      style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✕</button>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ fontSize: 13, lineHeight: 1 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
+                                    color: isActive ? slotHeroClr : C.textSec, letterSpacing: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>
+                                    {slot.name}
+                                  </span>
+                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
+                                    background: '#1a1a2e', color: '#818cf8', border: '1px solid #818cf844',
+                                    borderRadius: 3, padding: "0 4px" }}>CUSTOM</span>
+                                  {isActive && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
+                                    background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
+                                    borderRadius: 3, padding: "0 4px" }}>ACTIVE</span>}
+                                </div>
+                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    <button onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
+                                      title="Edit" style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✏</button>
+                                    <button onClick={e => {
+                                      e.stopPropagation();
+                                      setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
+                                      if (isActive) setSelectedLoadoutId('sentinel-st');
+                                      if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
+                                    }}
+                                      title="Remove" style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✕</button>
                                   </div>
                                 </div>
-                                {/* Mini tree */}
-                                <MiniTalentTree
-                                  selectedKeys={slot.enabledTalents}
-                                  heroKey={slot.heroKey}
-                                  heroSelectedKeys={slot.enabledHeroTalents}
-                                  onDot={(node, e) => handleTalentHover(nodeToPill(node), e)}
-                                  offDot={handleTalentLeave}
-                                />
-                                {isActive && (
-                                  <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9, color: slotHeroClr, letterSpacing: 1, opacity: .8 }}>● ACTIVE</div>
-                                )}
                               </div>
                             ) : (
-                              /* ── Empty slot ── */
                               <button
                                 onClick={() => {
                                   setEditingSlot(slotIdx);
                                   setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [] });
                                 }}
                                 style={{
-                                  width: "100%", minHeight: 200, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
+                                  width: "100%", height: "100%", minHeight: 80, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
                                   background: isEditing ? C.surface3 : C.surface2,
                                   border: `2px dashed ${isEditing ? C.textMid : C.border}`,
                                   color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
-                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
                                 }}>
-                                <span style={{ fontSize: 22, opacity: .35 }}>+</span>
-                                <span style={{ fontSize: 10, letterSpacing: 1, fontFamily: "'Orbitron',sans-serif", opacity: .5 }}>ADD CUSTOM{'\n'}LOADOUT</span>
+                                <span style={{ fontSize: 16, opacity: .35 }}>+</span>
+                                <span style={{ fontSize: 8, letterSpacing: 1, fontFamily: "'Orbitron',sans-serif", opacity: .5 }}>ADD CUSTOM</span>
                               </button>
                             )}
                           </div>
@@ -2116,6 +2069,7 @@ export default function SurvivalHunterSim() {
                               </span>
                             </div>
                             <BlizzardTalentTree
+                              compact
                               specSelectedKeys={editDraft.enabledTalents}
                               onSpecToggle={(key, selected) => {
                                 setEditDraft(d => {
@@ -2178,6 +2132,7 @@ export default function SurvivalHunterSim() {
 
                     {/* Talent Loadout cards — 3 builds for the active hero */}
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>TALENT LOADOUT</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
                     {(() => {
                       const loadouts = TALENT_LOADOUTS.filter(l => l.heroKey === heroTalent);
                       const heroClr  = heroTalent === 'sentinel' ? C.sentClr : C.packClr;
@@ -2185,51 +2140,39 @@ export default function SurvivalHunterSim() {
                       const heroBdr  = heroTalent === 'sentinel' ? C.sentBdr : C.packBdr;
                       return loadouts.map(loadout => {
                         const isSel = selectedLoadoutId === loadout.id;
-                        const specKeys = loadoutToSpecKeys(loadout);
-                        const heroNodeKeys = loadoutToHeroNodeKeys(loadout.heroKey);
                         return (
                           <div key={loadout.id}
                             onClick={() => { setSelectedLoadoutId(loadout.id); setHeroTalent(loadout.heroKey); setSimMode(loadout.simMode); }}
                             style={{
-                              marginBottom: 8, borderRadius: 10, padding: "10px 10px 8px", cursor: "pointer",
+                              borderRadius: 10, padding: "10px 10px 8px", cursor: "pointer",
                               background: isSel ? heroBg : C.surface2,
                               border: `2px solid ${isSel ? heroBdr : heroBdr + '33'}`,
                               boxShadow: isSel ? `0 0 14px ${heroClr}22` : undefined,
                               transition: "all .15s",
-                              display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                              display: "flex", flexDirection: "column", gap: 4,
                             }}>
 
-                            {/* Header: icon + name + ACTIVE badge + DPS deltas */}
-                            <div style={{ width: "100%", display: "flex", alignItems: "flex-start", gap: 6 }}>
+                            {/* Header */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                               <span style={{ fontSize: 13, lineHeight: 1 }}>{loadout.icon}</span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
-                                    color: isSel ? heroClr : C.textSec, letterSpacing: 1.2 }}>
-                                    {loadout.name}
-                                  </span>
-                                  {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9,
-                                    background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
-                                    borderRadius: 3, padding: "0 5px" }}>ACTIVE</span>}
-                                </div>
-                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {loadout.scenario}
-                                </div>
-                              </div>
-                              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#4ade80', fontWeight: 700 }}>ST +{Math.round(loadout.stDelta*100)}%</div>
-                                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#f97316', fontWeight: 700 }}>AoE +{Math.round(loadout.aoeDelta*100)}%</div>
-                              </div>
+                              <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
+                                color: isSel ? heroClr : C.textSec, letterSpacing: 1.2 }}>
+                                {loadout.name}
+                              </span>
+                              {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
+                                background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
+                                borderRadius: 3, padding: "0 4px" }}>ACTIVE</span>}
                             </div>
 
-                            {/* Compact dot tree — always visible */}
-                            <MiniTalentTree
-                              selectedKeys={specKeys}
-                              heroKey={loadout.heroKey}
-                              heroSelectedKeys={heroNodeKeys}
-                              onDot={(node, e) => handleTalentHover(nodeToPill(node), e)}
-                              offDot={handleTalentLeave}
-                            />
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {loadout.scenario}
+                            </div>
+
+                            {/* DPS deltas */}
+                            <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#4ade80', fontWeight: 700 }}>ST +{Math.round(loadout.stDelta*100)}%</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#f97316', fontWeight: 700 }}>AoE +{Math.round(loadout.aoeDelta*100)}%</span>
+                            </div>
 
                             {/* Copy talent string button */}
                             {isSel && (
@@ -2242,20 +2185,21 @@ export default function SurvivalHunterSim() {
                                 }}
                                 style={{
                                   marginTop: 4, width: "100%",
-                                  fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1.5,
-                                  padding: "8px 0", borderRadius: 7, cursor: "pointer",
+                                  fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5,
+                                  padding: "6px 0", borderRadius: 7, cursor: "pointer",
                                   background: copiedLoadoutId === loadout.id ? C.greenBg : C.surface3,
                                   border: `1px solid ${copiedLoadoutId === loadout.id ? C.green : C.border}`,
                                   color: copiedLoadoutId === loadout.id ? C.green : C.textMid,
                                   transition: "all .2s",
                                 }}>
-                                {copiedLoadoutId === loadout.id ? '✓ COPIED TO CLIPBOARD' : '⎘ COPY TALENT STRING'}
+                                {copiedLoadoutId === loadout.id ? '✓ COPIED' : '⎘ COPY STRING'}
                               </button>
                             )}
                           </div>
                         );
                       });
                     })()}
+                    </div>
 
                     {/* Custom loadout cards (saved slots that match current hero) */}
                     {customSlots.map((slot, idx) => {
@@ -2379,10 +2323,14 @@ export default function SurvivalHunterSim() {
                     <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>1 min</span><span>5 min</span><span>10 min</span></div>
                   </div>
 
-                  {/* Advanced Options — content renders above toggle so it collapses upward */}
+                  {/* Advanced Options — collapses downward, collapsed by default */}
                   <div style={{ marginBottom: 16 }}>
+                    <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
+                      <span style={{ fontSize: 10 }}>{showAdv ? "▲" : "▼"}</span>
+                      {showAdv ? "COLLAPSE" : "ADVANCED OPTIONS"} {!showAdv && <span style={{ color: C.textDim }}>(Buffs / Consumables / Fight Style)</span>}
+                    </button>
                     {showAdv && (
-                      <div style={{ marginBottom: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
+                      <div style={{ marginTop: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT STYLE</div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -2458,11 +2406,6 @@ export default function SurvivalHunterSim() {
                         </div>
                       </div>
                     )}
-                    {/* Toggle sits at the bottom — content collapses upward */}
-                    <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
-                      <span style={{ fontSize: 10 }}>{showAdv ? "▲" : "▼"}</span>
-                      {showAdv ? "COLLAPSE" : "ADVANCED OPTIONS"} {!showAdv && <span style={{ color: C.textDim }}>(Buffs / Consumables / Fight Style)</span>}
-                    </button>
                   </div>
 
                   {/* Run Simulation button */}

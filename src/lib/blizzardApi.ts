@@ -107,7 +107,7 @@ export interface TalentTreeFullResponse {
 
 /** Fetch Survival Hunter talent tree (class + spec nodes) plus both hero trees and all spell icons. */
 export async function getSurvivalTalentTree(
-  treeId = 786,
+  treeId = 774,
   specId = 255,
   region = "us"
 ): Promise<TalentTreeFullResponse> {
@@ -151,8 +151,17 @@ export function equipmentToSimData(fullData: any, region = "us") {
         isEquipBonus: !!s.is_equip_bonus,
       }));
 
+    // Normalize Blizzard slot types to canonical keys used by the gear display grid
+    const BLIZZARD_SLOT_MAP: Record<string, string> = {
+      shoulder: 'shoulders', finger_1: 'finger1', finger_2: 'finger2',
+      trinket_1: 'trinket1', trinket_2: 'trinket2', main_hand: 'main_hand',
+      off_hand: 'off_hand', wrist: 'wrist',
+    };
+    const rawSlot = (item.slot?.type || "unknown").toLowerCase();
+    const normalizedSlot = BLIZZARD_SLOT_MAP[rawSlot] || rawSlot;
+
     return {
-      slot: item.slot?.type?.toLowerCase() || "unknown",
+      slot: normalizedSlot,
       slotLabel: item.slot?.name || item.slot?.type || "Unknown",
       ilvl: item.level?.value || 0,
       itemId: item.item?.id || null,
