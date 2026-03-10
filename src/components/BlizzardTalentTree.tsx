@@ -272,7 +272,7 @@ function InteractiveTalentNode({
           <img src={iconA} alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
             style={{ width: sz, height: sz, objectFit: "cover", position: "absolute", left: 0, top: 0,
-              filter: `brightness(${brightA})`, transition: "filter .15s" }} />
+              filter: filterA, transition: "filter .15s" }} />
         </div>
         {/* Right half */}
         <div onClick={() => { if (nodeState !== 'LOCKED') onChoiceClick(1); }}
