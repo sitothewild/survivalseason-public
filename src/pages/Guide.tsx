@@ -172,12 +172,6 @@ export default function Guide() {
               color:heroClr, letterSpacing:3, margin:0, textTransform:"uppercase" }}>
               {isSent ? "🦉 Sentinel" : "🐾 Pack Leader"} — Rotation Guide
             </h1>
-            <p style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:15, color:C.textMid,
-              marginTop:8, maxWidth:620 }}>
-              First-principles ability DPS breakdown, talent analysis, community comparison,
-              and live SimC APL. All numbers computed from raw AP coefficients —
-              not anchored to a fixed value.
-            </p>
           </div>
           <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
             {(["sentinel","packLeader"] as const).map(h => (
