@@ -490,7 +490,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   266921: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_aspectoftheviper.jpg",
   378004: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_eagleeye.jpg",
   459460: "https://wow.zamimg.com/images/wow/icons/large/spell_shaman_bindelemental.jpg",
-  472729: "https://wow.zamimg.com/images/wow/icons/large/inv_trap_01.jpg",
+  472729: "https://wow.zamimg.com/images/wow/icons/large/inv_misc_rope_01.jpg",
   343247: "https://wow.zamimg.com/images/wow/icons/large/ability_ensnare.jpg",
   459517: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mendpet.jpg",
   53480: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_ferociousinspiration.jpg",
