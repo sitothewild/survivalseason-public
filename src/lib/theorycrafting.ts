@@ -951,6 +951,11 @@ function buildSentinelAoE(): TalentConfig {
     ursineFury: false, sharpenedClaws: false, wildAttacks: false, corneredPrey: false, frenziedTear: false,
     goForTheThroat: false, furiousAssault: false, scatteredPrey: false, wyvernGaze: false, clawFrenzy: false,
     packAssault: false,
+    // ── Hunter class tree ──
+    alphaPredator: true, keenEyesight: true, masterMarksman: true, serratedShots: true,
+    deathChakram: true, killerInstinct: true, steelTrap: false, hydrasBite: true,
+    spittingCobra: false, barrage: false, volley: true, bloodshed: false, murderOfCrows: false,
+    wailingArrow: false,
   };
 }
 
