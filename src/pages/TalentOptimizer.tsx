@@ -1,8 +1,10 @@
 // @ts-nocheck
 import { useRef, useState, useEffect } from "react";
 import type { FightStyle } from "@/utils/simcProfileBuilder";
+import { buildSimcProfile } from "@/utils/simcProfileBuilder";
 import { NavLink } from "@/components/NavLink";
-import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
+import { BlizzardTalentTree, type BlizzardTalentTreeHandle } from "@/components/BlizzardTalentTree";
+import { toast } from "@/hooks/use-toast";
 import survivalIconImg from "@/assets/survival-icon.png";
 import talentOptimizerBg from "@/assets/talent-optimizer-bg.png";
 
@@ -25,9 +27,11 @@ const NAV_LINKS = [
 export default function TalentOptimizer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
+  const treeRef = useRef<BlizzardTalentTreeHandle>(null);
   const [treeScale, setTreeScale] = useState(1);
   const [isHovering, setIsHovering] = useState(false);
   const [fightStyle, setFightStyle] = useState<FightStyle>("st");
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -45,6 +49,36 @@ export default function TalentOptimizer() {
     requestAnimationFrame(measure);
     return () => ro.disconnect();
   }, []);
+
+  const handleCopySimc = () => {
+    if (!treeRef.current) return;
+    const talents = treeRef.current.getSelectedTalents();
+    const heroKey = treeRef.current.getActiveHeroKey();
+    const heroTree = heroKey === "packLeader" ? "pack_leader" : "sentinel";
+
+    const selectedTalents = talents.map(t => ({
+      nodeId: 0,
+      talentId: 0,
+      spellId: t.spellId,
+      name: t.name,
+      rank: t.rank,
+      section: t.section,
+    }));
+
+    const result = buildSimcProfile(selectedTalents, {
+      heroTree: heroTree as any,
+      fightStyle,
+    });
+
+    navigator.clipboard.writeText(result.profileString).then(() => {
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+      toast({
+        title: "SimC string copied!",
+        description: `${result.summary.talentCount} talents · ${result.summary.gearSlots} gear slots · ${result.summary.fightStyle}`,
+      });
+    });
+  };
 
   return (
     <div style={{ minHeight:"100vh", background:C.pageBg, color:C.textPri,
@@ -144,8 +178,29 @@ export default function TalentOptimizer() {
             }} />
             {/* Content layer */}
             <div style={{ position:"relative", zIndex:1 }}>
-            {/* Fight style toggle — top right */}
-            <FightStyleToggle active={fightStyle} onChange={setFightStyle} />
+            {/* Fight style toggle + Copy SimC — top right */}
+            <div style={{ position:"absolute", top:10, right:14, zIndex:10, display:"flex", gap:8, alignItems:"center" }}>
+              <FightStyleToggle active={fightStyle} onChange={setFightStyle} />
+              <button
+                onClick={handleCopySimc}
+                style={{
+                  padding:"4px 14px",
+                  fontSize:10,
+                  fontFamily:"'Rajdhani',sans-serif",
+                  fontWeight:700,
+                  letterSpacing:1.5,
+                  textTransform:"uppercase",
+                  border:`1px solid ${copyFeedback ? "rgba(56,189,248,.5)" : "rgba(217,119,6,.4)"}`,
+                  borderRadius:6,
+                  cursor:"pointer",
+                  transition:"all .2s",
+                  background: copyFeedback ? "rgba(56,189,248,.15)" : "rgba(217,119,6,.15)",
+                  color: copyFeedback ? "#38bdf8" : "#fbbf24",
+                }}
+              >
+                {copyFeedback ? "✓ Copied!" : "📋 Copy SimC"}
+              </button>
+            </div>
             <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
               <div
                 ref={innerRef}
@@ -159,7 +214,7 @@ export default function TalentOptimizer() {
                   paddingLeft:"2%",
                 }}
               >
-                <BlizzardTalentTree fightStyle={fightStyle} />
+                <BlizzardTalentTree ref={treeRef} fightStyle={fightStyle} />
               </div>
             </div>
             </div>
@@ -179,7 +234,6 @@ function FightStyleToggle({ active, onChange }: { active: FightStyle; onChange: 
 
   return (
     <div style={{
-      position: "absolute", top: 10, right: 14, zIndex: 10,
       display: "flex", borderRadius: 6, overflow: "hidden",
       border: "1px solid #2e3a50",
     }}>
