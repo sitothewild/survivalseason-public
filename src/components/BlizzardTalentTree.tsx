@@ -584,6 +584,41 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
   // Hero tree lifted to parent level for preset loading
   const heroTree = useTalentTree(heroNodes, HERO_MAX_PTS, HERO_ROW_GATES, heroGateMet);
 
+  // Class tree lifted for export access
+  const classTree = useTalentTree(HUNTER_NODES, CLASS_MAX_PTS, CLASS_ROW_GATES, true);
+
+  // Expose getSelectedTalents via ref
+  useImperativeHandle(ref, () => ({
+    getSelectedTalents: () => {
+      const result: { nodeId: string; spellId: number; name: string; rank: number; section: "class" | "spec" | "hero" }[] = [];
+      const collectFromTree = (
+        nodes: TalentNodeDef[],
+        points: Record<string, number>,
+        choices: Record<string, 0 | 1>,
+        section: "class" | "spec" | "hero",
+      ) => {
+        for (const node of nodes) {
+          const pts = points[node.id] ?? 0;
+          if (pts <= 0) continue;
+          if (node.type === 'choice') {
+            const side = choices[node.id];
+            const chosen = side === 1 ? node.choiceB : node.choiceA;
+            if (chosen?.spellId) {
+              result.push({ nodeId: node.id, spellId: chosen.spellId, name: chosen.name, rank: pts, section });
+            }
+          } else if (node.spellId) {
+            result.push({ nodeId: node.id, spellId: node.spellId, name: node.name, rank: pts, section });
+          }
+        }
+      };
+      collectFromTree(HUNTER_NODES, classTree.state.points, classTree.state.choiceSelections, "class");
+      collectFromTree([...SURVIVAL_NODES, ...APEX_NODES], specTree.state.points, specTree.state.choiceSelections, "spec");
+      collectFromTree(heroNodes, heroTree.state.points, heroTree.state.choiceSelections, "hero");
+      return result;
+    },
+    getActiveHeroKey: () => activeHeroKey,
+  }), [classTree.state, specTree.state, heroTree.state, heroNodes, activeHeroKey]);
+
   // Report total points for hero gate
   const prevTotal = useRef(0);
   if (specTree.totalPoints !== prevTotal.current) {
@@ -621,6 +656,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
             nodes={HUNTER_NODES}
             maxPts={CLASS_MAX_PTS}
             rowGates={CLASS_ROW_GATES}
+            tree={classTree}
             onGlobalHover={handleGlobalHover}
           />
 
