@@ -6,10 +6,17 @@
 // Switching hero trees resets the previous hero tree's points.
 // ─────────────────────────────────────────────────────────────
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import TalentTreeGrid from "./TalentTreeGrid";
 import { useTalentTreeData } from "../hooks/useTalentTreeData";
 import type { BlizzardTalentTreeResponse } from "../types/talentTreeTypes";
+import { buildSimcProfile, type FightStyle } from "../utils/simcProfileBuilder";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 // ─── PROPS ──────────────────────────────────────────────────
 
@@ -23,6 +30,11 @@ interface TalentPanelProps {
 // ─── COMPONENT ──────────────────────────────────────────────
 
 export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
+  const [exportFightStyle, setExportFightStyle] = useState<FightStyle>("st");
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportResult, setExportResult] = useState<{ profileString: string; summary: any } | null>(null);
+  const [copied, setCopied] = useState(false);
+
   const tree = useTalentTreeData(fetchTalentTree);
 
   // Switch hero tree AND reset all hero points
@@ -119,6 +131,26 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
             >
               Reset All
             </button>
+            {/* Fight style toggle */}
+            <div className="flex rounded overflow-hidden border border-slate-700">
+              {(["st", "cleave", "aoe"] as FightStyle[]).map((fs) => (
+                <button
+                  key={fs}
+                  className={`
+                    text-[9px] px-2 py-1 font-['Rajdhani',sans-serif] uppercase tracking-wider
+                    transition-colors focus:outline-none
+                    ${exportFightStyle === fs
+                      ? "bg-amber-900/40 text-amber-400 border-r border-amber-700/50"
+                      : "bg-slate-800/60 text-slate-600 hover:text-slate-400 border-r border-slate-700 last:border-r-0"
+                    }
+                  `}
+                  onClick={() => setExportFightStyle(fs)}
+                >
+                  {fs === "st" ? "ST" : fs === "cleave" ? "Cleave" : "AoE"}
+                </button>
+              ))}
+            </div>
+
             <button
               className="
                 text-[9px] px-2.5 py-1 rounded
@@ -128,7 +160,13 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
               "
               onClick={() => {
                 const talents = tree.getSelectedTalents();
-                console.log("Selected talents for SimC:", talents);
+                const result = buildSimcProfile(talents, {
+                  heroTree: tree.activeHeroTree,
+                  fightStyle: exportFightStyle,
+                });
+                setExportResult(result);
+                setExportModalOpen(true);
+                setCopied(false);
               }}
             >
               Export to SimC
@@ -211,6 +249,70 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
           />
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          EXPORT MODAL
+          ═══════════════════════════════════════════════════════ */}
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="max-w-2xl bg-[#1c2333] border-[#2e3a50] text-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-amber-400 font-['Orbitron',sans-serif] text-sm tracking-widest uppercase">
+              SimC Profile Export
+            </DialogTitle>
+          </DialogHeader>
+
+          {exportResult && (
+            <div className="flex flex-col gap-4">
+              {/* Summary badges */}
+              <div className="flex flex-wrap gap-2">
+                <ExportBadge label="Hero" value={exportResult.summary.heroTree} />
+                <ExportBadge label="Fight" value={exportResult.summary.fightStyle} />
+                <ExportBadge label="Avg ilvl" value={String(exportResult.summary.avgIlvl)} />
+                <ExportBadge label="Slots" value={String(exportResult.summary.gearSlots)} />
+                <ExportBadge label="Enchants" value={String(exportResult.summary.enchants)} />
+                <ExportBadge label="Gems" value={String(exportResult.summary.gems)} />
+                <ExportBadge label="Talents" value={String(exportResult.summary.talentCount)} />
+              </div>
+
+              {/* Profile string */}
+              <pre
+                className="
+                  bg-[#0f1520] border border-[#2e3a50] rounded p-3
+                  text-[10px] text-slate-400 font-mono
+                  max-h-[400px] overflow-auto whitespace-pre
+                  cursor-pointer select-all
+                "
+                onClick={(e) => {
+                  const range = document.createRange();
+                  range.selectNodeContents(e.currentTarget);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+                }}
+              >
+                {exportResult.profileString}
+              </pre>
+
+              {/* Copy button */}
+              <button
+                className="
+                  self-end text-[10px] px-4 py-1.5 rounded
+                  bg-amber-900/30 border border-amber-700/50
+                  text-amber-400 hover:bg-amber-800/40 hover:border-amber-600
+                  transition-colors font-['Rajdhani',sans-serif] font-bold tracking-wider
+                "
+                onClick={() => {
+                  navigator.clipboard.writeText(exportResult.profileString);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? "✓ Copied!" : "Copy Profile"}
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -313,6 +415,17 @@ function PointBadge({
         {spent}
         {max != null && `/${max}`}
       </span>
+    </div>
+  );
+}
+
+// ─── EXPORT BADGE ───────────────────────────────────────────
+
+function ExportBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#0f1520] border border-[#2e3a50]">
+      <span className="text-[8px] text-slate-600 font-['Rajdhani',sans-serif] uppercase">{label}</span>
+      <span className="text-[10px] text-amber-400 font-bold font-mono">{value}</span>
     </div>
   );
 }
