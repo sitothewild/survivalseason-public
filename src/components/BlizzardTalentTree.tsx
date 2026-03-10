@@ -424,10 +424,10 @@ function TreeSection({
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", width: "100%" }}>
-        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700,
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%" }}>
+        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700,
           letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>{label}</span>
-        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 700,
+        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700,
           color: pointColor(tree.totalPoints, maxPts) }}>
           {tree.totalPoints} / {maxPts}
         </span>
