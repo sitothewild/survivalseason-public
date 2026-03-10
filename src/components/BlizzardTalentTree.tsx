@@ -361,7 +361,7 @@ function InteractiveTalentNode({
 // ── Tree Section ─────────────────────────────────────────────
 function TreeSection({
   label, nodes, maxPts, rowGates, externalGateMet = true,
-  onTalentChange,
+  onTalentChange, compact = false,
 }: {
   label: string;
   nodes: TalentNodeDef[];
@@ -369,6 +369,7 @@ function TreeSection({
   rowGates: Record<number, number>;
   externalGateMet?: boolean;
   onTalentChange?: (nodeId: string, pts: number, choiceSide?: 0 | 1) => void;
+  compact?: boolean;
 }) {
   const tree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(nodes), [nodes]);
