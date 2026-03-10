@@ -10,16 +10,15 @@ export interface TalentNodeDef {
   name: string;
   type: 'active' | 'passive' | 'choice' | 'apex';
   maxPts: number;
-  imports: string[];
+  row: number;
+  col: number;
+  parents: string[];
+  desc: string;
   /** For choice nodes: two options */
   choiceA?: { name: string; spellId: number; desc: string };
   choiceB?: { name: string; spellId: number; desc: string };
   /** Visual hint: render as small tier dot */
   tier?: boolean;
-  desc: string;
-  /** For choice nodes: two options */
-  choiceA?: { name: string; spellId: number; desc: string };
-  choiceB?: { name: string; spellId: number; desc: string };
 }
 
 export type NodeState = 'LOCKED' | 'AVAILABLE' | 'SELECTED' | 'PARTIAL';
