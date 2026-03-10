@@ -1491,7 +1491,7 @@ export default function SurvivalHunterSim() {
 
   // Helper components (memoized so inputs don't lose focus on state updates)
    const LBL = useCallback(({ children }) => (
-    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10, fontWeight: 700 }}>
+    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 14, letterSpacing: 3, color: '#1c2333', textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10, fontWeight: 900 }}>
       {children}
       <div style={{ flex: 1, height: 1, background: C.borderSub }} />
     </div>
@@ -2893,7 +2893,7 @@ export default function SurvivalHunterSim() {
             {/* ═══ SECTION 1: OPTIMAL BUILDS ═══ */}
             <div>
               <LBL>🌿 Optimal Talent Builds</LBL>
-              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
+              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
 
               {/* Legend */}
               <div style={{ display: "flex", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
@@ -2902,9 +2902,9 @@ export default function SurvivalHunterSim() {
                   { label: 'Single Target', dot: '#d8b4fe', bg: '#1e1040', sup: 'ST' },
                   { label: 'Multi-Target', dot: '#6ee7b7', bg: '#0f2a1a', sup: 'AoE' },
                 ].map(l => (
-                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
+                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Rajdhani',sans-serif", fontSize: 15, fontWeight: 700, color: C.textDim }}>
                     {l.sup ? (
-                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: l.dot, background: l.bg, padding: '2px 5px', borderRadius: 3, fontWeight: 700 }}>{l.sup}</span>
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: l.dot, background: l.bg, padding: '2px 6px', borderRadius: 3, fontWeight: 700 }}>{l.sup}</span>
                     ) : (
                       <span style={{ color: l.dot, fontSize: 14 }}>●</span>
                     )}
@@ -2916,7 +2916,7 @@ export default function SurvivalHunterSim() {
               {/* ST Divider */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
-                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', fontWeight: 700 }}>SINGLE TARGET</span>
+                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 12, letterSpacing: 3, color: '#1c2333', fontWeight: 900 }}>SINGLE TARGET</span>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
               </div>
 
@@ -2980,7 +2980,7 @@ export default function SurvivalHunterSim() {
               {/* AoE Divider */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
-                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', fontWeight: 700 }}>AOE / M+</span>
+                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 12, letterSpacing: 3, color: '#1c2333', fontWeight: 900 }}>AOE / M+</span>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
               </div>
 
