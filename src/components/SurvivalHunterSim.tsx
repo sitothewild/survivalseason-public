@@ -13,6 +13,16 @@ import {
   type GearProfile, type TierSetConfig, type TalentNode,
 } from "@/lib/theorycrafting";
 import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
+import {
+  PHIALS, FOOD_BUFFS, POTIONS, WEAPON_ENHANCEMENTS, AUGMENT_RUNES,
+} from "@/engine/consumables";
+import { MIDNIGHT_ENCHANTS } from "@/lib/gearOptimizer";
+import { FULL_RAID_OPTIONS, MPLUS_CASUAL_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
+import type { SimOptions } from "@/engine/types";
+import { charToSimInput } from "@/engine/adapters/charToSimInput";
+import { simResultToLegacy } from "@/engine/adapters/simResultToLegacy";
+import { getWorkerPool } from "@/engine/WorkerPool";
+import type { HeroTree } from "@/engine/types";
 
 // ============================================================
 // MIDNIGHT 12.0.1 SURVIVAL HUNTER SIMULATION ENGINE
@@ -989,6 +999,17 @@ export default function SurvivalHunterSim() {
   const [fightStyle, setFightStyle] = useState('patchwerk');
   const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({ battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true });
   const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered' });
+  // Advanced Options — engine-driven SimOptions state
+  const [weaponEnhancement, setWeaponEnhancement] = useState('ironclaw_whetstone');
+  const [augmentRune, setAugmentRune] = useState(true);
+  const [gemPrimaryStat, setGemPrimaryStat] = useState<'crit' | 'haste' | 'mastery' | 'vers'>('mastery');
+  const [gemSockets, setGemSockets] = useState(6);
+  const [hasBlasphemite, setHasBlasphemite] = useState(true);
+  const [has2pc, setHas2pc] = useState(true);
+  const [has4pc, setHas4pc] = useState(true);
+  const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('auto');
+  const [manualEnchants, setManualEnchants] = useState<Record<string, string>>({});
+  const [showEnchants, setShowEnchants] = useState(false);
   const [showAdv, setShowAdv] = useState(true);
   const [copied, setCopied] = useState('');
   const [copiedLoadoutId, setCopiedLoadoutId] = useState<string|null>(null);
@@ -1505,22 +1526,121 @@ export default function SurvivalHunterSim() {
     })();
   }, [parsedChar?.gear, armoryRegion]);
 
+  // Build SimOptions from UI state
+  const currentSimOptions = useMemo((): SimOptions => {
+    // Map old consumable keys to engine keys
+    const phialMap: Record<string, string> = {
+      flaskOfAlchemicalChaos: 'alchemical_chaos',
+      flaskOfTemperingSanity: 'tempering_sanity',
+      none: 'none',
+    };
+    const foodMap: Record<string, string> = {
+      mastery: 'mastery_food',
+      crit: 'crit_food',
+      haste: 'haste_food',
+      none: 'none',
+    };
+    const potionMap: Record<string, string> = {
+      tempered: 'tempered_potion',
+      frontLoaded: 'potion_of_unwavering_focus',
+      none: 'none',
+    };
 
-  const handleSim = useCallback(() => {
-    if (!parsedChar) return; setIsSimming(true); setSimResults(null); setUserSimResult(null); setOptimalSimResult(null);
-    let externalMult = 1.0; externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
-    Object.entries(raidBuffs).forEach(([buff, enabled]) => { if (enabled && RAID_BUFFS[buff]) externalMult *= RAID_BUFFS[buff].mult; });
-    Object.entries(consumables).forEach(([cat, sel]) => { const opt = CONSUMABLES[cat]?.options?.find(o => o.key === sel); if (opt) externalMult *= opt.mult; });
-    setTimeout(() => {
-      const targets = getTargets();
-      const primaryTarget = targets[0];
+    return {
+      raidBuffs: {
+        battleShout: !!raidBuffs.battleShout,
+        markOfTheWild: !!raidBuffs.markOfTheWild,
+        mysticTouch: !!raidBuffs.mysticTouch,
+        huntersMark: !!raidBuffs.huntersMark,
+      },
+      phial: phialMap[consumables.flask] ?? 'none',
+      food: foodMap[consumables.food] ?? 'none',
+      potion: potionMap[consumables.potion] ?? 'none',
+      weaponEnhancement,
+      augmentRune,
+      enchants: enchantMode === 'auto' ? 'auto' : manualEnchants,
+      gems: {
+        totalSockets: gemSockets,
+        primaryStat: gemPrimaryStat,
+        hasBlasphemite,
+      },
+      has2pc,
+      has4pc,
+    };
+  }, [raidBuffs, consumables, weaponEnhancement, augmentRune, enchantMode, manualEnchants, gemSockets, gemPrimaryStat, hasBlasphemite, has2pc, has4pc]);
+
+  const handleSim = useCallback(async () => {
+    if (!parsedChar) return;
+    setIsSimming(true); setSimResults(null); setUserSimResult(null); setOptimalSimResult(null);
+
+    const targets = getTargets();
+    const primaryTarget = targets[0];
+    const pool = getWorkerPool();
+
+    try {
+      // Build SimInput for each target count and run via WorkerPool
+      const engineResults = await Promise.all(
+        targets.map(async (t) => {
+          const input = charToSimInput(
+            parsedChar,
+            heroTalent as HeroTree,
+            t,
+            fightDuration,
+            currentSimOptions,
+          );
+          const result = await pool.runSim(input);
+          return simResultToLegacy(result, heroTalent as HeroTree, t, fightDuration);
+        }),
+      );
+
+      // Stat weights — kept analytical (fast, no engine run needed)
       const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
-
-      // Run main results (all targets, user's selected hero)
-      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData, aplData));
+      // Compute externalMult for the analytical stat weights path
+      let externalMult = 1.0;
+      externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
+      if (currentSimOptions.raidBuffs.battleShout) externalMult *= 1.05;
+      if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
+      if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
+      if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
+      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'alchemical_chaos' ? 1.035 : 1.03;
+      if (currentSimOptions.food !== 'none') externalMult *= 1.02;
+      if (currentSimOptions.potion !== 'none') externalMult *= currentSimOptions.potion === 'potion_of_unwavering_focus' ? 1.025 : 1.02;
+      if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
+      if (currentSimOptions.augmentRune) externalMult *= 1.005;
       const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
 
-      // Run user vs optimal single-target comparison
+      // User vs optimal comparison — run via engine
+      const uHeroKey = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent) as HeroTree;
+      const [userEngineResult, optEngineResult] = await Promise.all([
+        pool.runSim(charToSimInput(parsedChar, uHeroKey, primaryTarget, fightDuration, currentSimOptions)),
+        pool.runSim(charToSimInput(parsedChar, 'sentinel', primaryTarget, fightDuration, currentSimOptions)),
+      ]);
+      const userResult = simResultToLegacy(userEngineResult, uHeroKey, primaryTarget, fightDuration);
+      const optResult = simResultToLegacy(optEngineResult, 'sentinel', primaryTarget, fightDuration);
+
+      setStatWeights(sw);
+      setSimResults(engineResults);
+      setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
+      setUserSimResult(userResult);
+      setOptimalSimResult(optResult);
+    } catch (err) {
+      console.error("Sim engine error:", err);
+      // Fallback to legacy analytical sim if engine fails
+      let externalMult = 1.0;
+      externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
+      if (currentSimOptions.raidBuffs.battleShout) externalMult *= 1.05;
+      if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
+      if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
+      if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
+      if (currentSimOptions.phial !== 'none') externalMult *= 1.035;
+      if (currentSimOptions.food !== 'none') externalMult *= 1.02;
+      if (currentSimOptions.potion !== 'none') externalMult *= 1.02;
+      if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
+      if (currentSimOptions.augmentRune) externalMult *= 1.005;
+
+      const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData, aplData));
+      const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
+      const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
       const uHeroKey = detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent;
       const userResult = runSimulation(parsedChar, primaryTarget, fightDuration, uHeroKey, primaryBuild, externalMult, simcLiveData, aplData);
       const optResult = runSimulation(parsedChar, primaryTarget, fightDuration, 'sentinel', primaryBuild, externalMult, simcLiveData, aplData);
@@ -1530,9 +1650,10 @@ export default function SurvivalHunterSim() {
       setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
       setUserSimResult(userResult);
       setOptimalSimResult(optResult);
+    } finally {
       setIsSimming(false);
-    }, 1200);
-  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, raidBuffs, consumables, simcLiveData, detectedHeroTalent, aplData]);
+    }
+  }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, currentSimOptions, simcLiveData, detectedHeroTalent, aplData]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
 
@@ -2552,6 +2673,7 @@ export default function SurvivalHunterSim() {
                     </button>
                     {showAdv && (
                       <div style={{ marginTop: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
+                        {/* ── Fight Style ─────────────────────── */}
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT STYLE</div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -2569,6 +2691,8 @@ export default function SurvivalHunterSim() {
                             ))}
                           </div>
                         </div>
+
+                        {/* ── Raid Buffs ──────────────────────── */}
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>RAID BUFFS</div>
                           {Object.entries(RAID_BUFFS).map(([k, b]) => (
@@ -2590,11 +2714,12 @@ export default function SurvivalHunterSim() {
                             </label>
                           ))}
                         </div>
-                        <div>
+
+                        {/* ── Consumables ─────────────────────── */}
+                        <div style={{ marginBottom: 14 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CONSUMABLES</div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                             {Object.entries(CONSUMABLES).map(([k, d]) => {
-                              const selOpt = d.options.find(o => o.key === consumables[k]);
                               const isNone = consumables[k] === 'none';
                               return (
                                 <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2615,15 +2740,187 @@ export default function SurvivalHunterSim() {
                                       {d.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
                                     </select>
                                   </div>
-                                  {!isNone && (
-                                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.green, fontWeight: 700, flexShrink: 0 }}>
-                                      +{Math.round((selOpt!.mult - 1) * 100)}%
-                                    </span>
-                                  )}
                                 </div>
                               );
                             })}
                           </div>
+                        </div>
+
+                        {/* ── Weapon Enhancement ─────────────── */}
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>WEAPON ENHANCEMENT</div>
+                          <select
+                            className="ifield"
+                            value={weaponEnhancement}
+                            onChange={e => setWeaponEnhancement(e.target.value)}
+                            style={{
+                              width: "100%", padding: "6px 10px", fontSize: 13,
+                              color: weaponEnhancement === 'none' ? C.textDim : C.goldLight,
+                              fontWeight: weaponEnhancement === 'none' ? 400 : 700,
+                              background: weaponEnhancement === 'none' ? C.surface3 : C.goldBg,
+                              border: `1px solid ${weaponEnhancement === 'none' ? C.border : C.gold}`,
+                              borderRadius: 6, cursor: "pointer",
+                            }}>
+                            <option value="none">None</option>
+                            {WEAPON_ENHANCEMENTS.map(w => (
+                              <option key={w.key} value={w.key}>{w.name} {w.type === 'flat_stat' && w.ratingAmount ? `(+${w.ratingAmount} ${w.stat})` : `(${w.school} proc)`}</option>
+                            ))}
+                          </select>
+                          {weaponEnhancement !== 'none' && (() => {
+                            const enh = WEAPON_ENHANCEMENTS.find(w => w.key === weaponEnhancement);
+                            return enh ? <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 4 }}>{enh.notes}</div> : null;
+                          })()}
+                        </div>
+
+                        {/* ── Augment Rune + Tier Set ─────────── */}
+                        <div style={{ marginBottom: 14, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                            onClick={() => setAugmentRune(!augmentRune)}>
+                            <input type="checkbox" checked={augmentRune} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: augmentRune ? 700 : 500, color: augmentRune ? C.goldLight : C.textMid }}>Augment Rune (+52 Agi)</span>
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                            onClick={() => setHas2pc(!has2pc)}>
+                            <input type="checkbox" checked={has2pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has2pc ? 700 : 500, color: has2pc ? C.goldLight : C.textMid }}>2pc Tier</span>
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                            onClick={() => setHas4pc(!has4pc)}>
+                            <input type="checkbox" checked={has4pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has4pc ? 700 : 500, color: has4pc ? C.goldLight : C.textMid }}>4pc Tier</span>
+                          </label>
+                        </div>
+
+                        {/* ── Gems ───────────────────────────── */}
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>GEMS</div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Sockets:</span>
+                              <select className="ifield" value={gemSockets} onChange={e => setGemSockets(+e.target.value)}
+                                style={{ width: 52, padding: "4px 6px", fontSize: 12, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, cursor: "pointer" }}>
+                                {[0,1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Fill:</span>
+                              <select className="ifield" value={gemPrimaryStat} onChange={e => setGemPrimaryStat(e.target.value as any)}
+                                style={{ width: 90, padding: "4px 6px", fontSize: 12, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, cursor: "pointer" }}>
+                                <option value="mastery">Mastery</option>
+                                <option value="crit">Crit</option>
+                                <option value="haste">Haste</option>
+                                <option value="vers">Versatility</option>
+                              </select>
+                            </div>
+                            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+                              onClick={() => setHasBlasphemite(!hasBlasphemite)}>
+                              <input type="checkbox" checked={hasBlasphemite} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: hasBlasphemite ? C.goldLight : C.textDim }}>Blasphemite</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* ── Enchants ────────────────────────── */}
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>ENCHANTS</div>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <button onClick={() => setEnchantMode('auto')}
+                                style={{
+                                  fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: enchantMode === 'auto' ? 700 : 500,
+                                  background: enchantMode === 'auto' ? C.goldBg : 'transparent',
+                                  border: `1px solid ${enchantMode === 'auto' ? C.gold : C.border}`,
+                                  borderRadius: 4, padding: "2px 8px", cursor: "pointer",
+                                  color: enchantMode === 'auto' ? C.goldLight : C.textDim,
+                                }}>Auto BiS</button>
+                              <button onClick={() => { setEnchantMode('manual'); setShowEnchants(true); }}
+                                style={{
+                                  fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: enchantMode === 'manual' ? 700 : 500,
+                                  background: enchantMode === 'manual' ? C.goldBg : 'transparent',
+                                  border: `1px solid ${enchantMode === 'manual' ? C.gold : C.border}`,
+                                  borderRadius: 4, padding: "2px 8px", cursor: "pointer",
+                                  color: enchantMode === 'manual' ? C.goldLight : C.textDim,
+                                }}>Per-Slot</button>
+                            </div>
+                          </div>
+                          {enchantMode === 'auto' && (
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>
+                              BiS enchants for {heroTalent === 'packLeader' ? 'Pack Leader' : 'Sentinel'} auto-applied to all slots.
+                            </div>
+                          )}
+                          {enchantMode === 'manual' && (
+                            <>
+                              <button className="adv-toggle" onClick={() => setShowEnchants(!showEnchants)} style={{ marginBottom: showEnchants ? 8 : 0 }}>
+                                <span style={{ fontSize: 10 }}>{showEnchants ? "▲" : "▼"}</span>
+                                {showEnchants ? "Hide Slots" : "Show Slots"}
+                              </button>
+                              {showEnchants && (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                  {(() => {
+                                    const slotSet = new Map<string, typeof MIDNIGHT_ENCHANTS>();
+                                    for (const e of MIDNIGHT_ENCHANTS) {
+                                      if (!slotSet.has(e.slot)) slotSet.set(e.slot, []);
+                                      slotSet.get(e.slot)!.push(e);
+                                    }
+                                    return Array.from(slotSet.entries()).map(([slot, enchants]) => (
+                                      <div key={slot} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 50, flexShrink: 0, letterSpacing: 1 }}>{slot}</span>
+                                        <select className="ifield"
+                                          value={manualEnchants[slot] ?? ''}
+                                          onChange={e => setManualEnchants(p => ({ ...p, [slot]: e.target.value }))}
+                                          style={{
+                                            flex: 1, padding: "4px 8px", fontSize: 12,
+                                            background: manualEnchants[slot] ? C.goldBg : C.surface3,
+                                            border: `1px solid ${manualEnchants[slot] ? C.gold : C.border}`,
+                                            borderRadius: 4, cursor: "pointer",
+                                            color: manualEnchants[slot] ? C.goldLight : C.textDim,
+                                          }}>
+                                          <option value="">None</option>
+                                          {enchants.map(e => (
+                                            <option key={e.id} value={e.name}>{e.name} ({e.stat === 'mixed' ? 'Mixed' : e.stat === 'utility' ? 'Utility' : `+${e.primaryRating || e.secondaryRating} ${e.stat}`})</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    ));
+                                  })()}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* ── Preset Buttons ─────────────────── */}
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {[
+                            { label: 'Full Raid', preset: FULL_RAID_OPTIONS },
+                            { label: 'M+ Casual', preset: MPLUS_CASUAL_OPTIONS },
+                            { label: 'Naked', preset: NAKED_OPTIONS },
+                          ].map(({ label, preset }) => (
+                            <button key={label} onClick={() => {
+                              setRaidBuffs({ battleShout: preset.raidBuffs.battleShout, markOfTheWild: preset.raidBuffs.markOfTheWild, mysticTouch: preset.raidBuffs.mysticTouch, huntersMark: preset.raidBuffs.huntersMark });
+                              // Map engine keys back to UI keys
+                              const phialRev: Record<string, string> = { alchemical_chaos: 'flaskOfAlchemicalChaos', tempering_sanity: 'flaskOfTemperingSanity', none: 'none' };
+                              const foodRev: Record<string, string> = { mastery_food: 'mastery', crit_food: 'crit', haste_food: 'haste', none: 'none' };
+                              const potRev: Record<string, string> = { tempered_potion: 'tempered', potion_of_unwavering_focus: 'frontLoaded', none: 'none' };
+                              setConsumables({ flask: phialRev[preset.phial] ?? 'none', food: foodRev[preset.food] ?? 'none', potion: potRev[preset.potion] ?? 'none' });
+                              setWeaponEnhancement(preset.weaponEnhancement);
+                              setAugmentRune(preset.augmentRune);
+                              setGemPrimaryStat(preset.gems.primaryStat);
+                              setGemSockets(preset.gems.totalSockets);
+                              setHasBlasphemite(preset.gems.hasBlasphemite);
+                              setHas2pc(preset.has2pc);
+                              setHas4pc(preset.has4pc);
+                              setEnchantMode('auto');
+                            }}
+                              style={{
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                background: C.surface, border: `1px solid ${C.border}`,
+                                borderRadius: 6, padding: "5px 12px", cursor: "pointer",
+                                color: C.textMid, transition: "all .15s",
+                              }}>
+                              {label}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     )}

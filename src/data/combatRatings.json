@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "level": 90,
+  "ratingPerPercent": {
+    "crit": 180,
+    "haste": 170,
+    "mastery": 180,
+    "versatility": 205
+  },
+  "drBands": [
+    { "threshold": 0.30, "efficiency": 1.00 },
+    { "threshold": 0.39, "efficiency": 0.90 },
+    { "threshold": 0.47, "efficiency": 0.80 },
+    { "threshold": 0.54, "efficiency": 0.70 },
+    { "threshold": 0.66, "efficiency": 0.60 },
+    { "threshold": 1.26, "efficiency": 0.50 }
+  ],
+  "armorKValue": 14014,
+  "baseStats": {
+    "critBase": 0.05,
+    "hasteBase": 0,
+    "masteryBase": 0,
+    "versatilityBase": 0
+  }
+}
