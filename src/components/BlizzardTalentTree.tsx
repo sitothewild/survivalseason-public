@@ -1090,22 +1090,14 @@ export function BlizzardTalentTree({
   );
 
   return (
-    <div ref={compactRef} style={{ userSelect: "none", ...(compact ? { overflow: "hidden" } : {}) }}>
-      {/* ── Scroll wrapper ─────────────────────────────────────────────── */}
-      <div
-        ref={innerRef}
-        style={{
-          ...(compact
-            ? { transform: `scale(${compactScale})`, transformOrigin: "top left", ...(compactHeight ? { height: compactHeight } : {}) }
-            : { overflowX: "auto", overflowY: "visible" }),
-        }}
-      >
+    <div style={{ userSelect: "none" }}>
+      <div style={{ overflowX: "auto", overflowY: "visible" }}>
         <div style={{
           display: "flex",
-          gap: compact ? SECTION_GAP * 0.6 : SECTION_GAP,
+          gap: SECTION_GAP,
           alignItems: "flex-start",
           minWidth: "fit-content",
-          padding: compact ? "4px 2px 8px" : "8px 4px 16px",
+          padding: "8px 4px 16px",
         }}>
           {/* CLASS TREE */}
           <TalentSection
