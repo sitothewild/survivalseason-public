@@ -794,6 +794,7 @@ export function BlizzardTalentTree({
   onHeroChange,
   heroSelectedKeys: heroSelectedKeysProp,
   onHeroToggle,
+  compact = false,
 }: BlizzardTalentTreeProps) {
   // ── Data ──────────────────────────────────────────────────────────────────
   const [treeData, setTreeData] = useState<TalentTreeFullResponse | null>(null);
