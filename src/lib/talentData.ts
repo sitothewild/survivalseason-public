@@ -429,7 +429,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
 
   // ── Pack Leader ──
   471876: "/icons/talents/ability_hunter_sickem.jpg",
-  472358: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_lonewolf.jpg", // 404 locally
+  472358: "/icons/talents/ability_hunter_lonewolf.jpg",
   472352: "/icons/talents/ability_hunter_beastwithin.jpg",
   472357: "/icons/talents/ability_hunter_pathfinding2.jpg",
   472719: "/icons/talents/ability_hunter_aspectoftheviper.jpg",
