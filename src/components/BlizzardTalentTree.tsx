@@ -595,7 +595,7 @@ export function BlizzardTalentTree({
                 />
               </button>
               <span style={{
-                fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700,
+                fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700,
                 letterSpacing: 2, color: isSentinel ? "#7dd3fc" : "#d8b4fe",
                 marginTop: 6, textTransform: "uppercase",
                 transition: "color .3s ease",
