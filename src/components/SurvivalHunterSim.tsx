@@ -1621,6 +1621,7 @@ export default function SurvivalHunterSim() {
             <NavLink to="/"      className="site-nav-link" activeClassName="active" end>⚔ Simulator</NavLink>
             <NavLink to="/gear"  className="site-nav-link" activeClassName="active">⚗ Gear</NavLink>
             <NavLink to="/guide" className="site-nav-link" activeClassName="active">📖 Guide</NavLink>
+            <NavLink to="/talent-optimizer" className="site-nav-link" activeClassName="active">🧬 Talent Optimizer</NavLink>
           </nav>
         </div>
       </header>

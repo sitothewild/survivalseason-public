@@ -24,9 +24,11 @@ const C = {
 };
 
 const NAV_LINKS = [
-  { to:"/",      label:"⚔ Simulator" },
-  { to:"/gear",  label:"⚗ Gear"      },
-  { to:"/guide", label:"📖 Guide"     },
+  { to:"/",                  label:"⚔ Simulator" },
+  { to:"/gear",              label:"⚗ Gear"      },
+  { to:"/guide",             label:"📖 Guide"     },
+  { to:"/talent-optimizer",  label:"🧬 Talent Optimizer" },
+  { to:"/calculator",        label:"🧮 Calculator" },
 ];
 
 export default function Guide() {
