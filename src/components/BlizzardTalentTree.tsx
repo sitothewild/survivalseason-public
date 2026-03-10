@@ -650,6 +650,7 @@ export function BlizzardTalentTree({
               externalGateMet={heroGateMet}
               compact
               tree={heroTree}
+              onGlobalHover={handleGlobalHover}
             />
 
             {/* APEX TALENT (under hero tree) */}
