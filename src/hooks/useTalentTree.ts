@@ -201,6 +201,10 @@ export function useTalentTree(
     setState({ points: {}, choiceSelections: {} });
   }, []);
 
+  const loadBuild = useCallback((newState: TalentTreeState) => {
+    setState(newState);
+  }, []);
+
   return {
     state,
     totalPoints,
@@ -210,5 +214,6 @@ export function useTalentTree(
     deallocatePoint,
     selectChoice,
     reset,
+    loadBuild,
   };
 }
