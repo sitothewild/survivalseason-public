@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { NavLink } from "@/components/NavLink";
-import TalentPanel from "@/components/TalentPanel";
-import { fetchTalentTreeRaw } from "@/lib/blizzardApi";
+import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 const C = {
@@ -87,7 +86,7 @@ export default function TalentOptimizer() {
           color:C.sentClr, letterSpacing:3, margin:0, marginBottom:24, textTransform:"uppercase" }}>
           Talent Optimizer
         </h1>
-        <TalentPanel fetchTalentTree={fetchTalentTreeRaw} />
+        <BlizzardTalentTree />
       </main>
     </div>
   );
