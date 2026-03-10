@@ -888,7 +888,10 @@ export function BlizzardTalentTree({
   }, [activeSpecKeys, activeHeroKeys]);
 
   // ── Hero tree resolution ──────────────────────────────────────────────────
-  const heroTrees = useMemo(() => treeData?.heroTrees ?? [], [treeData]);
+  const heroTrees = useMemo(() => {
+    const apiTrees = treeData?.heroTrees ?? [];
+    return apiTrees.length > 0 ? apiTrees : FALLBACK_HERO_TREES;
+  }, [treeData]);
 
   const activeHeroTreeId = useMemo(() => {
     if (!heroTrees.length) return -1;
