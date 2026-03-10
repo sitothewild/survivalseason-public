@@ -55,12 +55,11 @@ export default function Gear() {
   const handleBiSHover = useCallback((slot: string, e: React.MouseEvent) => {
     if (bisHideTimer.current) { window.clearTimeout(bisHideTimer.current); bisHideTimer.current = null; }
     const row = e.currentTarget as HTMLElement;
-    const rect = row.getBoundingClientRect();
-    // Position after the Myth ilvl column (4th td)
+    // Only update X position from the Myth ilvl column; Y stays fixed at viewport center
     const cells = row.querySelectorAll("td");
     const mythCell = cells[3];
-    const cellRect = mythCell ? mythCell.getBoundingClientRect() : rect;
-    setBisTooltipPos({ x: cellRect.right + 8, y: rect.top + rect.height / 2 });
+    const cellRect = mythCell ? mythCell.getBoundingClientRect() : row.getBoundingClientRect();
+    setBisTooltipPos(prev => ({ x: cellRect.right + 8, y: prev.y || 0 }));
     setHoveredBiS(slot);
   }, []);
 
@@ -818,9 +817,9 @@ export default function Gear() {
 
         const tipW = 340;
         const tipH = 480;
-        // Position to the right of the row
-        const tipX = Math.min(bisTooltipPos.x + 10, window.innerWidth - tipW - 8);
-        const tipY = Math.max(8, Math.min(bisTooltipPos.y - tipH / 2, window.innerHeight - tipH - 8));
+        const tipX = Math.min(bisTooltipPos.x, window.innerWidth - tipW - 8);
+        // Fixed vertical position: centered in viewport
+        const tipY = Math.max(8, (window.innerHeight - tipH) / 2);
 
         const Divider = () => (
           <div style={{ borderTop:`1px solid ${C.borderSub}`, margin:"10px 0" }} />
