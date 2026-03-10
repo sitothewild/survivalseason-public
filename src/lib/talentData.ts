@@ -185,9 +185,9 @@ export const SURVIVAL_NODES: TalentNodeDef[] = [
   { id:'raptor_strike', apiNodeId:102262, spellId:186270, name:'Raptor Strike', type:'active', maxPts:1, row:2, col:5,
     parents:['kill_command'], desc:'A vicious slash dealing Physical damage.' },
   // ROW 3 (API row 4)
-  { id:'guerrilla_tactics', spellId:264332, name:'Guerrilla Tactics', type:'passive', maxPts:1, row:3, col:3,
+  { id:'guerrilla_tactics', apiNodeId:102285, spellId:264332, name:'Guerrilla Tactics', type:'passive', maxPts:1, row:3, col:3,
     parents:['wildfire_bomb'], desc:'Wildfire Bomb now has 2 charges, and the initial explosion deals 15% increased damage.' },
-  { id:'tip_of_spear', spellId:260285, name:'Tip of the Spear', type:'passive', maxPts:1, row:3, col:5,
+  { id:'tip_of_spear', apiNodeId:102263, spellId:260285, name:'Tip of the Spear', type:'passive', maxPts:1, row:3, col:5,
     parents:['raptor_strike'], desc:'Kill Command increases the direct damage of your other abilities by 15%, stacking up to 3 times.' },
   // ROW 4 (API row 5)
   { id:'lunge', spellId:378934, name:'Lunge', type:'passive', maxPts:1, row:4, col:2,
