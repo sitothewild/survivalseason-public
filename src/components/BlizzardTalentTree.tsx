@@ -576,11 +576,6 @@ export function BlizzardTalentTree({
               })}
             </div>
 
-            {!heroGateMet && (
-              <div style={{ fontSize: 10, color: "#f87171", marginBottom: 6, fontFamily: "'Rajdhani',sans-serif" }}>
-                Requires {HERO_UNLOCK_THRESHOLD} spec points to unlock
-              </div>
-            )}
 
             <TreeSection
               label={isSentinel ? "SENTINEL" : "PACK LEADER"}
