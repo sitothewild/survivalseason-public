@@ -1876,6 +1876,42 @@ export default function SurvivalHunterSim() {
                   )}
                 </CARD>
 
+                {/* Professions — shown after armory import */}
+                <CARD style={{ marginTop: 12 }}>
+                  <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>PROFESSIONS</div>
+                    {professions && professions.filter((p: any) => !p.secondary).length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {professions.filter((p: any) => !p.secondary).map((p: any, i: number) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: C.goldLight, minWidth: 110 }}>
+                              {p.name}
+                            </span>
+                            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textSec }}>
+                              {p.skillPoints}/{p.maxSkillPoints}
+                            </span>
+                            {p.specializations?.length > 0 && (
+                              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                                {p.specializations.map((s: string, j: number) => (
+                                  <span key={j} style={{
+                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 600,
+                                    color: C.sentClr, background: C.surface, border: `1px solid ${C.borderSub}`,
+                                    borderRadius: 4, padding: "1px 6px",
+                                  }}>{s}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: '#5a6a82' }}>
+                        {parsedChar ? 'No profession data available' : 'AWAITING IMPORT'}
+                      </span>
+                    )}
+                  </div>
+                </CARD>
+
                 {/* Current Talents — always visible */}
                 <CARD style={{ marginTop: 12 }}>
                   <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
