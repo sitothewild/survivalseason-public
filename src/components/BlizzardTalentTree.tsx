@@ -49,25 +49,40 @@ function pointColor(pts: number, max: number): string {
 }
 
 // ── Grid layout calculation ──────────────────────────────────
-const CW = 42;  // col step (was 52)
-const RH = 48;  // row step (was 56)
-const PAD = 20;  // padding (was 30)
-const NODE_R = 18; // node radius (was 20)
+// Standard size (Hunter class + Survival spec)
+const CW = 52;  // col step
+const RH = 56;  // row step
+const PAD = 30;
+const NODE_R = 20;
 
-function gridBounds(nodes: TalentNodeDef[]) {
+// Compact size (Hero trees + Apex)
+const CW_C = 42;
+const RH_C = 48;
+const PAD_C = 20;
+const NODE_R_C = 18;
+
+function gridBounds(nodes: TalentNodeDef[], compact = false) {
+  const cw = compact ? CW_C : CW;
+  const rh = compact ? RH_C : RH;
+  const pad = compact ? PAD_C : PAD;
+  const nr = compact ? NODE_R_C : NODE_R;
   const rows = nodes.map(n => n.row);
   const cols = nodes.map(n => n.col);
   const minRow = Math.min(...rows), maxRow = Math.max(...rows);
   const minCol = Math.min(...cols), maxCol = Math.max(...cols);
-  const w = (maxCol - minCol) * CW + NODE_R * 2 + PAD * 2;
-  const h = (maxRow - minRow) * RH + NODE_R * 2 + PAD * 2;
+  const w = (maxCol - minCol) * cw + nr * 2 + pad * 2;
+  const h = (maxRow - minRow) * rh + nr * 2 + pad * 2;
   return { minRow, maxRow, minCol, maxCol, w, h };
 }
 
-function nodePos(node: TalentNodeDef, minRow: number, minCol: number) {
+function nodePos(node: TalentNodeDef, minRow: number, minCol: number, compact = false) {
+  const cw = compact ? CW_C : CW;
+  const rh = compact ? RH_C : RH;
+  const pad = compact ? PAD_C : PAD;
+  const nr = compact ? NODE_R_C : NODE_R;
   return {
-    x: PAD + (node.col - minCol) * CW + NODE_R,
-    y: PAD + (node.row - minRow) * RH + NODE_R,
+    x: pad + (node.col - minCol) * cw + nr,
+    y: pad + (node.row - minRow) * rh + nr,
   };
 }
 
@@ -122,11 +137,12 @@ function TalentTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number
 
 // ── Connection Lines ─────────────────────────────────────────
 function ConnectionLines({
-  nodes, minRow, minCol, w, h, pointsMap,
+  nodes, minRow, minCol, w, h, pointsMap, compact = false,
 }: {
   nodes: TalentNodeDef[];
   minRow: number; minCol: number; w: number; h: number;
   pointsMap: Record<string, number>;
+  compact?: boolean;
 }) {
   const lines = useMemo(() => {
     const result: React.ReactNode[] = [];
@@ -136,8 +152,8 @@ function ConnectionLines({
       node.parents.forEach(pid => {
         const parent = nodeMap.get(pid);
         if (!parent) return;
-        const from = nodePos(parent, minRow, minCol);
-        const to = nodePos(node, minRow, minCol);
+        const from = nodePos(parent, minRow, minCol, compact);
+        const to = nodePos(node, minRow, minCol, compact);
         const parentOn = (pointsMap[pid] ?? 0) > 0;
         const nodeOn = (pointsMap[node.id] ?? 0) > 0;
 
@@ -162,7 +178,7 @@ function ConnectionLines({
       });
     });
     return result;
-  }, [nodes, minRow, minCol, pointsMap]);
+  }, [nodes, minRow, minCol, pointsMap, compact]);
 
   return (
     <svg width={w} height={h}
@@ -190,7 +206,7 @@ function InteractiveTalentNode({
   const isApex = node.type === 'apex';
   const isTier = node.id.startsWith('apex_tier');
   const isCapstone = node.row === 5 && node.parents.length >= 3;
-  const sz = isApex ? 44 : isTier ? 24 : 36;
+  const sz = isApex ? 52 : isTier ? 28 : 40;
 
   const ringColor = nodeState === 'SELECTED' ? GOLD
     : nodeState === 'PARTIAL' ? GOLD
@@ -345,7 +361,7 @@ function InteractiveTalentNode({
 // ── Tree Section ─────────────────────────────────────────────
 function TreeSection({
   label, nodes, maxPts, rowGates, externalGateMet = true,
-  onTalentChange,
+  onTalentChange, compact = false,
 }: {
   label: string;
   nodes: TalentNodeDef[];
@@ -353,9 +369,10 @@ function TreeSection({
   rowGates: Record<number, number>;
   externalGateMet?: boolean;
   onTalentChange?: (nodeId: string, pts: number, choiceSide?: 0 | 1) => void;
+  compact?: boolean;
 }) {
   const tree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
-  const { minRow, minCol, w, h } = useMemo(() => gridBounds(nodes), [nodes]);
+  const { minRow, minCol, w, h } = useMemo(() => gridBounds(nodes, compact), [nodes, compact]);
 
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
@@ -426,16 +443,16 @@ function TreeSection({
       }}>
         <ConnectionLines
           nodes={nodes} minRow={minRow} minCol={minCol}
-          w={w} h={h} pointsMap={tree.state.points}
+          w={w} h={h} pointsMap={tree.state.points} compact={compact}
         />
 
         {nodes.map(node => {
-          const pos = nodePos(node, minRow, minCol);
+          const pos = nodePos(node, minRow, minCol, compact);
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
           const isApex = node.type === 'apex';
-          const sz = isApex ? 44 : 36;
+          const sz = compact ? (isApex ? 44 : 36) : (isApex ? 52 : 40);
 
           return (
             <div key={node.id} style={{
@@ -571,6 +588,7 @@ export function BlizzardTalentTree({
               maxPts={HERO_MAX_PTS}
               rowGates={HERO_ROW_GATES}
               externalGateMet={heroGateMet}
+              compact
             />
 
             {/* APEX TALENT (under hero tree) */}
@@ -591,7 +609,7 @@ export function BlizzardTalentTree({
 
 // Apex section rendered under the Hero tree
 function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
-  const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES), []);
+  const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES, true), []);
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
 
@@ -621,11 +639,11 @@ function ApexSection({ tree }: { tree: UseTalentTreeReturn }) {
       <div style={{ position: "relative", width: w, height: h, background: "transparent" }}>
         <ConnectionLines
           nodes={APEX_NODES} minRow={minRow} minCol={minCol}
-          w={w} h={h} pointsMap={tree.state.points}
+          w={w} h={h} pointsMap={tree.state.points} compact
         />
 
         {APEX_NODES.map(node => {
-          const pos = nodePos(node, minRow, minCol);
+          const pos = nodePos(node, minRow, minCol, true);
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const isApex = node.type === 'apex';
@@ -722,7 +740,7 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
           const nodeState = tree.getNodeState(node);
           const pts = tree.state.points[node.id] ?? 0;
           const choiceSide = tree.state.choiceSelections[node.id];
-          const sz = 36;
+          const sz = 40;
 
           return (
             <div key={node.id} style={{
