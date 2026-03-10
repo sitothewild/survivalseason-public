@@ -28,24 +28,36 @@ const LINE_DIM  = "#3a2a08";    // inner ring / dim line color
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3C/svg%3E";
 
 // ── Hardcoded fallback hero trees ────────────────────────────────────────────
+// Sentinel: 1-4-4-4-1 diamond layout — rows 1-5, cols 1,3,5,7 (center=4)
 const FALLBACK_SENTINEL_NODES: BzTalentNode[] = [
-  { id: 94973, display_row: 1, display_col: 2, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253825, name: "Lunar Inspiration" }, description: "Your Sentinel abilities deal increased Arcane damage." } }] },
-  { id: 94958, display_row: 1, display_col: 1, node_type: { id: 2, type: "SELECTION" }, entries: [
+  // Row 1 — auto-selected keystone
+  { id: 95001, display_row: 1, display_col: 4, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253599, name: "Lunar Storm" }, description: "Sentinel Mark consumption triggers Lunar Storm AoE." } }] },
+  // Row 2 — 4 passives
+  { id: 94960, display_row: 2, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450373, name: "Sanctified Armaments" }, description: "Harpoon applies Sentinel Mark on impact." } }] },
+  { id: 94973, display_row: 2, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253825, name: "Lunar Inspiration" }, description: "Your Sentinel abilities deal increased Arcane damage." } }] },
+  { id: 95002, display_row: 2, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253831, name: "Moonlight Chakram" }, description: "Moonlight-empowered Chakram deals bonus damage." } }] },
+  { id: 95003, display_row: 2, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95001 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264902, name: "Chakram Passback" }, description: "Chakram bounces back for additional damage." } }] },
+  // Row 3 — choice at cols 1 and 7
+  { id: 94958, display_row: 3, display_col: 1, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 94960 }], entries: [
     { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253751, name: "Stargazer" }, description: "Raptor Strike extends Sentinel Mark by 2 sec." } },
     { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253807, name: "Open Fire" }, description: "Kill Command reduces Sentinel cooldown by 5 sec." } },
   ] },
-  { id: 94971, display_row: 1, display_col: 3, node_type: { id: 1, type: "SINGLE" }, entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450379, name: "Extrapolation" }, description: "Sentinel Marks have near-permanent uptime." } }] },
-  { id: 110028, display_row: 1, display_col: 4, node_type: { id: 2, type: "SELECTION" }, entries: [
+  { id: 95004, display_row: 3, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94960 }, { id: 94973 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253830, name: "Sentinel's Mark" }, description: "Sentinel Mark application improved." } }] },
+  { id: 94971, display_row: 3, display_col: 5, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95002 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450379, name: "Stargazer" }, description: "Sentinel Marks have near-permanent uptime." } }] },
+  { id: 110028, display_row: 3, display_col: 7, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 95003 }], entries: [
     { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264904, name: "Twilight Requiem" }, description: "When Sentinel expires, deals Arcane damage to all marked targets." } },
     { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1266069, name: "Stalk and Strike" }, description: "Mongoose Bite/Raptor Strike damage increased per active Sentinel Mark." } },
   ] },
-  { id: 94960, display_row: 2, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94958 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450373, name: "Don't Look Back" }, description: "Harpoon applies Sentinel Mark on impact." } }] },
-  { id: 94959, display_row: 2, display_col: 2, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94973 }, { id: 94971 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450376, name: "Catch Out" }, description: "Kill Command can apply an additional Sentinel Mark." } }] },
-  { id: 94957, display_row: 2, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94971 }, { id: 110028 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450380, name: "Invigorating Pulse" }, description: "Sentinel Mark consumption heals you." } }] },
-  { id: 94970, display_row: 3, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94960 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253846, name: "Eyes Closed" }, description: "Sentinel Mark damage increased by 10%." } }] },
-  { id: 94956, display_row: 3, display_col: 2, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94959 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450378, name: "Lunar Calling" }, description: "Sentinel Mark consumption damage increased and can crit." } }] },
-  { id: 109805, display_row: 3, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94957 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264903, name: "Release and Reload" }, description: "Sentinel cooldown reduced when you consume Sentinel Marks." } }] },
-  { id: 94955, display_row: 4, display_col: 2, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94970 }, { id: 94956 }, { id: 109805 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450384, name: "Lunar Storm" }, description: "Capstone: Sentinel Mark consumption triggers Lunar Storm AoE." } }] },
+  // Row 4 — choice at col 5
+  { id: 94970, display_row: 4, display_col: 1, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94958 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253846, name: "Ice Claw" }, description: "Sentinel Mark damage increased by 10%." } }] },
+  { id: 95005, display_row: 4, display_col: 3, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 95004 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253852, name: "Sentinel Owl" }, description: "Sentinel Owl patrols the battlefield." } }] },
+  { id: 95006, display_row: 4, display_col: 5, node_type: { id: 2, type: "SELECTION" }, prerequisite_nodes: [{ id: 94971 }], entries: [
+    { id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450376, name: "Conditioning" }, description: "Improves Sentinel defensive benefits." } },
+    { id: 2, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 450380, name: "Scout's Vigil" }, description: "Enhanced scouting range and mark duration." } },
+  ] },
+  { id: 109805, display_row: 4, display_col: 7, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 110028 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1264903, name: "Glaive Passive" }, description: "Sentinel cooldown reduced when you consume Sentinel Marks." } }] },
+  // Row 5 — capstone
+  { id: 95007, display_row: 5, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 94970 }, { id: 95005 }, { id: 95006 }, { id: 109805 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 1253732, name: "Moon and Stars" }, description: "Capstone: Ultimate Sentinel power unleashed." } }] },
 ];
 
 const FALLBACK_PACK_LEADER_NODES: BzTalentNode[] = [
