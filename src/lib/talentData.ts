@@ -377,7 +377,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   459964: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_beastmastery.jpg",
   1251718: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_separationanxiety.jpg",
   1252708: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_mongoosebite.jpg",
-  1252931: "https://wow.zamimg.com/images/wow/icons/large/inv_firearm_2h_rifle_d_02_green.jpg",
+  1252931: "https://wow.zamimg.com/images/wow/icons/large/inv_10_engineering2_pvpflaregun_color1.jpg",
   1253137: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_sickem.jpg",
   321290: "https://wow.zamimg.com/images/wow/icons/large/inv_wildfirebomb.jpg",
   1262442: "https://wow.zamimg.com/images/wow/icons/large/ability_druid_ferociousbite.jpg",
