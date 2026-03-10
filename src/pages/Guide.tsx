@@ -222,7 +222,7 @@ export default function Guide() {
             <div style={{
               position:"absolute", inset:0, borderRadius:10,
               background:`url(${talentOptimizerBg}) center/cover no-repeat`,
-              filter:"blur(6px)",
+              filter:"blur(3px)",
               zIndex:0,
             }} />
             {/* Semi-opaque overlay behind talent trees */}
