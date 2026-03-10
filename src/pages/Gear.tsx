@@ -817,9 +817,9 @@ export default function Gear() {
 
         const tipW = 340;
         const tipH = 480;
-        // Position to the right of the row
-        const tipX = Math.min(bisTooltipPos.x + 10, window.innerWidth - tipW - 8);
-        const tipY = Math.max(8, Math.min(bisTooltipPos.y - tipH / 2, window.innerHeight - tipH - 8));
+        const tipX = Math.min(bisTooltipPos.x, window.innerWidth - tipW - 8);
+        // Fixed vertical position: centered in viewport
+        const tipY = Math.max(8, (window.innerHeight - tipH) / 2);
 
         const Divider = () => (
           <div style={{ borderTop:`1px solid ${C.borderSub}`, margin:"10px 0" }} />
