@@ -2068,33 +2068,34 @@ export default function SurvivalHunterSim() {
                                 click nodes to toggle · hero toggle above center column
                               </span>
                             </div>
-                            <BlizzardTalentTree
-                              compact
-                              specSelectedKeys={editDraft.enabledTalents}
-                              onSpecToggle={(key, selected) => {
-                                setEditDraft(d => {
-                                  if (!d) return d;
-                                  if (selected) {
-                                    return { ...d, enabledTalents: [...d.enabledTalents, key] };
-                                  } else {
-                                    return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
-                                  }
-                                });
-                              }}
-                              heroKey={editDraft.heroKey}
-                              onHeroChange={(hero) => setEditDraft(d => d ? { ...d, heroKey: hero, enabledHeroTalents: [] } : d)}
-                              heroSelectedKeys={editDraft.enabledHeroTalents}
-                              onHeroToggle={(key, selected) => {
-                                setEditDraft(d => {
-                                  if (!d) return d;
-                                  if (selected) {
-                                    return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
-                                  } else {
-                                    return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
-                                  }
-                                });
-                              }}
-                            />
+                            <div style={{ overflowX: "auto", overflowY: "visible", borderRadius: 8 }}>
+                              <BlizzardTalentTree
+                                specSelectedKeys={editDraft.enabledTalents}
+                                onSpecToggle={(key, selected) => {
+                                  setEditDraft(d => {
+                                    if (!d) return d;
+                                    if (selected) {
+                                      return { ...d, enabledTalents: [...d.enabledTalents, key] };
+                                    } else {
+                                      return { ...d, enabledTalents: cascadeRemove(key, d.enabledTalents) };
+                                    }
+                                  });
+                                }}
+                                heroKey={editDraft.heroKey}
+                                onHeroChange={(hero) => setEditDraft(d => d ? { ...d, heroKey: hero, enabledHeroTalents: [] } : d)}
+                                heroSelectedKeys={editDraft.enabledHeroTalents}
+                                onHeroToggle={(key, selected) => {
+                                  setEditDraft(d => {
+                                    if (!d) return d;
+                                    if (selected) {
+                                      return { ...d, enabledHeroTalents: [...d.enabledHeroTalents, key] };
+                                    } else {
+                                      return { ...d, enabledHeroTalents: d.enabledHeroTalents.filter(k => k !== key) };
+                                    }
+                                  });
+                                }}
+                              />
+                            </div>
                           </div>
 
                           {/* Save / Cancel */}
