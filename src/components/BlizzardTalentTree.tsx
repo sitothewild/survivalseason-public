@@ -512,6 +512,7 @@ export interface BlizzardTalentTreeProps {
   classSelectedKeys?: string[];
   onClassToggle?: (key: string, selected: boolean) => void;
   onTalentConfigChange?: (config: Record<string, any>) => void;
+  fightStyle?: FightStyle;
 }
 
 export function BlizzardTalentTree({
@@ -520,6 +521,7 @@ export function BlizzardTalentTree({
   onTalentConfigChange,
   onClassToggle,
   classSelectedKeys,
+  fightStyle,
 }: BlizzardTalentTreeProps) {
   const [internalHeroKey, setInternalHeroKey] = useState<"sentinel" | "packLeader">("sentinel");
   const activeHeroKey = heroKeyProp ?? internalHeroKey;
@@ -533,7 +535,6 @@ export function BlizzardTalentTree({
 
   const handleSpecChange = useCallback((nodeId: string, pts: number) => {
     // Recalculate total from the tree section internally
-    // We track this via a ref-based approach
   }, []);
 
   const handleHeroSwitch = useCallback(() => {
@@ -546,12 +547,31 @@ export function BlizzardTalentTree({
   const allSpecNodes = useMemo(() => [...SURVIVAL_NODES, ...APEX_NODES], []);
   const specTree = useTalentTree(allSpecNodes, SPEC_MAX_PTS, SPEC_ROW_GATES, true);
 
+  // Hero tree lifted to parent level for preset loading
+  const heroTree = useTalentTree(heroNodes, HERO_MAX_PTS, HERO_ROW_GATES, heroGateMet);
+
   // Report total points for hero gate
   const prevTotal = useRef(0);
   if (specTree.totalPoints !== prevTotal.current) {
     prevTotal.current = specTree.totalPoints;
     setTimeout(() => setSpecTotalPts(specTree.totalPoints), 0);
   }
+
+  // Apply preset builds when fight style changes
+  const prevFightStyle = useRef<FightStyle | undefined>(undefined);
+  const prevHeroForPreset = useRef<string>(activeHeroKey);
+  useEffect(() => {
+    if (!fightStyle) return;
+    const heroChanged = prevHeroForPreset.current !== activeHeroKey;
+    const fightChanged = prevFightStyle.current !== fightStyle;
+    if (fightChanged || heroChanged) {
+      prevFightStyle.current = fightStyle;
+      prevHeroForPreset.current = activeHeroKey;
+      const preset = getPresetBuild(activeHeroKey, fightStyle);
+      specTree.loadBuild(preset.spec);
+      heroTree.loadBuild(preset.hero);
+    }
+  }, [fightStyle, activeHeroKey]);
 
   return (
     <div style={{ userSelect: "none" }}>
@@ -619,6 +639,7 @@ export function BlizzardTalentTree({
               rowGates={HERO_ROW_GATES}
               externalGateMet={heroGateMet}
               compact
+              tree={heroTree}
             />
 
             {/* APEX TALENT (under hero tree) */}
