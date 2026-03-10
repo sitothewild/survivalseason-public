@@ -504,6 +504,17 @@ export function BlizzardTalentTree({
     else setInternalHeroKey(newKey);
   }, [activeHeroKey, onHeroChange]);
 
+  // Combined survival + apex nodes share 34-pt budget
+  const allSpecNodes = useMemo(() => [...SURVIVAL_NODES, ...APEX_NODES], []);
+  const specTree = useTalentTree(allSpecNodes, SPEC_MAX_PTS, SPEC_ROW_GATES, true);
+
+  // Report total points for hero gate
+  const prevTotal = useRef(0);
+  if (specTree.totalPoints !== prevTotal.current) {
+    prevTotal.current = specTree.totalPoints;
+    setTimeout(() => setSpecTotalPts(specTree.totalPoints), 0);
+  }
+
   return (
     <div style={{ userSelect: "none" }}>
       <div style={{ overflowX: "auto", overflowY: "visible" }}>
@@ -520,7 +531,7 @@ export function BlizzardTalentTree({
             rowGates={CLASS_ROW_GATES}
           />
 
-          {/* HERO TREE (center) */}
+          {/* HERO TREE + APEX (center) */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* Hero switcher */}
             <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
@@ -560,10 +571,13 @@ export function BlizzardTalentTree({
               rowGates={HERO_ROW_GATES}
               externalGateMet={heroGateMet}
             />
+
+            {/* APEX TALENT (under hero tree) */}
+            <ApexSection tree={specTree} />
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
-          <SpecTreeSection onTotalChange={setSpecTotalPts} />
+          <SpecTreeSection tree={specTree} />
         </div>
       </div>
 
