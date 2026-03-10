@@ -1,7 +1,7 @@
 // @ts-nocheck
+import { useRef, useState, useEffect } from "react";
 import { NavLink } from "@/components/NavLink";
-import TalentPanel from "@/components/TalentPanel";
-import { fetchTalentTreeRaw } from "@/lib/blizzardApi";
+import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 const C = {
@@ -21,6 +21,27 @@ const NAV_LINKS = [
 ];
 
 export default function TalentOptimizer() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [treeScale, setTreeScale] = useState(1);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const inner = innerRef.current;
+    if (!container || !inner) return;
+    const measure = () => {
+      const cw = container.clientWidth;
+      const iw = inner.scrollWidth;
+      if (iw > 0) {
+        setTreeScale(Math.max(0.4, Math.min(cw / iw, 1)));
+      }
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(container);
+    requestAnimationFrame(measure);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <div style={{ minHeight:"100vh", background:C.pageBg, color:C.textPri,
       fontFamily:"'Rajdhani','Segoe UI',sans-serif" }}>
@@ -87,7 +108,31 @@ export default function TalentOptimizer() {
           color:C.sentClr, letterSpacing:3, margin:0, marginBottom:24, textTransform:"uppercase" }}>
           Talent Optimizer
         </h1>
-        <TalentPanel fetchTalentTree={fetchTalentTreeRaw} />
+
+        {/* Dark panel wrapping the talent tree — matches Custom Loadout style */}
+        <div style={{
+          background:"linear-gradient(160deg,#0d1117 0%,#1c2333 50%,#0f1a2e 100%)",
+          border:`1px solid ${C.border}`,
+          borderRadius:12,
+          padding:"24px 16px 32px",
+          overflow:"hidden",
+        }}>
+          <div ref={containerRef} style={{ width:"100%", overflow:"hidden" }}>
+            <div
+              ref={innerRef}
+              style={{
+                transformOrigin:"top center",
+                transform:`scale(${treeScale})`,
+                display:"inline-flex",
+                justifyContent:"center",
+                width:"100%",
+                minWidth:"fit-content",
+              }}
+            >
+              <BlizzardTalentTree />
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

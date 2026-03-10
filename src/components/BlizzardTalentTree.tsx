@@ -396,9 +396,16 @@ function TreeSection({
 
   const handleRightClick = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.preventDefault();
-    tree.deallocatePoint(nodeId);
-    onTalentChange?.(nodeId, Math.max(0, (tree.state.points[nodeId] ?? 0) - 1));
-  }, [tree, onTalentChange]);
+    const node = nodes.find(n => n.id === nodeId);
+    if (node?.type === 'choice') {
+      // Choice nodes: deselect via selectChoice(-1) to clear both choice and point
+      tree.selectChoice(nodeId, -1);
+      onTalentChange?.(nodeId, 0);
+    } else {
+      tree.deallocatePoint(nodeId);
+      onTalentChange?.(nodeId, Math.max(0, (tree.state.points[nodeId] ?? 0) - 1));
+    }
+  }, [tree, nodes, onTalentChange]);
 
   const handleLeftClick = useCallback((nodeId: string) => {
     tree.allocatePoint(nodeId);

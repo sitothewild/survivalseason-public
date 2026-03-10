@@ -153,11 +153,23 @@ export function useTalentTree(
     setState({ points: newPoints, choiceSelections: newChoices });
   }, [state, nodes, wouldOrphan, rowGates]);
 
-  const selectChoice = useCallback((nodeId: string, side: 0 | 1) => {
+  const selectChoice = useCallback((nodeId: string, side: 0 | 1 | -1) => {
     const node = nodeMap.get(nodeId);
     if (!node || node.type !== 'choice') return;
     const currentPts = state.points[nodeId] ?? 0;
     const currentSide = state.choiceSelections[nodeId];
+
+    // -1 = explicit deselect (right-click), or toggle: clicking same side deselects
+    if (side === -1 || (currentSide !== undefined && currentSide === side)) {
+      setState(prev => {
+        const newChoices = { ...prev.choiceSelections };
+        delete newChoices[nodeId];
+        const newPoints = { ...prev.points };
+        delete newPoints[nodeId];
+        return { points: newPoints, choiceSelections: newChoices };
+      });
+      return;
+    }
 
     if (currentPts > 0 && currentSide !== undefined && currentSide !== side) {
       // Switching sides: keep the point, just change selection
