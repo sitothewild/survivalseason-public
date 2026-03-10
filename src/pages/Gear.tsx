@@ -56,11 +56,7 @@ export default function Gear() {
     if (bisHideTimer.current) { window.clearTimeout(bisHideTimer.current); bisHideTimer.current = null; }
     const row = e.currentTarget as HTMLElement;
     const rect = row.getBoundingClientRect();
-    // Find the "Hero ilvl" cell (3rd td) to align X near it
-    const cells = row.querySelectorAll("td");
-    const heroCell = cells[2]; // Hero ilvl column
-    const cellRect = heroCell ? heroCell.getBoundingClientRect() : rect;
-    setBisTooltipPos({ x: cellRect.left, y: rect.top + rect.height / 2 });
+    setBisTooltipPos({ x: rect.right, y: rect.top + rect.height / 2 });
     setHoveredBiS(slot);
   }, []);
 
@@ -817,8 +813,9 @@ export default function Gear() {
         const sourceBoss  = sourceParts.slice(1).join(" — ");
 
         const tipW = 340;
-        const tipH = 480; // approximate tooltip height
-        const tipX = Math.min(bisTooltipPos.x - tipW - 12, window.innerWidth - tipW - 8);
+        const tipH = 480;
+        // Position to the right of the row
+        const tipX = Math.min(bisTooltipPos.x + 10, window.innerWidth - tipW - 8);
         const tipY = Math.max(8, Math.min(bisTooltipPos.y - tipH / 2, window.innerHeight - tipH - 8));
 
         const Divider = () => (
