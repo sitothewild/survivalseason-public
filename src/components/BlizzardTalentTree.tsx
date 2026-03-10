@@ -801,16 +801,15 @@ function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
 }
 
 // Survival spec tree (uses shared tree state from parent)
-function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
+function SpecTreeSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void }) {
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(SURVIVAL_NODES), []);
 
-  const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
   const tipTimer = useRef<number>();
 
-  const handleHover = useCallback((info: TooltipInfo | null, x: number, y: number) => {
+  const handleHover = useCallback((info: TooltipInfo | null, _x: number, _y: number) => {
     clearTimeout(tipTimer.current);
     if (!info) {
-      tipTimer.current = window.setTimeout(() => setTooltip(null), 80);
+      tipTimer.current = window.setTimeout(() => onGlobalHover?.(null), 80);
     } else {
       if (info.state === 'LOCKED') {
         const node = SURVIVAL_NODES.find(n => n.name === info.name);
@@ -819,9 +818,9 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
           info.ptsNeeded = Math.max(0, gate - tree.totalPoints);
         }
       }
-      setTooltip({ info, x, y });
+      onGlobalHover?.(info);
     }
-  }, [tree.totalPoints]);
+  }, [tree.totalPoints, onGlobalHover]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -886,8 +885,6 @@ function SpecTreeSection({ tree }: { tree: UseTalentTreeReturn }) {
           );
         })}
       </div>
-
-      {tooltip && <TalentTooltip info={tooltip.info} x={tooltip.x} y={tooltip.y} />}
     </div>
   );
 }
