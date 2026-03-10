@@ -368,7 +368,7 @@ export const WOWHEAD_ICON_FALLBACKS: Record<number, string> = {
   186270: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_raptorstrike.jpg",
   259495: "https://wow.zamimg.com/images/wow/icons/large/inv_wildfirebomb.jpg",
   260285: "https://wow.zamimg.com/images/wow/icons/large/ability_bossmannoroth_glaivethrust.jpg",
-  264332: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_guerrillatactics.jpg",
+  264332: "https://wow.zamimg.com/images/wow/icons/large/spell_mage_flameorb.jpg",
   378934: "https://wow.zamimg.com/images/wow/icons/large/ability_hunter_harpoon.jpg",
   1261193: "https://wow.zamimg.com/images/wow/icons/large/inv_musket_04.jpg",
   1251717: "https://wow.zamimg.com/images/wow/icons/large/inv_coordinatedassault.jpg",
