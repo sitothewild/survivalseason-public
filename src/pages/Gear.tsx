@@ -56,7 +56,11 @@ export default function Gear() {
     if (bisHideTimer.current) { window.clearTimeout(bisHideTimer.current); bisHideTimer.current = null; }
     const row = e.currentTarget as HTMLElement;
     const rect = row.getBoundingClientRect();
-    setBisTooltipPos({ x: rect.right, y: rect.top + rect.height / 2 });
+    // Position after the Myth ilvl column (4th td)
+    const cells = row.querySelectorAll("td");
+    const mythCell = cells[3];
+    const cellRect = mythCell ? mythCell.getBoundingClientRect() : rect;
+    setBisTooltipPos({ x: cellRect.right + 8, y: rect.top + rect.height / 2 });
     setHoveredBiS(slot);
   }, []);
 
