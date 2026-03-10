@@ -325,279 +325,267 @@ export default function Guide() {
                 </div>
               </div>
 
-              {/* ═══ SPEC TALENT TREE — 2D node grid + SVG lines ═══ */}
-              <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
-                color:C.textDim, marginBottom:12 }}>SPECIALIZATION TALENT TREE</div>
+              {/* ═══ SIDE-BY-SIDE LAYOUT: Spec + Hero ═══ */}
+              <div style={{ display:"flex", gap:28, alignItems:"flex-start", flexWrap:"wrap" }}>
 
-              <div style={{ position:"relative", width:gridW, height:gridH, margin:"0 auto 28px",
-                background:"radial-gradient(ellipse at center, #0d1520 0%, #080c14 100%)",
-                borderRadius:14, border:`1px solid ${C.border}`, padding:0, overflow:"visible" }}>
+                {/* ── LEFT: SPEC TALENT TREE ── */}
+                <div style={{ flex:"1 1 auto", minWidth:gridW + 20 }}>
+                  <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:2.5,
+                    color:C.textSec, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ color:'#60a5fa' }}>◆</span> SPECIALIZATION TREE
+                    <div style={{ flex:1, height:1, background:C.border }} />
+                  </div>
 
-                {/* SVG prerequisite lines */}
-                <svg style={{ position:"absolute", top:0, left:0, width:gridW, height:gridH,
-                  pointerEvents:"none", zIndex:1 }}>
-                  <defs>
-                    <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.6" />
-                      <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.2" />
-                    </linearGradient>
-                  </defs>
-                  {SURVIVAL_SPEC_TREE.map(node =>
-                    node.prerequisites.map(prereq => {
-                      const parent = SURVIVAL_SPEC_TREE.find(n => n.key === prereq);
-                      if (!parent) return null;
-                      const from = nodePos(parent.row, parent.col);
-                      const to   = nodePos(node.row, node.col);
-                      return (
-                        <line key={`${prereq}-${node.key}`}
-                          x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                          stroke="url(#lineGrad)" strokeWidth={2}
-                          strokeDasharray={node.isGateway ? "4,3" : "none"}
-                          opacity={0.7} />
-                      );
-                    })
-                  )}
-                </svg>
+                  <div style={{ position:"relative", width:gridW, height:gridH, margin:"0 auto",
+                    background:`linear-gradient(180deg, ${C.surface2} 0%, ${C.surface} 100%)`,
+                    borderRadius:12, border:`1px solid ${C.border}`, padding:0, overflow:"visible" }}>
 
-                {/* Row gate indicators (left side) */}
-                {[1,2,3,4,5,6,7,8,9,10,11].map(row => {
-                  const gate = ROW_GATES[row];
-                  const y = nodePos(row, 0).y;
-                  return (
-                    <div key={`gate-${row}`} style={{
-                      position:"absolute", left:-48, top: y - 8,
-                      fontFamily:"'IBM Plex Mono',monospace", fontSize:8,
-                      color: gate === 0 ? C.green : C.textDim,
-                      textAlign:"right", width:40, zIndex:5,
-                    }}>
-                      {gate === 0 ? '' : `≥${gate}`}
-                    </div>
-                  );
-                })}
-
-                {/* Nodes */}
-                {SURVIVAL_SPEC_TREE.map(node => {
-                  const pos = nodePos(node.row, node.col);
-                  const clr = CAT_CLR[node.dpsCategory];
-                  const isApex = node.isApex;
-                  const isMultiPt = node.pointCost >= 2;
-                  const isChoice = node.gatewayNote?.startsWith('Choice node');
-                  const size = isApex ? 56 : NODE_SIZE;
-                  const inBuild = node.inSTBuild;
-
-                  return (
-                    <div key={node.key} title={`${node.label} (${node.pointCost}pt) — ${CAT_LBL[node.dpsCategory]}${node.gatewayNote ? '\n' + node.gatewayNote : ''}`}
-                      style={{
-                        position:"absolute", zIndex:3,
-                        left: pos.x - size/2, top: pos.y - size/2,
-                        width:size, height:size,
-                        display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                        cursor:"default",
-                        transition:"transform .15s, box-shadow .15s",
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.15)"; (e.currentTarget as HTMLElement).style.zIndex = "10"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.zIndex = "3"; }}
-                    >
-                      {/* Node shape */}
-                      <div style={{
-                        width: isApex ? 46 : isMultiPt ? 40 : 36,
-                        height: isApex ? 46 : isMultiPt ? 40 : 36,
-                        borderRadius: isChoice ? 4 : "50%",
-                        transform: isChoice ? "rotate(45deg)" : "none",
-                        background: isApex
-                          ? "linear-gradient(135deg,#2a1f08,#1c1505)"
-                          : inBuild
-                            ? `radial-gradient(circle at 30% 30%, ${clr}33, ${CAT_BG[node.dpsCategory]})`
-                            : C.surface3,
-                        border: `2px solid ${inBuild ? clr : '#3e4a5e'}`,
-                        boxShadow: inBuild
-                          ? `0 0 ${isApex ? 16 : 10}px ${clr}44, inset 0 0 8px ${clr}22`
-                          : 'none',
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                      }}>
-                        <span style={{
-                          fontFamily:"'Orbitron',sans-serif",
-                          fontSize: isApex ? 10 : isMultiPt ? 9 : 8,
-                          fontWeight:700,
-                          color: inBuild ? clr : '#5a6a82',
-                          letterSpacing: 0.5,
-                          transform: isChoice ? "rotate(-45deg)" : "none",
-                          textAlign:"center", lineHeight:1.1,
-                        }}>
-                          {shortLabel(node.label)}
-                        </span>
-                      </div>
-
-                      {/* Label below */}
-                      <div style={{
-                        position:"absolute", bottom: isApex ? -14 : -12,
-                        fontFamily:"'Rajdhani',sans-serif", fontSize:8, fontWeight:600,
-                        color: inBuild ? C.textMid : '#3e4a5e',
-                        whiteSpace:"nowrap", textAlign:"center",
-                        maxWidth:60, overflow:"hidden", textOverflow:"ellipsis",
-                      }}>
-                        {node.label}
-                      </div>
-
-                      {/* Point cost badge */}
-                      {isMultiPt && (
-                        <div style={{
-                          position:"absolute", top:-3, right:-3,
-                          width:16, height:16, borderRadius:"50%",
-                          background: isApex ? '#f59e0b' : '#fbbf24',
-                          color:"#000", fontFamily:"'Orbitron',sans-serif",
-                          fontSize:8, fontWeight:900,
-                          display:"flex", alignItems:"center", justifyContent:"center",
-                          border:"1.5px solid #000",
-                        }}>
-                          {node.pointCost}
-                        </div>
+                    {/* SVG prerequisite lines */}
+                    <svg style={{ position:"absolute", top:0, left:0, width:gridW, height:gridH,
+                      pointerEvents:"none", zIndex:1 }}>
+                      <defs>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.5" />
+                          <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.15" />
+                        </linearGradient>
+                      </defs>
+                      {SURVIVAL_SPEC_TREE.map(node =>
+                        node.prerequisites.map(prereq => {
+                          const parent = SURVIVAL_SPEC_TREE.find(n => n.key === prereq);
+                          if (!parent) return null;
+                          const from = nodePos(parent.row, parent.col);
+                          const to   = nodePos(node.row, node.col);
+                          return (
+                            <line key={`${prereq}-${node.key}`}
+                              x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                              stroke="url(#lineGrad)" strokeWidth={1.5}
+                              strokeDasharray={node.isGateway ? "4,3" : "none"}
+                              opacity={0.7} />
+                          );
+                        })
                       )}
+                    </svg>
 
-                      {/* Build membership dots */}
-                      <div style={{ position:"absolute", bottom: isApex ? -22 : -20,
-                        display:"flex", gap:3 }}>
-                        {node.inSTBuild && <div style={{ width:5, height:5, borderRadius:"50%", background:C.green }} />}
-                        {node.inAoEBuild && <div style={{ width:5, height:5, borderRadius:"50%", background:'#f97316' }} />}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    {/* Nodes */}
+                    {SURVIVAL_SPEC_TREE.map(node => {
+                      const pos = nodePos(node.row, node.col);
+                      const clr = CAT_CLR[node.dpsCategory];
+                      const isApex = node.isApex;
+                      const isMultiPt = node.pointCost >= 2;
+                      const isChoice = node.gatewayNote?.startsWith('Choice node');
+                      const size = isApex ? 56 : NODE_SIZE;
+                      const inBuild = node.inSTBuild;
 
-              {/* ═══ HERO TALENT TREE — WoWHead-style ═══ */}
-              <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:2,
-                color: heroClrL, marginBottom:12, marginTop:8 }}>
-                {hero === 'sentinel' ? '🌙 SENTINEL' : '🐺 PACK LEADER'} — HERO TALENT TREE
-              </div>
+                      return (
+                        <div key={node.key} title={`${node.label} (${node.pointCost}pt) — ${CAT_LBL[node.dpsCategory]}${node.gatewayNote ? '\n' + node.gatewayNote : ''}`}
+                          style={{
+                            position:"absolute", zIndex:3,
+                            left: pos.x - size/2, top: pos.y - size/2,
+                            width:size, height:size,
+                            display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                            cursor:"default",
+                            transition:"transform .15s, box-shadow .15s",
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.15)"; (e.currentTarget as HTMLElement).style.zIndex = "10"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.zIndex = "3"; }}
+                        >
+                          <div style={{
+                            width: isApex ? 46 : isMultiPt ? 40 : 36,
+                            height: isApex ? 46 : isMultiPt ? 40 : 36,
+                            borderRadius: isChoice ? 4 : "50%",
+                            transform: isChoice ? "rotate(45deg)" : "none",
+                            background: isApex
+                              ? "linear-gradient(135deg,#2a1f08,#1c1505)"
+                              : inBuild
+                                ? `radial-gradient(circle at 30% 30%, ${clr}33, ${CAT_BG[node.dpsCategory]})`
+                                : C.surface3,
+                            border: `2px solid ${inBuild ? clr : '#3e4a5e'}`,
+                            boxShadow: inBuild
+                              ? `0 0 ${isApex ? 16 : 10}px ${clr}44, inset 0 0 8px ${clr}22`
+                              : 'none',
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                          }}>
+                            <span style={{
+                              fontFamily:"'Orbitron',sans-serif",
+                              fontSize: isApex ? 10 : isMultiPt ? 9 : 8,
+                              fontWeight:700,
+                              color: inBuild ? clr : '#5a6a82',
+                              letterSpacing: 0.5,
+                              transform: isChoice ? "rotate(-45deg)" : "none",
+                              textAlign:"center", lineHeight:1.1,
+                            }}>
+                              {shortLabel(node.label)}
+                            </span>
+                          </div>
 
-              <div style={{ position:"relative", width:heroGridW, height:heroGridH, margin:"0 auto 20px",
-                background:"radial-gradient(ellipse at center, #0d1520 0%, #080c14 100%)",
-                borderRadius:14, border:`1px solid ${heroBdrL}`, padding:0 }}>
+                          <div style={{
+                            position:"absolute", bottom: isApex ? -14 : -12,
+                            fontFamily:"'Rajdhani',sans-serif", fontSize:8, fontWeight:600,
+                            color: inBuild ? C.textMid : '#3e4a5e',
+                            whiteSpace:"nowrap", textAlign:"center",
+                            maxWidth:60, overflow:"hidden", textOverflow:"ellipsis",
+                          }}>
+                            {node.label}
+                          </div>
 
-                {/* SVG lines for hero tree — simple vertical connections */}
-                <svg style={{ position:"absolute", top:0, left:0, width:heroGridW, height:heroGridH,
-                  pointerEvents:"none", zIndex:1 }}>
-                  {[0,1,2,3].map(col => {
-                    // Connect row 1 → 2, 2 → 3, 3 → 4 (only if nodes exist)
-                    const lines: any[] = [];
-                    for (let r = 1; r < 4; r++) {
-                      const fromNode = heroNodesDeduped.find(n => n.row === r && n.col === col);
-                      const toNode   = heroNodesDeduped.find(n => n.row === r+1 && n.col === col);
-                      if (fromNode && toNode) {
-                        const from = heroNodePos(r, col);
-                        const to   = heroNodePos(r+1, col);
-                        lines.push(
-                          <line key={`hero-${r}-${col}`}
-                            x1={from.x} y1={from.y + HERO_NODE/2 - 4}
-                            x2={to.x} y2={to.y - HERO_NODE/2 + 4}
-                            stroke={heroClrL} strokeWidth={2} opacity={0.4} />
-                        );
-                      }
-                    }
-                    // Cross-col connections for capstone
-                    if (col === 1) {
-                      const capstone = heroNodesDeduped.find(n => n.row === 4);
-                      if (capstone) {
-                        [0,1,2,3].forEach(srcCol => {
-                          const srcNode = heroNodesDeduped.find(n => n.row === 3 && n.col === srcCol);
-                          if (srcNode) {
-                            const from = heroNodePos(3, srcCol);
-                            const to   = heroNodePos(4, capstone.col);
+                          {isMultiPt && (
+                            <div style={{
+                              position:"absolute", top:-3, right:-3,
+                              width:16, height:16, borderRadius:"50%",
+                              background: isApex ? '#f59e0b' : '#fbbf24',
+                              color:"#000", fontFamily:"'Orbitron',sans-serif",
+                              fontSize:8, fontWeight:900,
+                              display:"flex", alignItems:"center", justifyContent:"center",
+                              border:"1.5px solid #000",
+                            }}>
+                              {node.pointCost}
+                            </div>
+                          )}
+
+                          <div style={{ position:"absolute", bottom: isApex ? -22 : -20,
+                            display:"flex", gap:3 }}>
+                            {node.inSTBuild && <div style={{ width:5, height:5, borderRadius:"50%", background:C.green }} />}
+                            {node.inAoEBuild && <div style={{ width:5, height:5, borderRadius:"50%", background:'#f97316' }} />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── RIGHT: HERO TALENT TREE ── */}
+                <div style={{ flex:"0 0 auto", minWidth:heroGridW + 20 }}>
+                  <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:2.5,
+                    color: heroClrL, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+                    <span>{hero === 'sentinel' ? '🌙' : '🐺'}</span>
+                    {hero === 'sentinel' ? 'SENTINEL' : 'PACK LEADER'} TREE
+                    <div style={{ flex:1, height:1, background:heroBdrL }} />
+                  </div>
+
+                  <div style={{ position:"relative", width:heroGridW, height:heroGridH, margin:"0 auto",
+                    background:`linear-gradient(180deg, ${heroBgL}cc 0%, ${C.surface} 100%)`,
+                    borderRadius:12, border:`1px solid ${heroBdrL}`, padding:0 }}>
+
+                    {/* SVG lines */}
+                    <svg style={{ position:"absolute", top:0, left:0, width:heroGridW, height:heroGridH,
+                      pointerEvents:"none", zIndex:1 }}>
+                      {[0,1,2,3].map(col => {
+                        const lines: any[] = [];
+                        for (let r = 1; r < 4; r++) {
+                          const fromNode = heroNodesDeduped.find(n => n.row === r && n.col === col);
+                          const toNode   = heroNodesDeduped.find(n => n.row === r+1 && n.col === col);
+                          if (fromNode && toNode) {
+                            const from = heroNodePos(r, col);
+                            const to   = heroNodePos(r+1, col);
                             lines.push(
-                              <line key={`hero-cap-${srcCol}`}
+                              <line key={`hero-${r}-${col}`}
                                 x1={from.x} y1={from.y + HERO_NODE/2 - 4}
                                 x2={to.x} y2={to.y - HERO_NODE/2 + 4}
-                                stroke={heroClrL} strokeWidth={2} opacity={0.3}
-                                strokeDasharray="3,3" />
+                                stroke={heroClrL} strokeWidth={1.5} opacity={0.35} />
                             );
                           }
-                        });
-                      }
-                    }
-                    return lines;
-                  })}
-                </svg>
+                        }
+                        if (col === 1) {
+                          const capstone = heroNodesDeduped.find(n => n.row === 4);
+                          if (capstone) {
+                            [0,1,2,3].forEach(srcCol => {
+                              const srcNode = heroNodesDeduped.find(n => n.row === 3 && n.col === srcCol);
+                              if (srcNode) {
+                                const from = heroNodePos(3, srcCol);
+                                const to   = heroNodePos(4, capstone.col);
+                                lines.push(
+                                  <line key={`hero-cap-${srcCol}`}
+                                    x1={from.x} y1={from.y + HERO_NODE/2 - 4}
+                                    x2={to.x} y2={to.y - HERO_NODE/2 + 4}
+                                    stroke={heroClrL} strokeWidth={1.5} opacity={0.25}
+                                    strokeDasharray="3,3" />
+                                );
+                              }
+                            });
+                          }
+                        }
+                        return lines;
+                      })}
+                    </svg>
 
-                {/* Hero nodes */}
-                {heroNodesDeduped.map(node => {
-                  const pos = heroNodePos(node.row, node.col);
-                  const isCapstone = node.row === 4;
-                  const isChoice = node.isChoice;
-                  const choicePartner = isChoice
-                    ? heroTree.find(n => n.row === node.row && n.col === node.col && n.key !== node.key)
-                    : null;
-                  const size = isCapstone ? 58 : HERO_NODE;
+                    {/* Hero nodes */}
+                    {heroNodesDeduped.map(node => {
+                      const pos = heroNodePos(node.row, node.col);
+                      const isCapstone = node.row === 4;
+                      const isChoice = node.isChoice;
+                      const choicePartner = isChoice
+                        ? heroTree.find(n => n.row === node.row && n.col === node.col && n.key !== node.key)
+                        : null;
+                      const size = isCapstone ? 58 : HERO_NODE;
 
-                  return (
-                    <div key={node.key}
-                      title={`${node.label}${isChoice && choicePartner ? ' / ' + choicePartner.label : ''}${node.desc ? '\n' + node.desc : ''}`}
-                      style={{
-                        position:"absolute", zIndex:3,
-                        left: pos.x - size/2, top: pos.y - size/2,
-                        width:size, height:size,
-                        display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                        cursor:"default",
-                        transition:"transform .15s",
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.12)"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
-                    >
-                      <div style={{
-                        width: isCapstone ? 48 : isChoice ? 38 : 40,
-                        height: isCapstone ? 48 : isChoice ? 38 : 40,
-                        borderRadius: isChoice ? 6 : "50%",
-                        transform: isChoice ? "rotate(45deg)" : "none",
-                        background: isCapstone
-                          ? `radial-gradient(circle at 30% 30%, ${heroClrL}44, ${heroBgL})`
-                          : `radial-gradient(circle at 30% 30%, ${heroClrL}22, ${heroBgL})`,
-                        border: `2px solid ${isCapstone ? heroClrL : heroBdrL}`,
-                        boxShadow: isCapstone
-                          ? `0 0 18px ${heroClrL}55, inset 0 0 10px ${heroClrL}22`
-                          : `0 0 8px ${heroClrL}22`,
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                      }}>
-                        <span style={{
-                          fontFamily:"'Orbitron',sans-serif",
-                          fontSize: isCapstone ? 8 : 7,
-                          fontWeight:700,
-                          color: heroClrL,
-                          transform: isChoice ? "rotate(-45deg)" : "none",
-                          textAlign:"center", lineHeight:1,
-                          letterSpacing:0.3,
-                        }}>
-                          {node.label.split(' ').map(w => w[0]).join('')}
-                        </span>
-                      </div>
+                      return (
+                        <div key={node.key}
+                          title={`${node.label}${isChoice && choicePartner ? ' / ' + choicePartner.label : ''}${node.desc ? '\n' + node.desc : ''}`}
+                          style={{
+                            position:"absolute", zIndex:3,
+                            left: pos.x - size/2, top: pos.y - size/2,
+                            width:size, height:size,
+                            display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                            cursor:"default",
+                            transition:"transform .15s",
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.12)"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+                        >
+                          <div style={{
+                            width: isCapstone ? 48 : isChoice ? 38 : 40,
+                            height: isCapstone ? 48 : isChoice ? 38 : 40,
+                            borderRadius: isChoice ? 6 : "50%",
+                            transform: isChoice ? "rotate(45deg)" : "none",
+                            background: isCapstone
+                              ? `radial-gradient(circle at 30% 30%, ${heroClrL}44, ${heroBgL})`
+                              : `radial-gradient(circle at 30% 30%, ${heroClrL}22, ${heroBgL})`,
+                            border: `2px solid ${isCapstone ? heroClrL : heroBdrL}`,
+                            boxShadow: isCapstone
+                              ? `0 0 18px ${heroClrL}55, inset 0 0 10px ${heroClrL}22`
+                              : `0 0 8px ${heroClrL}22`,
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                          }}>
+                            <span style={{
+                              fontFamily:"'Orbitron',sans-serif",
+                              fontSize: isCapstone ? 8 : 7,
+                              fontWeight:700,
+                              color: heroClrL,
+                              transform: isChoice ? "rotate(-45deg)" : "none",
+                              textAlign:"center", lineHeight:1,
+                              letterSpacing:0.3,
+                            }}>
+                              {node.label.split(' ').map(w => w[0]).join('')}
+                            </span>
+                          </div>
 
-                      {/* Label */}
-                      <div style={{
-                        position:"absolute", bottom: isCapstone ? -16 : -13,
-                        fontFamily:"'Rajdhani',sans-serif", fontSize:8, fontWeight:600,
-                        color: heroClrL, whiteSpace:"nowrap", textAlign:"center",
-                        maxWidth:70, overflow:"hidden", textOverflow:"ellipsis",
-                        opacity:0.8,
-                      }}>
-                        {node.label}
-                      </div>
+                          <div style={{
+                            position:"absolute", bottom: isCapstone ? -16 : -13,
+                            fontFamily:"'Rajdhani',sans-serif", fontSize:8, fontWeight:600,
+                            color: heroClrL, whiteSpace:"nowrap", textAlign:"center",
+                            maxWidth:70, overflow:"hidden", textOverflow:"ellipsis",
+                            opacity:0.8,
+                          }}>
+                            {node.label}
+                          </div>
 
-                      {/* Choice indicator */}
-                      {isChoice && choicePartner && (
-                        <div style={{
-                          position:"absolute", top:-8,
-                          fontFamily:"'Rajdhani',sans-serif", fontSize:7,
-                          color:C.goldLight, background:C.goldBg,
-                          borderRadius:3, padding:"0 4px",
-                          border:"1px solid rgba(217,119,6,.4)",
-                        }}>
-                          ↔
+                          {isChoice && choicePartner && (
+                            <div style={{
+                              position:"absolute", top:-8,
+                              fontFamily:"'Rajdhani',sans-serif", fontSize:7,
+                              color:C.goldLight, background:C.goldBg,
+                              borderRadius:3, padding:"0 4px",
+                              border:"1px solid rgba(217,119,6,.4)",
+                            }}>
+                              ↔
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-
             </Card>
           );
         })()}
