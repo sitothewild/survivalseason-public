@@ -1336,6 +1336,7 @@ export default function SurvivalHunterSim() {
       setParsedChar(null);
       setImportedTalentSource(null);
       setImportedTalentString('');
+      setProfessions(null);
     } finally {
       setArmoryLoading(false);
     }
