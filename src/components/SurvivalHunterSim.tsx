@@ -1991,10 +1991,10 @@ export default function SurvivalHunterSim() {
                       const heroBgE   = editDraft.heroKey === 'sentinel' ? C.sentBg  : C.packBg;
                       const heroBdrE  = editDraft.heroKey === 'sentinel' ? C.sentBdr : C.packBdr;
 
-                      // Point counters
-                      const specTotalSelected = editDraft.enabledTalents.length + CORE_SPEC.size;
+                      // Point counters (25 core spec talents are always active; 3 core class talents always taken)
+                      const specTotalSelected = editDraft.enabledTalents.length + 25;
                       const heroTotalSelected = editDraft.enabledHeroTalents.length;
-                      const classTotalSelected = CORE_CLASS.size; // class tree not editable in custom
+                      const classTotalSelected = 3;
                       const specBudget = 31;
                       const heroBudgetVal = 10;
                       const classBudget = 31;
