@@ -523,6 +523,52 @@ function TalentSection({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// normalizeHeroLayout — remap hero nodes to canonical 1-4-4-4-1 diamond
+// Row 0: col 3 | Rows 1-3: cols 1,2,4,5 | Row 4: col 3
+// ─────────────────────────────────────────────────────────────────────────────
+
+function normalizeHeroLayout(nodes: BzTalentNode[]): BzTalentNode[] {
+  if (nodes.length < 5) return nodes;
+
+  // Group by original display_row
+  const rowMap = new Map<number, BzTalentNode[]>();
+  nodes.forEach((n) => {
+    const r = n.display_row;
+    if (!rowMap.has(r)) rowMap.set(r, []);
+    rowMap.get(r)!.push(n);
+  });
+
+  // Sort row keys
+  const rowKeys = [...rowMap.keys()].sort((a, b) => a - b);
+
+  // Sort each row's nodes by display_col
+  rowKeys.forEach((r) => rowMap.get(r)!.sort((a, b) => a.display_col - b.display_col));
+
+  // Assign canonical positions: 1-4-4-4-1 pattern
+  // Single-node rows → row 0/4 at col 3, multi-node rows → rows 1-3 at cols 1,2,4,5
+  const MULTI_COLS = [1, 2, 4, 5];
+  const result: BzTalentNode[] = [];
+  let canonRow = 0;
+
+  for (const rk of rowKeys) {
+    const rowNodes = rowMap.get(rk)!;
+    if (rowNodes.length === 1) {
+      // Single node row: col 3
+      result.push({ ...rowNodes[0], display_row: canonRow, display_col: 3 });
+    } else {
+      // Multi node row: assign cols 1,2,4,5 (or subset if fewer than 4)
+      rowNodes.forEach((n, i) => {
+        const col = i < MULTI_COLS.length ? MULTI_COLS[i] : MULTI_COLS[MULTI_COLS.length - 1];
+        result.push({ ...n, display_row: canonRow, display_col: col });
+      });
+    }
+    canonRow++;
+  }
+
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // HeroSection — portrait + toggle + hero talent tree
 // Matches sentinel-tree.html: large portrait circle (R=30) + talent nodes
 // ─────────────────────────────────────────────────────────────────────────────
@@ -756,12 +802,11 @@ export function BlizzardTalentTree({
     [heroTrees, activeHeroTreeId],
   );
 
-  const heroNodes: BzTalentNode[] = useMemo(
-    () => activeHeroTree
-      ? (activeHeroTree.spec_talent_nodes ?? activeHeroTree.hero_talent_nodes ?? activeHeroTree.class_talent_nodes ?? [])
-      : [],
-    [activeHeroTree],
-  );
+  const heroNodes: BzTalentNode[] = useMemo(() => {
+    if (!activeHeroTree) return [];
+    const raw = activeHeroTree.spec_talent_nodes ?? activeHeroTree.hero_talent_nodes ?? activeHeroTree.class_talent_nodes ?? [];
+    return normalizeHeroLayout(raw);
+  }, [activeHeroTree]);
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
