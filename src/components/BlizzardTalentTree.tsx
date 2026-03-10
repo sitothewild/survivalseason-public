@@ -7,7 +7,7 @@
  * Implements: click to select, right-click to deselect, row gates,
  * parent prerequisites, choice nodes, cascade deselection, reset buttons.
  */
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import heroSentinelImg from "@/assets/hero-sentinel.png";
 import heroPackLeaderImg from "@/assets/hero-pack-leader.png";
 import {
@@ -19,6 +19,8 @@ import {
   type TalentNodeDef, type NodeState,
 } from "@/lib/talentData";
 import { useTalentTree, type UseTalentTreeReturn } from "@/hooks/useTalentTree";
+import { getPresetBuild } from "@/lib/presetBuilds";
+import type { FightStyle } from "@/utils/simcProfileBuilder";
 
 // ── Visual constants ─────────────────────────────────────────
 const GOLD        = "#C8A84B";
