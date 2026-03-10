@@ -768,14 +768,31 @@ function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
       {info && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            {info.spellId && (
+            {info.choiceASpellId && info.choiceBSpellId ? (
+              <div style={{ display: "flex", gap: 4 }}>
+                <img
+                  src={resolveIcon(info.choiceASpellId)}
+                  alt=""
+                  style={{ width: 28, height: 28, borderRadius: 4, border: `1px solid ${info.choiceSide === 0 ? GOLD : GOLD_DIM}`, objectFit: "cover",
+                    filter: info.choiceSide === 0 ? 'none' : 'grayscale(1) brightness(0.75)' }}
+                  draggable={false}
+                />
+                <img
+                  src={resolveIcon(info.choiceBSpellId)}
+                  alt=""
+                  style={{ width: 28, height: 28, borderRadius: 4, border: `1px solid ${info.choiceSide === 1 ? GOLD : GOLD_DIM}`, objectFit: "cover",
+                    filter: info.choiceSide === 1 ? 'none' : 'grayscale(1) brightness(0.75)' }}
+                  draggable={false}
+                />
+              </div>
+            ) : info.spellId ? (
               <img
                 src={resolveIcon(info.spellId)}
                 alt=""
                 style={{ width: 28, height: 28, borderRadius: 4, border: `1px solid ${GOLD_DIM}`, objectFit: "cover" }}
                 draggable={false}
               />
-            )}
+            ) : null}
             <div>
               <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 700,
                 color: GOLD, letterSpacing: 0.5 }}>
