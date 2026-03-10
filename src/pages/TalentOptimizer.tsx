@@ -153,8 +153,7 @@ export default function TalentOptimizer() {
   );
 }
 
-function FightStyleToggle() {
-  const [active, setActive] = useState<FightStyle>("st");
+function FightStyleToggle({ active, onChange }: { active: FightStyle; onChange: (fs: FightStyle) => void }) {
   const styles: { key: FightStyle; label: string }[] = [
     { key: "st", label: "ST" },
     { key: "cleave", label: "Cleave" },
@@ -170,7 +169,7 @@ function FightStyleToggle() {
       {styles.map(({ key, label }) => (
         <button
           key={key}
-          onClick={() => setActive(key)}
+          onClick={() => onChange(key)}
           style={{
             padding: "4px 12px",
             fontSize: 10,
