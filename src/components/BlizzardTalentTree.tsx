@@ -450,8 +450,7 @@ interface ConnectionLinesProps {
   selectedChoices: Record<number, number>;
 }
 
-function ConnectionLines({ nodes, nodeMap, rowMap, colMap, w, h, selectedKeys, coreKeys }: ConnectionLinesProps) {
-function ConnectionLines({ nodes, nodeMap, minRow, minCol, selectedKeys, selectedChoices }: ConnectionLinesProps) {
+function ConnectionLines({ nodes, nodeMap, rowMap, colMap, selectedKeys, coreKeys }: ConnectionLinesProps) {
   const lines = useMemo(() => {
     const result: Array<{ key: string; x1: number; y1: number; x2: number; y2: number; active: boolean }> = [];
     for (const node of nodes) {
@@ -464,23 +463,16 @@ function ConnectionLines({ nodes, nodeMap, minRow, minCol, selectedKeys, selecte
         const nk = nodeTalentKey(node);
         const prereqOn = pk ? (coreKeys.has(pk) || selectedKeys.has(pk)) : false;
         const nodeOn   = nk ? (coreKeys.has(nk) || selectedKeys.has(nk)) : false;
-        const from = nodeCenter(prereqNode, minRow, minCol);
-        const to   = nodeCenter(node,       minRow, minCol);
-        const prereqKey = nodeTalentKey(prereqNode);
-        const nodeKey   = nodeTalentKey(node);
-        const prereqOn  = prereqKey ? selectedKeys.has(prereqKey) : false;
-        const nodeOn    = nodeKey   ? selectedKeys.has(nodeKey)   : false;
         result.push({
           key:    `${prereq.id}-${node.id}`,
-          x1: from.cx, y1: from.cy,
-          x2: to.cx,   y2: to.cy,
+          x1: from.x, y1: from.y,
+          x2: to.x,   y2: to.y,
           active: prereqOn && nodeOn,
         });
       }
     }
     return result;
   }, [nodes, nodeMap, rowMap, colMap, selectedKeys, coreKeys]);
-  }, [nodes, nodeMap, minRow, minCol, selectedKeys]);
 
   return (
     <svg
