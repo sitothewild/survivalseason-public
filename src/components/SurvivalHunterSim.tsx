@@ -2071,6 +2071,7 @@ export default function SurvivalHunterSim() {
                               </span>
                             </div>
                             <BlizzardTalentTree
+                              compact
                               specSelectedKeys={editDraft.enabledTalents}
                               onSpecToggle={(key, selected) => {
                                 setEditDraft(d => {
