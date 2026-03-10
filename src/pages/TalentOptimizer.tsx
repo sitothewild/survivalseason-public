@@ -44,7 +44,7 @@ export default function TalentOptimizer() {
   }, []);
 
   return (
-    <div style={{ minHeight:"100vh", background:C.pageBg, color:C.textPri,
+    <div style={{ minHeight:"100vh", background:`url(${talentOptimizerBg}) center/cover fixed, ${C.pageBg}`, color:C.textPri,
       fontFamily:"'Rajdhani','Segoe UI',sans-serif" }}>
 
       <style>{`
