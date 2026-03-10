@@ -25,7 +25,7 @@ const GOLD_GLOW = "rgba(200,168,75,.45)";
 const NODE_FILL = "#110a03";    // node background
 const LINE_DIM  = "#3a2a08";    // inner ring / dim line color
 
-const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3Ctext x='32' y='40' text-anchor='middle' fill='%237a5a20' font-size='26' font-family='serif'%3E%3F%3C/text%3E%3C/svg%3E";
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3C/svg%3E";
 
 // ── Hardcoded fallback hero trees ────────────────────────────────────────────
 const FALLBACK_SENTINEL_NODES: BzTalentNode[] = [
