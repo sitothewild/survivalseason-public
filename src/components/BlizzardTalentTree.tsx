@@ -1,29 +1,43 @@
 // @ts-nocheck
-// BlizzardTalentTree.tsx — WoW in-game style talent tree
-// Visual design matches hunter-tree.html / survival-tree.html / sentinel-tree.html
+/**
+ * BlizzardTalentTree — Survival Hunter talent tree
+ *
+ * Node positions come from the NAMED LAYOUT DATA below (SURVIVAL_NODES /
+ * SENTINEL_NODES / PACK_LEADER_NODES).  These match the HTML reference files
+ * exactly: col 1–7, row 1–N, rendered at x = PAD + (col-1)*CW.
+ *
+ * Live Blizzard API data enriches icons, descriptions, and prerequisite
+ * connections.  If the API is unavailable the fallback spell IDs render
+ * with whatever icons the mediaMap has.
+ */
 import React, {
   useState, useEffect, useMemo, useCallback, useRef,
 } from "react";
 import { getSurvivalTalentTree } from "@/lib/blizzardApi";
-import type {
-  BzTalentNode, BzHeroTree, TalentTreeFullResponse,
-} from "@/lib/blizzardApi";
+import type { TalentTreeFullResponse, BzTalentNode } from "@/lib/blizzardApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Constants — matched exactly to HTML reference files
+// Visual constants (match HTML reference: R=17/26, CW=48, RH=52, PAD=30)
 // ─────────────────────────────────────────────────────────────────────────────
+const NODE_R      = 17;
+const APEX_R      = 26;
+const NODE_SIZE   = NODE_R * 2;
+const COL_STEP    = 48;
+const ROW_STEP    = 52;
+const TREE_PAD    = 30;
 
-const NODE_R    = 18;           // node radius (R=18 in HTML)
-const NODE_SIZE = NODE_R * 2;   // diameter = 36px
-const COL_STEP  = 48;           // horizontal step (CW=48 in HTML)
-const ROW_STEP  = 52;           // vertical step (RH=52 in HTML)
-const TREE_PAD  = 30;           // padding inside tree container (PAD=30 in HTML)
+const GOLD        = "#C8A84B";
+const GOLD_DIM    = "#7a5a20";
+const GOLD_GLOW   = "rgba(200,168,75,.45)";
+const NODE_FILL   = "#110a03";
+const LINE_DIM    = "#3a2a08";
 
-const GOLD      = "#C8A84B";    // primary gold
-const GOLD_DIM  = "#7a5a20";    // dim gold for inactive borders/lines
-const GOLD_GLOW = "rgba(200,168,75,.45)";
-const NODE_FILL = "#110a03";    // node background
-const LINE_DIM  = "#3a2a08";    // inner ring / dim line color
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3Ctext x='32' y='40' text-anchor='middle' fill='%237a5a20' font-size='26' font-family='serif'%3E%3F%3C/text%3E%3C/svg%3E";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Named layout data  — positions match HTML reference files exactly
+// col 1–7 map to x = PAD + (col-1)*CW   row 1–N map to y = PAD + (row-1)*RH
+// ─────────────────────────────────────────────────────────────────────────────
 
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23110a03'/%3E%3C/svg%3E";
 
@@ -132,12 +146,38 @@ const FALLBACK_PACK_LEADER_NODES: BzTalentNode[] = [
   { id: 96014, display_row: 5, display_col: 4, node_type: { id: 1, type: "SINGLE" }, prerequisite_nodes: [{ id: 96010 }, { id: 96011 }, { id: 96012 }, { id: 96013 }], entries: [{ id: 1, type: "PASSIVE", max_rank: 1, spell_tooltip: { spell: { id: 472741, name: "Bestial Discipline" }, description: "Capstone: Ultimate Pack Leader power unleashed." } }] },
 ];
 
-const FALLBACK_HERO_TREES: BzHeroTree[] = [
-  { id: 42, name: "Sentinel",    hero_talent_nodes: FALLBACK_SENTINEL_NODES },
-  { id: 43, name: "Pack Leader", hero_talent_nodes: FALLBACK_PACK_LEADER_NODES },
+// ── PACK LEADER HERO TREE ─────────────────────────────────────────────────────
+const PACK_LEADER_NODES: LayoutNode[] = [
+  // Row 1 — auto-selected keystone
+  { id: "vicious_hunt",        spellId: 471876, name: "Vicious Hunt",              type: "passive", maxPts: 1, row: 1, col: 4, autoSelected: true },
+  // Row 2
+  { id: "lone_wolf",           spellId: 472358, name: "Lone Wolf",                 type: "passive", maxPts: 1, row: 2, col: 1 },
+  { id: "horn",                spellId: 472352, name: "Horn",                      type: "passive", maxPts: 1, row: 2, col: 3 },
+  { id: "pathfinding",         spellId: 472357, name: "Pathfinding",               type: "passive", maxPts: 1, row: 2, col: 5 },
+  { id: "shoes_choice",        spellId: 0,      name: "Slicked Shoes / Masterful Call", type: "choice", maxPts: 1, row: 2, col: 7,
+    entryA: { spellId: 472719,  name: "Slicked Shoes",  key: "slickedShoes" },
+    entryB: { spellId: 1268705, name: "Masterful Call", key: "masterfulCall" } },
+  // Row 3
+  { id: "ursine_choice",       spellId: 0,      name: "Ursine Fury / Sharpened Claws", type: "choice", maxPts: 1, row: 3, col: 1,
+    entryA: { spellId: 472476,  name: "Ursine Fury",       key: "ursineFury" },
+    entryB: { spellId: 472524,  name: "Sharpened Claws",   key: "sharpenedClaws" } },
+  { id: "cat_charge",          spellId: 472550, name: "Cat Charge",                type: "passive", maxPts: 1, row: 3, col: 3 },
+  { id: "boar_head",           spellId: 472639, name: "Boar Head",                 type: "passive", maxPts: 1, row: 3, col: 5 },
+  { id: "critical_shot",       spellId: 1264781,name: "Critical Shot",             type: "passive", maxPts: 1, row: 3, col: 7 },
+  // Row 4
+  { id: "go_for_throat",       spellId: 472660, name: "Go for the Throat",         type: "passive", maxPts: 1, row: 4, col: 1 },
+  { id: "turtle",              spellId: 472707, name: "Turtle",                    type: "passive", maxPts: 1, row: 4, col: 3 },
+  { id: "hoof_choice",         spellId: 0,      name: "Hoof and Blade / Wyvern's Gaze", type: "choice", maxPts: 1, row: 4, col: 5,
+    entryA: { spellId: 1264797, name: "Hoof and Blade",   key: "hoofAndBlade" },
+    entryB: { spellId: 1264792, name: "Wyvern's Gaze",    key: "wyvernGaze" } },
+  { id: "monster_fang",        spellId: 1264775,name: "Monster Fang",              type: "passive", maxPts: 1, row: 4, col: 7 },
+  // Row 5 — capstone
+  { id: "bestial_discipline",  spellId: 472741, name: "Bestial Discipline",        type: "passive", maxPts: 1, row: 5, col: 4, capstone: true },
 ];
 
-// ── Spell name → TalentConfig key ────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Spell name → TalentConfig key  (used to wire visual selection → DPS sim)
+// ─────────────────────────────────────────────────────────────────────────────
 const NAME_TO_KEY: Record<string, string> = {
   "Kill Command": "killCommand", "Wildfire Bomb": "wildfireBomb", "Raptor Strike": "raptorStrike",
   "Guerrilla Tactics": "guerrillaTactics", "Tip of the Spear": "tipOfTheSpear", "Lunge": "lunge",
@@ -171,7 +211,8 @@ const NAME_TO_KEY: Record<string, string> = {
   "Bestial Discipline": "bestialDiscipline",
 };
 
-const CORE_SPEC = new Set([
+// Keys that are always on (core spec abilities — never need to be toggled)
+const CORE_SPEC_KEYS = new Set([
   "killCommand","wildfireBomb","raptorStrike","guerrillaTactics",
   "tipOfTheSpear","lunge","boomstick","strikeAsOne","flamebreak",
   "quickReload","mongooseFury","wildfireShells","shellshock","wallop",
@@ -180,10 +221,9 @@ const CORE_SPEC = new Set([
   "flanked","primalSurge","raptorSwipe",
 ]);
 
-const CORE_CLASS = new Set(["Keen Eyesight","Unnatural Causes","Trigger Finger"]);
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Helpers
+// Helpers — convert LayoutNode[] to BzTalentNode[]
+// Enriches from live API node map (name→BzTalentNode) when possible.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Resolve icon URL: mediaMap (Blizzard API) → Wowhead fallback → blank fallback */
@@ -196,57 +236,138 @@ function nodeSpellName(node: BzTalentNode): string | null {
   return node.entries?.[0]?.spell_tooltip?.spell?.name ?? null;
 }
 
-function nodeTalentKey(node: BzTalentNode): string | null {
-  const name = nodeSpellName(node);
-  return name ? (NAME_TO_KEY[name] ?? null) : null;
-}
+let _nodeIdSeq = 1;
+function nextId() { return _nodeIdSeq++; }
 
-function buildNodeMap(nodes: BzTalentNode[]) {
-  const m = new Map<number, BzTalentNode>();
-  nodes.forEach((n) => m.set(n.id, n));
-  return m;
-}
+function layoutToBzNode(
+  ln: LayoutNode,
+  liveMap: LiveNodeMap,
+  mediaMap: Record<number, string>,
+): BzTalentNode {
+  const numId = nextId();
 
-/**
- * Direct column/row positioning — uses actual display_col/display_row values
- * normalized to start at (0,0). Preserves the diamond stagger pattern from
- * the HTML reference files (e.g. row 0 at cols 2,4,6 and row 2 at 1,3,5,7).
- */
-function gridLayout(nodes: BzTalentNode[]) {
-  if (!nodes.length) {
-    return { minRow: 0, maxRow: 0, minCol: 0, maxCol: 0, w: 0, h: 0 };
+  if (ln.type === "choice") {
+    // Try to find the live node by matching either entry name
+    const liveA = ln.entryA ? liveMap.get(ln.entryA.name) : undefined;
+    const liveB = ln.entryB ? liveMap.get(ln.entryB.name) : undefined;
+    const liveNode = liveA ?? liveB;
+
+    let entries;
+    if (liveNode?.entries?.length >= 2) {
+      // Use live entries directly (they have correct spell IDs + descriptions)
+      entries = liveNode.entries;
+    } else {
+      // Build from hardcoded data
+      entries = [
+        {
+          id: 1, type: "PASSIVE", max_rank: 1,
+          spell_tooltip: {
+            spell: { id: ln.entryA?.spellId ?? 0, name: ln.entryA?.name ?? "Option A" },
+            description: "",
+          },
+        },
+        {
+          id: 2, type: "PASSIVE", max_rank: 1,
+          spell_tooltip: {
+            spell: { id: ln.entryB?.spellId ?? 0, name: ln.entryB?.name ?? "Option B" },
+            description: "",
+          },
+        },
+      ];
+    }
+
+    return {
+      id: liveNode?.id ?? numId,
+      display_row: ln.row,
+      display_col: ln.col,
+      node_type: { id: 2, type: "SELECTION" },
+      prerequisite_nodes: liveNode?.prerequisite_nodes ?? [],
+      entries,
+      _layoutId: ln.id,
+      _talentKey: ln.talentKey,
+      _autoSelected: ln.autoSelected,
+      _capstone: ln.capstone,
+      _apex: ln.type === "apex",
+    } as any;
   }
+
+  // Non-choice nodes
+  const liveNode = liveMap.get(ln.name);
+  const spellId  = liveNode?.entries?.[0]?.spell_tooltip?.spell?.id ?? ln.spellId ?? 0;
+  const spellName = liveNode?.entries?.[0]?.spell_tooltip?.spell?.name ?? ln.name;
+  const description = liveNode?.entries?.[0]?.spell_tooltip?.description ?? "";
+  const maxRank = liveNode?.entries?.[0]?.max_rank ?? ln.maxPts;
+
+  return {
+    id: liveNode?.id ?? numId,
+    display_row: ln.row,
+    display_col: ln.col,
+    node_type: { id: 1, type: "SINGLE" },
+    prerequisite_nodes: liveNode?.prerequisite_nodes ?? [],
+    entries: [{
+      id: 1,
+      type: ln.type === "active" ? "ACTIVE" : "PASSIVE",
+      max_rank: maxRank,
+      spell_tooltip: { spell: { id: spellId, name: spellName }, description },
+    }],
+    _layoutId: ln.id,
+    _talentKey: ln.talentKey,
+    _autoSelected: ln.autoSelected,
+    _capstone: ln.capstone,
+    _apex: ln.type === "apex",
+  } as any;
+}
+
+function convertLayoutNodes(
+  layoutNodes: LayoutNode[],
+  allLiveNodes: BzTalentNode[],
+  mediaMap: Record<number, string>,
+): BzTalentNode[] {
+  _nodeIdSeq = Date.now(); // unique IDs per call
+  const liveMap = buildLiveMap(allLiveNodes);
+  return layoutNodes.map((ln) => layoutToBzNode(ln, liveMap, mediaMap));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid layout helpers — direct col/row positioning (matches HTML)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function gridLayout(nodes: BzTalentNode[]) {
+  if (!nodes.length) return { minRow: 1, maxRow: 1, minCol: 1, maxCol: 1, w: 0, h: 0 };
   const rows = nodes.map((n) => n.display_row);
   const cols = nodes.map((n) => n.display_col);
   const minRow = Math.min(...rows), maxRow = Math.max(...rows);
   const minCol = Math.min(...cols), maxCol = Math.max(...cols);
+  // Use NODE_SIZE (but apex uses APEX_R*2 — add a little extra at bottom)
+  const hasApex = nodes.some((n) => (n as any)._apex);
   const w = (maxCol - minCol) * COL_STEP + NODE_SIZE + TREE_PAD * 2;
-  const h = (maxRow - minRow) * ROW_STEP + NODE_SIZE + TREE_PAD * 2;
+  const h = (maxRow - minRow) * ROW_STEP + NODE_SIZE + TREE_PAD * 2 + (hasApex ? ROW_STEP : 0);
   return { minRow, maxRow, minCol, maxCol, w, h };
 }
 
-/** Pixel center of a node within its tree container SVG */
-function nodeCenter(
-  node: BzTalentNode,
-  minRow: number,
-  minCol: number,
-): { x: number; y: number } {
+function nodeCenter(node: BzTalentNode, minRow: number, minCol: number) {
+  const r = (node as any)._apex ? APEX_R : NODE_R;
   return {
     x: TREE_PAD + (node.display_col - minCol) * COL_STEP + NODE_R,
     y: TREE_PAD + (node.display_row - minRow) * ROW_STEP + NODE_R,
   };
 }
 
+// Resolve TalentConfig key for a node
+function resolveKey(node: BzTalentNode, entryIdx = 0): string | null {
+  const ext = node as any;
+  if (ext._talentKey) return ext._talentKey;
+  // Check entry's choice key if present
+  const entries = node.entries ?? [];
+  const entry = entries[entryIdx];
+  const name = entry?.spell_tooltip?.spell?.name ?? "";
+  return NAME_TO_KEY[name] ?? null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tooltip
 // ─────────────────────────────────────────────────────────────────────────────
-
-interface TooltipInfo {
-  name: string;
-  description: string;
-  rank?: number;
-  maxRank?: number;
-}
+interface TooltipInfo { name: string; description: string; rank?: number; maxRank?: number }
 
 function NodeTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number }) {
   const left = Math.min(x + 16, window.innerWidth - 300);
@@ -254,17 +375,14 @@ function NodeTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number }
   return (
     <div style={{
       position: "fixed", left, top, zIndex: 10000,
-      background: "linear-gradient(160deg, #1c1005 0%, #0d0a02 100%)",
-      border: `1px solid ${GOLD_DIM}`,
-      borderTop: `2px solid ${GOLD}`,
-      borderRadius: 4,
-      padding: "10px 14px", maxWidth: 280, pointerEvents: "none",
-      boxShadow: `0 0 24px rgba(0,0,0,.85), inset 0 1px 0 ${GOLD_DIM}60`,
+      background: "linear-gradient(160deg,#1c1005 0%,#0d0a02 100%)",
+      border: `1px solid ${GOLD_DIM}`, borderTop: `2px solid ${GOLD}`,
+      borderRadius: 4, padding: "10px 14px", maxWidth: 280,
+      pointerEvents: "none",
+      boxShadow: `0 0 24px rgba(0,0,0,.85),inset 0 1px 0 ${GOLD_DIM}60`,
     }}>
-      <div style={{
-        fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 700,
-        color: GOLD, marginBottom: 4, letterSpacing: 0.5,
-      }}>
+      <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 700,
+        color: GOLD, marginBottom: 4, letterSpacing: 0.5 }}>
         {info.name}
       </div>
       {info.maxRank && info.maxRank > 1 && (
@@ -280,41 +398,35 @@ function NodeTooltip({ info, x, y }: { info: TooltipInfo; x: number; y: number }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SVG Connection Lines — golden lines between prerequisite nodes
+// Connection lines
 // ─────────────────────────────────────────────────────────────────────────────
-
 function ConnectionLines({
   nodes, nodeMap, minRow, minCol, w, h, selectedKeys, coreKeys,
 }: {
   nodes: BzTalentNode[];
   nodeMap: Map<number, BzTalentNode>;
-  minRow: number; minCol: number;
-  w: number; h: number;
-  selectedKeys: Set<string>;
-  coreKeys: Set<string>;
+  minRow: number; minCol: number; w: number; h: number;
+  selectedKeys: Set<string>; coreKeys: Set<string>;
 }) {
   const lines = useMemo(() => {
     const result: React.ReactNode[] = [];
     nodes.forEach((node) => {
       if (!node.prerequisite_nodes?.length) return;
       const to = nodeCenter(node, minRow, minCol);
-      const nk = nodeTalentKey(node);
-      const nodeOn = nk ? (selectedKeys.has(nk) || coreKeys.has(nk)) : false;
-
-      node.prerequisite_nodes.forEach((prereq) => {
-        const pNode = nodeMap.get(prereq.id);
+      const nk = resolveKey(node);
+      const nodeOn = nk ? (selectedKeys.has(nk) || coreKeys.has(nk)) : (node as any)._autoSelected;
+      node.prerequisite_nodes.forEach((pr) => {
+        const pNode = nodeMap.get(pr.id);
         if (!pNode) return;
         const from = nodeCenter(pNode, minRow, minCol);
-        const pk = nodeTalentKey(pNode);
-        const parentOn = pk ? (selectedKeys.has(pk) || coreKeys.has(pk)) : false;
+        const pk = resolveKey(pNode);
+        const parentOn = pk ? (selectedKeys.has(pk) || coreKeys.has(pk)) : (pNode as any)._autoSelected;
         const active = parentOn && nodeOn;
         result.push(
-          <line
-            key={`${pNode.id}-${node.id}`}
+          <line key={`${pNode.id}-${node.id}`}
             x1={from.x} y1={from.y} x2={to.x} y2={to.y}
             stroke={active ? GOLD : GOLD_DIM}
-            strokeWidth={active ? 2 : 1.5}
-            opacity={active ? 0.9 : 0.35}
+            strokeWidth={active ? 2 : 1.5} opacity={active ? 0.9 : 0.35}
           />
         );
       });
@@ -323,19 +435,16 @@ function ConnectionLines({
   }, [nodes, nodeMap, minRow, minCol, selectedKeys, coreKeys]);
 
   return (
-    <svg
-      width={w} height={h}
-      style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}
-    >
+    <svg width={w} height={h}
+      style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
       {lines}
     </svg>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TalentNode — circular node with icon + double-ring style (matches HTML)
+// TalentNode component
 // ─────────────────────────────────────────────────────────────────────────────
-
 function TalentNode({
   node, mediaMap, selectedKeys, selectedChoices, canSelect, isCore,
   onClick, onChoiceClick, onHover,
@@ -344,26 +453,30 @@ function TalentNode({
   mediaMap: Record<number, string>;
   selectedKeys: Set<string>;
   selectedChoices: Record<number, number>;
-  canSelect: boolean;
-  isCore: boolean;
+  canSelect: boolean; isCore: boolean;
   onClick: () => void;
   onChoiceClick: (idx: number) => void;
   onHover: (info: TooltipInfo | null, x: number, y: number) => void;
 }) {
-  if (!node.entries?.length || !node.node_type) return null;
+  if (!node.entries?.length) return null;
 
-  const isChoice = node.node_type.type === "SELECTION" && node.entries.length >= 2;
+  const ext = node as any;
+  const isChoice = node.node_type?.type === "SELECTION" && node.entries.length >= 2;
+  const isApex = !!ext._apex;
+  const isCapstone = !!ext._capstone;
   const chosenIdx = selectedChoices[node.id] ?? 0;
-  const key = nodeTalentKey(node);
-  const isSelected = key ? (selectedKeys.has(key) || isCore) : isCore;
-  const isLocked = !isCore && !isSelected && !canSelect;
 
+  // Determine selection state
+  const key = isChoice ? resolveKey(node, chosenIdx) : resolveKey(node);
+  const isSelected = key ? (selectedKeys.has(key) || isCore || ext._autoSelected) : (isCore || ext._autoSelected);
+  const isLocked = !isCore && !ext._autoSelected && !isSelected && !canSelect;
+
+  const r = isApex ? APEX_R : NODE_R;
+  const sz = r * 2;
   const borderColor = isSelected ? GOLD : isLocked ? "#1c1408" : GOLD_DIM;
-  const glow = isSelected
-    ? `0 0 0 2px ${GOLD_GLOW}, 0 0 14px 3px ${GOLD_GLOW}`
-    : undefined;
+  const glow = isSelected ? `0 0 0 2px ${GOLD_GLOW},0 0 14px 3px ${GOLD_GLOW}` : undefined;
   const brightness = isSelected ? 1 : isLocked ? 0.2 : 0.5;
-  const cursor = isCore ? "default" : isLocked ? "not-allowed" : "pointer";
+  const cursor = (isCore || ext._autoSelected) ? "default" : isLocked ? "not-allowed" : "pointer";
 
   const handleEnter = (e: React.MouseEvent) => {
     if (isChoice) {
@@ -391,18 +504,24 @@ function TalentNode({
     }
   };
 
-  // ── Choice node: split-icon with dashed vertical divider ────────────────
+  // ── CHOICE node ────────────────────────────────────────────────────────────
   if (isChoice) {
+    const idA = node.entries[0]?.spell_tooltip?.spell?.id ?? 0;
+    const idB = node.entries[1]?.spell_tooltip?.spell?.id ?? 0;
+    const iconA = idA && mediaMap[idA] ? mediaMap[idA] : FALLBACK_ICON;
+    const iconB = idB && mediaMap[idB] ? mediaMap[idB] : FALLBACK_ICON;
+    const brightA = isSelected && chosenIdx === 0 ? 1 : brightness * 0.6;
+    const brightB = isSelected && chosenIdx === 1 ? 1 : brightness * 0.6;
+
     return (
-      <div
-        style={{
-          width: NODE_SIZE, height: NODE_SIZE, borderRadius: "50%",
-          border: `1.5px solid ${borderColor}`, boxShadow: glow,
-          overflow: "hidden", cursor, position: "relative",
-          background: NODE_FILL, transition: "border-color .15s, box-shadow .15s",
-          display: "flex",
-        }}
-        onMouseEnter={handleEnter}
+      <div style={{
+        width: sz, height: sz, borderRadius: "50%",
+        border: `1.5px solid ${borderColor}`, boxShadow: glow,
+        overflow: "hidden", cursor, position: "relative",
+        background: NODE_FILL, display: "flex",
+        transition: "border-color .15s,box-shadow .15s",
+      }}
+        onMouseEnter={(e) => handleEnter(e, chosenIdx)}
         onMouseLeave={() => onHover(null, 0, 0)}
       >
         {/* Left icon half (entry 0) */}
@@ -414,13 +533,9 @@ function TalentNode({
             src={resolveIcon(node.entries[0]?.spell_tooltip?.spell?.id, mediaMap)}
             alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
-            style={{
-              width: NODE_SIZE, height: NODE_SIZE,
-              objectFit: "cover", position: "absolute", left: 0, top: 0,
-              filter: `brightness(${isSelected && chosenIdx === 0 ? 1 : brightness * 0.6})`,
-              transition: "filter .15s",
-            }}
-          />
+            style={{ width: sz, height: sz, objectFit: "cover",
+              position: "absolute", left: 0, top: 0,
+              filter: `brightness(${brightA})`, transition: "filter .15s" }} />
         </div>
         {/* Right icon half (entry 1) */}
         <div
@@ -431,26 +546,20 @@ function TalentNode({
             src={resolveIcon(node.entries[1]?.spell_tooltip?.spell?.id, mediaMap)}
             alt="" loading="lazy" draggable={false}
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
-            style={{
-              width: NODE_SIZE, height: NODE_SIZE,
-              objectFit: "cover", position: "absolute", left: -(NODE_SIZE / 2), top: 0,
-              filter: `brightness(${isSelected && chosenIdx === 1 ? 1 : brightness * 0.6})`,
-              transition: "filter .15s",
-            }}
-          />
+            style={{ width: sz, height: sz, objectFit: "cover",
+              position: "absolute", left: -(sz / 2), top: 0,
+              filter: `brightness(${brightB})`, transition: "filter .15s" }} />
         </div>
-        {/* Dashed vertical divider (matches HTML choice node style) */}
+        {/* Dashed vertical divider (matches HTML choice node) */}
         <div style={{
-          position: "absolute", left: "50%", top: 4, bottom: 4,
-          width: 1, transform: "translateX(-50%)",
-          background: `repeating-linear-gradient(to bottom, ${GOLD_DIM} 0px, ${GOLD_DIM} 3px, transparent 3px, transparent 5px)`,
+          position: "absolute", left: "50%", top: 4, bottom: 4, width: 1,
+          transform: "translateX(-50%)",
+          background: `repeating-linear-gradient(to bottom,${GOLD_DIM} 0,${GOLD_DIM} 3px,transparent 3px,transparent 5px)`,
           pointerEvents: "none",
         }} />
-        {/* Inner ring overlay */}
-        <div style={{
-          position: "absolute", inset: 4, borderRadius: "50%",
-          border: `1px solid ${LINE_DIM}`, pointerEvents: "none",
-        }} />
+        {/* Inner ring */}
+        <div style={{ position: "absolute", inset: 4, borderRadius: "50%",
+          border: `1px solid ${LINE_DIM}`, pointerEvents: "none" }} />
       </div>
     );
   }
@@ -461,33 +570,33 @@ function TalentNode({
   const iconUrl = resolveIcon(spellId, mediaMap);
   const maxRank = entry?.max_rank ?? 1;
 
+  const outerStroke = (isCapstone || isApex)
+    ? (isSelected ? GOLD : GOLD_DIM)
+    : (isSelected ? GOLD : isLocked ? "#1c1408" : GOLD_DIM);
+  const outerStrokeW = (isCapstone || isApex) ? (isSelected ? "3" : "2") : "1.5";
+
   return (
     <div
-      onClick={() => { if (!isCore && canSelect) onClick(); }}
+      onClick={() => { if (!isCore && !ext._autoSelected && canSelect) onClick(); }}
       onMouseEnter={handleEnter}
       onMouseLeave={() => onHover(null, 0, 0)}
       style={{
-        width: NODE_SIZE, height: NODE_SIZE, borderRadius: "50%",
-        border: `1.5px solid ${borderColor}`, boxShadow: glow,
+        width: sz, height: sz, borderRadius: "50%",
+        border: `${outerStrokeW}px solid ${outerStroke}`,
+        boxShadow: glow ?? ((isCapstone || isApex) && isSelected
+          ? `0 0 18px 4px ${GOLD_GLOW}` : undefined),
         cursor, position: "relative", overflow: "hidden",
-        background: NODE_FILL,
-        transition: "border-color .15s, box-shadow .15s",
+        background: NODE_FILL, transition: "border-color .15s,box-shadow .15s",
       }}
     >
-      <img
-        src={iconUrl} alt="" loading="lazy" draggable={false}
+      <img src={iconUrl} alt="" loading="lazy" draggable={false}
         onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
-        style={{
-          width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
-          filter: `brightness(${brightness})`, transition: "filter .15s",
-        }}
-      />
-      {/* Inner ring (matches HTML double-circle decoration) */}
-      <div style={{
-        position: "absolute", inset: 4, borderRadius: "50%",
-        border: `1px solid ${LINE_DIM}`, pointerEvents: "none",
-      }} />
-      {/* Rank badge */}
+        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
+          filter: `brightness(${brightness})`, transition: "filter .15s" }} />
+      {/* Inner decorative ring (matches HTML double-circle) */}
+      <div style={{ position: "absolute", inset: isApex ? 6 : 4, borderRadius: "50%",
+        border: `1px solid ${LINE_DIM}`, pointerEvents: "none" }} />
+      {/* Rank badge for multi-rank nodes */}
       {maxRank > 1 && (
         <div style={{
           position: "absolute", bottom: -2, right: -2,
@@ -496,8 +605,7 @@ function TalentNode({
           borderRadius: 3, padding: "0 3px",
           fontSize: 8, fontWeight: 700, lineHeight: "13px",
           color: isSelected ? GOLD : GOLD_DIM,
-          fontFamily: "'Rajdhani',sans-serif",
-          pointerEvents: "none",
+          fontFamily: "'Rajdhani',sans-serif", pointerEvents: "none",
         }}>
           {isSelected ? maxRank : 0}/{maxRank}
         </div>
@@ -507,32 +615,34 @@ function TalentNode({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TalentSection — one tree column (class / spec)
+// TalentSection — one tree column (class or spec)
 // ─────────────────────────────────────────────────────────────────────────────
-
 function TalentSection({
   label, pointBudget, nodes, mediaMap,
   selectedKeys, selectedChoices, coreKeys,
-  onToggle, onChoiceSelect, onHover,
-  showPointCounter = true,
+  onToggle, onChoiceSelect, onHover, showPointCounter = true,
 }: {
-  label: string;
-  pointBudget: number;
-  nodes: BzTalentNode[];
-  mediaMap: Record<number, string>;
-  selectedKeys: Set<string>;
-  selectedChoices: Record<number, number>;
+  label: string; pointBudget: number;
+  nodes: BzTalentNode[]; mediaMap: Record<number, string>;
+  selectedKeys: Set<string>; selectedChoices: Record<number, number>;
   coreKeys: Set<string>;
-  onToggle: (node: BzTalentNode) => void;
-  onChoiceSelect: (node: BzTalentNode, entryIdx: number) => void;
+  onToggle: (n: BzTalentNode) => void;
+  onChoiceSelect: (n: BzTalentNode, idx: number) => void;
   onHover: (info: TooltipInfo | null, x: number, y: number) => void;
   showPointCounter?: boolean;
 }) {
-  const { minRow, minCol, maxCol, w, h } = useMemo(() => gridLayout(nodes), [nodes]);
-  const nodeMap = useMemo(() => buildNodeMap(nodes), [nodes]);
+  const layout = useMemo(() => gridLayout(nodes), [nodes]);
+  const { minRow, minCol, w, h } = layout;
+  const nodeMap = useMemo(() => {
+    const m = new Map<number, BzTalentNode>();
+    nodes.forEach((n) => m.set(n.id, n));
+    return m;
+  }, [nodes]);
 
   const usedPts = useMemo(() => nodes.reduce((sum, n) => {
-    const k = nodeTalentKey(n);
+    const ext = n as any;
+    if (ext._autoSelected) return sum;
+    const k = resolveKey(n);
     if (!k || coreKeys.has(k)) return sum;
     return sum + (selectedKeys.has(k) ? (n.entries?.[0]?.max_rank ?? 1) : 0);
   }, 0), [nodes, selectedKeys, coreKeys]);
@@ -540,29 +650,26 @@ function TalentSection({
   if (!nodes.length) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: w }}>
-      {/* Section header — matches HTML .tree-header style */}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+      flex: "1 1 0", minWidth: w }}>
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-        <span style={{
-          fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700,
-          letterSpacing: 3, color: GOLD, textTransform: "uppercase",
-        }}>{label}</span>
+        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700,
+          letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>{label}</span>
         {showPointCounter && (
-          <span style={{
-            fontFamily: "'Rajdhani',sans-serif", fontSize: 15, fontWeight: 700,
-            color: usedPts >= pointBudget ? GOLD : GOLD_DIM,
-          }}>{usedPts}</span>
+          <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 15, fontWeight: 700,
+            color: usedPts >= pointBudget ? GOLD : GOLD_DIM }}>{usedPts}</span>
         )}
       </div>
 
-      {/* Tree container — matches HTML .talent-window style */}
+      {/* Tree panel — matches HTML .talent-window */}
       <div style={{
         position: "relative", width: w, height: h,
-        background: "linear-gradient(180deg, rgba(22,12,4,0.95) 0%, rgba(10,5,2,0.98) 100%)",
+        background: "linear-gradient(180deg,rgba(22,12,4,.95) 0%,rgba(10,5,2,.98) 100%)",
         border: `1px solid ${GOLD_DIM}50`,
         borderTop: `2px solid ${GOLD}40`,
         borderRadius: 6,
-        boxShadow: `0 0 40px rgba(200,168,75,0.05), inset 0 1px 0 ${GOLD_DIM}20`,
+        boxShadow: `0 0 40px rgba(200,168,75,.05),inset 0 1px 0 ${GOLD_DIM}20`,
       }}>
         <ConnectionLines
           nodes={nodes} nodeMap={nodeMap}
@@ -572,25 +679,27 @@ function TalentSection({
         />
 
         {nodes.map((node) => {
-          const key = nodeTalentKey(node);
-          const isCore = !!(key && coreKeys.has(key));
-          const prereqsMet = (node.prerequisite_nodes ?? []).every((p) => {
-            const pNode = nodeMap.get(p.id);
-            if (!pNode) return true;
-            const pk = nodeTalentKey(pNode);
-            return pk ? (coreKeys.has(pk) || selectedKeys.has(pk)) : false;
+          const ext = node as any;
+          const isCore = (() => {
+            const k = resolveKey(node);
+            return !!(k && coreKeys.has(k));
+          })();
+          const prereqsMet = (node.prerequisite_nodes ?? []).every((pr) => {
+            const pn = nodeMap.get(pr.id);
+            if (!pn) return true;
+            const pk = resolveKey(pn);
+            return pk ? (coreKeys.has(pk) || selectedKeys.has(pk)) : !!(pn as any)._autoSelected;
           });
-          const canSelect = prereqsMet && (isCore || (selectedKeys.has(key ?? "") ? true : usedPts < pointBudget));
+          const selKey = resolveKey(node, selectedChoices[node.id] ?? 0);
+          const alreadyOn = selKey ? selectedKeys.has(selKey) : false;
+          const canSelect = prereqsMet && (isCore || ext._autoSelected || alreadyOn || usedPts < pointBudget);
 
-          // Direct col positioning — preserves stagger (matches HTML px formula)
-          const left = TREE_PAD + (node.display_col - minCol) * COL_STEP;
-          const top  = TREE_PAD + (node.display_row - minRow) * ROW_STEP;
+          const r = ext._apex ? APEX_R : NODE_R;
+          const left = TREE_PAD + (node.display_col - minCol) * COL_STEP + (NODE_R - r);
+          const top  = TREE_PAD + (node.display_row - minRow) * ROW_STEP + (NODE_R - r);
 
           return (
-            <div
-              key={node.id}
-              style={{ position: "absolute", left, top }}
-            >
+            <div key={node.id} style={{ position: "absolute", left, top }}>
               <TalentNode
                 node={node} mediaMap={mediaMap}
                 selectedKeys={selectedKeys} selectedChoices={selectedChoices}
@@ -643,47 +752,39 @@ function normalizeHeroLayout(nodes: BzTalentNode[]): BzTalentNode[] {
 // HeroSection — portrait + toggle + hero talent tree
 // Matches sentinel-tree.html: large portrait circle (R=30) + talent nodes
 // ─────────────────────────────────────────────────────────────────────────────
-
 function HeroSection({
-  heroTrees, activeHeroTreeId, activeHeroKey, activeHeroTree, heroNodes,
+  heroTrees, activeHeroTreeId, activeHeroKey, heroNodes,
   mediaMap, selectedKeys, selectedChoices,
   onHeroToggle, onHeroChoiceSelect, onHeroSwitch, onHover,
 }: {
-  heroTrees: BzHeroTree[];
-  activeHeroTreeId: number;
-  activeHeroKey: "sentinel" | "packLeader";
-  activeHeroTree: BzHeroTree | undefined;
+  heroTrees: Array<{ id: number; name: string }>;
+  activeHeroTreeId: number; activeHeroKey: "sentinel" | "packLeader";
   heroNodes: BzTalentNode[];
   mediaMap: Record<number, string>;
-  selectedKeys: Set<string>;
-  selectedChoices: Record<number, number>;
-  onHeroToggle: (node: BzTalentNode) => void;
-  onHeroChoiceSelect: (node: BzTalentNode, entryIdx: number) => void;
+  selectedKeys: Set<string>; selectedChoices: Record<number, number>;
+  onHeroToggle: (n: BzTalentNode) => void;
+  onHeroChoiceSelect: (n: BzTalentNode, idx: number) => void;
   onHeroSwitch: (id: number) => void;
   onHover: (info: TooltipInfo | null, x: number, y: number) => void;
 }) {
   const isSentinel = activeHeroKey === "sentinel";
-  const heroName = activeHeroTree?.name ?? (isSentinel ? "Sentinel" : "Pack Leader");
-  const accentColor = isSentinel ? "#7dd3fc" : "#d8b4fe";
-
-  // Use first node's spell icon as portrait
-  const portraitSpellId = heroNodes[0]?.entries?.[0]?.spell_tooltip?.spell?.id;
+  const heroName   = heroTrees.find((h) => h.id === activeHeroTreeId)?.name
+    ?? (isSentinel ? "Sentinel" : "Pack Leader");
+  const keystoneNode = heroNodes.find((n) => (n as any)._autoSelected);
+  const portraitSpellId = keystoneNode?.entries?.[0]?.spell_tooltip?.spell?.id ?? 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "0 0 auto" }}>
-      {/* Section label */}
-      <div style={{
-        fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700,
-        letterSpacing: 3, color: GOLD, textTransform: "uppercase", marginBottom: 6,
-      }}>
+      <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700,
+        letterSpacing: 3, color: GOLD, textTransform: "uppercase", marginBottom: 6 }}>
         {heroName.toUpperCase()}
       </div>
 
-      {/* Hero portrait — matches sentinel-tree.html hero node (R=30, gold border, glow) */}
+      {/* Hero portrait — matches sentinel-tree.html hero node (R=30, gold glow) */}
       <div
         onClick={() => {
           if (heroTrees.length >= 2) {
-            const other = heroTrees.find((ht) => ht.id !== activeHeroTreeId);
+            const other = heroTrees.find((h) => h.id !== activeHeroTreeId);
             if (other) onHeroSwitch(other.id);
           }
         }}
@@ -691,80 +792,58 @@ function HeroSection({
         style={{
           width: 60, height: 60, borderRadius: "50%",
           border: `2px solid ${GOLD}`,
-          boxShadow: `0 0 16px ${GOLD_GLOW}, 0 0 32px rgba(200,168,75,.12)`,
+          boxShadow: `0 0 16px ${GOLD_GLOW},0 0 32px rgba(200,168,75,.12)`,
           overflow: "hidden", marginBottom: 6,
           background: NODE_FILL,
           cursor: heroTrees.length >= 2 ? "pointer" : "default",
-          flexShrink: 0,
-        }}
-      >
+        }}>
         {portraitSpellId && mediaMap[portraitSpellId] ? (
-          <img
-            src={mediaMap[portraitSpellId]} alt={heroName}
+          <img src={mediaMap[portraitSpellId]} alt={heroName}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }}
-          />
+            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_ICON; }} />
         ) : (
-          <div style={{
-            width: "100%", height: "100%", display: "flex",
-            alignItems: "center", justifyContent: "center", fontSize: 26,
-          }}>
+          <div style={{ width: "100%", height: "100%", display: "flex",
+            alignItems: "center", justifyContent: "center", fontSize: 26 }}>
             {isSentinel ? "🌙" : "🐺"}
           </div>
         )}
       </div>
 
-      {/* Mini gate connector dot (matches HTML sn_gate) */}
-      <div style={{
-        width: 8, height: 8, borderRadius: "50%",
-        background: GOLD_DIM, marginBottom: 4, opacity: 0.7,
-      }} />
+      {/* Mini gate connector dot (matches sentinel-tree.html sn_gate node) */}
+      <div style={{ width: 8, height: 8, borderRadius: "50%",
+        background: GOLD_DIM, marginBottom: 4, opacity: 0.7 }} />
 
-      {/* Hero switch dots */}
+      {/* Hero tree switcher dots */}
       {heroTrees.length >= 2 && (
         <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
           {heroTrees.map((ht) => {
             const isActive = ht.id === activeHeroTreeId;
-            const htSentinel = ht.name.toLowerCase().includes("sentinel");
-            const clr = htSentinel ? "#7dd3fc" : "#d8b4fe";
+            const clr = ht.name.toLowerCase().includes("sentinel") ? "#7dd3fc" : "#d8b4fe";
             return (
-              <button
-                key={ht.id}
-                onClick={() => onHeroSwitch(ht.id)}
-                title={ht.name}
-                style={{
-                  width: 8, height: 8, borderRadius: "50%", padding: 0, border: "none",
-                  background: isActive ? clr : GOLD_DIM,
-                  cursor: "pointer", opacity: isActive ? 1 : 0.45,
-                  transition: "all .15s",
-                }}
-              />
+              <button key={ht.id} onClick={() => onHeroSwitch(ht.id)} title={ht.name}
+                style={{ width: 8, height: 8, borderRadius: "50%", padding: 0, border: "none",
+                  background: isActive ? clr : GOLD_DIM, cursor: "pointer",
+                  opacity: isActive ? 1 : 0.45, transition: "all .15s" }} />
             );
           })}
         </div>
       )}
 
-      {/* Hero talent nodes panel */}
+      {/* Hero talent nodes */}
       <div style={{
-        background: "linear-gradient(180deg, rgba(22,12,4,0.95) 0%, rgba(10,5,2,0.98) 100%)",
+        background: "linear-gradient(180deg,rgba(22,12,4,.95) 0%,rgba(10,5,2,.98) 100%)",
         border: `1px solid ${GOLD_DIM}50`,
         borderTop: `2px solid ${GOLD}40`,
-        borderRadius: 6,
-        padding: "4px 2px",
+        borderRadius: 6, padding: "4px 2px",
         boxShadow: `inset 0 1px 0 ${GOLD_DIM}20`,
       }}>
         <TalentSection
-          label=""
-          pointBudget={10}
-          nodes={heroNodes}
-          mediaMap={mediaMap}
-          selectedKeys={selectedKeys}
-          selectedChoices={selectedChoices}
+          label="" pointBudget={10}
+          nodes={heroNodes} mediaMap={mediaMap}
+          selectedKeys={selectedKeys} selectedChoices={selectedChoices}
           coreKeys={new Set()}
-          onToggle={onHeroToggle}
-          onChoiceSelect={onHeroChoiceSelect}
-          onHover={onHover}
-          showPointCounter={false}
+          onToggle={onHeroToggle} onChoiceSelect={onHeroChoiceSelect}
+          onHover={onHover} showPointCounter={false}
         />
       </div>
     </div>
@@ -772,28 +851,21 @@ function HeroSection({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Loading Skeleton — matches HTML visual style
+// Loading skeleton
 // ─────────────────────────────────────────────────────────────────────────────
-
 function TreeSkeleton() {
   return (
-    <div style={{ display: "flex", gap: 20, justifyContent: "center", padding: 20, opacity: 0.55 }}>
-      {[{ cols: 5, rows: 8 }, { cols: 3, isHero: true, rows: 5 }, { cols: 5, rows: 10 }].map((sec, si) => (
+    <div style={{ display: "flex", gap: 20, justifyContent: "center", padding: 20, opacity: 0.5 }}>
+      {[7, 4, 7].map((cols, si) => (
         <div key={si} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
           <div style={{ height: 12, width: 70, background: GOLD_DIM, borderRadius: 3, opacity: 0.4 }} />
-          {sec.isHero && (
-            <div style={{
-              width: 60, height: 60, borderRadius: "50%",
-              border: `2px solid ${GOLD_DIM}`, opacity: 0.3, marginBottom: 4,
-            }} />
-          )}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: COL_STEP - NODE_SIZE, justifyContent: "center", maxWidth: sec.cols * COL_STEP }}>
-            {Array.from({ length: sec.cols * Math.min(sec.rows, 5) }).map((_, i) => (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center", maxWidth: cols * COL_STEP }}>
+            {Array.from({ length: cols * 5 }).map((_, i) => (
               <div key={i} style={{
                 width: NODE_SIZE, height: NODE_SIZE, borderRadius: "50%",
                 background: NODE_FILL, border: `1.5px solid ${GOLD_DIM}40`,
                 animation: "pulse 1.8s ease-in-out infinite",
-                animationDelay: `${(i % 6) * 130}ms`,
+                animationDelay: `${(i % 7) * 120}ms`,
               }} />
             ))}
           </div>
@@ -804,9 +876,8 @@ function TreeSkeleton() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main Export — BlizzardTalentTree
+// Main component
 // ─────────────────────────────────────────────────────────────────────────────
-
 export interface BlizzardTalentTreeProps {
   specSelectedKeys?: string[];
   onSpecToggle?: (key: string, selected: boolean) => void;
@@ -817,56 +888,71 @@ export interface BlizzardTalentTreeProps {
 }
 
 export function BlizzardTalentTree({
-  specSelectedKeys,
-  onSpecToggle,
-  heroKey: heroKeyProp,
-  onHeroChange,
-  heroSelectedKeys: heroSelectedKeysProp,
-  onHeroToggle,
+  specSelectedKeys, onSpecToggle,
+  heroKey: heroKeyProp, onHeroChange,
+  heroSelectedKeys: heroSelectedKeysProp, onHeroToggle,
 }: BlizzardTalentTreeProps) {
-  // ── Data ──────────────────────────────────────────────────────────────────
-  const [treeData, setTreeData] = useState<TalentTreeFullResponse | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // ── Live API (used for mediaMap + node enrichment) ─────────────────────────
+  const [apiData, setApiData] = useState<TalentTreeFullResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    setIsLoading(true);
-    setLoadError(null);
     getSurvivalTalentTree()
-      .then((data) => { if (mounted) { setTreeData(data); setIsLoading(false); } })
-      .catch((err) => { if (mounted) { setLoadError(err?.message ?? "Failed to load"); setIsLoading(false); } });
+      .then((d) => { if (mounted) { setApiData(d); setIsLoading(false); } })
+      .catch((e) => { if (mounted) { setLoadError(e?.message ?? "Failed"); setIsLoading(false); } });
     return () => { mounted = false; };
   }, []);
 
-  // ── Selection state ───────────────────────────────────────────────────────
-  const [internalSpecKeys, setInternalSpecKeys] = useState<string[]>([]);
-  const [internalHeroKey, setInternalHeroKey] = useState<"sentinel" | "packLeader">("sentinel");
-  const [internalHeroKeys, setInternalHeroKeys] = useState<string[]>([]);
-  const [selectedChoices, setSelectedChoices] = useState<Record<number, number>>({});
+  // ── Convert named layout nodes, enriched with live API data ───────────────
+  const mediaMap: Record<number, string> = apiData?.mediaMap ?? {};
+
+  const allLiveNodes = useMemo(() => [
+    ...(apiData?.specTree?.class_talent_nodes ?? []),
+    ...(apiData?.specTree?.spec_talent_nodes ?? []),
+    ...((apiData?.heroTrees ?? []).flatMap((ht) =>
+      ht.hero_talent_nodes ?? ht.spec_talent_nodes ?? ht.class_talent_nodes ?? []
+    )),
+  ], [apiData]);
+
+  const specNodes    = useMemo(() => convertLayoutNodes(SURVIVAL_NODES,     allLiveNodes, mediaMap), [allLiveNodes]);
+  const sentinelNodes = useMemo(() => convertLayoutNodes(SENTINEL_NODES,    allLiveNodes, mediaMap), [allLiveNodes]);
+  const packLeaderNodes = useMemo(() => convertLayoutNodes(PACK_LEADER_NODES, allLiveNodes, mediaMap), [allLiveNodes]);
+
+  // Class tree still comes from live API (Hunter class tree not in prompt)
+  const classNodes = useMemo(() => apiData?.specTree?.class_talent_nodes ?? [], [apiData]);
+
+  // ── Selection state ────────────────────────────────────────────────────────
+  const [internalSpecKeys, setInternalSpecKeys]   = useState<string[]>([]);
+  const [internalHeroKey, setInternalHeroKey]     = useState<"sentinel" | "packLeader">("sentinel");
+  const [internalHeroKeys, setInternalHeroKeys]   = useState<string[]>([]);
+  const [selectedChoices, setSelectedChoices]     = useState<Record<number, number>>({});
 
   const activeSpecKeys = specSelectedKeys ?? internalSpecKeys;
   const activeHeroKey  = heroKeyProp ?? internalHeroKey;
   const activeHeroKeys = heroSelectedKeysProp ?? internalHeroKeys;
 
   const selectedKeys = useMemo<Set<string>>(
-    () => new Set([...CORE_SPEC.values(), ...activeSpecKeys, ...activeHeroKeys]),
+    () => new Set([...CORE_SPEC_KEYS, ...activeSpecKeys, ...activeHeroKeys]),
     [activeSpecKeys, activeHeroKeys],
   );
 
-  // ── Hero tree resolution ──────────────────────────────────────────────────
-  const heroTrees = useMemo(() => {
-    const apiTrees = treeData?.heroTrees ?? [];
-    return apiTrees.length > 0 ? apiTrees : FALLBACK_HERO_TREES;
-  }, [treeData]);
+  // ── Hero tree resolution ───────────────────────────────────────────────────
+  const heroTreeRefs = useMemo(() => {
+    const apiRefs = (apiData?.heroTrees ?? []).map((ht) => ({ id: ht.id, name: ht.name }));
+    return apiRefs.length > 0 ? apiRefs : [
+      { id: 42, name: "Sentinel" },
+      { id: 43, name: "Pack Leader" },
+    ];
+  }, [apiData]);
 
   const activeHeroTreeId = useMemo(() => {
-    if (!heroTrees.length) return -1;
-    const match = heroTrees.find((ht) =>
-      ht.name.toLowerCase().includes(activeHeroKey === "sentinel" ? "sentinel" : "pack")
+    const match = heroTreeRefs.find((h) =>
+      h.name.toLowerCase().includes(activeHeroKey === "sentinel" ? "sentinel" : "pack")
     );
-    return match?.id ?? heroTrees[0]?.id ?? -1;
-  }, [heroTrees, activeHeroKey]);
+    return match?.id ?? heroTreeRefs[0]?.id ?? 42;
+  }, [heroTreeRefs, activeHeroKey]);
 
   const activeHeroTree = useMemo(
     () => heroTrees.find((ht) => ht.id === activeHeroTreeId),
@@ -879,39 +965,34 @@ export function BlizzardTalentTree({
     return normalizeHeroLayout(raw);
   }, [activeHeroTree]);
 
-  // ── Tooltip ───────────────────────────────────────────────────────────────
+  // ── Tooltip ────────────────────────────────────────────────────────────────
   const [tooltip, setTooltip] = useState<{ info: TooltipInfo; x: number; y: number } | null>(null);
-  const tooltipTimer = useRef<number>();
+  const tipTimer = useRef<number>();
   const handleHover = useCallback((info: TooltipInfo | null, x: number, y: number) => {
-    clearTimeout(tooltipTimer.current);
-    if (!info) {
-      tooltipTimer.current = window.setTimeout(() => setTooltip(null), 80);
-    } else {
-      setTooltip({ info, x, y });
-    }
+    clearTimeout(tipTimer.current);
+    if (!info) { tipTimer.current = window.setTimeout(() => setTooltip(null), 80); }
+    else setTooltip({ info, x, y });
   }, []);
 
-  // ── Toggle handlers ───────────────────────────────────────────────────────
+  // ── Toggle handlers ────────────────────────────────────────────────────────
   const handleSpecToggle = useCallback((node: BzTalentNode) => {
-    const key = nodeTalentKey(node);
-    if (!key || CORE_SPEC.has(key)) return;
-    const isOn = selectedKeys.has(key);
-    if (onSpecToggle) onSpecToggle(key, !isOn);
-    else setInternalSpecKeys((prev) => isOn ? prev.filter((k) => k !== key) : [...prev, key]);
+    const k = resolveKey(node);
+    if (!k || CORE_SPEC_KEYS.has(k)) return;
+    const isOn = selectedKeys.has(k);
+    if (onSpecToggle) onSpecToggle(k, !isOn);
+    else setInternalSpecKeys((p) => isOn ? p.filter((x) => x !== k) : [...p, k]);
   }, [selectedKeys, onSpecToggle]);
 
-  const handleChoiceSelect = useCallback((node: BzTalentNode, entryIdx: number) => {
-    const entry = node.entries[entryIdx];
-    const newKey = entry ? (NAME_TO_KEY[entry.spell_tooltip?.spell?.name ?? ""] ?? null) : null;
+  const handleChoiceSelect = useCallback((node: BzTalentNode, idx: number) => {
     const oldIdx = selectedChoices[node.id] ?? 0;
-    const oldEntry = node.entries[oldIdx];
-    const oldKey = oldEntry ? (NAME_TO_KEY[oldEntry.spell_tooltip?.spell?.name ?? ""] ?? null) : null;
-    setSelectedChoices((prev) => ({ ...prev, [node.id]: entryIdx }));
+    const oldKey = resolveKey(node, oldIdx);
+    const newKey = resolveKey(node, idx);
+    setSelectedChoices((p) => ({ ...p, [node.id]: idx }));
     if (oldKey && onSpecToggle) onSpecToggle(oldKey, false);
     if (newKey && onSpecToggle) onSpecToggle(newKey, true);
     else if (!onSpecToggle) {
-      setInternalSpecKeys((prev) => {
-        let next = oldKey ? prev.filter((k) => k !== oldKey) : [...prev];
+      setInternalSpecKeys((p) => {
+        let next = oldKey ? p.filter((x) => x !== oldKey) : [...p];
         if (newKey && !next.includes(newKey)) next = [...next, newKey];
         return next;
       });
@@ -919,49 +1000,45 @@ export function BlizzardTalentTree({
   }, [selectedChoices, onSpecToggle]);
 
   const handleHeroToggle = useCallback((node: BzTalentNode) => {
-    const key = nodeTalentKey(node);
-    if (!key) return;
-    const isOn = selectedKeys.has(key);
-    if (onHeroToggle) onHeroToggle(key, !isOn);
-    else setInternalHeroKeys((prev) => isOn ? prev.filter((k) => k !== key) : [...prev, key]);
+    const k = resolveKey(node);
+    if (!k) return;
+    const isOn = selectedKeys.has(k);
+    if (onHeroToggle) onHeroToggle(k, !isOn);
+    else setInternalHeroKeys((p) => isOn ? p.filter((x) => x !== k) : [...p, k]);
   }, [selectedKeys, onHeroToggle]);
 
-  const handleHeroChoiceSelect = useCallback((node: BzTalentNode, entryIdx: number) => {
-    const entry = node.entries[entryIdx];
-    const newKey = entry ? (NAME_TO_KEY[entry.spell_tooltip?.spell?.name ?? ""] ?? null) : null;
+  const handleHeroChoiceSelect = useCallback((node: BzTalentNode, idx: number) => {
     const oldIdx = selectedChoices[node.id] ?? 0;
-    const oldEntry = node.entries[oldIdx];
-    const oldKey = oldEntry ? (NAME_TO_KEY[oldEntry.spell_tooltip?.spell?.name ?? ""] ?? null) : null;
-    setSelectedChoices((prev) => ({ ...prev, [node.id]: entryIdx }));
+    const oldKey = resolveKey(node, oldIdx);
+    const newKey = resolveKey(node, idx);
+    setSelectedChoices((p) => ({ ...p, [node.id]: idx }));
     if (onHeroToggle) {
       if (oldKey) onHeroToggle(oldKey, false);
       if (newKey) onHeroToggle(newKey, true);
     } else {
-      setInternalHeroKeys((prev) => {
-        let next = oldKey ? prev.filter((k) => k !== oldKey) : [...prev];
+      setInternalHeroKeys((p) => {
+        let next = oldKey ? p.filter((x) => x !== oldKey) : [...p];
         if (newKey && !next.includes(newKey)) next = [...next, newKey];
         return next;
       });
     }
   }, [selectedChoices, onHeroToggle]);
 
-  const handleHeroSwitch = useCallback((heroId: number) => {
-    const ht = heroTrees.find((h) => h.id === heroId);
+  const handleHeroSwitch = useCallback((id: number) => {
+    const ht = heroTreeRefs.find((h) => h.id === id);
     if (!ht) return;
-    const newKey = ht.name.toLowerCase().includes("pack") ? "packLeader" : "sentinel";
-    if (onHeroChange) onHeroChange(newKey);
-    else { setInternalHeroKey(newKey); setInternalHeroKeys([]); }
-  }, [heroTrees, onHeroChange]);
+    const k = ht.name.toLowerCase().includes("pack") ? "packLeader" : "sentinel";
+    if (onHeroChange) onHeroChange(k);
+    else { setInternalHeroKey(k); setInternalHeroKeys([]); }
+  }, [heroTreeRefs, onHeroChange]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   if (isLoading) return <TreeSkeleton />;
 
   if (loadError) {
     return (
-      <div style={{
-        padding: 24, textAlign: "center",
-        fontFamily: "'Rajdhani',sans-serif", color: "#f87171", fontSize: 13,
-      }}>
+      <div style={{ padding: 24, textAlign: "center",
+        fontFamily: "'Rajdhani',sans-serif", color: "#f87171", fontSize: 13 }}>
         <div style={{ marginBottom: 8, color: GOLD }}>⚠ Could not load talent tree</div>
         <div style={{ fontSize: 11, color: GOLD_DIM }}>{loadError}</div>
       </div>
@@ -1087,27 +1164,24 @@ export function BlizzardTalentTree({
 
           {/* HERO TREE */}
           <HeroSection
-            heroTrees={heroTrees}
+            heroTrees={heroTreeRefs}
             activeHeroTreeId={activeHeroTreeId}
             activeHeroKey={activeHeroKey}
-            activeHeroTree={activeHeroTree}
             heroNodes={heroNodes}
             mediaMap={mediaMap}
-            selectedKeys={selectedKeys}
-            selectedChoices={selectedChoices}
+            selectedKeys={selectedKeys} selectedChoices={selectedChoices}
             onHeroToggle={handleHeroToggle}
             onHeroChoiceSelect={handleHeroChoiceSelect}
             onHeroSwitch={handleHeroSwitch}
             onHover={handleHover}
           />
 
-          {/* SPEC TREE */}
+          {/* SPEC TREE — named layout data from prompt */}
           <TalentSection
-            label="SURVIVAL"
+            label="SURVIVAL" pointBudget={specBudget}
             nodes={specNodes} mediaMap={mediaMap}
-            pointBudget={specBudget}
             selectedKeys={selectedKeys} selectedChoices={selectedChoices}
-            coreKeys={CORE_SPEC}
+            coreKeys={CORE_SPEC_KEYS}
             onToggle={handleSpecToggle} onChoiceSelect={handleChoiceSelect}
             onHover={handleHover}
           />
@@ -1117,10 +1191,7 @@ export function BlizzardTalentTree({
       {tooltip && <NodeTooltip info={tooltip.info} x={tooltip.x} y={tooltip.y} />}
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: .35; }
-          50%       { opacity: .7; }
-        }
+        @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:.7} }
       `}</style>
     </div>
   );
