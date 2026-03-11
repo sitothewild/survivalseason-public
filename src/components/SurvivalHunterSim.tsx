@@ -2999,23 +2999,46 @@ export default function SurvivalHunterSim() {
                               {showEnchants && (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                                   {(() => {
+                                    // Group enchants by their base slot from MIDNIGHT_ENCHANTS
                                     const slotSet = new Map<string, typeof MIDNIGHT_ENCHANTS>();
                                     for (const e of MIDNIGHT_ENCHANTS) {
                                       if (!slotSet.has(e.slot)) slotSet.set(e.slot, []);
                                       slotSet.get(e.slot)!.push(e);
                                     }
-                                    return Array.from(slotSet.entries()).map(([slot, enchants]) => (
-                                      <div key={slot} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{slot}</span>
+
+                                    // Detect DW from parsed gear (off_hand slot present)
+                                    const hasDW = parsedChar?.gear?.some((g: any) => g.slot === 'off_hand') ?? false;
+
+                                    // Build display rows: expand Weapon → Weapon + Off Hand (if DW),
+                                    // Ring → Ring 1 + Ring 2
+                                    type SlotRow = { label: string; key: string; enchants: typeof MIDNIGHT_ENCHANTS };
+                                    const rows: SlotRow[] = [];
+                                    for (const [baseSlot, enchants] of slotSet.entries()) {
+                                      if (baseSlot === 'Weapon') {
+                                        rows.push({ label: hasDW ? 'Main Hand' : 'Weapon', key: 'Weapon', enchants });
+                                        if (hasDW) {
+                                          rows.push({ label: 'Off Hand', key: 'Off Hand', enchants });
+                                        }
+                                      } else if (baseSlot === 'Ring') {
+                                        rows.push({ label: 'Ring 1', key: 'Ring 1', enchants });
+                                        rows.push({ label: 'Ring 2', key: 'Ring 2', enchants });
+                                      } else {
+                                        rows.push({ label: baseSlot, key: baseSlot, enchants });
+                                      }
+                                    }
+
+                                    return rows.map(({ label, key, enchants }) => (
+                                      <div key={key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 52, flexShrink: 0, letterSpacing: 1 }}>{label}</span>
                                         <select className="ifield"
-                                          value={manualEnchants[slot] ?? ''}
-                                          onChange={e => setManualEnchants(p => ({ ...p, [slot]: e.target.value }))}
+                                          value={manualEnchants[key] ?? ''}
+                                          onChange={e => setManualEnchants(p => ({ ...p, [key]: e.target.value }))}
                                           style={{
                                             flex: 1, height: 24, padding: "0 6px", fontSize: 10,
-                                            background: manualEnchants[slot] ? C.goldBg : C.surface3,
-                                            border: `1px solid ${manualEnchants[slot] ? C.gold : C.border}`,
+                                            background: manualEnchants[key] ? C.goldBg : C.surface3,
+                                            border: `1px solid ${manualEnchants[key] ? C.gold : C.border}`,
                                             borderRadius: 3, cursor: "pointer",
-                                            color: manualEnchants[slot] ? C.goldLight : C.textDim,
+                                            color: manualEnchants[key] ? C.goldLight : C.textDim,
                                           }}>
                                           <option value="">None</option>
                                           {enchants.map(e => (
