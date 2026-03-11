@@ -2947,9 +2947,9 @@ export default function SurvivalHunterSim() {
                             <button key={label} onClick={() => {
                               setRaidBuffs({ battleShout: preset.raidBuffs.battleShout, markOfTheWild: preset.raidBuffs.markOfTheWild, mysticTouch: preset.raidBuffs.mysticTouch, huntersMark: preset.raidBuffs.huntersMark });
                               // Map engine keys back to UI keys
-                              const phialRev: Record<string, string> = { alchemical_chaos: 'flaskOfAlchemicalChaos', tempering_sanity: 'flaskOfTemperingSanity', none: 'none' };
-                              const foodRev: Record<string, string> = { mastery_food: 'mastery', crit_food: 'crit', haste_food: 'haste', none: 'none' };
-                              const potRev: Record<string, string> = { tempered_potion: 'tempered', potion_of_unwavering_focus: 'frontLoaded', none: 'none' };
+                              const phialRev: Record<string, string> = { fleeting_magisters: 'fleetingMagisters', fleeting_alacrity: 'fleetingAlacrity', fleeting_determination: 'fleetingDetermination', none: 'none' };
+                              const foodRev: Record<string, string> = { silvermoon_parade: 'silvermoonParade', thalassian_feast: 'thalassianFeast', amani_feast: 'amaniFeast', none: 'none' };
+                              const potRev: Record<string, string> = { lights_potential: 'lightsPotential', none: 'none' };
                               setConsumables({ flask: phialRev[preset.phial] ?? 'none', food: foodRev[preset.food] ?? 'none', potion: potRev[preset.potion] ?? 'none' });
                               setWeaponEnhancement(preset.weaponEnhancement);
                               setAugmentRune(preset.augmentRune);
