@@ -23,6 +23,11 @@ export interface SimConfig {
   captureTimeline: boolean;
   timelineDurationMs: number;
 
+  /** Target error as percentage (e.g., 0.1 = 0.1%). When set, iterations becomes
+   *  the maximum and the sim stops early when standard error drops below threshold.
+   *  Like SimC's target_error option. Default: undefined (run all iterations). */
+  targetError?: number;
+
   features: {
     prd: boolean;
     dotSnapshotting: "none" | "ap_only";
@@ -131,6 +136,10 @@ export interface AbilityBreakdown {
   avgHit: number;
   pctOfTotal: number;
   category: "player" | "pet" | "trinket" | "dot";
+  /** Number of crits per iteration (average) */
+  crits: number;
+  /** Crit rate as percentage (0-100) */
+  critPct: number;
 }
 
 export interface SimResult {

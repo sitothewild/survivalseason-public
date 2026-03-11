@@ -202,7 +202,8 @@ export function charToSimInput(
   const config: SimConfig = {
     durationMs: durationS * 1000,
     durationVariance: 0.2,
-    iterations: opts?.iterations ?? 500,
+    iterations: opts?.iterations ?? 3000,  // Max iterations (adaptive early-stop)
+    targetError: 0.1,   // Stop when 95% CI error < 0.1%
     fightStyle,
     targets,
     bossLevelDelta: 3,

@@ -30,6 +30,8 @@ export interface LegacySimResult {
   // Engine-derived data for detailed reports
   heroCounters?: HeroCounters;
   perTarget?: Record<number, { damage: number; dps: number }>;
+  /** Full engine breakdown with crit data for detailed output */
+  engineBreakdown?: import("../types").AbilityBreakdown[];
 }
 
 export interface HeroCounters {
@@ -211,5 +213,6 @@ export function simResultToLegacy(
     iterations: result.iterations,
     heroCounters: result.heroCounters,
     perTarget: result.perTarget,
+    engineBreakdown: result.breakdown,
   };
 }

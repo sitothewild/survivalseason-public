@@ -39,7 +39,8 @@ export function buildSimInput(
               : fightStyle === "mplus_pull" ? 40_000
               : 180_000,
     durationVariance: 0.2, // ±20% variance like SimC default
-    iterations: 1000,
+    iterations: 10000,  // Max iterations (adaptive early-stop via targetError)
+    targetError: 0.1,   // Stop when 95% CI error < 0.1% (like SimC's target_error)
     fightStyle,
     targets: fightStyle === "raid_st" ? 1 : 5,
     bossLevelDelta: 3,
