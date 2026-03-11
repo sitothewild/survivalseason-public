@@ -41,10 +41,12 @@ import type {
 const PET_AP_SCALING = 0.60;
 // Spirit Bond mastery: ~2% per mastery point for player, ~2.5% for pet
 // From SimC: mastery_value() returns the coefficient from spell data
-const MASTERY_PLAYER_BONUS = 0.020;
+// Spirit Bond mastery: 2.5% per mastery point for both player and pet
+// Verification: 11.86 points * 2.5% = 29.64% (matches Raidbots mastery=29.64%)
+const MASTERY_PLAYER_BONUS = 0.025;
 const MASTERY_PET_BONUS = 0.025;
 const BASE_GCD_MS = 1500;
-const BOSS_ARMOR = 11480; // +3 boss level
+const BOSS_ARMOR = 1470;  // Boss armor from Raidbots target (level 93 tank_dummy)
 const ARMOR_K = 14014;
 const MELEE_SWING_MS_2H = 3600; // 2H base swing timer
 const MELEE_SWING_MS_1H = 2600; // 1H base swing timer
@@ -69,6 +71,7 @@ const STAMPEDE_AP_COEF = 0.40;
 const STAMPEDE_DURATION_MS = 4000;
 const STAMPEDE_TICK_MS = 500;
 const WYVERN_CRY_PET_DAMAGE_BONUS = 0.05; // +5% pet damage per stack
+const BLOODSEEKER_HASTE_PER_TARGET = 3; // +3% haste per bleeding target (as haste rating equivalent)
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
@@ -530,10 +533,25 @@ function executeAbility(
     state.tipOfTheSpearStacks = Math.min(TIP_MAX_STACKS, state.tipOfTheSpearStacks + 1);
   }
 
-  // Takedown: apply buff when cast
+  // Lethal Barbs (sic_em): Kill Command and Raptor Strike generate bonus focus
+  // In SimC, this generates ~2047 focus over 300s = ~6.8 focus/sec via procs
+  if (input.talents.activeTalents.has("sicEm") || input.talents.activeTalents.has("lethalBarbs")) {
+    if (spell.key === "kill_command" || spell.key === "raptor_strike") {
+      state.focus = Math.min(state.maxFocus, state.focus + 15);
+    }
+  }
+
+  // Takedown: apply buff when cast + pet component
   if (spell.key === "takedown") {
     state.takedownActive = true;
     state.takedownExpiresMs = state.nowMs + TAKEDOWN_DURATION_MS;
+
+    // Pet Takedown component: pet does its own strike (from SimC: pet takedown = 1304 pDPS)
+    const petAp = state.currentAP * PET_AP_SCALING;
+    const { damage: petTdDmg, isCrit: petTdCrit } = computeDamage(
+      state, petAp, SPELL_DB["takedown"].apCoef * 0.80, "physical", true, rng,
+    );
+    state.recordDamage("pet_takedown", petTdDmg, petTdCrit, 0);
 
     // Second potion use: align with Takedown
     if (input.potionAura && state.cooldowns.isReady("potion", state.nowMs) && state.nowMs > 0) {
@@ -574,6 +592,19 @@ function executeAbility(
   // Apply DoTs if applicable
   applySpellDots(state, spell, queue);
 
+  // Bloodseeker: +3% haste per bleeding target (modeled as aura)
+  if (input.talents.activeTalents.has("bloodseeker")) {
+    let bleedingTargets = 0;
+    for (const t of state.targets) {
+      if (t.dots.size > 0) bleedingTargets++;
+    }
+    if (bleedingTargets > 0) {
+      // Apply as haste rating buff: 3% haste = ~510 haste rating (170 per 1%)
+      const hasteAmount = bleedingTargets * BLOODSEEKER_HASTE_PER_TARGET * 170;
+      state.applyAura("bloodseeker", 12000, 1, { haste: hasteAmount });
+    }
+  }
+
   // FIX #4: Raptor Strike triggers Mongoose Fury stack
   if (spell.key === "raptor_strike" && input.talents.activeTalents.has("mongooseFury")) {
     state.mongooseFuryStacks = Math.min(MONGOOSE_FURY_MAX_STACKS, state.mongooseFuryStacks + 1);
@@ -608,10 +639,10 @@ function executeAbility(
   // Tier set interactions
   handleTierInteractions(state, rng, spell, input);
 
-  // Raptor Swipe proc
+  // Raptor Swipe proc — in Midnight 12.0, Raptor Swipe is a guaranteed proc from Raptor Strike
+  // (SimC data shows ~100% proc rate: 55.8 swipes from 56.4 raptor strikes)
   if (spell.key === "raptor_strike" && input.talents.activeTalents.has("raptorSwipe")) {
-    const procChance = state.takedownActive ? 1.0 : 0.25;
-    if (rng.roll() < procChance) {
+    {
       const swipeSpell = SPELL_DB["raptor_swipe"];
       if (swipeSpell) {
         const { damage: swipeDmg, isCrit: swipeCrit } = computeDamage(
@@ -1181,6 +1212,17 @@ function applySpellDots(
       const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
       for (let t = 0; t < targets; t++) {
         applyDot(state, queue, "flamefang_pitch_dot", t, dotInfo, state.currentAP);
+      }
+    }
+  }
+
+  // Boomstick: multi-tick ability (4 ticks over 6s)
+  if (spell.key === "boomstick") {
+    const dotInfo = DOT_DB["boomstick_dot"];
+    if (dotInfo) {
+      const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
+      for (let t = 0; t < targets; t++) {
+        applyDot(state, queue, "boomstick_dot", t, dotInfo, state.currentAP);
       }
     }
   }

@@ -283,7 +283,9 @@ export class CombatState {
     this.currentAP = totalAgi + (s.attackPower ?? 0);
     this.currentCritPct = (s.critRating + bonusCrit) / 180 + 5; // base 5% crit
     this.currentHastePct = (s.hasteRating + bonusHaste) / 170;
-    this.currentMasteryPct = (s.masteryRating + bonusMastery) / 180;
+    // Base mastery: 8 points (all specs) + rating-based points
+    // Raidbots verification: 8 + 695/180 = 11.86 points * 2.5% = 29.64% ✓
+    this.currentMasteryPct = 8 + (s.masteryRating + bonusMastery) / 180;
     this.currentVersPct = (s.versatilityRating + bonusVers) / 205 + this.externalVersPctBonus;
   }
 

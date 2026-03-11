@@ -86,7 +86,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
   // ─── Midnight 12.0 New Abilities ───────────────────────────
   boomstick: {
     id: 0, key: "boomstick", label: "Boomstick",
-    apCoef: 3.60, focusCost: 0, cooldownMs: 60000, charges: 1,
+    apCoef: 0.90, focusCost: 0, cooldownMs: 60000, charges: 1,
     gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 5,
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0.40,
     triggersGcd: true, requiresTalent: "boomstick", requiresHero: "",
@@ -274,6 +274,12 @@ export const DOT_DB: Record<string, DotInfo> = {
     pandemic: true, durationMs: 8000, tickIntervalMs: 2000,
     apCoef: 0.20, snapshots: ["ap"], school: "fire",
     bypassesArmor: true, aoeTargetCap: 5,
+  },
+  boomstick_dot: {
+    key: "boomstick_dot", spellKey: "boomstick",
+    pandemic: false, durationMs: 6000, tickIntervalMs: 1500,
+    apCoef: 0.90, snapshots: ["ap"], school: "physical",
+    bypassesArmor: false, aoeTargetCap: 5,
   },
 };
 
