@@ -193,8 +193,10 @@ export class CombatState {
   sentinelWisdomStacks: number = 0;
   packCounter: number = 0;
 
-  // Mongoose Fury: stacks on Raptor Strike, +15% per stack, max 5
+  // Mongoose Fury: stacks on Raptor Strike, +15% per stack, max 5, 14s duration
+  // Refresh behavior: DISABLED (new stacks do NOT extend duration)
   mongooseFuryStacks: number = 0;
+  mongooseFuryExpiresMs: number = 0;
 
   // Pack Leader: Howl of the Pack Leader beast cycle (0=Wyvern, 1=Boar, 2=Bear)
   howlBeastCycle: number = 0;
@@ -337,6 +339,11 @@ export class CombatState {
     if (this.takedownExpiresMs > 0 && this.nowMs >= this.takedownExpiresMs) {
       this.takedownActive = false;
       this.takedownExpiresMs = 0;
+    }
+    // Mongoose Fury: 14s duration, refresh DISABLED
+    if (this.mongooseFuryExpiresMs > 0 && this.nowMs >= this.mongooseFuryExpiresMs) {
+      this.mongooseFuryStacks = 0;
+      this.mongooseFuryExpiresMs = 0;
     }
     this.recalcStats();
   }

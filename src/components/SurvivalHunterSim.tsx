@@ -19,7 +19,7 @@ import {
 import { MIDNIGHT_ENCHANTS } from "@/lib/gearOptimizer";
 import { FULL_RAID_OPTIONS, MPLUS_CASUAL_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
 import type { SimOptions } from "@/engine/types";
-import { charToSimInput } from "@/engine/adapters/charToSimInput";
+import { charToSimInput, detectTierSet } from "@/engine/adapters/charToSimInput";
 import { simResultToLegacy } from "@/engine/adapters/simResultToLegacy";
 import { getWorkerPool } from "@/engine/WorkerPool";
 import type { HeroTree } from "@/engine/types";
@@ -1035,8 +1035,8 @@ export default function SurvivalHunterSim() {
   const [gemPrimaryStat, setGemPrimaryStat] = useState<'crit' | 'haste' | 'mastery' | 'vers'>('mastery');
   const [gemSockets, setGemSockets] = useState(6);
   const [hasBlasphemite, setHasBlasphemite] = useState(true);
-  const [has2pc, setHas2pc] = useState(true);
-  const [has4pc, setHas4pc] = useState(true);
+  const [has2pc, setHas2pc] = useState(false);
+  const [has4pc, setHas4pc] = useState(false);
   const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('auto');
   const [manualEnchants, setManualEnchants] = useState<Record<string, string>>({});
   const [showEnchants, setShowEnchants] = useState(false);
@@ -1323,6 +1323,15 @@ export default function SurvivalHunterSim() {
     }
     setSimResults(null);
   }, [simcInput]);
+
+  // Auto-detect tier set from equipped gear whenever parsedChar changes
+  useEffect(() => {
+    if (parsedChar?.gear) {
+      const tier = detectTierSet(parsedChar.gear);
+      setHas2pc(tier.has2pc);
+      setHas4pc(tier.has4pc);
+    }
+  }, [parsedChar]);
 
   const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); setProfessions(null); };
 
@@ -2925,16 +2934,22 @@ export default function SurvivalHunterSim() {
                             <input type="checkbox" checked={augmentRune} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
                             <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: augmentRune ? 700 : 500, color: augmentRune ? C.goldLight : C.textMid }}>Augment Rune (+52 Agi)</span>
                           </label>
-                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-                            onClick={() => setHas2pc(!has2pc)}>
-                            <input type="checkbox" checked={has2pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has2pc ? 700 : 500, color: has2pc ? C.goldLight : C.textMid }}>2pc Tier</span>
-                          </label>
-                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-                            onClick={() => setHas4pc(!has4pc)}>
-                            <input type="checkbox" checked={has4pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has4pc ? 700 : 500, color: has4pc ? C.goldLight : C.textMid }}>4pc Tier</span>
-                          </label>
+                          {(() => {
+                            const tierInfo = parsedChar?.gear ? detectTierSet(parsedChar.gear) : null;
+                            const tierLabel = tierInfo ? ` (${tierInfo.tierCount}/5 equipped)` : '';
+                            return (<>
+                              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                                onClick={() => setHas2pc(!has2pc)}>
+                                <input type="checkbox" checked={has2pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has2pc ? 700 : 500, color: has2pc ? C.goldLight : C.textMid }}>2pc Tier{tierLabel}</span>
+                              </label>
+                              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                                onClick={() => setHas4pc(!has4pc)}>
+                                <input type="checkbox" checked={has4pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has4pc ? 700 : 500, color: has4pc ? C.goldLight : C.textMid }}>4pc Tier</span>
+                              </label>
+                            </>);
+                          })()}
                         </div>
 
                         {/* ── Gems ───────────────────────────── */}

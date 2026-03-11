@@ -208,7 +208,7 @@ export const COOLDOWNS = {
 export const BUFF_DURATIONS = {
   tip_of_the_spear:    { durationMs: 10000, maxStacks: 2, dmgPerStack: 0.25 },
   takedown_window:     { durationMs: 8000 },
-  mongoose_fury:       { durationMs: 0, maxStacks: 5, dmgPerStack: 0.15 },
+  mongoose_fury:       { durationMs: 14000, maxStacks: 5, dmgPerStack: 0.15 },
   bloodseeker:         { durationMs: 12000, hastePctPerTarget: 3.0 },
   sentinels_wisdom:    { durationMs: 15000, maxStacks: 5, critPctPerStack: 3.0 },
   hogstrider:          { durationMs: 15000 },  // hogstrider_buff spell 472640

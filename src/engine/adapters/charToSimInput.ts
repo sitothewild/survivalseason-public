@@ -15,6 +15,39 @@ import { applySimOptions } from "../applySimOptions";
 import { DEFAULT_SIM_OPTIONS } from "../simOptionsPresets";
 import { COMBAT_RATINGS } from "../simcSpellData";
 
+// ── Midnight S1 Hunter Tier Set (Primal Sentry's Camouflage) ──
+// Item IDs for the 5-piece set. Detecting these from equipped gear
+// lets us auto-determine has2pc/has4pc instead of a manual toggle.
+const TIER_SET_ITEM_IDS = new Set([
+  249988, // Head  — Primal Sentry's Maw
+  249986, // Shoulders — Primal Sentry's Trophies
+  249991, // Chest — Primal Sentry's Scaleplate
+  249989, // Hands — Primal Sentry's Talonguards
+  249987, // Legs  — Primal Sentry's Legguards
+]);
+
+/**
+ * Count how many tier set pieces are equipped from parsed gear.
+ * Returns { has2pc, has4pc, tierCount }.
+ */
+export function detectTierSet(gear?: ParsedCharData["gear"]): {
+  has2pc: boolean;
+  has4pc: boolean;
+  tierCount: number;
+} {
+  if (!gear || gear.length === 0) return { has2pc: false, has4pc: false, tierCount: 0 };
+
+  let count = 0;
+  for (const item of gear) {
+    if (item.itemId) {
+      const id = typeof item.itemId === "string" ? parseInt(item.itemId, 10) : item.itemId;
+      if (!isNaN(id) && TIER_SET_ITEM_IDS.has(id)) count++;
+    }
+  }
+
+  return { has2pc: count >= 2, has4pc: count >= 4, tierCount: count };
+}
+
 // Rating constants derived from simcSpellData COMBAT_RATINGS.
 // Mastery uses a special conversion: the parser gives Spirit Bond % (e.g. 29.64%),
 // but conversion to rating is non-linear due to base points. Use 28.1 as approximate
@@ -141,8 +174,9 @@ export function charToSimInput(
       mainHandDps: 420,
       mainHandSpeed: 3.6,
     },
-    has2pc: simOptions?.has2pc ?? true,
-    has4pc: simOptions?.has4pc ?? true,
+    // Tier: use SimOptions toggle (which is auto-synced from gear in the UI)
+    has2pc: simOptions?.has2pc ?? detectTierSet(char.gear).has2pc,
+    has4pc: simOptions?.has4pc ?? detectTierSet(char.gear).has4pc,
   };
 
   // Determine fight style from targets

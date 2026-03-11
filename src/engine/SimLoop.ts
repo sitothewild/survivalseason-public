@@ -66,6 +66,7 @@ const TIP_DAMAGE_PER_STACK = BUFF_DURATIONS.tip_of_the_spear.dmgPerStack;
 const TAKEDOWN_DURATION_MS = BUFF_DURATIONS.takedown_window.durationMs;
 const MONGOOSE_FURY_MAX_STACKS = BUFF_DURATIONS.mongoose_fury.maxStacks;
 const MONGOOSE_FURY_DAMAGE_PER_STACK = BUFF_DURATIONS.mongoose_fury.dmgPerStack;
+const MONGOOSE_FURY_DURATION_MS = BUFF_DURATIONS.mongoose_fury.durationMs;
 
 // Howl of the Pack Leader: beast cycle timing
 const HOWL_CD_MS = HOWL_BEAST_CYCLE.cycleCdMs;
@@ -617,7 +618,12 @@ function executeAbility(
   }
 
   // FIX #4: Raptor Strike triggers Mongoose Fury stack
+  // Refresh behavior: DISABLED — new stacks do NOT extend duration (per SimC set_refresh_behavior)
   if (spell.key === "raptor_strike" && input.talents.activeTalents.has("mongooseFury")) {
+    if (state.mongooseFuryStacks === 0) {
+      // First stack: start the 14s timer
+      state.mongooseFuryExpiresMs = state.nowMs + MONGOOSE_FURY_DURATION_MS;
+    }
     state.mongooseFuryStacks = Math.min(MONGOOSE_FURY_MAX_STACKS, state.mongooseFuryStacks + 1);
   }
 
@@ -1170,6 +1176,7 @@ function handlePackLeaderTriggers(
     state.wyvernsCryStacks = 0;
     state.wyvernsCryExpiresMs = 0;
   }
+
 }
 
 // ── Tier Set Interactions ─────────────────────────────────────
