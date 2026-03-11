@@ -1424,25 +1424,31 @@ export default function SurvivalHunterSim() {
   }, [importedTalentString]);
 
   const detectedHeroTalent = useMemo(() => {
-    // Priority 1: Use the heroTalentTree field from Blizzard API (most reliable)
+    // Priority 1: Use the heroTalentTree field from Blizzard API or SimC parser
     if (parsedChar?.heroTalentTree) {
       const name = parsedChar.heroTalentTree.toLowerCase();
-      if (name.includes('pack leader')) return 'Pack Leader';
+      if (name.includes('pack leader') || name.includes('pack_leader')) return 'Pack Leader';
       if (name.includes('sentinel')) return 'Sentinel';
     }
 
     const raw = (importedTalentString || '').trim();
     if (!raw) return 'Unknown';
 
-    // Priority 2: WoW talent loadout codes encode hero talent choice
+    // Priority 2: Decode hero tree from WoW talent loadout string
+    // The talent string has a shared prefix, then hero-specific markers after position ~24-28
+    // Pack Leader strings contain 'cM2w' or 'M2w' after the common prefix
+    // Sentinel strings contain 'cMWg' or 'MWg' after the common prefix
+    const afterPrefix = raw.length > 20 ? raw.substring(20) : raw;
+    
+    // Check for Pack Leader indicators in the encoded string
+    if (afterPrefix.includes('M2w') || afterPrefix.includes('Mgx') || afterPrefix.includes('cM2w') || afterPrefix.includes('cMgx')) return 'Pack Leader';
+    
+    // Check for Sentinel indicators in the encoded string
+    if (afterPrefix.includes('MWg') || afterPrefix.includes('cMWg')) return 'Sentinel';
+
+    // Priority 3: SimC keyword patterns
     const lowerRaw = raw.toLowerCase();
-    
-    // Check for Pack Leader indicators
-    if (raw.includes('Mgx') || raw.includes('cMgx') || raw.includes('mgx')) return 'Pack Leader';
     if (lowerRaw.includes('pack_leader') || lowerRaw.includes('packleader')) return 'Pack Leader';
-    
-    // Check for Sentinel indicators  
-    if (raw.includes('MWg') || raw.includes('cMWg') || raw.includes('mwg')) return 'Sentinel';
     if (lowerRaw.includes('sentinel')) return 'Sentinel';
 
     // Fallback: if talent string exists but we can't detect, return Unknown
