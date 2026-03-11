@@ -18,7 +18,7 @@ import {
   GEM_FILL_OPTIONS,
 } from "@/engine/consumables";
 import { MIDNIGHT_ENCHANTS } from "@/lib/gearOptimizer";
-import { FULL_RAID_OPTIONS, MPLUS_CASUAL_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
+import { FULL_RAID_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
 import type { SimOptions } from "@/engine/types";
 import { charToSimInput, detectTierSet } from "@/engine/adapters/charToSimInput";
 import { simResultToLegacy } from "@/engine/adapters/simResultToLegacy";
@@ -1036,11 +1036,11 @@ export default function SurvivalHunterSim() {
   const [weaponEnhancement, setWeaponEnhancement] = useState('thalassian_phoenix_oil');
   const [augmentRune, setAugmentRune] = useState(true);
   const [gemPrimaryStat, setGemPrimaryStat] = useState<string>('mastery');
-  const [gemSockets, setGemSockets] = useState(6);
+  const [gemSockets, setGemSockets] = useState(0);
   const [hasBlasphemite, setHasBlasphemite] = useState(true);
   const [has2pc, setHas2pc] = useState(false);
   const [has4pc, setHas4pc] = useState(false);
-  const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('auto');
+  const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('manual');
   const [manualEnchants, setManualEnchants] = useState<Record<string, string>>({});
   const [showEnchants, setShowEnchants] = useState(false);
   const [showAdv, setShowAdv] = useState(true);
@@ -2999,23 +2999,46 @@ export default function SurvivalHunterSim() {
                               {showEnchants && (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                                   {(() => {
+                                    // Group enchants by their base slot from MIDNIGHT_ENCHANTS
                                     const slotSet = new Map<string, typeof MIDNIGHT_ENCHANTS>();
                                     for (const e of MIDNIGHT_ENCHANTS) {
                                       if (!slotSet.has(e.slot)) slotSet.set(e.slot, []);
                                       slotSet.get(e.slot)!.push(e);
                                     }
-                                    return Array.from(slotSet.entries()).map(([slot, enchants]) => (
-                                      <div key={slot} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{slot}</span>
+
+                                    // Detect DW from parsed gear (off_hand slot present)
+                                    const hasDW = parsedChar?.gear?.some((g: any) => g.slot === 'off_hand') ?? false;
+
+                                    // Build display rows: expand Weapon → Weapon + Off Hand (if DW),
+                                    // Ring → Ring 1 + Ring 2
+                                    type SlotRow = { label: string; key: string; enchants: typeof MIDNIGHT_ENCHANTS };
+                                    const rows: SlotRow[] = [];
+                                    for (const [baseSlot, enchants] of slotSet.entries()) {
+                                      if (baseSlot === 'Weapon') {
+                                        rows.push({ label: hasDW ? 'Main Hand' : 'Weapon', key: 'Weapon', enchants });
+                                        if (hasDW) {
+                                          rows.push({ label: 'Off Hand', key: 'Off Hand', enchants });
+                                        }
+                                      } else if (baseSlot === 'Ring') {
+                                        rows.push({ label: 'Ring 1', key: 'Ring 1', enchants });
+                                        rows.push({ label: 'Ring 2', key: 'Ring 2', enchants });
+                                      } else {
+                                        rows.push({ label: baseSlot, key: baseSlot, enchants });
+                                      }
+                                    }
+
+                                    return rows.map(({ label, key, enchants }) => (
+                                      <div key={key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 52, flexShrink: 0, letterSpacing: 1 }}>{label}</span>
                                         <select className="ifield"
-                                          value={manualEnchants[slot] ?? ''}
-                                          onChange={e => setManualEnchants(p => ({ ...p, [slot]: e.target.value }))}
+                                          value={manualEnchants[key] ?? ''}
+                                          onChange={e => setManualEnchants(p => ({ ...p, [key]: e.target.value }))}
                                           style={{
                                             flex: 1, height: 24, padding: "0 6px", fontSize: 10,
-                                            background: manualEnchants[slot] ? C.goldBg : C.surface3,
-                                            border: `1px solid ${manualEnchants[slot] ? C.gold : C.border}`,
+                                            background: manualEnchants[key] ? C.goldBg : C.surface3,
+                                            border: `1px solid ${manualEnchants[key] ? C.gold : C.border}`,
                                             borderRadius: 3, cursor: "pointer",
-                                            color: manualEnchants[slot] ? C.goldLight : C.textDim,
+                                            color: manualEnchants[key] ? C.goldLight : C.textDim,
                                           }}>
                                           <option value="">None</option>
                                           {enchants.map(e => (
@@ -3034,9 +3057,8 @@ export default function SurvivalHunterSim() {
                         {/* ── Preset Buttons ─────────────────── */}
                         <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
                           {[
-                            { label: 'Full Raid', preset: FULL_RAID_OPTIONS },
-                            { label: 'M+ Casual', preset: MPLUS_CASUAL_OPTIONS },
-                            { label: 'Naked', preset: NAKED_OPTIONS },
+                            { label: 'Optimal Raid Buffs', preset: FULL_RAID_OPTIONS },
+                            { label: 'No Buff', preset: NAKED_OPTIONS },
                           ].map(({ label, preset }) => (
                             <button key={label} onClick={() => {
                               setRaidBuffs({ battleShout: preset.raidBuffs.battleShout, markOfTheWild: preset.raidBuffs.markOfTheWild, mysticTouch: preset.raidBuffs.mysticTouch, huntersMark: preset.raidBuffs.huntersMark });
@@ -3051,7 +3073,8 @@ export default function SurvivalHunterSim() {
                               setHasBlasphemite(preset.gems.hasBlasphemite);
                               setHas2pc(preset.has2pc);
                               setHas4pc(preset.has4pc);
-                              setEnchantMode('auto');
+                              setEnchantMode(preset.enchants === 'auto' ? 'auto' : 'manual');
+                              if (preset.enchants !== 'auto') setManualEnchants(preset.enchants);
                             }}
                               style={{
                                 fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 700,
@@ -3294,18 +3317,30 @@ export default function SurvivalHunterSim() {
                             <div style={{ width: 1, flex: 1, background: C.borderSub }} />
                             {(() => {
                               const diff = optimalSimResult.totalDps - userSimResult.totalDps;
-                              const isOptimal = diff <= 0;
+                              const userIsOptimal = diff <= 0;
+                              const absDiff = Math.abs(diff);
                               return (
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 0" }}>
-                                  {isOptimal ? (
-                                    <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}` }}>✓ OPTIMAL</span>
+                                  {userIsOptimal ? (
+                                    <>
+                                      <span style={{ fontSize: 18, color: C.green }}>◄</span>
+                                      <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}` }}>✓ OPTIMAL</span>
+                                      {absDiff > 0 && (
+                                        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.green, textAlign: "center", maxWidth: 70 }}>
+                                          +{fmt(absDiff)} ahead
+                                        </span>
+                                      )}
+                                    </>
                                   ) : (
                                     <>
-                                      <span style={{ fontSize: 18, color: C.gold }}>→</span>
+                                      <span style={{ fontSize: 18, color: C.gold }}>►</span>
                                       <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid ${C.gold}` }}>
-                                        ▲ +{fmt(diff)} DPS
+                                        OPTIMAL ►
                                       </span>
-                                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, textAlign: "center", maxWidth: 60 }}>possible</span>
+                                      <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid ${C.gold}` }}>
+                                        +{fmt(absDiff)} DPS
+                                      </span>
+                                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, textAlign: "center", maxWidth: 70 }}>switch for more</span>
                                     </>
                                   )}
                                 </div>

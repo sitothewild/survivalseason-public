@@ -38,6 +38,14 @@ function getAutoEnchants(hero: HeroTree): Record<string, string> {
     );
     if (best) {
       result[slot] = best.name;
+      // Duplicate Ring → Ring 1 + Ring 2, Weapon → Off Hand
+      if (slot === "Ring") {
+        result["Ring 1"] = best.name;
+        result["Ring 2"] = best.name;
+      }
+      if (slot === "Weapon") {
+        result["Off Hand"] = best.name;
+      }
     }
   }
 
@@ -87,8 +95,17 @@ export function applySimOptions(
     ? getAutoEnchants(hero)
     : options.enchants;
 
+  // Map UI slot keys to MIDNIGHT_ENCHANTS slot names
+  // (Off Hand → Weapon, Ring 1/Ring 2 → Ring)
+  const slotToEnchantSlot = (uiSlot: string): string => {
+    if (uiSlot === "Off Hand") return "Weapon";
+    if (uiSlot === "Ring 1" || uiSlot === "Ring 2") return "Ring";
+    return uiSlot;
+  };
+
   for (const [slot, enchantName] of Object.entries(enchantMap)) {
-    const enchant = MIDNIGHT_ENCHANTS.find(e => e.slot === slot && e.name === enchantName);
+    const lookupSlot = slotToEnchantSlot(slot);
+    const enchant = MIDNIGHT_ENCHANTS.find(e => e.slot === lookupSlot && e.name === enchantName);
     if (!enchant) continue;
 
     const rating = enchant.primaryRating || enchant.secondaryRating || 0;

@@ -97,8 +97,14 @@ export interface ParsedCharData {
  */
 function percentToRating(pct: number, stat: keyof typeof RATING_PER_PCT): number {
   if (stat === "versatility") {
-    // parseSimcString: vers = rating / 205 * 100, so rating = vers * 205 / 100
-    return Math.round(pct * RATING_PER_PCT.versatility / 100);
+    // Vers rating = versPct * ratingPer1Pct (54.0)
+    return Math.round(pct * RATING_PER_PCT.versatility);
+  }
+  if (stat === "crit") {
+    // Parsed crit% includes 5% base crit — subtract it before converting to rating
+    // e.g. 21.74% parsed → (21.74 - 5.0) * 22.3 = 373 rating
+    const baseCrit = COMBAT_RATINGS.baseCrit;
+    return Math.round(Math.max(0, pct - baseCrit) * RATING_PER_PCT.crit);
   }
   // Other stats: rating = pct * ratingPerPct
   return Math.round(pct * RATING_PER_PCT[stat]);
@@ -225,10 +231,18 @@ export function charToSimInput(
   const trinkets = resolveTrinkets(hero, char.gear);
 
   // Apply advanced options (enchants, gems, consumables, buffs)
+  // IMPORTANT: Imported character stats already include equipped enchant and gem
+  // effects. When enchants is "auto", override to empty to prevent double-counting.
+  // Users can still manually select per-slot enchants for "what-if" sims, but
+  // "auto" (BiS enchants) should not stack on top of already-enchanted gear.
   const resolvedOptions = simOptions ?? DEFAULT_SIM_OPTIONS;
+  const optionsForApply: SimOptions = {
+    ...resolvedOptions,
+    enchants: resolvedOptions.enchants === "auto" ? {} : resolvedOptions.enchants,
+  };
   const { stats, buffMults, weaponProc, potionAura } = applySimOptions(
     baseStats,
-    resolvedOptions,
+    optionsForApply,
     hero,
   );
 

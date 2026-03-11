@@ -114,8 +114,8 @@ export const PET_AP_COEFFICIENTS = {
 export const MASTERY_SPIRIT_BOND = {
   /** Rating per mastery point */
   ratingPerPoint: 180,
-  /** Base mastery points at level 90 */
-  basePoints: 8,
+  /** Base mastery points at level 90 (yields ~24.7% Spirit Bond with 695 mastery rating) */
+  basePoints: 6,
   /** Damage bonus per mastery point (2.5%) — effectN().mastery_value() */
   bonusPerPoint: 0.025,
   /** spirit_bond_buff->effectN(1).percent() — direct damage extra */
