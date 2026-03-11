@@ -3032,17 +3032,7 @@ export default function SurvivalHunterSim() {
                     )}
                   </div>
 
-                  {/* Run Simulation button */}
-                  <div style={{ flex: 1 }} />
-                  <button
-                    className="sim-btn"
-                    onClick={handleSim}
-                    disabled={!parsedChar || isSimming}
-                    style={parsedChar && !isSimming ? { animation: "goldPulse 2s ease-in-out infinite" } : { opacity: 0.5 }}
-                  >
-                    {isSimming ? "⟳ SIMULATING..." : "▶ RUN SIMULATION"}
-                  </button>
-                  {!parsedChar && <p style={{ textAlign: "center", color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, marginTop: 8 }}>Parse your character first</p>}
+                  {/* Run Simulation button moved to left column */}
                 </CARD>
               </div>
             </div>
