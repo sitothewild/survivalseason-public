@@ -260,31 +260,31 @@ describe("SimOptions Presets", () => {
 describe("Consumable Data", () => {
   it("has phial definitions", () => {
     expect(PHIALS.length).toBeGreaterThanOrEqual(2);
-    const chaos = PHIALS.find(p => p.key === "alchemical_chaos");
-    expect(chaos).toBeDefined();
-    expect(chaos!.isProcBased).toBe(true);
+    const magisters = PHIALS.find(p => p.key === "fleeting_magisters");
+    expect(magisters).toBeDefined();
+    expect(magisters!.isProcBased).toBe(true);
   });
 
   it("has food definitions", () => {
     expect(FOOD_BUFFS.length).toBeGreaterThanOrEqual(3);
-    const mastery = FOOD_BUFFS.find(f => f.key === "mastery_food");
+    const mastery = FOOD_BUFFS.find(f => f.key === "silvermoon_parade");
     expect(mastery).toBeDefined();
     expect(mastery!.ratingAmount).toBe(90);
   });
 
   it("has potion definitions", () => {
-    expect(POTIONS.length).toBeGreaterThanOrEqual(2);
-    const tempered = POTIONS.find(p => p.key === "tempered_potion");
-    expect(tempered).toBeDefined();
-    expect(tempered!.ratingAmount).toBe(3648);
-    expect(tempered!.durationSec).toBe(30);
+    expect(POTIONS.length).toBeGreaterThanOrEqual(1);
+    const pot = POTIONS.find(p => p.key === "lights_potential");
+    expect(pot).toBeDefined();
+    expect(pot!.ratingAmount).toBe(3648);
+    expect(pot!.durationSec).toBe(30);
   });
 
   it("has weapon enhancement definitions", () => {
-    expect(WEAPON_ENHANCEMENTS.length).toBeGreaterThanOrEqual(4);
-    const whetstone = WEAPON_ENHANCEMENTS.find(w => w.key === "ironclaw_whetstone");
-    expect(whetstone).toBeDefined();
-    expect(whetstone!.type).toBe("flat_stat");
+    expect(WEAPON_ENHANCEMENTS.length).toBeGreaterThanOrEqual(3);
+    const phoenix = WEAPON_ENHANCEMENTS.find(w => w.key === "thalassian_phoenix_oil");
+    expect(phoenix).toBeDefined();
+    expect(phoenix!.type).toBe("damage_proc");
   });
 
   it("has augment rune definitions", () => {
