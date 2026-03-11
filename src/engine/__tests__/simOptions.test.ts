@@ -154,14 +154,14 @@ describe("applySimOptions", () => {
     const base = makeBaseStats();
     const options: SimOptions = {
       ...NAKED_OPTIONS,
-      weaponEnhancement: "oil_of_deep_toxins",
+      weaponEnhancement: "thalassian_phoenix_oil",
     };
 
     const result = applySimOptions(base, options, "sentinel");
     expect(result.weaponProc).toBeDefined();
-    expect(result.weaponProc!.dmgApCoef).toBe(0.32);
-    expect(result.weaponProc!.dmgCPM).toBe(8.5);
-    expect(result.weaponProc!.school).toBe("nature");
+    expect(result.weaponProc!.dmgApCoef).toBe(0.35);
+    expect(result.weaponProc!.dmgCPM).toBe(9.0);
+    expect(result.weaponProc!.school).toBe("fire");
   });
 
   it("injects augment rune stats", () => {
