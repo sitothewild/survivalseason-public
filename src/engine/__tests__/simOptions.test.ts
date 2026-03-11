@@ -251,7 +251,7 @@ describe("SimOptions Presets", () => {
     expect(custom.potion).toBe("none");
     expect(custom.raidBuffs.battleShout).toBe(false);
     // Rest should be from FULL_RAID
-    expect(custom.phial).toBe("alchemical_chaos");
+    expect(custom.phial).toBe("fleeting_magisters");
   });
 });
 
