@@ -18,7 +18,7 @@ import {
   GEM_FILL_OPTIONS,
 } from "@/engine/consumables";
 import { MIDNIGHT_ENCHANTS } from "@/lib/gearOptimizer";
-import { FULL_RAID_OPTIONS, MPLUS_CASUAL_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
+import { FULL_RAID_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
 import type { SimOptions } from "@/engine/types";
 import { charToSimInput, detectTierSet } from "@/engine/adapters/charToSimInput";
 import { simResultToLegacy } from "@/engine/adapters/simResultToLegacy";
@@ -3057,9 +3057,8 @@ export default function SurvivalHunterSim() {
                         {/* ── Preset Buttons ─────────────────── */}
                         <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
                           {[
-                            { label: 'Full Raid', preset: FULL_RAID_OPTIONS },
-                            { label: 'M+ Casual', preset: MPLUS_CASUAL_OPTIONS },
-                            { label: 'Naked', preset: NAKED_OPTIONS },
+                            { label: 'Optimal Raid Buffs', preset: FULL_RAID_OPTIONS },
+                            { label: 'No Buff', preset: NAKED_OPTIONS },
                           ].map(({ label, preset }) => (
                             <button key={label} onClick={() => {
                               setRaidBuffs({ battleShout: preset.raidBuffs.battleShout, markOfTheWild: preset.raidBuffs.markOfTheWild, mysticTouch: preset.raidBuffs.mysticTouch, huntersMark: preset.raidBuffs.huntersMark });
