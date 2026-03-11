@@ -689,8 +689,8 @@ function handlePackLeaderTriggers(
     }
   }
 
-  // Frenzied Tear: Raptor Strike/Mongoose Bite → 20% chance extra pet attack
-  if ((spell.key === "raptor_strike" || spell.key === "mongoose_bite") && talents.has("furiousAssault")) {
+  // Frenzied Tear: Raptor Strike → 20% chance extra pet attack
+  if (spell.key === "raptor_strike" && talents.has("furiousAssault")) {
     if (rollPRD("frenzied_tear", 0.20, rng, prdState)) {
       state.frenziedTearProcs++;
 
