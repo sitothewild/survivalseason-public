@@ -2885,7 +2885,7 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Weapon Enhancement ─────────────── */}
-                        <div style={{ marginBottom: 10 }}>
+                        <div style={{ marginBottom: 12 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>WEAP</span>
                             <select
