@@ -858,9 +858,9 @@ const RAID_BUFFS = {
 };
 
 const CONSUMABLES = {
-  flask: { label: 'Flask', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'flaskOfAlchemicalChaos', label: 'Alchemical Chaos', mult: 1.035 },{ key: 'flaskOfTemperingSanity', label: 'Tempering Sanity', mult: 1.03 }] },
-  food: { label: 'Food', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'mastery', label: 'Mastery (+90)', mult: 1.025 },{ key: 'crit', label: 'Crit (+90)', mult: 1.02 },{ key: 'haste', label: 'Haste (+90)', mult: 1.018 }] },
-  potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'tempered', label: 'Tempered Potion', mult: 1.02 },{ key: 'frontLoaded', label: 'Unwavering Focus', mult: 1.025 }] },
+  flask: { label: 'Flask', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'fleetingMagisters', label: 'Fleeting Flask of the Magisters', mult: 1.035 },{ key: 'fleetingAlacrity', label: 'Fleeting Flask of Alacrity', mult: 1.03 },{ key: 'fleetingDetermination', label: 'Fleeting Flask of Determination', mult: 1.03 }] },
+  food: { label: 'Food', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'silvermoonParade', label: 'Silvermoon Parade (+90 Mastery)', mult: 1.025 },{ key: 'thalassianFeast', label: 'Thalassian Feast (+90 Crit)', mult: 1.02 },{ key: 'amaniFeast', label: 'Amani Feast (+90 Haste)', mult: 1.018 }] },
+  potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'lightsPotential', label: "Light's Potential", mult: 1.02 }] },
 };
 
 // (TalentTreeGrid and its constants removed — replaced by BlizzardTalentTree component)
