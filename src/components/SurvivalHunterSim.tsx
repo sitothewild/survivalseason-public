@@ -238,6 +238,35 @@ function parseSimcString(simcText) {
   });
   if (result.gear.length > 0) { result.character.avgIlvl = Math.round(result.gear.reduce((sum, g) => sum + (g.ilvl || 0), 0) / result.gear.filter(g => g.ilvl > 0).length) || 0; }
   const talentLine = lines.find(l => /^talents=/.test(l)); if (talentLine) result.talents = talentLine.replace('talents=', '').trim();
+
+  // Detect hero talent tree from SimC data
+  // Method 1: Check the active Saved Loadout comment name (e.g., "# Saved Loadout: Mythic Pack")
+  const talentLineIdx = lines.findIndex(l => /^talents=/.test(l));
+  if (talentLineIdx > 0) {
+    // The Saved Loadout comment is typically 1-2 lines above the active talents= line
+    for (let i = Math.max(0, talentLineIdx - 3); i < talentLineIdx; i++) {
+      const loadoutMatch = lines[i].match(/^#\s*Saved Loadout:\s*(.+)/i);
+      if (loadoutMatch) {
+        const loadoutName = loadoutMatch[1].toLowerCase();
+        if (loadoutName.includes('pack') || loadoutName.includes('pl ')) {
+          result.heroTalentTree = 'Pack Leader';
+        } else if (loadoutName.includes('sent') || loadoutName.includes('sentinel')) {
+          result.heroTalentTree = 'Sentinel';
+        }
+        break;
+      }
+    }
+  }
+
+  // Method 2: Check SimC spec comment header for hero talent hints
+  if (!result.heroTalentTree) {
+    const headerComment = lines.find(l => /^#.*(?:pack.?leader|sentinel)/i.test(l));
+    if (headerComment) {
+      if (/pack.?leader/i.test(headerComment)) result.heroTalentTree = 'Pack Leader';
+      else if (/sentinel/i.test(headerComment)) result.heroTalentTree = 'Sentinel';
+    }
+  }
+
   if (result.character.name || result.stats.agility > 0 || result.gear.length > 0) result.valid = true;
   else result.errors.push("Could not parse character data.");
 
