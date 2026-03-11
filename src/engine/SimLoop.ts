@@ -411,7 +411,7 @@ function executeAbility(
   }
 
   // Takedown: +20% damage during window
-  if (state.takedownActive && (spell.key === "raptor_strike" || spell.key === "mongoose_bite")) {
+  if (state.takedownActive && spell.key === "raptor_strike") {
     baseDmg *= 1.20;
   }
 
