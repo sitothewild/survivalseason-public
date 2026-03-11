@@ -245,12 +245,28 @@ serve(async (req) => {
 
         // Normalize nodes: Blizzard API uses "ranks" with "tooltip.spell_tooltip",
         // but the frontend expects "entries" with direct "spell_tooltip".
+        // CHOICE nodes store their options in "choice_of_tooltips" instead of "tooltip".
         function normalizeNodes(nodes: any[]): any[] {
           return (nodes ?? []).map((n: any) => {
             // If node already has "entries", pass through
             if (n.entries?.length) return n;
             // Convert "ranks" → "entries"
             if (n.ranks?.length) {
+              const isChoice = n.node_type?.type === "CHOICE";
+              const primaryRank = n.ranks[0];
+
+              if (isChoice && primaryRank?.choice_of_tooltips?.length) {
+                // CHOICE nodes: create one entry per choice option, preserving choice data
+                const entries = primaryRank.choice_of_tooltips.map((ct: any) => ({
+                  spell_tooltip: ct.spell_tooltip ?? null,
+                  talent: ct.talent ?? null,
+                  max_rank: 1,
+                  default_points: 0,
+                }));
+                return { ...n, entries, choice_of_tooltips: primaryRank.choice_of_tooltips };
+              }
+
+              // Standard nodes: single entry per rank
               const entries = n.ranks.map((r: any) => ({
                 spell_tooltip: r.tooltip?.spell_tooltip ?? null,
                 max_rank: r.rank ?? 1,
@@ -259,16 +275,6 @@ serve(async (req) => {
               return { ...n, entries };
             }
             return { ...n, entries: [] };
-          });
-        }
-
-        // Also remap node_type: API uses "CHOICE" but frontend expects "SELECTION"
-        function remapNodeType(nodes: any[]): any[] {
-          return nodes.map((n: any) => {
-            if (n.node_type?.type === "CHOICE") {
-              return { ...n, node_type: { ...n.node_type, type: "SELECTION" } };
-            }
-            return n;
           });
         }
 
@@ -292,7 +298,7 @@ serve(async (req) => {
         }
 
         function processNodes(nodes: any[]): any[] {
-          return addPrerequisites(remapNodeType(normalizeNodes(nodes)));
+          return addPrerequisites(normalizeNodes(nodes));
         }
 
         specTree.class_talent_nodes = processNodes(specTree.class_talent_nodes ?? []);

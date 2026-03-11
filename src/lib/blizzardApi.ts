@@ -75,14 +75,21 @@ export interface BzEntry {
   type: string;
   max_rank: number;
   spell_tooltip: BzSpellTooltip;
+  /** Present on CHOICE node entries — the talent metadata */
+  talent?: { id: number; name: string };
 }
 export interface BzTalentNode {
   id: number;
   display_row: number;
   display_col: number;
-  node_type: { id: number; type: string }; // SINGLE | TIERED | SELECTION
+  node_type: { id: number; type: string }; // ACTIVE | PASSIVE | CHOICE | SELECTION
   prerequisite_nodes?: Array<{ id: number }>;
   entries: BzEntry[];
+  /** Preserved from Blizzard API for CHOICE nodes — raw choice_of_tooltips data */
+  choice_of_tooltips?: Array<{
+    talent: { id: number; name: string };
+    spell_tooltip: BzSpellTooltip;
+  }>;
 }
 export interface BzSpecTree {
   id: number;
