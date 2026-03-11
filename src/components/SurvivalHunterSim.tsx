@@ -1395,13 +1395,17 @@ export default function SurvivalHunterSim() {
   }, [importedTalentString]);
 
   const detectedHeroTalent = useMemo(() => {
+    // Priority 1: Use the heroTalentTree field from Blizzard API (most reliable)
+    if (parsedChar?.heroTalentTree) {
+      const name = parsedChar.heroTalentTree.toLowerCase();
+      if (name.includes('pack leader')) return 'Pack Leader';
+      if (name.includes('sentinel')) return 'Sentinel';
+    }
+
     const raw = (importedTalentString || '').trim();
     if (!raw) return 'Unknown';
 
-    // WoW talent loadout codes encode hero talent choice
-    // Pack Leader markers: 'Mgx', 'cMgx', 'MG' patterns in the encoded string
-    // Sentinel markers: 'MWg', 'cMWg', 'MW' patterns
-    // Also check for keyword patterns from SimC talent comments
+    // Priority 2: WoW talent loadout codes encode hero talent choice
     const lowerRaw = raw.toLowerCase();
     
     // Check for Pack Leader indicators
@@ -1414,7 +1418,7 @@ export default function SurvivalHunterSim() {
 
     // Fallback: if talent string exists but we can't detect, return Unknown
     return 'Unknown';
-  }, [importedTalentString]);
+  }, [importedTalentString, parsedChar]);
 
   const userHeroKey = useMemo(() => {
     if (detectedHeroTalent === 'Sentinel') return 'sentinel';
