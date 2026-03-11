@@ -680,11 +680,24 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
                   padding: 0,
                 }}
               >
+                {/* Render both images to avoid load flash on toggle */}
                 <img
-                  src={isSentinel ? heroSentinelImg : heroPackLeaderImg}
-                  alt={isSentinel ? "Sentinel" : "Pack Leader"}
+                  src={heroSentinelImg}
+                  alt="Sentinel"
                   style={{
+                    position: "absolute", inset: 0,
                     width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
+                    opacity: isSentinel ? 1 : 0,
+                    transition: "opacity .3s ease",
+                  }}
+                />
+                <img
+                  src={heroPackLeaderImg}
+                  alt="Pack Leader"
+                  style={{
+                    position: "absolute", inset: 0,
+                    width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
+                    opacity: isSentinel ? 0 : 1,
                     transition: "opacity .3s ease",
                   }}
                 />
