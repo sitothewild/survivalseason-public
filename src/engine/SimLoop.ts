@@ -40,7 +40,6 @@ const MONGOOSE_FURY_DURATION_MS = 5000;
 const TIP_MAX_STACKS = 2;
 const TIP_DAMAGE_PER_STACK = 0.25;
 const TAKEDOWN_DURATION_MS = 8000;
-const COORDINATED_ASSAULT_DURATION_MS = 20000;
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
@@ -412,7 +411,7 @@ function executeAbility(
   }
 
   // Takedown: +20% damage during window
-  if (state.takedownActive && (spell.key === "raptor_strike" || spell.key === "mongoose_bite")) {
+  if (state.takedownActive && spell.key === "raptor_strike") {
     baseDmg *= 1.20;
   }
 
@@ -429,11 +428,7 @@ function executeAbility(
     }
   }
 
-  // Coordinated Assault
-  if (spell.key === "coordinated_assault") {
-    state.coordinatedAssaultActive = true;
-    state.coordinatedAssaultExpiresMs = state.nowMs + COORDINATED_ASSAULT_DURATION_MS;
-  }
+  // (Coordinated Assault removed in Midnight 12.0)
 
   // Crit calculation
   let critMult = 2.0 + spell.bonusCritMult;
@@ -473,7 +468,7 @@ function executeAbility(
   handleTierInteractions(state, rng, spell, input);
 
   // Raptor Swipe proc
-  if ((spell.key === "raptor_strike" || spell.key === "mongoose_bite") &&
+  if (spell.key === "raptor_strike" &&
       input.talents.activeTalents.has("raptorSwipe")) {
     const procChance = state.takedownActive ? 1.0 : 0.25;
     if (rng.roll() < procChance) {
@@ -694,8 +689,8 @@ function handlePackLeaderTriggers(
     }
   }
 
-  // Frenzied Tear: Raptor Strike/Mongoose Bite → 20% chance extra pet attack
-  if ((spell.key === "raptor_strike" || spell.key === "mongoose_bite") && talents.has("furiousAssault")) {
+  // Frenzied Tear: Raptor Strike → 20% chance extra pet attack
+  if (spell.key === "raptor_strike" && talents.has("furiousAssault")) {
     if (rollPRD("frenzied_tear", 0.20, rng, prdState)) {
       state.frenziedTearProcs++;
 
@@ -764,11 +759,14 @@ function applySpellDots(
     }
   }
 
-  // Serpent Sting
-  if (spell.key === "serpent_sting") {
-    const dotInfo = DOT_DB["serpent_sting"];
+  // Flamefang Pitch DoT
+  if (spell.key === "flamefang_pitch") {
+    const dotInfo = DOT_DB["flamefang_pitch_dot"];
     if (dotInfo) {
-      applyDot(state, queue, "serpent_sting", 0, dotInfo, state.currentAP);
+      const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
+      for (let t = 0; t < targets; t++) {
+        applyDot(state, queue, "flamefang_pitch_dot", t, dotInfo, state.currentAP);
+      }
     }
   }
 }
@@ -958,19 +956,19 @@ function initializeCooldowns(state: CombatState, talents: { activeTalents: Set<s
     state.cooldowns.init("takedown", 1, cd);
   }
 
-  // Coordinated Assault
-  if (talents.activeTalents.has("coordinatedAssault")) {
-    state.cooldowns.init("coordinated_assault", 1, 120000);
+  // Flamefang Pitch: 1 charge, 15s
+  if (talents.activeTalents.has("flamefangPitch")) {
+    state.cooldowns.init("flamefang_pitch", 1, 15000);
   }
 
-  // Flanking Strike
-  if (talents.activeTalents.has("flankingStrike")) {
-    state.cooldowns.init("flanking_strike", 1, 30000);
+  // Moonlight Chakram: 1 charge, 20s
+  if (talents.activeTalents.has("moonlightChakram")) {
+    state.cooldowns.init("moonlight_chakram", 1, 20000);
   }
 
-  // Fury of the Eagle
-  if (talents.activeTalents.has("furyOfTheEagle")) {
-    state.cooldowns.init("fury_of_the_eagle", 1, 45000);
+  // Death Chakram: 1 charge, 45s
+  if (talents.activeTalents.has("deathChakram")) {
+    state.cooldowns.init("death_chakram", 1, 45000);
   }
 }
 

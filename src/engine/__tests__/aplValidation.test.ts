@@ -73,7 +73,7 @@ actions+=/raptor_strike`);
   it("accepts known condition patterns without warnings", () => {
     const result = validateAPL(`actions=auto_attack
 actions+=/raptor_strike,if=focus>=60&buff.tip_of_the_spear.stack>=2
-actions+=/serpent_sting,if=!dot.serpent_sting.ticking
+actions+=/wildfire_bomb,if=cooldown.wildfire_bomb.charges>=1
 actions+=/kill_command,if=cooldown.kill_command.ready`);
     expect(result.valid).toBe(true);
     expect(result.warnings).toHaveLength(0);
