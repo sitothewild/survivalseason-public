@@ -670,7 +670,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
                 style={{
                   width: 100, height: 100, borderRadius: "50%",
                   border: `3px solid ${isSentinel ? "#7dd3fc" : "#d8b4fe"}`,
-                  background: "#0a0a12",
+                  background: `url(${heroSentinelImg}) center/cover, url(${heroPackLeaderImg}) center/cover, #0a0a12`,
                   boxShadow: `0 0 20px 4px ${isSentinel ? "rgba(125,211,252,.3)" : "rgba(216,180,254,.3)"}, 0 0 0 2px ${isSentinel ? "rgba(125,211,252,.15)" : "rgba(216,180,254,.15)"}`,
                   cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center",
@@ -680,7 +680,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
                   padding: 0,
                 }}
               >
-                {/* Render both images to avoid load flash on toggle */}
+                {/* Both images always rendered; opacity toggles which is visible */}
                 <img
                   src={heroSentinelImg}
                   alt="Sentinel"
@@ -689,6 +689,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
                     width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
                     opacity: isSentinel ? 1 : 0,
                     transition: "opacity .3s ease",
+                    willChange: "opacity",
                   }}
                 />
                 <img
@@ -699,6 +700,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
                     width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%",
                     opacity: isSentinel ? 0 : 1,
                     transition: "opacity .3s ease",
+                    willChange: "opacity",
                   }}
                 />
               </button>
