@@ -240,6 +240,7 @@ function compare(a: number, op: string, b: number): boolean {
 export function evaluateAPL(
   apl: CompiledAPL,
   state: CombatState,
+  activeTalents?: Set<string>,
 ): string | null {
   for (const action of apl.actions) {
     if (action.ability === "auto_attack") continue;
@@ -249,6 +250,9 @@ export function evaluateAPL(
 
     // Check hero requirement
     if (spell.requiresHero && spell.requiresHero !== state.hero) continue;
+
+    // Check talent requirement — skip abilities the character doesn't have
+    if (spell.requiresTalent && activeTalents && !activeTalents.has(spell.requiresTalent)) continue;
 
     // Check GCD
     if (spell.triggersGcd && state.nowMs < state.gcdReadyMs) continue;

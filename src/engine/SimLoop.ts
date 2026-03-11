@@ -323,7 +323,7 @@ function handleGcdReady(
   timeline: TimelineEvent[],
   capture: boolean,
 ): void {
-  const ability = evaluateAPL(apl, state);
+  const ability = evaluateAPL(apl, state, input.talents.activeTalents);
   if (!ability) {
     // Nothing to cast, try again in 100ms
     queue.enqueue({ tMs: state.nowMs + 100, priority: EventPriority.GCD_READY, type: "gcd_ready" });
@@ -926,36 +926,28 @@ function processWeaponProc(
 function initializeCooldowns(state: CombatState, talents: { activeTalents: Set<string> }): void {
   const hasteMult = 1 + state.currentHastePct / 100;
 
-  // Kill Command: 2 charges, 6s recharge (haste-scaled)
-  state.cooldowns.init("kill_command", 2, Math.round(6000 / hasteMult));
+  // Initialize CDs for ALL spells with cooldownMs > 0, regardless of talent.
+  // This ensures the CooldownTracker rejects casts for abilities whose CD
+  // was never "used" (charge stays at 1 → ready), but also prevents the
+  // evaluateAPL fallback of "untracked = always ready" from firing.
+  for (const spell of Object.values(SPELL_DB)) {
+    if (spell.cooldownMs <= 0) continue;
+    if (spell.key === "auto_attack") continue;
 
-  // Wildfire Bomb: 1 charge, 18s
-  state.cooldowns.init("wildfire_bomb", 1, 18000);
+    let cdMs = spell.cooldownMs;
 
-  // Boomstick: 1 charge, 60s
-  if (talents.activeTalents.has("boomstick")) {
-    state.cooldowns.init("boomstick", 1, 60000);
-  }
+    // Apply haste scaling where applicable
+    if (spell.hasteScalesCD) {
+      cdMs = Math.round(cdMs / hasteMult);
+    }
 
-  // Takedown: 1 charge, 90s (60s with Savagery)
-  if (talents.activeTalents.has("takedown")) {
-    const cd = talents.activeTalents.has("savagery") ? 60000 : 90000;
-    state.cooldowns.init("takedown", 1, cd);
-  }
+    // Talent-specific overrides
+    if (spell.key === "takedown" && talents.activeTalents.has("savagery")) {
+      cdMs = 60000;
+    }
 
-  // Flamefang Pitch: 1 charge, 15s
-  if (talents.activeTalents.has("flamefangPitch")) {
-    state.cooldowns.init("flamefang_pitch", 1, 15000);
-  }
-
-  // Moonlight Chakram: 1 charge, 20s
-  if (talents.activeTalents.has("moonlightChakram")) {
-    state.cooldowns.init("moonlight_chakram", 1, 20000);
-  }
-
-  // Death Chakram: 1 charge, 45s
-  if (talents.activeTalents.has("deathChakram")) {
-    state.cooldowns.init("death_chakram", 1, 45000);
+    const charges = spell.charges > 0 ? spell.charges : 1;
+    state.cooldowns.init(spell.key, charges, cdMs);
   }
 }
 

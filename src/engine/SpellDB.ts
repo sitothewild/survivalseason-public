@@ -164,7 +164,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   pet_melee: {
     id: 0, key: "pet_melee", label: "Pet Melee",
@@ -173,7 +172,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+
   },
   // ─── Sentinel Hero Tree ────────────────────────────────────
   lunar_storm: {
@@ -191,7 +190,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "sentinel",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+
   },
   sentinel_owl: {
     id: 0, key: "sentinel_owl", label: "Sentinel Owl",
@@ -233,7 +232,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "pack_leader",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+
   },
 };
 
