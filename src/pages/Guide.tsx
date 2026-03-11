@@ -1,4 +1,10 @@
 // @ts-nocheck
+// CONTENT REVIEW STATUS — Midnight 12.0.1:
+// ✅ Accurate: Talent tree rendering (BlizzardTalentTree), hero tree toggle (Sentinel/Pack Leader),
+//    consumables section, rotation priorities (per-hero), M+ tips, DPS breakdown table,
+//    tier set math (2pc + 4pc), talent delta analysis, SimC APL display
+// ⚠️ Needs update: No explicit stat priority ranking table (stats are implicit in weight calculations)
+// ❌ Missing: Formal stat priority section, point budget reference (34/34/13)
 import { useState, useEffect, useMemo } from "react";
 import { NavLink } from "@/components/NavLink";
 import { supabase } from "@/integrations/supabase/client";

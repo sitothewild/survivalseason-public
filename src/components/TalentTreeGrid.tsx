@@ -49,10 +49,10 @@ export default function TalentTreeGrid({
     return { minCol: mnC, numCols: mxC - mnC + 1 };
   }, [nodes]);
 
-  // Build locked set using displayRow — gates.afterRow is now the API restricted_row
-  // Nodes with displayRow >= afterRow are locked when points < gate.points
+  // Build locked set: gate rows AND prerequisite (lockedBy) validation
   const lockedNodeIds = useMemo(() => {
     const locked = new Set<number>();
+    // Gate check: nodes below a gate are locked if total points < threshold
     for (const gate of gates) {
       if (totalPointsSpent < gate.points) {
         for (const node of nodes) {
@@ -60,8 +60,17 @@ export default function TalentTreeGrid({
         }
       }
     }
+    // Prerequisite check: nodes whose lockedBy parents all have 0 points are locked
+    for (const node of nodes) {
+      if (node.lockedBy.length > 0) {
+        const prereqMet = node.lockedBy.some(
+          (parentId) => (talentState[parentId] ?? 0) > 0
+        );
+        if (!prereqMet) locked.add(node.nodeId);
+      }
+    }
     return locked;
-  }, [gates, totalPointsSpent, nodes]);
+  }, [gates, totalPointsSpent, nodes, talentState]);
 
   // Group by displayRow
   const sortedDisplayRows = useMemo(() =>
