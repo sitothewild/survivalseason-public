@@ -170,7 +170,7 @@ describe("applySimOptions", () => {
     const withRune = applySimOptions(base, { ...NAKED_OPTIONS, augmentRune: true }, "sentinel");
 
     expect(withRune.stats.agility).toBe(noRune.stats.agility + 52);
-    expect(withRune.stats.attackPower).toBeGreaterThan(noRune.stats.attackPower);
+    // AP = Agility for hunters; augment rune boosts agility, not attackPower separately
   });
 
   it("resolves raid buff multipliers", () => {

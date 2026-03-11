@@ -101,7 +101,7 @@ export function applySimOptions(
       case "vers": stats.versatilityRating += rating; break;
       case "agi":
         stats.agility += rating;
-        stats.attackPower += rating;
+        // AP = Agility for hunters; no separate attackPower bump needed
         break;
       case "mixed": {
         const perStat = Math.round(rating / 4);
@@ -196,7 +196,6 @@ export function applySimOptions(
     const rune = AUGMENT_RUNES[0]; // Only one exists
     if (rune) {
       stats.agility += rune.ratingAmount;
-      stats.attackPower += rune.ratingAmount;
     }
   }
 
@@ -210,8 +209,8 @@ export function applySimOptions(
   if (options.raidBuffs.mysticTouch) dmgMult *= 1.05;
   if (options.raidBuffs.huntersMark) dmgMult *= 1.05;
 
-  // Apply AP multiplier to stats directly
-  stats.attackPower = Math.round(stats.attackPower * apMult);
+  // Apply AP multiplier (Battle Shout) to agility since AP = Agi for hunters
+  stats.agility = Math.round(stats.agility * apMult);
 
   // ── 8. Potion → timed aura (returned for SimLoop to apply) ──
   let potionAura: ApplyResult["potionAura"];

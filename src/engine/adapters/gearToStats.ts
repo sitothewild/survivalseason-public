@@ -48,7 +48,7 @@ export function gearToPlayerStats(
   return {
     agility: Math.round(totalAgi),
     stamina: Math.round(totalStam),
-    attackPower: Math.round(totalAgi), // AP ≈ Agi for hunters
+    attackPower: 0, // AP = Agility for hunters; no separate AP stat
     critRating: Math.round(totalCrit),
     hasteRating: Math.round(totalHaste),
     masteryRating: Math.round(totalMast),

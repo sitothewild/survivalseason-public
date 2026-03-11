@@ -3,6 +3,17 @@
 // The main simulation loop. Processes events, evaluates APL,
 // handles damage calculation, hero talent triggers, and DoT ticks.
 // Deterministic: same seed → same result.
+//
+// FIXES APPLIED (March 2026):
+//  1. DoT ticks now properly enqueue into EventQueue
+//  2. Pet auto-attacks (Claw + Melee) scheduled on timers
+//  3. AP = Agility (no double-count)
+//  4. Mongoose Fury tracked (+15%/stack, 5 max)
+//  5. Strike as One triggers on ToTS consumption (per SimC)
+//  6. Pack Leader hero beasts (Boar/Bear/Wyvern cycle)
+//  7. Mastery coefficient fixed to 0.02 (Spirit Bond)
+//  8. Off-hand auto attacks for DW specs
+//  9. Wyvern's Cry damage buff tracked
 // ─────────────────────────────────────────────────────────────
 
 import { EventQueue, EventPriority, type SimEvent } from "./EventQueue";
@@ -24,20 +35,54 @@ import type {
   TimelineEvent,
   HeroTree,
 } from "./types";
+import {
+  PET_AP_COEFFICIENTS,
+  MASTERY_SPIRIT_BOND,
+  COMBAT_MECHANICS,
+  COMBAT_RATINGS,
+  AP_COEFFICIENTS as AP,
+  BUFF_DURATIONS,
+  PROC_CHANCES,
+  SENTINEL_COUNTER,
+  HOWL_BEAST_CYCLE,
+  FOCUS_VALUES,
+  WEAPON_NORMS,
+} from "./simcSpellData";
 
-// ── Constants ─────────────────────────────────────────────────
+// ── Constants (sourced from simcSpellData.ts) ─────────────────
 
-const CLASS_AURA = 1.20;
-const PET_AP_SCALING = 0.60;
-const MASTERY_PLAYER_BONUS = 0.004; // per 1% mastery
-const MASTERY_PET_BONUS = 0.006;
-const BASE_GCD_MS = 1500;
-const BOSS_ARMOR = 11480; // +3 boss level
-const ARMOR_K = 14014;
-const MELEE_SWING_MS = 3600; // 2H base
-const TIP_MAX_STACKS = 2;
-const TIP_DAMAGE_PER_STACK = 0.25;
-const TAKEDOWN_DURATION_MS = 8000;
+const PET_AP_SCALING = PET_AP_COEFFICIENTS.main_pet;
+const MASTERY_PLAYER_BONUS = MASTERY_SPIRIT_BOND.bonusPerPoint;
+const MASTERY_PET_BONUS = MASTERY_SPIRIT_BOND.bonusPerPoint;
+const BASE_GCD_MS = COMBAT_MECHANICS.baseGcdMs;
+const BOSS_ARMOR = COMBAT_MECHANICS.bossArmor;
+const ARMOR_K = COMBAT_RATINGS.armorK;
+const MELEE_SWING_MS_2H = WEAPON_NORMS.twoHandSwingMs;
+const MELEE_SWING_MS_1H = WEAPON_NORMS.oneHandSwingMs;
+const PET_SWING_MS = WEAPON_NORMS.petSwingMs;
+const PET_CLAW_CD_MS = WEAPON_NORMS.petClawCdMs;
+const TIP_MAX_STACKS = BUFF_DURATIONS.tip_of_the_spear.maxStacks;
+const TIP_DAMAGE_PER_STACK = BUFF_DURATIONS.tip_of_the_spear.dmgPerStack;
+const TAKEDOWN_DURATION_MS = BUFF_DURATIONS.takedown_window.durationMs;
+const MONGOOSE_FURY_MAX_STACKS = BUFF_DURATIONS.mongoose_fury.maxStacks;
+const MONGOOSE_FURY_DAMAGE_PER_STACK = BUFF_DURATIONS.mongoose_fury.dmgPerStack;
+
+// Howl of the Pack Leader: beast cycle timing
+const HOWL_CD_MS = HOWL_BEAST_CYCLE.cycleCdMs;
+// Boar charge uses hunter AP (not pet AP) — confirmed from SimC: hunter_ranged_attack_t
+const BOAR_CHARGE_AP_COEF = AP.boar_charge;
+const BOAR_CHARGE_CLEAVE_AP_COEF = AP.boar_charge_cleave;
+const BOAR_CHARGE_USES_HUNTER_AP = true; // SimC: hunter_ranged_attack_t inherits hunter AP
+const BEAR_REND_AP_COEF_PER_TICK = AP.bear_rend_per_tick;
+const BEAR_REND_DURATION_MS = HOWL_BEAST_CYCLE.bearRendDurationMs;
+const BEAR_REND_TICK_MS = HOWL_BEAST_CYCLE.bearRendTickMs;
+const BEAR_MELEE_AP_COEF = AP.bear_melee;
+const BEAR_DURATION_MS = HOWL_BEAST_CYCLE.bearDurationMs;
+const STAMPEDE_AP_COEF = AP.stampede;
+const STAMPEDE_DURATION_MS = HOWL_BEAST_CYCLE.stampedeDurationMs;
+const STAMPEDE_TICK_MS = HOWL_BEAST_CYCLE.stampedeTickMs;
+const WYVERN_CRY_PET_DAMAGE_BONUS = BUFF_DURATIONS.wyverns_cry.petDmgPerStack;
+const BLOODSEEKER_HASTE_PER_TARGET = BUFF_DURATIONS.bloodseeker.hastePctPerTarget;
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
@@ -212,6 +257,59 @@ export function runSimulation(input: SimInput): SimResult {
   };
 }
 
+// ── Helper: get melee swing timer ─────────────────────────────
+
+function getMeleeSwingMs(input: SimInput): number {
+  return input.stats.weapon.type === "2h" ? MELEE_SWING_MS_2H : MELEE_SWING_MS_1H;
+}
+
+// ── Helper: compute damage with all multipliers ───────────────
+
+function computeDamage(
+  state: CombatState,
+  ap: number,
+  apCoef: number,
+  school: string,
+  isPet: boolean,
+  rng: RNG,
+  bonusCritMult: number = 0,
+): { damage: number; isCrit: boolean } {
+  let baseDmg = apCoef * ap;
+
+  // Mastery: Spirit Bond
+  const mastPct = state.currentMasteryPct;
+  const mastBonus = isPet
+    ? 1 + mastPct * MASTERY_PET_BONUS
+    : 1 + mastPct * MASTERY_PLAYER_BONUS;
+  baseDmg *= mastBonus;
+
+  // Versatility
+  baseDmg *= 1 + state.currentVersPct / 100;
+
+  // Mongoose Fury (applies to abilities affected by it)
+  if (state.mongooseFuryStacks > 0) {
+    baseDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+  }
+
+  // Wyvern's Cry pet damage bonus
+  if (isPet && state.wyvernsCryStacks > 0) {
+    baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+  }
+
+  // Crit
+  const critChance = Math.min(1, state.currentCritPct / 100);
+  const isCrit = rng.roll() < critChance;
+  const critMult = 2.0 + bonusCritMult;
+  let damage = isCrit ? baseDmg * critMult : baseDmg;
+
+  // Armor mitigation for physical
+  if (school === "physical") {
+    damage *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
+  }
+
+  return { damage, isCrit };
+}
+
 // ── Single iteration ──────────────────────────────────────────
 
 function runIteration(
@@ -225,16 +323,31 @@ function runIteration(
   const queue = new EventQueue();
   const timeline: TimelineEvent[] = [];
   const endMs = input.config.durationMs;
+  const meleeSwingMs = getMeleeSwingMs(input);
 
   // Schedule initial events
-  scheduleAutoAttack(queue, 0, input.stats.weapon.mainHandSpeed * 1000);
+  queue.enqueue({ tMs: 0, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
   queue.enqueue({ tMs: 0, priority: EventPriority.GCD_READY, type: "gcd_ready" });
+
+  // FIX #2: Schedule pet auto-attacks
+  queue.enqueue({ tMs: 0, priority: EventPriority.AUTO_ATTACK, type: "pet_melee" });
+  queue.enqueue({ tMs: PET_CLAW_CD_MS, priority: EventPriority.AUTO_ATTACK, type: "pet_claw" });
+
+  // FIX #8: Schedule off-hand auto attacks for DW
+  if (input.stats.weapon.type === "dw" && input.stats.weapon.offHandSpeed) {
+    queue.enqueue({ tMs: 0, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
+  }
+
+  // Pack Leader: schedule first Howl beast summon
+  if (input.config.hero === "pack_leader" && input.talents.activeTalents.has("howlOfThePackLeader")) {
+    state.cooldowns.init("howl_cd", 1, HOWL_CD_MS);
+    queue.enqueue({ tMs: HOWL_CD_MS, priority: EventPriority.CAST_COMPLETE, type: "howl_beast" });
+  }
 
   // Apply pre-pot at pull (potion aura from SimOptions)
   if (input.potionAura) {
     const { stat, amount, durationMs } = input.potionAura;
     state.applyAura("potion", durationMs, 1, { [stat]: amount });
-    // Track potion for second use: cooldown = 5 min, aligned with burst
     state.cooldowns.init("potion", 1, 300_000);
     state.cooldowns.use("potion", 0);
   }
@@ -250,7 +363,6 @@ function runIteration(
         break;
       }
       case "proc": {
-        // ICD tracking: procICD defaults to 0 (no ICD)
         const icdMs = (trinket.procICD ?? 0) * 1000;
         if (icdMs > 0) {
           state.cooldowns.init(cdKey, 1, icdMs);
@@ -258,13 +370,11 @@ function runIteration(
         break;
       }
       case "equip": {
-        // Passive stat trinket — add primary agi as a permanent aura
         if (trinket.primaryAgi > 0) {
           state.applyAura(cdKey, endMs + 10_000, 1, { agi: trinket.primaryAgi });
         }
         break;
       }
-      // damage_proc: no CD init needed, CPM-based
     }
   }
 
@@ -283,28 +393,53 @@ function runIteration(
         break;
 
       case "auto_attack":
-        handleAutoAttack(state, rng, prdState, queue, input, timeline, captureTimeline);
+        handleAutoAttack(state, rng, prdState, queue, input, timeline, captureTimeline, meleeSwingMs);
+        break;
+
+      case "oh_auto_attack":
+        handleOffHandAutoAttack(state, rng, queue, input, timeline, captureTimeline);
+        break;
+
+      case "pet_melee":
+        handlePetMelee(state, rng, queue, input, endMs);
+        break;
+
+      case "pet_claw":
+        handlePetClaw(state, rng, queue, input, endMs);
         break;
 
       case "dot_tick":
-        handleDotTick(state, rng, event, timeline, captureTimeline);
+        handleDotTick(state, rng, queue, event, timeline, captureTimeline);
         break;
 
       case "aura_expire":
         handleAuraExpire(state, event);
         break;
 
+      case "howl_beast":
+        handleHowlBeast(state, rng, queue, input, endMs);
+        break;
+
+      case "bear_melee":
+        handleBearMelee(state, rng, queue, endMs);
+        break;
+
+      case "stampede_tick":
+        handleStampedeTick(state, rng, queue, endMs);
+        break;
+
       case "cooldown_ready":
-        // Just a marker — APL will pick up the ready CD on next GCD
         break;
     }
 
-    // Process trinket procs on every event
-    processTrinkets(state, rng, input, event.type);
+    // Process trinket procs on applicable events
+    if (event.type === "gcd_ready" || event.type === "auto_attack") {
+      processTrinkets(state, rng, input, event.type);
+    }
 
     // Process weapon enhancement damage procs
     if (input.weaponProc && event.type === "auto_attack") {
-      processWeaponProc(state, rng, input);
+      processWeaponProc(state, rng, input, meleeSwingMs);
     }
   }
 
@@ -325,7 +460,6 @@ function handleGcdReady(
 ): void {
   const ability = evaluateAPL(apl, state, input.talents.activeTalents);
   if (!ability) {
-    // Nothing to cast, try again in 100ms
     queue.enqueue({ tMs: state.nowMs + 100, priority: EventPriority.GCD_READY, type: "gcd_ready" });
     return;
   }
@@ -341,13 +475,12 @@ function handleGcdReady(
 
   // Schedule next GCD
   const hasteMult = 1 + state.currentHastePct / 100;
-  const gcdMs = spell.triggersGcd ? Math.max(750, Math.round(BASE_GCD_MS / hasteMult)) : 0;
+  const gcdMs = spell.triggersGcd ? Math.max(COMBAT_MECHANICS.minGcdMs, Math.round(BASE_GCD_MS / hasteMult)) : 0;
 
   if (gcdMs > 0) {
     state.gcdReadyMs = state.nowMs + gcdMs;
     queue.enqueue({ tMs: state.gcdReadyMs, priority: EventPriority.GCD_READY, type: "gcd_ready" });
   } else {
-    // Off-GCD: immediately reschedule
     queue.enqueue({ tMs: state.nowMs + 50, priority: EventPriority.GCD_READY, type: "gcd_ready" });
   }
 }
@@ -374,12 +507,12 @@ function executeAbility(
     state.cooldowns.use(spell.key, state.nowMs);
   }
 
-  // Calculate damage
+  // FIX #3: AP = Agility (not doubled). Pet AP = hunter AP * 0.6
   const isPet = spell.isPet;
   const ap = isPet ? state.currentAP * PET_AP_SCALING : state.currentAP;
-  let baseDmg = spell.apCoef * ap * CLASS_AURA;
+  let baseDmg = spell.apCoef * ap;
 
-  // Mastery: Spirit Bond
+  // FIX #7: Mastery: Spirit Bond with correct coefficient
   const mastBonus = isPet
     ? 1 + state.currentMasteryPct * MASTERY_PET_BONUS
     : 1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS;
@@ -388,10 +521,22 @@ function executeAbility(
   // Versatility
   baseDmg *= 1 + state.currentVersPct / 100;
 
-  // Tip of the Spear
+  // FIX #4: Mongoose Fury stacks (+15% per stack, affects melee focus spenders)
+  if (state.mongooseFuryStacks > 0 && isAffectedByMongooseFury(spell.key)) {
+    baseDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+  }
+
+  // Wyvern's Cry pet damage bonus (Pack Leader)
+  if (isPet && state.wyvernsCryStacks > 0) {
+    baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+  }
+
+  // Tip of the Spear consumption + Strike as One trigger
+  let consumedTip = false;
   if (spell.consumesTots && state.tipOfTheSpearStacks > 0) {
     baseDmg *= 1 + state.tipOfTheSpearStacks * TIP_DAMAGE_PER_STACK;
     state.tipOfTheSpearStacks = 0;
+    consumedTip = true;
   }
 
   // Kill Command grants ToTS stacks
@@ -399,17 +544,27 @@ function executeAbility(
     state.tipOfTheSpearStacks = Math.min(TIP_MAX_STACKS, state.tipOfTheSpearStacks + 1);
   }
 
-  // Takedown: +20% damage during window
-  if (state.takedownActive && spell.key === "raptor_strike") {
-    baseDmg *= 1.20;
+  // Lethal Barbs (sic_em): Kill Command and Raptor Strike generate bonus focus
+  // In SimC, this generates ~2047 focus over 300s = ~6.8 focus/sec via procs
+  if (input.talents.activeTalents.has("sicEm") || input.talents.activeTalents.has("lethalBarbs")) {
+    if (spell.key === "kill_command" || spell.key === "raptor_strike") {
+      state.focus = Math.min(state.maxFocus, state.focus + FOCUS_VALUES.lethal_barbs_bonus);
+    }
   }
 
-  // Takedown special: apply buff when cast
+  // Takedown: apply buff when cast + pet component
   if (spell.key === "takedown") {
     state.takedownActive = true;
     state.takedownExpiresMs = state.nowMs + TAKEDOWN_DURATION_MS;
 
-    // Second potion use: align with Takedown when potion CD is ready
+    // Pet Takedown component: pet does its own strike (from SimC: pet takedown = 1304 pDPS)
+    const petAp = state.currentAP * PET_AP_SCALING;
+    const { damage: petTdDmg, isCrit: petTdCrit } = computeDamage(
+      state, petAp, SPELL_DB["takedown"].apCoef * 0.80, "physical", true, rng,
+    );
+    state.recordDamage("pet_takedown", petTdDmg, petTdCrit, 0);
+
+    // Second potion use: align with Takedown
     if (input.potionAura && state.cooldowns.isReady("potion", state.nowMs) && state.nowMs > 0) {
       const { stat, amount, durationMs } = input.potionAura;
       state.applyAura("potion", durationMs, 1, { [stat]: amount });
@@ -417,8 +572,13 @@ function executeAbility(
     }
   }
 
+  // Takedown: +20% damage during window for melee spenders
+  if (state.takedownActive && (spell.key === "raptor_strike" || spell.key === "kill_command")) {
+    baseDmg *= 1.20;
+  }
+
   // Crit calculation
-  let critMult = 2.0 + spell.bonusCritMult;
+  const critMult = 2.0 + spell.bonusCritMult;
   const critChance = Math.min(1, state.currentCritPct / 100);
   const isCrit = rng.roll() < critChance;
   const damage = isCrit ? baseDmg * critMult : baseDmg;
@@ -426,8 +586,7 @@ function executeAbility(
   // Armor mitigation for physical
   let finalDamage = damage;
   if (spell.school === "physical") {
-    const mitigation = computeArmorMitigation(BOSS_ARMOR, ARMOR_K);
-    finalDamage *= (1 - mitigation);
+    finalDamage *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
   }
 
   // AoE target scaling
@@ -444,6 +603,43 @@ function executeAbility(
   // Apply DoTs if applicable
   applySpellDots(state, spell, queue);
 
+  // Bloodseeker: +3% haste per bleeding target (modeled as aura)
+  if (input.talents.activeTalents.has("bloodseeker")) {
+    let bleedingTargets = 0;
+    for (const t of state.targets) {
+      if (t.dots.size > 0) bleedingTargets++;
+    }
+    if (bleedingTargets > 0) {
+      // Apply as haste rating buff: 3% haste per target (35.0 rating per 1%)
+      const hasteAmount = bleedingTargets * BLOODSEEKER_HASTE_PER_TARGET * COMBAT_RATINGS.haste;
+      state.applyAura("bloodseeker", 12000, 1, { haste: hasteAmount });
+    }
+  }
+
+  // FIX #4: Raptor Strike triggers Mongoose Fury stack
+  if (spell.key === "raptor_strike" && input.talents.activeTalents.has("mongooseFury")) {
+    state.mongooseFuryStacks = Math.min(MONGOOSE_FURY_MAX_STACKS, state.mongooseFuryStacks + 1);
+  }
+
+  // FIX #5: Strike as One triggers when Tip of the Spear is consumed (per SimC)
+  if (consumedTip && input.talents.activeTalents.has("strikeAsOne")) {
+    const saoSpell = SPELL_DB["strike_as_one"];
+    if (saoSpell) {
+      const petAp = state.currentAP * PET_AP_SCALING;
+      const { damage: saoDmg, isCrit: saoCrit } = computeDamage(
+        state, petAp, saoSpell.apCoef, saoSpell.school, true, rng,
+      );
+      const saoTargets = Math.min(state.numTargets, 1);
+      for (let t = 0; t < saoTargets; t++) {
+        state.recordDamage("strike_as_one", saoDmg, saoCrit, t);
+      }
+      // Strike as One pet attack counts for pack counter
+      if (input.config.hero === "pack_leader") {
+        incrementPackCounter(state, input, rng);
+      }
+    }
+  }
+
   // Hero talent triggers
   if (input.config.hero === "sentinel") {
     handleSentinelTriggers(state, rng, prdState, queue, spell, input, timeline, capture);
@@ -454,24 +650,41 @@ function executeAbility(
   // Tier set interactions
   handleTierInteractions(state, rng, spell, input);
 
-  // Raptor Swipe proc
-  if (spell.key === "raptor_strike" &&
-      input.talents.activeTalents.has("raptorSwipe")) {
-    const procChance = state.takedownActive ? 1.0 : 0.25;
-    if (rng.roll() < procChance) {
+  // Raptor Swipe proc — in Midnight 12.0, Raptor Swipe is a guaranteed proc from Raptor Strike
+  // (SimC data shows ~100% proc rate: 55.8 swipes from 56.4 raptor strikes)
+  if (spell.key === "raptor_strike" && input.talents.activeTalents.has("raptorSwipe")) {
+    {
       const swipeSpell = SPELL_DB["raptor_swipe"];
       if (swipeSpell) {
-        const swipeDmg = swipeSpell.apCoef * state.currentAP * CLASS_AURA
-          * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
-          * (1 + state.currentVersPct / 100);
-        const swipeCrit = rng.roll() < critChance;
-        const swipeFinal = swipeCrit ? swipeDmg * 2.0 : swipeDmg;
+        const { damage: swipeDmg, isCrit: swipeCrit } = computeDamage(
+          state, state.currentAP, swipeSpell.apCoef, swipeSpell.school, false, rng,
+        );
+        const armorMod = swipeSpell.school === "physical"
+          ? (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K)) : 1;
         const swipeTargets = Math.min(state.numTargets, 5);
         for (let t = 0; t < swipeTargets; t++) {
-          state.recordDamage("raptor_swipe", swipeFinal, swipeCrit, t);
+          state.recordDamage("raptor_swipe", swipeDmg, swipeCrit, t);
+        }
+
+        // Raptor Swipe also triggers Strike as One (reduced effectiveness per SimC)
+        if (input.talents.activeTalents.has("strikeAsOne")) {
+          const saoSpell = SPELL_DB["strike_as_one"];
+          if (saoSpell) {
+            const petAp = state.currentAP * PET_AP_SCALING;
+            const reducedCoef = saoSpell.apCoef * 0.5; // reduced effectiveness for swipe
+            const { damage: saoDmg, isCrit: saoCrit } = computeDamage(
+              state, petAp, reducedCoef, saoSpell.school, true, rng,
+            );
+            state.recordDamage("strike_as_one", saoDmg, saoCrit, 0);
+          }
         }
       }
     }
+  }
+
+  // Kill Command: trigger Howl consumption for Pack Leader
+  if (spell.key === "kill_command" && input.config.hero === "pack_leader") {
+    consumeHowlBeasts(state, rng, queue, input);
   }
 
   // Timeline capture
@@ -486,6 +699,36 @@ function executeAbility(
   }
 }
 
+// ── Mongoose Fury: which abilities are affected ───────────────
+
+function isAffectedByMongooseFury(key: string): boolean {
+  // Mongoose Fury affects melee focus spenders and their procs
+  return key === "raptor_strike" || key === "raptor_swipe" ||
+         key === "kill_command" || key === "boomstick" ||
+         key === "takedown" || key === "wildfire_bomb" ||
+         key === "flamefang_pitch" || key === "carve";
+}
+
+// ── Pack Counter helper ───────────────────────────────────────
+
+function incrementPackCounter(state: CombatState, input: SimInput, rng: RNG): void {
+  state.packCounter++;
+  if (state.packCounter >= 4 && input.talents.activeTalents.has("packCoordination")) {
+    state.packCounter = 0;
+    state.packCoordinationProcs++;
+
+    const pcSpell = SPELL_DB["pack_coordination"];
+    if (pcSpell) {
+      const { damage: pcDmg, isCrit: pcCrit } = computeDamage(
+        state, state.currentAP, pcSpell.apCoef, pcSpell.school, false, rng,
+      );
+      state.recordDamage("pack_coordination", pcDmg, pcCrit, 0);
+    }
+  }
+}
+
+// ── Auto attack handlers ─────────────────────────────────────
+
 function handleAutoAttack(
   state: CombatState,
   rng: RNG,
@@ -494,38 +737,143 @@ function handleAutoAttack(
   input: SimInput,
   timeline: TimelineEvent[],
   capture: boolean,
+  meleeSwingMs: number,
 ): void {
-  const spell = SPELL_DB["auto_attack"];
-  if (!spell) return;
-
   const ap = state.currentAP;
-  let dmg = spell.apCoef * ap * CLASS_AURA
+  // Auto attack damage = weapon_DPS * weapon_speed * modifiers
+  // Normalized: baseDmg ≈ AP * weaponSpeedNormalized / 3.5
+  const weaponSpeed = input.stats.weapon.mainHandSpeed;
+  const weaponDps = input.stats.weapon.mainHandDps;
+  let dmg = (weaponDps * weaponSpeed + ap * weaponSpeed / WEAPON_NORMS.twoHand)
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
+
+  // Mongoose Fury affects auto attacks
+  if (state.mongooseFuryStacks > 0) {
+    dmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+  }
 
   const critChance = Math.min(1, state.currentCritPct / 100);
   const isCrit = rng.roll() < critChance;
   if (isCrit) dmg *= 2.0;
 
   // Armor
-  const mitigation = computeArmorMitigation(BOSS_ARMOR, ARMOR_K);
-  dmg *= (1 - mitigation);
+  dmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
 
   state.recordDamage("auto_attack", dmg, isCrit, 0);
 
   // Schedule next auto
   const hasteMult = 1 + state.currentHastePct / 100;
-  const swingMs = Math.round(MELEE_SWING_MS / hasteMult);
-  scheduleAutoAttack(queue, state.nowMs + swingMs, swingMs);
+  const swingMs = Math.round(meleeSwingMs / hasteMult);
+  queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
 
   if (capture) {
     timeline.push({ tMs: state.nowMs, type: "auto", ability: "auto_attack", damage: Math.round(dmg) });
   }
 }
 
+// FIX #8: Off-hand auto attack for DW
+function handleOffHandAutoAttack(
+  state: CombatState,
+  rng: RNG,
+  queue: EventQueue,
+  input: SimInput,
+  timeline: TimelineEvent[],
+  capture: boolean,
+): void {
+  if (!input.stats.weapon.offHandDps || !input.stats.weapon.offHandSpeed) return;
+
+  const ap = state.currentAP;
+  const ohSpeed = input.stats.weapon.offHandSpeed;
+  const ohDps = input.stats.weapon.offHandDps;
+  // Off-hand deals 50% of main-hand damage
+  let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand) * COMBAT_MECHANICS.offHandPenalty
+    * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
+    * (1 + state.currentVersPct / 100);
+
+  if (state.mongooseFuryStacks > 0) {
+    dmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+  }
+
+  const critChance = Math.min(1, state.currentCritPct / 100);
+  const isCrit = rng.roll() < critChance;
+  if (isCrit) dmg *= 2.0;
+
+  dmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
+
+  state.recordDamage("auto_attack_oh", dmg, isCrit, 0);
+
+  const hasteMult = 1 + state.currentHastePct / 100;
+  const swingMs = Math.round((ohSpeed * 1000) / hasteMult);
+  queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
+
+  if (capture) {
+    timeline.push({ tMs: state.nowMs, type: "auto", ability: "auto_attack_oh", damage: Math.round(dmg) });
+  }
+}
+
+// FIX #2: Pet auto-attacks
+
+function handlePetMelee(
+  state: CombatState,
+  rng: RNG,
+  queue: EventQueue,
+  input: SimInput,
+  endMs: number,
+): void {
+  const petAp = state.currentAP * PET_AP_SCALING;
+  const spell = SPELL_DB["pet_melee"];
+  if (!spell) return;
+
+  const { damage: dmg, isCrit } = computeDamage(
+    state, petAp, spell.apCoef, spell.school, true, rng,
+  );
+  // Pet melee is physical, armor already applied by computeDamage
+  state.recordDamage("pet_melee", dmg, isCrit, 0);
+
+  // Schedule next pet melee
+  const hasteMult = 1 + state.currentHastePct / 100;
+  const nextMs = state.nowMs + Math.round(PET_SWING_MS / hasteMult);
+  if (nextMs <= endMs) {
+    queue.enqueue({ tMs: nextMs, priority: EventPriority.AUTO_ATTACK, type: "pet_melee" });
+  }
+}
+
+function handlePetClaw(
+  state: CombatState,
+  rng: RNG,
+  queue: EventQueue,
+  input: SimInput,
+  endMs: number,
+): void {
+  const petAp = state.currentAP * PET_AP_SCALING;
+  const spell = SPELL_DB["pet_claw"];
+  if (!spell) return;
+
+  const { damage: dmg, isCrit } = computeDamage(
+    state, petAp, spell.apCoef, spell.school, true, rng,
+  );
+  state.recordDamage("pet_claw", dmg, isCrit, 0);
+
+  // Pet Claw counts for pack counter
+  if (input.config.hero === "pack_leader") {
+    incrementPackCounter(state, input, rng);
+  }
+
+  // Schedule next claw
+  const hasteMult = 1 + state.currentHastePct / 100;
+  const nextMs = state.nowMs + Math.round(PET_CLAW_CD_MS / hasteMult);
+  if (nextMs <= endMs) {
+    queue.enqueue({ tMs: nextMs, priority: EventPriority.AUTO_ATTACK, type: "pet_claw" });
+  }
+}
+
+// FIX #1: DoT tick handler (now properly uses queue)
+
 function handleDotTick(
   state: CombatState,
   rng: RNG,
+  queue: EventQueue,
   event: SimEvent,
   timeline: TimelineEvent[],
   capture: boolean,
@@ -544,7 +892,8 @@ function handleDotTick(
 
   // Calculate tick damage
   const ap = dot.snapshotAP > 0 ? dot.snapshotAP : state.currentAP;
-  let dmg = dot.apCoefPerTick * ap * CLASS_AURA
+  let dmg = dot.apCoefPerTick * ap
+    * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
   if (!dot.bypassesArmor && dot.school === "physical") {
@@ -561,16 +910,152 @@ function handleDotTick(
     timeline.push({ tMs: state.nowMs, type: "dot_tick", ability: payload.dotKey, damage: Math.round(dmg), target: payload.targetId });
   }
 
-  // Schedule next tick
+  // FIX #1: Schedule next tick via queue
   dot.nextTickMs = state.nowMs + dot.tickIntervalMs;
   if (dot.nextTickMs < dot.expiresMs) {
-    scheduleDotTick(state, payload.dotKey, payload.targetId, dot.nextTickMs, dot.tickIntervalMs);
+    queue.enqueue({
+      tMs: dot.nextTickMs,
+      priority: EventPriority.DOT_TICK,
+      type: "dot_tick",
+      payload: { dotKey: payload.dotKey, targetId: payload.targetId },
+    });
   }
 }
 
 function handleAuraExpire(state: CombatState, event: SimEvent): void {
   const key = event.payload as string;
   if (key) state.removeAura(key);
+}
+
+// ── FIX #6: Pack Leader hero beast handlers ──────────────────
+
+function handleHowlBeast(
+  state: CombatState,
+  rng: RNG,
+  queue: EventQueue,
+  input: SimInput,
+  endMs: number,
+): void {
+  // Cycle: Wyvern → Boar → Bear
+  const cycle = state.howlBeastCycle % 3;
+  state.howlBeastCycle++;
+
+  if (cycle === 0) {
+    // Wyvern: grants Wyvern's Cry stacking buff
+    state.wyvernsCryStacks = Math.min(10, state.wyvernsCryStacks + 3);
+    // Wyvern's Cry expires after ~20s
+    state.wyvernsCryExpiresMs = state.nowMs + 20000;
+  } else if (cycle === 1) {
+    // Boar: Boar Charge direct + cleave damage
+    // Boar charge uses hunter AP (hunter_ranged_attack_t in SimC)
+    const boarAp = BOAR_CHARGE_USES_HUNTER_AP ? state.currentAP : state.currentAP * PET_AP_SCALING;
+    const { damage: chargeDmg, isCrit: chargeCrit } = computeDamage(
+      state, boarAp, BOAR_CHARGE_AP_COEF, "physical", false, rng,
+    );
+    state.recordDamage("boar_charge", chargeDmg, chargeCrit, 0);
+
+    // Cleave on additional targets
+    if (state.numTargets > 1) {
+      const { damage: cleaveDmg, isCrit: cleaveCrit } = computeDamage(
+        state, boarAp, BOAR_CHARGE_CLEAVE_AP_COEF, "physical", false, rng,
+      );
+      for (let t = 1; t < Math.min(state.numTargets, 5); t++) {
+        state.recordDamage("boar_charge", cleaveDmg, cleaveCrit, t);
+      }
+    }
+  } else {
+    // Bear: Summon bear that melees and applies Rend
+    // Apply bear rend DoT
+    const bearRendDot = {
+      key: "bear_rend",
+      spellKey: "bear_rend",
+      pandemic: false,
+      durationMs: BEAR_REND_DURATION_MS,
+      tickIntervalMs: BEAR_REND_TICK_MS,
+      apCoef: BEAR_REND_AP_COEF_PER_TICK,
+      snapshots: ["ap" as const],
+      school: "physical" as const,
+      bypassesArmor: true,
+      aoeTargetCap: 1,
+    };
+    applyDot(state, queue, "bear_rend", 0, bearRendDot, state.currentAP * PET_AP_SCALING);
+
+    // Schedule bear melee attacks for duration
+    const bearEndMs = Math.min(state.nowMs + BEAR_DURATION_MS, endMs);
+    let nextBearMs = state.nowMs + PET_SWING_MS;
+    while (nextBearMs <= bearEndMs) {
+      queue.enqueue({ tMs: nextBearMs, priority: EventPriority.AUTO_ATTACK, type: "bear_melee" });
+      nextBearMs += PET_SWING_MS;
+    }
+  }
+
+  // Stampede: triggers when any beast is consumed during KC
+  // (handled in consumeHowlBeasts)
+
+  // Schedule next howl beast
+  const nextMs = state.nowMs + HOWL_CD_MS;
+  if (nextMs <= endMs) {
+    queue.enqueue({ tMs: nextMs, priority: EventPriority.CAST_COMPLETE, type: "howl_beast" });
+  }
+}
+
+function handleBearMelee(
+  state: CombatState,
+  rng: RNG,
+  queue: EventQueue,
+  endMs: number,
+): void {
+  const petAp = state.currentAP * PET_AP_SCALING;
+  const { damage: dmg, isCrit } = computeDamage(
+    state, petAp, BEAR_MELEE_AP_COEF, "physical", true, rng,
+  );
+  state.recordDamage("bear_melee", dmg, isCrit, 0);
+}
+
+function consumeHowlBeasts(
+  state: CombatState,
+  rng: RNG,
+  queue: EventQueue,
+  input: SimInput,
+): void {
+  // When Kill Command fires, check if a beast buff is ready to consume
+  // In SimC this cycles through ready beast buffs
+  if (!input.talents.activeTalents.has("howlOfThePackLeader")) return;
+
+  // Stampede: triggers when Takedown is active (aligned with CD, ~5.3 procs per fight)
+  // In SimC: stampede fires during Takedown window when a beast is consumed
+  if (state.takedownActive && !state.stampedePending) {
+    state.stampedePending = true;
+    // Schedule stampede ticks
+    const endMs = input.config.durationMs;
+    let tickMs = state.nowMs + STAMPEDE_TICK_MS;
+    const stampEndMs = Math.min(state.nowMs + STAMPEDE_DURATION_MS, endMs);
+    while (tickMs <= stampEndMs) {
+      queue.enqueue({ tMs: tickMs, priority: EventPriority.DOT_TICK, type: "stampede_tick" });
+      tickMs += STAMPEDE_TICK_MS;
+    }
+  }
+
+  // Reset stampede flag when takedown expires
+  if (!state.takedownActive) {
+    state.stampedePending = false;
+  }
+
+  // Pack Mentality: beast consumption reduces WFB CD
+  state.cooldowns.reduceCooldown("wildfire_bomb", 1000, state.nowMs);
+}
+
+function handleStampedeTick(
+  state: CombatState,
+  rng: RNG,
+  queue: EventQueue,
+  endMs: number,
+): void {
+  const petAp = state.currentAP * PET_AP_SCALING;
+  const { damage: dmg, isCrit } = computeDamage(
+    state, petAp, STAMPEDE_AP_COEF * 0.5, "physical", true, rng,
+  );
+  state.recordDamage("stampede", dmg, isCrit, 0);
 }
 
 // ── Hero talent triggers ──────────────────────────────────────
@@ -587,34 +1072,35 @@ function handleSentinelTriggers(
 ): void {
   const talents = input.talents.activeTalents;
 
-  // Sentinel counter: ranged attacks increment
+  // Sentinel counter: KC and auto attacks increment
   if (spell.key === "kill_command" || spell.key === "auto_attack") {
     state.sentinelCounter++;
 
-    if (state.sentinelCounter >= 5) {
+    if (state.sentinelCounter >= SENTINEL_COUNTER.threshold) {
       state.sentinelCounter = 0;
       state.sentinelOwlProcs++;
 
       // Sentinel Owl damage
       const owlSpell = SPELL_DB["sentinel_owl"];
       if (owlSpell) {
-        const owlDmg = owlSpell.apCoef * state.currentAP * CLASS_AURA
-          * (1 + state.currentVersPct / 100);
+        const petAp = state.currentAP; // Owl uses full AP
+        const { damage: owlDmg, isCrit: owlCrit } = computeDamage(
+          state, petAp, owlSpell.apCoef, owlSpell.school, false, rng,
+        );
         const targets = Math.min(state.numTargets, 8);
         for (let t = 0; t < targets; t++) {
-          state.recordDamage("sentinel_owl", owlDmg, false, t);
+          state.recordDamage("sentinel_owl", owlDmg, owlCrit, t);
         }
       }
 
       // Sentinel's Wisdom: +3% crit per owl proc, stacks to 5
-      state.sentinelWisdomStacks = Math.min(5, state.sentinelWisdomStacks + 1);
-      state.applyAura("sentinels_wisdom", 15000, 5, { crit: 0.03 * 180 });
+      state.sentinelWisdomStacks = Math.min(BUFF_DURATIONS.sentinels_wisdom.maxStacks, state.sentinelWisdomStacks + 1);
+      state.applyAura("sentinels_wisdom", BUFF_DURATIONS.sentinels_wisdom.durationMs, BUFF_DURATIONS.sentinels_wisdom.maxStacks, { crit: (BUFF_DURATIONS.sentinels_wisdom.critPctPerStack / 100) * COMBAT_RATINGS.crit });
 
       // PRD roll: 30% chance Lunar Storm
       if (talents.has("lunarStorm")) {
-        if (rollPRD("lunar_storm", 0.30, rng, prdState)) {
+        if (rollPRD("lunar_storm", PROC_CHANCES.lunar_storm, rng, prdState)) {
           state.lunarStormProcs++;
-          // Apply Lunar Storm DoT (8s, ticks every 1s)
           const dotInfo = DOT_DB["lunar_storm_dot"];
           if (dotInfo) {
             for (let t = 0; t < Math.min(state.numTargets, 5); t++) {
@@ -627,7 +1113,7 @@ function handleSentinelTriggers(
 
     // Eyes of the Eagle: KC has chance to reset WFB charge
     if (spell.key === "kill_command" && talents.has("catchOut")) {
-      if (rng.roll() < 0.25) {
+      if (rng.roll() < PROC_CHANCES.eyes_of_eagle) {
         state.cooldowns.resetCharge("wildfire_bomb");
         state.eyesOfEagleResets++;
       }
@@ -649,10 +1135,8 @@ function handlePackLeaderTriggers(
 
   // Kill Command → Vicious Hunt: summon dire beast
   if (spell.key === "kill_command" && talents.has("viciousHunt")) {
-    if (rollPRD("vicious_hunt", 0.25, rng, prdState)) {
+    if (rollPRD("vicious_hunt", PROC_CHANCES.vicious_hunt, rng, prdState)) {
       state.viciousHuntProcs++;
-
-      // Vicious Wound bleed on target
       const dotInfo = DOT_DB["vicious_wound_dot"];
       if (dotInfo) {
         applyDot(state, queue, "vicious_wound_dot", 0, dotInfo, state.currentAP);
@@ -662,44 +1146,29 @@ function handlePackLeaderTriggers(
 
   // Pet attack counter → Pack Coordination
   if (spell.isPet || spell.key === "kill_command") {
-    state.packCounter++;
-    if (state.packCounter >= 4 && talents.has("packCoordination")) {
-      state.packCounter = 0;
-      state.packCoordinationProcs++;
-
-      const pcSpell = SPELL_DB["pack_coordination"];
-      if (pcSpell) {
-        const pcDmg = pcSpell.apCoef * state.currentAP * CLASS_AURA
-          * (1 + state.currentVersPct / 100);
-        state.recordDamage("pack_coordination", pcDmg, false, 0);
-      }
-    }
+    incrementPackCounter(state, input, rng);
   }
 
   // Frenzied Tear: Raptor Strike → 20% chance extra pet attack
   if (spell.key === "raptor_strike" && talents.has("furiousAssault")) {
-    if (rollPRD("frenzied_tear", 0.20, rng, prdState)) {
+    if (rollPRD("frenzied_tear", PROC_CHANCES.frenzied_tear, rng, prdState)) {
       state.frenziedTearProcs++;
 
-      // Immediate pet attack (can trigger pack coordination)
-      const petDmg = 1.10 * state.currentAP * PET_AP_SCALING * CLASS_AURA
-        * (1 + state.currentMasteryPct * MASTERY_PET_BONUS)
-        * (1 + state.currentVersPct / 100);
-      state.recordDamage("strike_as_one", petDmg, false, 0);
+      const petAp = state.currentAP * PET_AP_SCALING;
+      const { damage: petDmg, isCrit: petCrit } = computeDamage(
+        state, petAp, 1.10, "physical", true, rng,
+      );
+      state.recordDamage("strike_as_one", petDmg, petCrit, 0);
 
-      // This pet attack counts for pack counter
-      state.packCounter++;
-      if (state.packCounter >= 4 && talents.has("packCoordination")) {
-        state.packCounter = 0;
-        state.packCoordinationProcs++;
-        const pcSpell = SPELL_DB["pack_coordination"];
-        if (pcSpell) {
-          const pcDmg = pcSpell.apCoef * state.currentAP * CLASS_AURA
-            * (1 + state.currentVersPct / 100);
-          state.recordDamage("pack_coordination", pcDmg, false, 0);
-        }
-      }
+      // Pet attack counts for pack counter
+      incrementPackCounter(state, input, rng);
     }
+  }
+
+  // Expire Wyvern's Cry stacks
+  if (state.wyvernsCryExpiresMs > 0 && state.nowMs >= state.wyvernsCryExpiresMs) {
+    state.wyvernsCryStacks = 0;
+    state.wyvernsCryExpiresMs = 0;
   }
 }
 
@@ -721,7 +1190,7 @@ function handleTierInteractions(
 
   // 4pc: WFB detonation has 20% chance to reset Boomstick CD
   if (spell.key === "wildfire_bomb" && input.stats.has4pc) {
-    if (rng.roll() < 0.20) {
+    if (rng.roll() < PROC_CHANCES.tier_4pc_boomstick) {
       state.cooldowns.resetCharge("boomstick");
     }
   }
@@ -734,7 +1203,6 @@ function applySpellDots(
   spell: SpellInfo,
   queue: EventQueue,
 ): void {
-  // Wildfire Bomb → WFB DoT
   if (spell.key === "wildfire_bomb") {
     const dotKey = "wildfire_bomb_dot";
     const dotInfo = DOT_DB[dotKey];
@@ -746,13 +1214,23 @@ function applySpellDots(
     }
   }
 
-  // Flamefang Pitch DoT
   if (spell.key === "flamefang_pitch") {
     const dotInfo = DOT_DB["flamefang_pitch_dot"];
     if (dotInfo) {
       const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
       for (let t = 0; t < targets; t++) {
         applyDot(state, queue, "flamefang_pitch_dot", t, dotInfo, state.currentAP);
+      }
+    }
+  }
+
+  // Boomstick: multi-tick ability (4 ticks over 6s)
+  if (spell.key === "boomstick") {
+    const dotInfo = DOT_DB["boomstick_dot"];
+    if (dotInfo) {
+      const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
+      for (let t = 0; t < targets; t++) {
+        applyDot(state, queue, "boomstick_dot", t, dotInfo, state.currentAP);
       }
     }
   }
@@ -763,7 +1241,7 @@ function applyDot(
   queue: EventQueue,
   dotKey: string,
   targetId: number,
-  dotInfo: typeof DOT_DB[string],
+  dotInfo: { pandemic: boolean; durationMs: number; tickIntervalMs: number; apCoef: number; snapshots: readonly string[]; school: string; bypassesArmor: boolean },
   snapshotAP: number,
 ): void {
   const target = state.targets[targetId];
@@ -775,7 +1253,7 @@ function applyDot(
   // Pandemic: extend by remaining time (up to 30% of base)
   if (dotInfo.pandemic && existing && existing.expiresMs > state.nowMs) {
     const remaining = existing.expiresMs - state.nowMs;
-    const pandemicMax = dotInfo.durationMs * 0.3;
+    const pandemicMax = dotInfo.durationMs * COMBAT_MECHANICS.pandemicMaxPct;
     duration += Math.min(remaining, pandemicMax);
   }
 
@@ -793,20 +1271,13 @@ function applyDot(
 
   target.dots.set(dotKey, activeDot);
 
-  // Schedule first tick
-  scheduleDotTick(state, dotKey, targetId, activeDot.nextTickMs, dotInfo.tickIntervalMs);
-}
-
-function scheduleDotTick(
-  state: CombatState,
-  dotKey: string,
-  targetId: number,
-  tickMs: number,
-  _intervalMs: number,
-): void {
-  // We use EventQueue through the iteration — but since we don't have a reference here,
-  // we'll rely on the main loop scheduling. This is handled via the queue parameter.
-  // For now, DoT ticks are driven by the main loop checking dot state.
+  // FIX #1: Actually enqueue the first tick event
+  queue.enqueue({
+    tMs: activeDot.nextTickMs,
+    priority: EventPriority.DOT_TICK,
+    type: "dot_tick",
+    payload: { dotKey, targetId },
+  });
 }
 
 // ── Trinket processing ────────────────────────────────────────
@@ -826,7 +1297,6 @@ function processTrinkets(
         if (eventType !== "gcd_ready") break;
         if (!state.cooldowns.isReady(cdKey, state.nowMs)) break;
 
-        // Burst alignment: on-use trinkets wait for Takedown window
         if (trinket.burstAlignable) {
           if (!state.takedownActive) break;
         }
@@ -844,15 +1314,9 @@ function processTrinkets(
       case "proc": {
         if (eventType !== "auto_attack" && eventType !== "gcd_ready") break;
 
-        // ICD check: if trinket has an ICD, respect it
         const hasICD = trinket.procICD && trinket.procICD > 0;
         if (hasICD && !state.cooldowns.isReady(cdKey, state.nowMs)) break;
 
-        // Proc chance per event derived from target uptime:
-        // uptime = procChance * buffDur / (procChance * buffDur + meanTimeBetweenProcs)
-        // Simplified: if target uptime = 0.45, buff dur = 10s, we want ~0.45 uptime.
-        // Average events/sec ≈ 1.8 (auto + GCD), so procChance = uptime * eventRate / buffDurSec
-        // We approximate: procChance = uptime * 0.18 per event
         const uptime = trinket.procUptime ?? 0;
         const procChance = Math.min(0.95, uptime * 0.18);
 
@@ -862,7 +1326,6 @@ function processTrinkets(
             const buffKey = stat === "agi" ? "agi" : stat;
             state.applyAura(cdKey, 10_000, 1, { [buffKey]: trinket.procAmount });
           }
-          // If ICD exists, put it on cooldown
           if (hasICD) {
             state.cooldowns.use(cdKey, state.nowMs);
           }
@@ -871,15 +1334,14 @@ function processTrinkets(
       }
 
       case "damage_proc": {
-        // Damage procs fire on auto attacks and ability casts
         if (eventType !== "auto_attack" && eventType !== "gcd_ready") break;
         if (!trinket.dmgApCoef || !trinket.dmgCPM) break;
 
-        // CPM-based proc chance: procsPerMin / eventsPerMin
+        const meleeSwingMs = getMeleeSwingMs(input);
         const hasteMult = 1 + state.currentHastePct / 100;
         const eventsPerSec = eventType === "auto_attack"
-          ? 1000 / (MELEE_SWING_MS / hasteMult)
-          : 0.7 * hasteMult;  // ~0.7 GCDs/sec at 0% haste
+          ? 1000 / (meleeSwingMs / hasteMult)
+          : 0.7 * hasteMult;
         const chancePerEvent = (trinket.dmgCPM / 60) / eventsPerSec;
 
         if (rng.roll() < chancePerEvent) {
@@ -890,8 +1352,6 @@ function processTrinkets(
         }
         break;
       }
-
-      // "equip" type handled at sim start (permanent aura)
     }
   }
 }
@@ -902,20 +1362,19 @@ function processWeaponProc(
   state: CombatState,
   rng: RNG,
   input: SimInput,
+  meleeSwingMs: number,
 ): void {
   const wp = input.weaponProc;
   if (!wp) return;
 
   const hasteMult = 1 + state.currentHastePct / 100;
-  const autoSpeed = MELEE_SWING_MS / hasteMult / 1000;
+  const autoSpeed = meleeSwingMs / hasteMult / 1000;
   const chancePerAttack = (wp.dmgCPM / 60) * autoSpeed;
 
   if (rng.roll() < chancePerAttack) {
     let dmg = state.currentAP * wp.dmgApCoef;
-    // Non-physical procs bypass armor
     if (wp.school === "physical") {
-      const mitigation = computeArmorMitigation(BOSS_ARMOR, ARMOR_K);
-      dmg *= (1 - mitigation);
+      dmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
     }
     state.recordDamage("weapon_enhancement", dmg, false, 0);
   }
@@ -926,22 +1385,16 @@ function processWeaponProc(
 function initializeCooldowns(state: CombatState, talents: { activeTalents: Set<string> }): void {
   const hasteMult = 1 + state.currentHastePct / 100;
 
-  // Initialize CDs for ALL spells with cooldownMs > 0, regardless of talent.
-  // This ensures the CooldownTracker rejects casts for abilities whose CD
-  // was never "used" (charge stays at 1 → ready), but also prevents the
-  // evaluateAPL fallback of "untracked = always ready" from firing.
   for (const spell of Object.values(SPELL_DB)) {
     if (spell.cooldownMs <= 0) continue;
     if (spell.key === "auto_attack") continue;
 
     let cdMs = spell.cooldownMs;
 
-    // Apply haste scaling where applicable
     if (spell.hasteScalesCD) {
       cdMs = Math.round(cdMs / hasteMult);
     }
 
-    // Talent-specific overrides
     if (spell.key === "takedown" && talents.activeTalents.has("savagery")) {
       cdMs = 60000;
     }
@@ -952,10 +1405,6 @@ function initializeCooldowns(state: CombatState, talents: { activeTalents: Set<s
 }
 
 // ── Scheduling helpers ────────────────────────────────────────
-
-function scheduleAutoAttack(queue: EventQueue, tMs: number, _swingMs: number): void {
-  queue.enqueue({ tMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
-}
 
 function compileAPL(config: { hero: HeroTree; apl: string; fightStyle: string }): CompiledAPL {
   if (config.apl) {

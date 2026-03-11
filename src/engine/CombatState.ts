@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import type { HeroTree, PlayerStats, ResolvedBuffMultipliers } from "./types";
+import { COMBAT_RATINGS, MASTERY_SPIRIT_BOND, BUFF_DURATIONS, FOCUS_VALUES } from "./simcSpellData";
 
 // ── Aura (buff/debuff) ────────────────────────────────────────
 
@@ -168,7 +169,7 @@ export class CombatState {
   // Player resources
   focus: number = 100;
   maxFocus: number = 100;
-  focusRegenPerSec: number = 5;
+  focusRegenPerSec: number = FOCUS_VALUES.baseRegenPerSec;
 
   // Player stats (mutable — auras modify these)
   baseStats: PlayerStats;
@@ -191,6 +192,17 @@ export class CombatState {
   sentinelCounter: number = 0;
   sentinelWisdomStacks: number = 0;
   packCounter: number = 0;
+
+  // Mongoose Fury: stacks on Raptor Strike, +15% per stack, max 5
+  mongooseFuryStacks: number = 0;
+
+  // Pack Leader: Howl of the Pack Leader beast cycle (0=Wyvern, 1=Boar, 2=Bear)
+  howlBeastCycle: number = 0;
+  // Wyvern's Cry: stacking pet damage buff
+  wyvernsCryStacks: number = 0;
+  wyvernsCryExpiresMs: number = 0;
+  // Stampede: pending flag (KC sets it, next beast consumption fires stampede)
+  stampedePending: boolean = false;
 
   // Hero counters for reporting
   sentinelOwlProcs: number = 0;
@@ -262,15 +274,17 @@ export class CombatState {
 
     // Sentinel's Wisdom: +3% crit per stack (up to 5)
     if (this.hero === "sentinel") {
-      bonusCrit += this.sentinelWisdomStacks * 0.03 * 180; // approx rating
+      bonusCrit += this.sentinelWisdomStacks * (BUFF_DURATIONS.sentinels_wisdom.critPctPerStack / 100) * COMBAT_RATINGS.crit;
     }
 
     const totalAgi = s.agility + bonusAgi;
-    this.currentAP = totalAgi + s.attackPower; // simplified AP calc
-    this.currentCritPct = (s.critRating + bonusCrit) / 180 + 5; // base 5% crit
-    this.currentHastePct = (s.hasteRating + bonusHaste) / 170;
-    this.currentMasteryPct = (s.masteryRating + bonusMastery) / 180;
-    this.currentVersPct = (s.versatilityRating + bonusVers) / 205 + this.externalVersPctBonus;
+    this.currentAP = totalAgi + (s.attackPower ?? 0);
+    // Level 90 Midnight stat conversions (from simcSpellData COMBAT_RATINGS)
+    this.currentCritPct = (s.critRating + bonusCrit) / COMBAT_RATINGS.crit + COMBAT_RATINGS.baseCrit;
+    this.currentHastePct = (s.hasteRating + bonusHaste) / COMBAT_RATINGS.haste;
+    // Mastery: base points + rating/ratingPerPoint mastery points, each point = bonusPerPoint Spirit Bond bonus
+    this.currentMasteryPct = MASTERY_SPIRIT_BOND.basePoints + (s.masteryRating + bonusMastery) / MASTERY_SPIRIT_BOND.ratingPerPoint;
+    this.currentVersPct = (s.versatilityRating + bonusVers) / COMBAT_RATINGS.versatility + this.externalVersPctBonus;
   }
 
   /** Apply an aura to the player */
@@ -358,6 +372,11 @@ export class CombatState {
     this.sentinelCounter = 0;
     this.sentinelWisdomStacks = 0;
     this.packCounter = 0;
+    this.mongooseFuryStacks = 0;
+    this.howlBeastCycle = 0;
+    this.wyvernsCryStacks = 0;
+    this.wyvernsCryExpiresMs = 0;
+    this.stampedePending = false;
     this.sentinelOwlProcs = 0;
     this.lunarStormProcs = 0;
     this.eyesOfEagleResets = 0;

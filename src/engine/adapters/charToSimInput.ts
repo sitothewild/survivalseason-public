@@ -13,13 +13,17 @@ import { getEquippedTrinkets, getTrinketById } from "./trinketsToEngine";
 import { DEFAULT_APLS, getDefaultAPLKey } from "../APLEngine";
 import { applySimOptions } from "../applySimOptions";
 import { DEFAULT_SIM_OPTIONS } from "../simOptionsPresets";
+import { COMBAT_RATINGS } from "../simcSpellData";
 
-// Rating constants matching combatRatings.json & parseSimcString()
+// Rating constants derived from simcSpellData COMBAT_RATINGS.
+// Mastery uses a special conversion: the parser gives Spirit Bond % (e.g. 29.64%),
+// but conversion to rating is non-linear due to base points. Use 28.1 as approximate
+// rating-per-1%-Spirit-Bond for the parser's percentage → rating reverse conversion.
 const RATING_PER_PCT = {
-  crit: 170,      // parseSimcString uses 170 (simpler than 180 in combatRatings)
-  haste: 170,
-  mastery: 170,
-  versatility: 205,
+  crit: COMBAT_RATINGS.crit,
+  haste: COMBAT_RATINGS.haste,
+  mastery: 28.1,   // Approximate: converts mastery% → rating for parser percentages
+  versatility: COMBAT_RATINGS.versatility,
 };
 
 /**
@@ -127,7 +131,7 @@ export function charToSimInput(
   const baseStats: PlayerStats = {
     agility: s.agility || 1500,
     stamina: Math.round((s.agility || 1500) * 0.9),
-    attackPower: s.attackPower || Math.round((s.agility || 1500) * 1.05),
+    attackPower: 0, // AP = Agility for hunters; bonus AP from buffs applied later
     critRating: percentToRating(s.crit || 0, "crit"),
     hasteRating: percentToRating(s.haste || 0, "haste"),
     masteryRating: percentToRating(s.mastery || 0, "mastery"),

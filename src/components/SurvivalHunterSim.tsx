@@ -4911,6 +4911,285 @@ export default function SurvivalHunterSim() {
                   );
                 })()}
 
+                {/* ═══ SECTION: HERO TALENT PROCS ═══ */}
+                <SectionDivider id="heroprocs" label="HERO TALENT PROCS" icon="⚡" />
+                {isOpen("heroprocs") && (() => {
+                  const hc = primary.heroCounters;
+                  if (!hc) return (
+                    <CARD>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, textAlign: "center", padding: 20 }}>
+                        Hero proc data is available when using the simulation engine. Run a sim to see real proc counts.
+                      </p>
+                    </CARD>
+                  );
+                  const isSent = heroTalent === 'sentinel';
+                  const procData = isSent ? [
+                    { label: "Sentinel Owl Procs", value: hc.sentinelOwlProcs ?? 0, perMin: ((hc.sentinelOwlProcs ?? 0) / fightDuration) * 60, color: "#38bdf8", desc: "Owl attacks that apply Sentinel marks to targets" },
+                    { label: "Lunar Storm Procs", value: hc.lunarStormProcs ?? 0, perMin: ((hc.lunarStormProcs ?? 0) / fightDuration) * 60, color: "#818cf8", desc: "AoE storms triggered by mark consumption" },
+                    { label: "Eyes of the Eagle Resets", value: hc.eyesOfEagleResets ?? 0, perMin: ((hc.eyesOfEagleResets ?? 0) / fightDuration) * 60, color: "#fbbf24", desc: "Cooldown resets from Sentinel talent procs" },
+                    { label: "Vicious Hunt Procs", value: hc.viciousHuntProcs ?? 0, perMin: ((hc.viciousHuntProcs ?? 0) / fightDuration) * 60, color: "#f87171", desc: "Bonus damage from Vicious Hunt talent" },
+                  ] : [
+                    { label: "Pack Coordination Procs", value: hc.packCoordinationProcs ?? 0, perMin: ((hc.packCoordinationProcs ?? 0) / fightDuration) * 60, color: "#4ade80", desc: "Beast summons from coordinated pack attacks" },
+                    { label: "Frenzied Tear Procs", value: hc.frenziedTearProcs ?? 0, perMin: ((hc.frenziedTearProcs ?? 0) / fightDuration) * 60, color: "#f97316", desc: "Bonus pet attacks from Frenzied Tear" },
+                  ];
+                  const maxVal = Math.max(...procData.map(p => p.value), 1);
+                  return (
+                    <CARD>
+                      <LBL>{isSent ? "🦉" : "🐾"} {isSent ? "Sentinel" : "Pack Leader"} Hero Procs — Per Fight Average</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                        Real proc counts averaged across {primary.iterations?.toLocaleString() ?? "N"} simulation iterations. These are actual engine-tracked values, not estimates.
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        {procData.map(p => (
+                          <div key={p.label}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                              <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 0.5, color: p.color, fontWeight: 700 }}>{p.label}</span>
+                              <div style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textDim }}>{p.perMin.toFixed(1)}/min</span>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, color: p.color, fontWeight: 700 }}>{p.value.toFixed(1)}</span>
+                              </div>
+                            </div>
+                            <div style={{ height: 8, background: C.surface2, borderRadius: 4, overflow: "hidden", marginBottom: 4 }}>
+                              <div style={{ height: "100%", width: `${(p.value / maxVal) * 100}%`, background: p.color, borderRadius: 4, transition: "width .5s ease", boxShadow: `0 0 6px ${p.color}30` }} />
+                            </div>
+                            <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, margin: 0 }}>{p.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CARD>
+                  );
+                })()}
+
+                {/* ═══ SECTION: PER-TARGET DAMAGE ═══ */}
+                {(primary.targets || 1) > 1 && (
+                  <>
+                    <SectionDivider id="pertarget" label="PER-TARGET DAMAGE" icon="🎯" />
+                    {isOpen("pertarget") && (() => {
+                      const pt = primary.perTarget;
+                      if (!pt || Object.keys(pt).length === 0) return (
+                        <CARD>
+                          <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textDim, textAlign: "center", padding: 20 }}>
+                            Per-target data available when using the simulation engine with multiple targets.
+                          </p>
+                        </CARD>
+                      );
+                      const entries = Object.entries(pt).sort((a, b) => b[1].dps - a[1].dps);
+                      const maxDps = Math.max(...entries.map(([, v]) => v.dps), 1);
+                      const totalDmg = entries.reduce((s, [, v]) => s + v.damage, 0);
+                      return (
+                        <CARD>
+                          <LBL>🎯 Per-Target Damage Distribution</LBL>
+                          <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                            How damage is distributed across {entries.length} targets. Target 0 is the primary (boss) target.
+                          </p>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {entries.map(([tid, data]) => {
+                              const pct = totalDmg > 0 ? (data.damage / totalDmg) * 100 : 0;
+                              const isPrimary = tid === "0";
+                              const color = isPrimary ? C.goldLight : "#64748b";
+                              return (
+                                <div key={tid}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                                    <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 0.5, color, fontWeight: 700 }}>
+                                      {isPrimary ? "PRIMARY TARGET" : `ADD ${tid}`}
+                                    </span>
+                                    <div style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
+                                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textDim }}>{pct.toFixed(1)}%</span>
+                                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color, fontWeight: 700 }}>{fmt(data.dps)} DPS</span>
+                                    </div>
+                                  </div>
+                                  <div style={{ height: 8, background: C.surface2, borderRadius: 4, overflow: "hidden" }}>
+                                    <div style={{ height: "100%", width: `${(data.dps / maxDps) * 100}%`, background: isPrimary ? C.goldLight : "#475569", borderRadius: 4, transition: "width .5s ease" }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{ marginTop: 14, padding: "10px 14px", background: "rgba(251,191,36,.06)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 8 }}>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid }}>
+                              Total combined damage: <strong style={{ color: C.goldLight, fontFamily: "'IBM Plex Mono',monospace" }}>{fmt(Math.round(totalDmg))}</strong> across all targets
+                            </span>
+                          </div>
+                        </CARD>
+                      );
+                    })()}
+                  </>
+                )}
+
+                {/* ═══ SECTION: CONVERGENCE ═══ */}
+                <SectionDivider id="convergence" label="STATISTICAL CONVERGENCE" icon="📉" />
+                {isOpen("convergence") && (() => {
+                  const mean = primary.totalDps;
+                  const sd = primary.stdDev ?? 0;
+                  const p5 = primary.p5Dps ?? 0;
+                  const p95 = primary.p95Dps ?? 0;
+                  const mn = primary.minDps ?? 0;
+                  const mx = primary.maxDps ?? 0;
+                  const med = primary.medianDps ?? 0;
+                  const iters = primary.iterations ?? 0;
+                  const coefVar = mean > 0 ? ((sd / mean) * 100) : 0;
+                  const converged = coefVar < 1;
+
+                  // Build distribution visualization bars (simplified normal approximation)
+                  const bucketCount = 30;
+                  const range = mx - mn;
+                  const bucketWidth = range > 0 ? range / bucketCount : 1;
+                  const buckets: number[] = Array(bucketCount).fill(0);
+                  // Approximate normal distribution from mean/stdDev
+                  for (let i = 0; i < bucketCount; i++) {
+                    const x = mn + (i + 0.5) * bucketWidth;
+                    const z = sd > 0 ? (x - mean) / sd : 0;
+                    buckets[i] = Math.exp(-0.5 * z * z);
+                  }
+                  const maxBucket = Math.max(...buckets, 0.01);
+
+                  return (
+                    <CARD>
+                      <LBL>📉 Statistical Convergence</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                        Distribution of DPS across {iters.toLocaleString()} iterations. Lower coefficient of variation = more reliable results.
+                      </p>
+
+                      {/* Distribution chart */}
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>DPS DISTRIBUTION</div>
+                        <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: 60, background: "#0d1117", borderRadius: 6, padding: "4px 2px", border: `1px solid ${C.border}` }}>
+                          {buckets.map((h, i) => {
+                            const x = mn + (i + 0.5) * bucketWidth;
+                            const inP5P95 = x >= p5 && x <= p95;
+                            return (
+                              <div key={i} style={{
+                                flex: 1,
+                                height: `${Math.max(2, (h / maxBucket) * 100)}%`,
+                                background: inP5P95 ? C.goldLight : '#2e3a50',
+                                borderRadius: 2,
+                                transition: "height .3s ease",
+                              }} title={`~${fmt(Math.round(x))} DPS`} />
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim, marginTop: 2 }}>
+                          <span>{fmt(mn)}</span>
+                          <span style={{ color: C.goldLight }}>p5–p95 highlighted</span>
+                          <span>{fmt(mx)}</span>
+                        </div>
+                      </div>
+
+                      {/* Stats grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+                        {[
+                          { label: "MEAN", value: fmt(mean), color: C.goldLight },
+                          { label: "MEDIAN", value: fmt(med), color: C.textPri },
+                          { label: "STD DEV", value: fmt(sd), color: "#60a5fa" },
+                          { label: "P5", value: fmt(p5), color: "#f87171" },
+                          { label: "P95", value: fmt(p95), color: "#4ade80" },
+                          { label: "RANGE", value: `${fmt(mn)}–${fmt(mx)}`, color: C.textMid },
+                        ].map(s => (
+                          <div key={s.label} style={{ background: C.surface2, borderRadius: 8, padding: "10px 12px", border: `1px solid ${C.borderSub}` }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 4 }}>{s.label}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, color: s.color, fontWeight: 700 }}>{s.value}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Convergence indicator */}
+                      <div style={{
+                        padding: "12px 16px", borderRadius: 8,
+                        background: converged ? "rgba(74,222,128,.08)" : "rgba(251,191,36,.08)",
+                        border: `1px solid ${converged ? "rgba(74,222,128,.2)" : "rgba(251,191,36,.2)"}`,
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 16 }}>{converged ? "✓" : "⚠"}</span>
+                          <div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1, color: converged ? C.green : C.goldLight, fontWeight: 700 }}>
+                              {converged ? "CONVERGED" : "LOW CONFIDENCE"}
+                            </div>
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginTop: 2 }}>
+                              Coefficient of variation: <strong style={{ fontFamily: "'IBM Plex Mono',monospace", color: converged ? C.green : C.goldLight }}>{coefVar.toFixed(2)}%</strong>
+                              {!converged && " — consider increasing iterations for more stable results"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CARD>
+                  );
+                })()}
+
+                {/* ═══ SECTION: FOCUS RESOURCES ═══ */}
+                <SectionDivider id="resources" label="FOCUS ECONOMY" icon="💎" />
+                {isOpen("resources") && (() => {
+                  const res = detailed.resourceData;
+                  const totalFocus = Math.max(res.focusGenerated, 1);
+                  const efficiency = ((res.focusSpent / totalFocus) * 100);
+                  const effColor = efficiency >= 90 ? C.green : efficiency >= 75 ? C.goldLight : C.red;
+
+                  const focusSpenders = res.spenders ?? [];
+                  const focusGenerators = res.generators ?? [];
+
+                  return (
+                    <CARD>
+                      <LBL>💎 Focus Economy</LBL>
+                      <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
+                        Focus resource tracking derived from engine cast counts and SpellDB focus costs.
+                      </p>
+
+                      {/* Main stats */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+                        {[
+                          { label: "GENERATED", value: res.focusGenerated.toLocaleString(), color: "#4ade80", sub: `${(res.focusGenerated / fightDuration).toFixed(1)}/sec` },
+                          { label: "SPENT", value: res.focusSpent.toLocaleString(), color: "#60a5fa", sub: `${(res.focusSpent / fightDuration).toFixed(1)}/sec` },
+                          { label: "EFFICIENCY", value: `${efficiency.toFixed(1)}%`, color: effColor, sub: `${res.focusWasted.toLocaleString()} wasted` },
+                        ].map(s => (
+                          <div key={s.label} style={{ background: C.surface2, borderRadius: 8, padding: "12px 14px", border: `1px solid ${C.borderSub}`, textAlign: "center" }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim, marginBottom: 6 }}>{s.label}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 18, color: s.color, fontWeight: 700 }}>{s.value}</div>
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 2 }}>{s.sub}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Efficiency bar */}
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>FOCUS UTILIZATION</div>
+                        <div style={{ height: 12, background: C.surface2, borderRadius: 6, overflow: "hidden", position: "relative" }}>
+                          <div style={{ height: "100%", width: `${Math.min(100, efficiency)}%`, background: `linear-gradient(90deg, #4ade80, ${effColor})`, borderRadius: 6, transition: "width .5s ease" }} />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim, marginTop: 3 }}>
+                          <span>0%</span>
+                          <span style={{ color: effColor }}>{efficiency.toFixed(1)}% utilized</span>
+                          <span>100%</span>
+                        </div>
+                      </div>
+
+                      {/* Spenders & Generators side by side */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                        <div>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: "#f87171", marginBottom: 8 }}>SPENDERS</div>
+                          {focusSpenders.length > 0 ? focusSpenders.map(s => (
+                            <div key={s.label} style={{ display: "flex", justifyContent: "space-between", padding: "5px 8px", borderRadius: 4, background: s === focusSpenders[0] ? "rgba(248,113,113,.06)" : "transparent", borderBottom: `1px solid ${C.borderSub}` }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textSec }}>{s.label}</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textMid }}>-{s.total} ({s.casts.toFixed(1)} × {s.cost})</span>
+                            </div>
+                          )) : <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>No spender data</span>}
+                        </div>
+                        <div>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: "#4ade80", marginBottom: 8 }}>GENERATORS</div>
+                          {focusGenerators.length > 0 ? focusGenerators.map(g => (
+                            <div key={g.label} style={{ display: "flex", justifyContent: "space-between", padding: "5px 8px", borderRadius: 4, background: g === focusGenerators[0] ? "rgba(74,222,128,.06)" : "transparent", borderBottom: `1px solid ${C.borderSub}` }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textSec }}>{g.label}</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textMid }}>+{g.total} ({g.casts.toFixed(1)} × {g.gen})</span>
+                            </div>
+                          )) : <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>No generator data</span>}
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 8px", borderRadius: 4, borderBottom: `1px solid ${C.borderSub}` }}>
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textSec }}>Passive Regen</span>
+                            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textMid }}>+{Math.round(fightDuration * 5)} (5/sec)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CARD>
+                  );
+                })()}
+
                 </>
               );
             })()}

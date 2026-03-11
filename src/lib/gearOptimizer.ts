@@ -676,16 +676,17 @@ export interface BiSSlot {
 // ── Stat budgets at ilvl 276 (Hero Rank 6) ──────────────────
 // Slot size determines the budget tier. Each secondary stat listed in order
 // of allocation (higher value = first stat shown on item).
-// Source: Blizzard item budget formula extrapolated to ilvl 276.
+// Source: Blizzard item budget formula extrapolated to ilvl 276 (Hero track).
 // Myth-track (289) scales all values ×1.047 (~4.7% more per stat).
+// Validated against SimC ilvl 231 data (1366 raw agi) scaled to 276.
 const B = {
-  large:   (s1: string, s2: string) => ({ agility:1050, stamina:1580, secondaries:[{name:s1,value:900},{name:s2,value:600}] }),
-  medium:  (s1: string, s2: string) => ({ agility:900,  stamina:1350, secondaries:[{name:s1,value:760},{name:s2,value:510}] }),
-  small:   (s1: string, s2: string) => ({ agility:680,  stamina:1020, secondaries:[{name:s1,value:575},{name:s2,value:385}] }),
-  neck:    (s1: string, s2: string) => ({ agility:undefined, stamina:1020, secondaries:[{name:s1,value:700},{name:s2,value:460}] }),
-  ring:    (s1: string, s2: string) => ({ agility:undefined, stamina:undefined, secondaries:[{name:s1,value:760},{name:s2,value:505}] }),
-  weapon2h:() => ({ agility:2200, stamina:3300, secondaries:[] as BiSStatLine[] }),
-  weapon1h:() => ({ agility:1100, stamina:1650, secondaries:[] as BiSStatLine[] }),
+  large:   (s1: string, s2: string) => ({ agility:180, stamina:270, secondaries:[{name:s1,value:155},{name:s2,value:100}] }),
+  medium:  (s1: string, s2: string) => ({ agility:135, stamina:200, secondaries:[{name:s1,value:120},{name:s2,value:80}] }),
+  small:   (s1: string, s2: string) => ({ agility:100, stamina:150, secondaries:[{name:s1,value:90},{name:s2,value:60}] }),
+  neck:    (s1: string, s2: string) => ({ agility:undefined, stamina:150, secondaries:[{name:s1,value:110},{name:s2,value:70}] }),
+  ring:    (s1: string, s2: string) => ({ agility:undefined, stamina:undefined, secondaries:[{name:s1,value:120},{name:s2,value:80}] }),
+  weapon2h:() => ({ agility:350, stamina:520, secondaries:[] as BiSStatLine[] }),
+  weapon1h:() => ({ agility:175, stamina:260, secondaries:[] as BiSStatLine[] }),
 };
 
 export function getBiSList(hero: HeroTalent): BiSSlot[] {
