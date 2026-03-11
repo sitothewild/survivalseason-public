@@ -35,45 +35,54 @@ import type {
   TimelineEvent,
   HeroTree,
 } from "./types";
+import {
+  PET_AP_COEFFICIENTS,
+  MASTERY_SPIRIT_BOND,
+  COMBAT_MECHANICS,
+  COMBAT_RATINGS,
+  AP_COEFFICIENTS as AP,
+  BUFF_DURATIONS,
+  PROC_CHANCES,
+  SENTINEL_COUNTER,
+  HOWL_BEAST_CYCLE,
+  FOCUS_VALUES,
+  WEAPON_NORMS,
+} from "./simcSpellData";
 
-// ── Constants ─────────────────────────────────────────────────
+// ── Constants (sourced from simcSpellData.ts) ─────────────────
 
-const PET_AP_SCALING = 0.60;
-// Spirit Bond mastery: ~2% per mastery point for player, ~2.5% for pet
-// From SimC: mastery_value() returns the coefficient from spell data
-// Spirit Bond mastery: 2.5% per mastery point for both player and pet
-// Verification: 11.86 points * 2.5% = 29.64% (matches Raidbots mastery=29.64%)
-const MASTERY_PLAYER_BONUS = 0.025;
-const MASTERY_PET_BONUS = 0.025;
-const BASE_GCD_MS = 1500;
-const BOSS_ARMOR = 1470;  // Boss armor from Raidbots target (level 93 tank_dummy)
-const ARMOR_K = 14014;
-const MELEE_SWING_MS_2H = 3600; // 2H base swing timer
-const MELEE_SWING_MS_1H = 2600; // 1H base swing timer
-const PET_SWING_MS = 2000;      // Pet auto-attack base swing
-const PET_CLAW_CD_MS = 3000;    // Pet claw ~3s interval
-const TIP_MAX_STACKS = 2;
-const TIP_DAMAGE_PER_STACK = 0.25;
-const TAKEDOWN_DURATION_MS = 8000;
-const MONGOOSE_FURY_MAX_STACKS = 5;
-const MONGOOSE_FURY_DAMAGE_PER_STACK = 0.15; // +15% per stack
+const PET_AP_SCALING = PET_AP_COEFFICIENTS.main_pet;
+const MASTERY_PLAYER_BONUS = MASTERY_SPIRIT_BOND.bonusPerPoint;
+const MASTERY_PET_BONUS = MASTERY_SPIRIT_BOND.bonusPerPoint;
+const BASE_GCD_MS = COMBAT_MECHANICS.baseGcdMs;
+const BOSS_ARMOR = COMBAT_MECHANICS.bossArmor;
+const ARMOR_K = COMBAT_RATINGS.armorK;
+const MELEE_SWING_MS_2H = WEAPON_NORMS.twoHandSwingMs;
+const MELEE_SWING_MS_1H = WEAPON_NORMS.oneHandSwingMs;
+const PET_SWING_MS = WEAPON_NORMS.petSwingMs;
+const PET_CLAW_CD_MS = WEAPON_NORMS.petClawCdMs;
+const TIP_MAX_STACKS = BUFF_DURATIONS.tip_of_the_spear.maxStacks;
+const TIP_DAMAGE_PER_STACK = BUFF_DURATIONS.tip_of_the_spear.dmgPerStack;
+const TAKEDOWN_DURATION_MS = BUFF_DURATIONS.takedown_window.durationMs;
+const MONGOOSE_FURY_MAX_STACKS = BUFF_DURATIONS.mongoose_fury.maxStacks;
+const MONGOOSE_FURY_DAMAGE_PER_STACK = BUFF_DURATIONS.mongoose_fury.dmgPerStack;
 
 // Howl of the Pack Leader: beast cycle timing
-const HOWL_CD_MS = 20000; // ~20s between beast summons
+const HOWL_CD_MS = HOWL_BEAST_CYCLE.cycleCdMs;
 // Boar charge uses hunter AP (not pet AP) — confirmed from SimC: hunter_ranged_attack_t
-const BOAR_CHARGE_AP_COEF = 20.5;
-const BOAR_CHARGE_CLEAVE_AP_COEF = 24.6;
-const BOAR_CHARGE_USES_HUNTER_AP = true;
-const BEAR_REND_AP_COEF_PER_TICK = 2.0;
-const BEAR_REND_DURATION_MS = 12000;
-const BEAR_REND_TICK_MS = 3000;
-const BEAR_MELEE_AP_COEF = 1.40;
-const BEAR_DURATION_MS = 12000;
-const STAMPEDE_AP_COEF = 2.80;
-const STAMPEDE_DURATION_MS = 4000;
-const STAMPEDE_TICK_MS = 500;
-const WYVERN_CRY_PET_DAMAGE_BONUS = 0.05; // +5% pet damage per stack
-const BLOODSEEKER_HASTE_PER_TARGET = 3; // +3% haste per bleeding target (as haste rating equivalent)
+const BOAR_CHARGE_AP_COEF = AP.boar_charge;
+const BOAR_CHARGE_CLEAVE_AP_COEF = AP.boar_charge_cleave;
+const BOAR_CHARGE_USES_HUNTER_AP = true; // SimC: hunter_ranged_attack_t inherits hunter AP
+const BEAR_REND_AP_COEF_PER_TICK = AP.bear_rend_per_tick;
+const BEAR_REND_DURATION_MS = HOWL_BEAST_CYCLE.bearRendDurationMs;
+const BEAR_REND_TICK_MS = HOWL_BEAST_CYCLE.bearRendTickMs;
+const BEAR_MELEE_AP_COEF = AP.bear_melee;
+const BEAR_DURATION_MS = HOWL_BEAST_CYCLE.bearDurationMs;
+const STAMPEDE_AP_COEF = AP.stampede;
+const STAMPEDE_DURATION_MS = HOWL_BEAST_CYCLE.stampedeDurationMs;
+const STAMPEDE_TICK_MS = HOWL_BEAST_CYCLE.stampedeTickMs;
+const WYVERN_CRY_PET_DAMAGE_BONUS = BUFF_DURATIONS.wyverns_cry.petDmgPerStack;
+const BLOODSEEKER_HASTE_PER_TARGET = BUFF_DURATIONS.bloodseeker.hastePctPerTarget;
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
@@ -466,7 +475,7 @@ function handleGcdReady(
 
   // Schedule next GCD
   const hasteMult = 1 + state.currentHastePct / 100;
-  const gcdMs = spell.triggersGcd ? Math.max(750, Math.round(BASE_GCD_MS / hasteMult)) : 0;
+  const gcdMs = spell.triggersGcd ? Math.max(COMBAT_MECHANICS.minGcdMs, Math.round(BASE_GCD_MS / hasteMult)) : 0;
 
   if (gcdMs > 0) {
     state.gcdReadyMs = state.nowMs + gcdMs;
@@ -539,7 +548,7 @@ function executeAbility(
   // In SimC, this generates ~2047 focus over 300s = ~6.8 focus/sec via procs
   if (input.talents.activeTalents.has("sicEm") || input.talents.activeTalents.has("lethalBarbs")) {
     if (spell.key === "kill_command" || spell.key === "raptor_strike") {
-      state.focus = Math.min(state.maxFocus, state.focus + 15);
+      state.focus = Math.min(state.maxFocus, state.focus + FOCUS_VALUES.lethal_barbs_bonus);
     }
   }
 
@@ -602,7 +611,7 @@ function executeAbility(
     }
     if (bleedingTargets > 0) {
       // Apply as haste rating buff: 3% haste per target (35.0 rating per 1%)
-      const hasteAmount = bleedingTargets * BLOODSEEKER_HASTE_PER_TARGET * 35.0;
+      const hasteAmount = bleedingTargets * BLOODSEEKER_HASTE_PER_TARGET * COMBAT_RATINGS.haste;
       state.applyAura("bloodseeker", 12000, 1, { haste: hasteAmount });
     }
   }
@@ -735,7 +744,7 @@ function handleAutoAttack(
   // Normalized: baseDmg ≈ AP * weaponSpeedNormalized / 3.5
   const weaponSpeed = input.stats.weapon.mainHandSpeed;
   const weaponDps = input.stats.weapon.mainHandDps;
-  let dmg = (weaponDps * weaponSpeed + ap * weaponSpeed / 3.5)
+  let dmg = (weaponDps * weaponSpeed + ap * weaponSpeed / WEAPON_NORMS.twoHand)
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
@@ -778,7 +787,7 @@ function handleOffHandAutoAttack(
   const ohSpeed = input.stats.weapon.offHandSpeed;
   const ohDps = input.stats.weapon.offHandDps;
   // Off-hand deals 50% of main-hand damage
-  let dmg = (ohDps * ohSpeed + ap * ohSpeed / 3.5) * 0.5
+  let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand) * COMBAT_MECHANICS.offHandPenalty
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
@@ -1067,7 +1076,7 @@ function handleSentinelTriggers(
   if (spell.key === "kill_command" || spell.key === "auto_attack") {
     state.sentinelCounter++;
 
-    if (state.sentinelCounter >= 5) {
+    if (state.sentinelCounter >= SENTINEL_COUNTER.threshold) {
       state.sentinelCounter = 0;
       state.sentinelOwlProcs++;
 
@@ -1085,12 +1094,12 @@ function handleSentinelTriggers(
       }
 
       // Sentinel's Wisdom: +3% crit per owl proc, stacks to 5
-      state.sentinelWisdomStacks = Math.min(5, state.sentinelWisdomStacks + 1);
-      state.applyAura("sentinels_wisdom", 15000, 5, { crit: 0.03 * 22.3 });
+      state.sentinelWisdomStacks = Math.min(BUFF_DURATIONS.sentinels_wisdom.maxStacks, state.sentinelWisdomStacks + 1);
+      state.applyAura("sentinels_wisdom", BUFF_DURATIONS.sentinels_wisdom.durationMs, BUFF_DURATIONS.sentinels_wisdom.maxStacks, { crit: (BUFF_DURATIONS.sentinels_wisdom.critPctPerStack / 100) * COMBAT_RATINGS.crit });
 
       // PRD roll: 30% chance Lunar Storm
       if (talents.has("lunarStorm")) {
-        if (rollPRD("lunar_storm", 0.30, rng, prdState)) {
+        if (rollPRD("lunar_storm", PROC_CHANCES.lunar_storm, rng, prdState)) {
           state.lunarStormProcs++;
           const dotInfo = DOT_DB["lunar_storm_dot"];
           if (dotInfo) {
@@ -1104,7 +1113,7 @@ function handleSentinelTriggers(
 
     // Eyes of the Eagle: KC has chance to reset WFB charge
     if (spell.key === "kill_command" && talents.has("catchOut")) {
-      if (rng.roll() < 0.25) {
+      if (rng.roll() < PROC_CHANCES.eyes_of_eagle) {
         state.cooldowns.resetCharge("wildfire_bomb");
         state.eyesOfEagleResets++;
       }
@@ -1126,7 +1135,7 @@ function handlePackLeaderTriggers(
 
   // Kill Command → Vicious Hunt: summon dire beast
   if (spell.key === "kill_command" && talents.has("viciousHunt")) {
-    if (rollPRD("vicious_hunt", 0.25, rng, prdState)) {
+    if (rollPRD("vicious_hunt", PROC_CHANCES.vicious_hunt, rng, prdState)) {
       state.viciousHuntProcs++;
       const dotInfo = DOT_DB["vicious_wound_dot"];
       if (dotInfo) {
@@ -1142,7 +1151,7 @@ function handlePackLeaderTriggers(
 
   // Frenzied Tear: Raptor Strike → 20% chance extra pet attack
   if (spell.key === "raptor_strike" && talents.has("furiousAssault")) {
-    if (rollPRD("frenzied_tear", 0.20, rng, prdState)) {
+    if (rollPRD("frenzied_tear", PROC_CHANCES.frenzied_tear, rng, prdState)) {
       state.frenziedTearProcs++;
 
       const petAp = state.currentAP * PET_AP_SCALING;
@@ -1181,7 +1190,7 @@ function handleTierInteractions(
 
   // 4pc: WFB detonation has 20% chance to reset Boomstick CD
   if (spell.key === "wildfire_bomb" && input.stats.has4pc) {
-    if (rng.roll() < 0.20) {
+    if (rng.roll() < PROC_CHANCES.tier_4pc_boomstick) {
       state.cooldowns.resetCharge("boomstick");
     }
   }
@@ -1244,7 +1253,7 @@ function applyDot(
   // Pandemic: extend by remaining time (up to 30% of base)
   if (dotInfo.pandemic && existing && existing.expiresMs > state.nowMs) {
     const remaining = existing.expiresMs - state.nowMs;
-    const pandemicMax = dotInfo.durationMs * 0.3;
+    const pandemicMax = dotInfo.durationMs * COMBAT_MECHANICS.pandemicMaxPct;
     duration += Math.min(remaining, pandemicMax);
   }
 

@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import type { HeroTree, PlayerStats, ResolvedBuffMultipliers } from "./types";
+import { COMBAT_RATINGS, MASTERY_SPIRIT_BOND, BUFF_DURATIONS, FOCUS_VALUES } from "./simcSpellData";
 
 // ── Aura (buff/debuff) ────────────────────────────────────────
 
@@ -168,7 +169,7 @@ export class CombatState {
   // Player resources
   focus: number = 100;
   maxFocus: number = 100;
-  focusRegenPerSec: number = 5;
+  focusRegenPerSec: number = FOCUS_VALUES.baseRegenPerSec;
 
   // Player stats (mutable — auras modify these)
   baseStats: PlayerStats;
@@ -273,21 +274,17 @@ export class CombatState {
 
     // Sentinel's Wisdom: +3% crit per stack (up to 5)
     if (this.hero === "sentinel") {
-      bonusCrit += this.sentinelWisdomStacks * 0.03 * 22.3; // +3% crit per stack as rating
+      bonusCrit += this.sentinelWisdomStacks * (BUFF_DURATIONS.sentinels_wisdom.critPctPerStack / 100) * COMBAT_RATINGS.crit;
     }
 
     const totalAgi = s.agility + bonusAgi;
-    // FIX #3: For hunters, AP = Agility + any bonus AP from buffs/options.
-    // attackPower field holds bonus AP beyond agility (e.g., Battle Shout, augment rune).
-    // It should NOT duplicate agility.
     this.currentAP = totalAgi + (s.attackPower ?? 0);
-    // Level 90 Midnight stat conversions (verified from Raidbots: 389 crit→17.46%, 370 haste→10.58%)
-    this.currentCritPct = (s.critRating + bonusCrit) / 22.3 + 5; // base 5% crit
-    this.currentHastePct = (s.hasteRating + bonusHaste) / 35.0;
-    // Mastery: 8 base points + rating/180 mastery points, each point = 2.5% Spirit Bond bonus
-    // Raidbots verification: 8 + 695/180 = 11.86 points * 2.5% = 29.64% ✓
-    this.currentMasteryPct = 8 + (s.masteryRating + bonusMastery) / 180;
-    this.currentVersPct = (s.versatilityRating + bonusVers) / 54.0 + this.externalVersPctBonus;
+    // Level 90 Midnight stat conversions (from simcSpellData COMBAT_RATINGS)
+    this.currentCritPct = (s.critRating + bonusCrit) / COMBAT_RATINGS.crit + COMBAT_RATINGS.baseCrit;
+    this.currentHastePct = (s.hasteRating + bonusHaste) / COMBAT_RATINGS.haste;
+    // Mastery: base points + rating/ratingPerPoint mastery points, each point = bonusPerPoint Spirit Bond bonus
+    this.currentMasteryPct = MASTERY_SPIRIT_BOND.basePoints + (s.masteryRating + bonusMastery) / MASTERY_SPIRIT_BOND.ratingPerPoint;
+    this.currentVersPct = (s.versatilityRating + bonusVers) / COMBAT_RATINGS.versatility + this.externalVersPctBonus;
   }
 
   /** Apply an aura to the player */

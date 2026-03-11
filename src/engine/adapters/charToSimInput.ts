@@ -13,17 +13,17 @@ import { getEquippedTrinkets, getTrinketById } from "./trinketsToEngine";
 import { DEFAULT_APLS, getDefaultAPLKey } from "../APLEngine";
 import { applySimOptions } from "../applySimOptions";
 import { DEFAULT_SIM_OPTIONS } from "../simOptionsPresets";
+import { COMBAT_RATINGS } from "../simcSpellData";
 
-// Rating constants for level 90 Midnight 12.0 (verified from Raidbots)
-// crit: 389 rating = 17.46% → 22.3 per 1%
-// haste: 370 rating = 10.58% → 35.0 per 1%
-// mastery: uses mastery point system (180 per point, 2.5% per point)
-// vers: 199 rating = 3.685% → 54.0 per 1%
+// Rating constants derived from simcSpellData COMBAT_RATINGS.
+// Mastery uses a special conversion: the parser gives Spirit Bond % (e.g. 29.64%),
+// but conversion to rating is non-linear due to base points. Use 28.1 as approximate
+// rating-per-1%-Spirit-Bond for the parser's percentage → rating reverse conversion.
 const RATING_PER_PCT = {
-  crit: 22.3,
-  haste: 35.0,
-  mastery: 28.1,   // This converts mastery% → rating (28.1 per 1% Spirit Bond)
-  versatility: 54.0,
+  crit: COMBAT_RATINGS.crit,
+  haste: COMBAT_RATINGS.haste,
+  mastery: 28.1,   // Approximate: converts mastery% → rating for parser percentages
+  versatility: COMBAT_RATINGS.versatility,
 };
 
 /**
