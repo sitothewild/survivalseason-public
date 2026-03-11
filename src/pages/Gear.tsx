@@ -47,6 +47,22 @@ const GRADE_CLR: Record<string,string> = {
 export default function Gear() {
   const [hero, setHero] = useState<"sentinel"|"packLeader">("sentinel");
   const [bisOpen, setBisOpen] = useState(true);   // open by default — tooltips require visibility
+  const [syncing, setSyncing] = useState(false);
+
+  // Load enchant data from Blizzard API cache
+  const { data: enchantData, refetch: refetchEnchants } = useBlizzardEnchants();
+
+  const handleSyncEnchants = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await triggerEnchantSnapshot("us");
+      await refetchEnchants();
+    } catch (e) {
+      console.error("[Gear] Enchant sync failed:", e);
+    } finally {
+      setSyncing(false);
+    }
+  }, [refetchEnchants]);
 
   // BiS tooltip state — mirrors sim page hover-tooltip pattern
   const [hoveredBiS, setHoveredBiS] = useState<string | null>(null);
