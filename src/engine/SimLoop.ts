@@ -148,19 +148,27 @@ export function runSimulation(input: SimInput): SimResult {
     const rng = new RNG(seed);
     const prdState = createPRDState();
 
+    // Apply fight duration variance (like SimC's fight_length_variation)
+    // Variance creates uniform distribution: [duration * (1-v), duration * (1+v)]
+    const variance = config.durationVariance ?? 0;
+    const iterDurationMs = variance > 0
+      ? Math.round(config.durationMs * (1 - variance + 2 * variance * rng.random()))
+      : config.durationMs;
+
     const state = new CombatState(stats, config.hero, config.targets, input.buffMults);
 
     // Initialize cooldowns
     initializeCooldowns(state, talents);
 
-    // Run single iteration
+    // Run single iteration (with per-iteration duration variance if enabled)
     const iterResult = runIteration(
       state, rng, prdState, apl, input,
       iter === 0 && config.captureTimeline,
+      iterDurationMs,
     );
 
-    const durationSec = config.durationMs / 1000;
-    const iterDps = state.totalDamage / durationSec;
+    const iterDurationSec = iterDurationMs / 1000;
+    const iterDps = state.totalDamage / iterDurationSec;
     dpsAccum.push(iterDps, needSamples);
 
     // Accumulate breakdown
@@ -320,10 +328,11 @@ function runIteration(
   apl: CompiledAPL,
   input: SimInput,
   captureTimeline: boolean,
+  overrideDurationMs?: number,
 ): { timeline?: TimelineEvent[] } {
   const queue = new EventQueue();
   const timeline: TimelineEvent[] = [];
-  const endMs = input.config.durationMs;
+  const endMs = overrideDurationMs ?? input.config.durationMs;
   const meleeSwingMs = getMeleeSwingMs(input);
 
   // Schedule initial events

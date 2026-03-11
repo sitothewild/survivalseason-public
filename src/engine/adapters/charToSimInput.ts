@@ -201,6 +201,7 @@ export function charToSimInput(
 
   const config: SimConfig = {
     durationMs: durationS * 1000,
+    durationVariance: 0.2,
     iterations: opts?.iterations ?? 500,
     fightStyle,
     targets,
