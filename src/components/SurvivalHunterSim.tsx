@@ -4425,42 +4425,27 @@ export default function SurvivalHunterSim() {
               const totalDps = primary.totalDps;
               const targetCount = primary.targets || 1;
 
-              const ABILITY_NOTES: Record<string, string> = {
-                "Kill Command": "Spam on cooldown for focus generation",
-                "Raptor Strike": "Primary spender — stack Mongoose Fury first",
-                "Raptor Swipe": "Cleave proc — always let it fire",
-                "Wildfire Bomb": "Never cap charges — highest AoE priority",
-                "Boomstick": "Use on CD — Shellshock amplifies ST damage",
-                "Strike as One": "Passive pet attack — triggers on every ability",
-                "Takedown": "Major CD — pool focus before using",
-                "Flamefang Pitch": "Pre-place puddle for incoming adds",
-                "Moonlight Chakram": "Use on CD for Sentinel builds",
-                "Sentinel Mark + Lunar Storm": "Consumes mark — massive AoE burst",
-                "Auto Attack (MH)": "Passive — ensure 100% uptime",
-                "Auto Attack (OH)": "Passive — ensure melee range",
-                "Pet (Claw)": "Passive pet damage — scales with AP",
-                "Pet Melee": "Passive pet melee — keep pet alive",
-                "Pack Leader Beasts": "Spawns from Kill Command procs",
-                "Bear (Rend + Melee)": "Pack Leader beast — passive damage",
-                "Coord. Assault": "Legacy CD — replaced by Takedown",
-                "Kroluk's Warbanner": "Trinket proc — passive",
-              };
+              // Build critPct lookup from engine breakdown
+              const engineBD = primary.engineBreakdown || [];
+              const critLookup: Record<string, number> = {};
+              for (const ab of engineBD) critLookup[ab.label] = ab.critPct ?? 0;
 
-              const CAT_BORDER = { DAMAGE: "#d97706", DOT: "#a78bfa", PET: "#60a5fa", COOLDOWN: "#fb923c", BUFF: "#4ade80" };
-              const CAT_BG = { DAMAGE: "rgba(217,119,6,.12)", DOT: "rgba(167,139,250,.12)", PET: "rgba(96,165,250,.12)", COOLDOWN: "rgba(251,146,60,.12)", BUFF: "rgba(74,222,128,.12)" };
-
-              const ABILITY_ENCYCLOPEDIA = [
-                { name: "Kill Command", category: "DAMAGE", cd: "None (GCD)", range: "50 yd", cost: "Generates 20 Focus", description: "Commands your pet to savagely attack the target, dealing Physical damage. This is your primary focus generator — you press it constantly to fuel your Raptor Strike and other spenders. It has no cooldown beyond the GCD, making it spammable.", whyCast: "Kill Command is your engine. It generates the focus you need to use Raptor Strike and keeps your rotation flowing. In Pack Leader builds, it also triggers beast spawns for extra damage.", mistake: "Sitting on full focus and still pressing Kill Command — you waste the focus generation. Spend first, then generate." },
-                { name: "Raptor Strike", category: "DAMAGE", cd: "None (GCD)", range: "Melee", cost: "30 Focus", description: "A vicious melee strike dealing heavy Physical damage. This is your primary focus spender and builds Mongoose Fury stacks that increase its own damage.", whyCast: "Raptor Strike is your main damage spender. Each cast stacks Mongoose Fury, increasing subsequent hits. During 6-stack windows, this is your hardest-hitting button.", mistake: "Spending Raptor Strike at low Mongoose Fury stacks instead of waiting for 5-6 stacks to maximize the damage multiplier." },
-                { name: "Wildfire Bomb", category: "DAMAGE", cd: "18s (2 charges)", range: "40 yd", cost: "Free", description: "Hurls a bomb at the target, dealing Fire damage on impact and leaving a burning area. Has 2 charges via Grenade Juggler. Triggers Lethal Calibration for +15% crit damage.", whyCast: "Free damage on a charge system — never let both charges cap. Applies Lethal Calibration which buffs your entire rotation's crit damage for 12 seconds.", mistake: "Letting both charges sit at full while pressing other abilities. WFB charges should always be cycling." },
-                { name: "Boomstick", category: "DAMAGE", cd: "60s", range: "40 yd", cost: "Free", description: "Fires a massive frontal cone blast dealing heavy Physical damage. Replaces Fury of the Eagle. Shellshock talent gives +40% single-target damage.", whyCast: "Your highest single-hit damage ability. Use on cooldown for burst. Shellshock makes it devastating in single target.", mistake: "Holding Boomstick for AoE when Shellshock is talented — it's a single-target powerhouse, use it on CD." },
-                { name: "Strike as One", category: "PET", cd: "Passive", range: "Melee (pet)", cost: "None", description: "Every damaging ability you cast causes your pet to immediately strike the target. During Takedown, Raptor Swipe triggers it at 300% damage.", whyCast: "Pure passive throughput — the more buttons you press, the more pet attacks fire. ABC (Always Be Casting) directly increases SaO damage.", mistake: "Having dead GCDs or downtime. Every empty GCD is a missed Strike as One proc." },
-                { name: "Takedown", category: "COOLDOWN", cd: "90s", range: "Melee", cost: "Generates 50 Focus", description: "Deals heavy damage and amplifies all your damage by 20% for 8 seconds. Also generates 50 Focus. Your most important burst cooldown.", whyCast: "20% damage amplification for 8 seconds is enormous. Time your highest damage abilities (Raptor Strike at max Fury, Boomstick) inside this window.", mistake: "Using Takedown when your other CDs aren't ready. Always pair with Boomstick when possible." },
-                { name: "Flamefang Pitch", category: "DAMAGE", cd: "30s (2 charges)", range: "40 yd", cost: "Free", description: "Throws a fiery projectile that creates a fire puddle on the ground, dealing sustained AoE damage. Great for pre-placing damage on incoming adds.", whyCast: "Free AoE damage on a charge system. Pre-place on pull locations in M+ for passive damage while mobs are gathered.", mistake: "Throwing it at targets that will move out of the puddle immediately." },
-                { name: "Raptor Swipe", category: "DAMAGE", cd: "Passive (proc)", range: "Melee", cost: "Free", description: "Apex talent proc — 25% chance on Raptor Strike, 100% during Takedown. Cleaves nearby enemies. Triggers Strike as One.", whyCast: "Free cleave damage that triggers SaO. During Takedown, every Raptor Strike guarantees a Swipe, making it your highest priority window.", mistake: "Trying to 'fish' for procs outside Takedown. Just play normally — procs come naturally." },
-                { name: "Serpent Sting", category: "DOT", cd: "None", range: "40 yd", cost: "10 Focus", description: "Applies a poison DoT to the target. Low priority in the rotation but useful for maintaining damage during movement phases.", whyCast: "Movement filler — when you can't be in melee, Serpent Sting keeps damage rolling.", mistake: "Refreshing the DoT too early or prioritizing it over melee abilities when in range." },
-                { name: "Pet (Kill Command procs)", category: "PET", cd: "Passive", range: "Pet range", cost: "None", description: "Your pet's auto attacks and special abilities triggered by Kill Command. Pet damage scales with your Attack Power and Mastery (Spirit Bond).", whyCast: "Passive throughput. Keep your pet alive and attacking at all times. Pet damage is 15-20% of your total.", mistake: "Letting your pet die or dismissing it accidentally. Always have Mend Pet ready." },
-              ];
+              // Hero talent proc data from engine
+              const hc = primary.heroCounters || {};
+              const isPL = heroTalent === 'packLeader';
+              const heroProcs = isPL
+                ? [
+                    { label: "Pack Coordination", value: hc.packCoordinationProcs ?? 0 },
+                    { label: "Vicious Hunt", value: hc.viciousHuntProcs ?? 0 },
+                    { label: "Frenzied Tear", value: hc.frenziedTearProcs ?? 0 },
+                  ]
+                : [
+                    { label: "Sentinel Owl", value: hc.sentinelOwlProcs ?? 0 },
+                    { label: "Lunar Storm", value: hc.lunarStormProcs ?? 0 },
+                    { label: "Eyes of Eagle Resets", value: hc.eyesOfEagleResets ?? 0 },
+                  ];
+              // Resource data
+              const resData = detailed.resourceData || { focusGenerated: 0, focusSpent: 0, focusWasted: 0, spenders: [], generators: [] };
 
               const toggleSection = (key: string) => setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
               const isOpen = (key: string) => !collapsedSections[key];
@@ -4477,7 +4462,21 @@ export default function SurvivalHunterSim() {
                   ``,
                   `ABILITY BREAKDOWN`,
                   `─────────────────`,
-                  ...actionEntries.map(([ability, data]) => `  ${ability.padEnd(28)} ${fmt(Math.round(data.dps)).padStart(8)} DPS  ${data.percentage.toFixed(1).padStart(5)}%  ${String(data.count).padStart(4)} casts`),
+                  ...actionEntries.map(([ability, data]) => `  ${ability.padEnd(28)} ${fmt(Math.round(data.dps)).padStart(8)} DPS  ${data.percentage.toFixed(1).padStart(5)}%  ${String(data.count).padStart(4)} casts  ${(critLookup[ability] != null ? critLookup[ability].toFixed(1) + '%' : '—').padStart(6)} crit`),
+                  ``,
+                  `STATISTICAL SUMMARY`,
+                  `────────────────────`,
+                  ...(primary.medianDps ? [
+                    `  Median DPS:   ${fmt(primary.medianDps)}`,
+                    `  95% CI:       ${primary.p5Dps ? fmt(primary.p5Dps) : '—'} – ${primary.p95Dps ? fmt(primary.p95Dps) : '—'}`,
+                    `  Std Dev:      ${primary.stdDev ? fmt(Math.round(primary.stdDev)) : '—'}`,
+                    `  Min/Max:      ${primary.minDps ? fmt(primary.minDps) : '—'} / ${primary.maxDps ? fmt(primary.maxDps) : '—'}`,
+                    `  Iterations:   ${primary.iterations || '—'}`,
+                  ] : ['  (run simulation first)']),
+                  ``,
+                  `HERO TALENT PROCS`,
+                  `──────────────────`,
+                  ...heroProcs.map(p => `  ${p.label.padEnd(24)} ${p.value.toFixed(1)} procs`),
                   ``,
                   `STAT WEIGHTS`,
                   `────────────`,
@@ -4566,8 +4565,8 @@ export default function SurvivalHunterSim() {
                           <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Rajdhani',sans-serif", fontSize: 13 }}>
                             <thead>
                               <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                                {["Ability", "DPS", "%", "Casts", "Avg/Cast", "Notes"].map(h => (
-                                  <th key={h} style={{ padding: "8px 6px", textAlign: h === "Ability" || h === "Notes" ? "left" : "right", fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                                {["Ability", "DPS", "%", "Casts", "Avg/Cast", "Crit%"].map(h => (
+                                  <th key={h} style={{ padding: "8px 6px", textAlign: h === "Ability" ? "left" : "right", fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                                 ))}
                               </tr>
                             </thead>
@@ -4584,7 +4583,7 @@ export default function SurvivalHunterSim() {
                                   <td style={{ padding: "6px 6px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{data.percentage.toFixed(1)}%</td>
                                   <td style={{ padding: "6px 6px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{data.count}</td>
                                   <td style={{ padding: "6px 6px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{data.avgHit.toLocaleString()}</td>
-                                  <td style={{ padding: "6px 6px", color: C.textDim, fontSize: 11, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ABILITY_NOTES[ability] || "—"}</td>
+                                  <td style={{ padding: "6px 6px", color: C.textMid, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, textAlign: "right" }}>{critLookup[ability] != null ? critLookup[ability].toFixed(1) + "%" : "—"}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -4616,44 +4615,99 @@ export default function SurvivalHunterSim() {
                         </div>
                       </CARD>
                     </div>
-                    <div style={{ maxHeight: "calc(100vh - 180px)", overflowY: "auto", paddingRight: 4 }}>
-                      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20 }}>
-                        <LBL>📖 Ability Encyclopedia</LBL>
-                        <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 16, lineHeight: 1.5 }}>
-                          Every Survival Hunter ability used in the rotation — explained for beginners and optimizers alike.
-                        </p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                          {ABILITY_ENCYCLOPEDIA.map(ability => {
-                            const catColor = CAT_BORDER[ability.category] || C.textDim;
-                            const catBg = CAT_BG[ability.category] || "transparent";
-                            return (
-                              <div key={ability.name} style={{ background: C.surface2, border: `1px solid ${C.borderSub}`, borderLeft: `4px solid ${catColor}`, borderRadius: "0 10px 10px 0", padding: "16px 18px" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, fontWeight: 700, color: C.textPri, letterSpacing: 0.5 }}>{ability.name}</span>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: catBg, color: catColor, border: `1px solid ${catColor}40` }}>{ability.category}</span>
-                                </div>
-                                <div style={{ display: "flex", gap: 16, marginBottom: 10, flexWrap: "wrap" }}>
-                                  {[{ label: "CD", value: ability.cd }, { label: "Range", value: ability.range }, { label: "Cost", value: ability.cost }].map(m => (
-                                    <div key={m.label} style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
-                                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim }}>{m.label}:</span>
-                                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textMid }}>{m.value}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                                <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.65, margin: "0 0 12px 0" }}>{ability.description}</p>
-                                <div style={{ background: "rgba(217,119,6,.08)", border: "1px solid rgba(217,119,6,.2)", borderRadius: 8, padding: "10px 14px", marginBottom: 10 }}>
-                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.goldLight, marginBottom: 5 }}>WHY YOU CAST IT</div>
-                                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, lineHeight: 1.6, margin: 0 }}>{ability.whyCast}</p>
-                                </div>
-                                <div style={{ background: "rgba(248,113,113,.06)", border: "1px solid rgba(248,113,113,.15)", borderRadius: 8, padding: "10px 14px" }}>
-                                  <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.red, marginBottom: 5 }}>COMMON MISTAKE</div>
-                                  <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, lineHeight: 1.6, margin: 0 }}>{ability.mistake}</p>
-                                </div>
-                              </div>
-                            );
-                          })}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      {/* ── Statistical Summary ── */}
+                      <CARD>
+                        <LBL>📈 Statistical Summary</LBL>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+                          {[
+                            { label: "DPS", value: fmt(Math.round(totalDps)), color: C.goldLight },
+                            { label: "MEDIAN DPS", value: primary.medianDps ? fmt(primary.medianDps) : "—", color: C.textPri },
+                            { label: "95% CI", value: primary.p5Dps && primary.p95Dps ? `${fmt(primary.p5Dps)} – ${fmt(primary.p95Dps)}` : "—", color: C.textMid },
+                            { label: "STD DEV", value: primary.stdDev ? fmt(Math.round(primary.stdDev)) : "—", color: C.textMid },
+                            { label: "MIN DPS", value: primary.minDps ? fmt(primary.minDps) : "—", color: C.textDim },
+                            { label: "MAX DPS", value: primary.maxDps ? fmt(primary.maxDps) : "—", color: C.textDim },
+                            { label: "RANGE", value: primary.minDps && primary.maxDps ? `${fmt(primary.maxDps - primary.minDps)} (${((primary.maxDps - primary.minDps) / totalDps * 100).toFixed(2)}%)` : "—", color: C.textDim },
+                            { label: "ITERATIONS", value: primary.iterations ? String(primary.iterations) : "—", color: C.textMid },
+                          ].map(s => (
+                            <div key={s.label} className="stat-chip" style={{ padding: "8px 10px" }}>
+                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 3 }}>{s.label}</div>
+                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: s.color, fontWeight: 600 }}>{s.value}</div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      </CARD>
+
+                      {/* ── Hero Talent Procs ── */}
+                      <CARD>
+                        <LBL>{isPL ? "🐾 Pack Leader Procs" : "🦉 Sentinel Procs"}</LBL>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {heroProcs.map(p => (
+                            <div key={p.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 6, background: C.surface2 }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, fontWeight: 600 }}>{p.label}</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.goldLight, fontWeight: 700 }}>{p.value.toFixed(1)} procs</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CARD>
+
+                      {/* ── Resource Economy ── */}
+                      <CARD>
+                        <LBL>🔋 Focus Economy</LBL>
+                        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+                          {[
+                            { label: "GENERATED", value: fmt(resData.focusGenerated), color: C.green },
+                            { label: "SPENT", value: fmt(resData.focusSpent), color: C.goldLight },
+                            { label: "WASTED", value: fmt(resData.focusWasted), color: resData.focusWasted > 0 ? C.red : C.textDim },
+                          ].map(s => (
+                            <div key={s.label} className="stat-chip" style={{ padding: "6px 10px", flex: "1 1 80px" }}>
+                              <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1, color: C.textDim, marginBottom: 2 }}>{s.label}</div>
+                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: s.color, fontWeight: 600 }}>{s.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                        {resData.generators && resData.generators.length > 0 && (
+                          <>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 6, marginTop: 4 }}>GENERATORS</div>
+                            {resData.generators.map((g: any) => (
+                              <div key={g.label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", borderRadius: 4, background: C.surface2, marginBottom: 3 }}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec }}>{g.label}</span>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.green }}>{fmt(g.total)} ({g.casts} casts × {g.gen}/cast)</span>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                        {resData.spenders && resData.spenders.length > 0 && (
+                          <>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 2, color: C.textDim, marginBottom: 6, marginTop: 10 }}>SPENDERS</div>
+                            {resData.spenders.map((s: any) => (
+                              <div key={s.label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", borderRadius: 4, background: C.surface2, marginBottom: 3 }}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec }}>{s.label}</span>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.goldLight }}>{fmt(s.total)} ({s.casts} casts × {s.cost}/cast)</span>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </CARD>
+
+                      {/* ── Stat Weights ── */}
+                      {statWeights && (
+                        <CARD>
+                          <LBL>⚖ Stat Weights</LBL>
+                          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textDim, marginBottom: 10 }}>Base DPS: {fmt(statWeights.baseDps)}</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            {Object.entries(statWeights.weights).sort((a: any, b: any) => b[1].normalized - a[1].normalized).map(([stat, w]: any) => (
+                              <div key={stat} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 8px", borderRadius: 6, background: C.surface2 }}>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textSec, fontWeight: 600, minWidth: 80 }}>{stat}</span>
+                                <div style={{ flex: 1, height: 4, background: C.borderSub, borderRadius: 2, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", borderRadius: 2, width: `${w.normalized * 100}%`, background: C.goldLight, transition: "width .3s ease" }} />
+                                </div>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, color: C.goldLight, fontWeight: 700, minWidth: 40, textAlign: "right" }}>{w.normalized.toFixed(3)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CARD>
+                      )}
                     </div>
                   </div>
                 )}
