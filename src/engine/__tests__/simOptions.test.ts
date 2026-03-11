@@ -332,7 +332,7 @@ describe("SimOptions Integration", () => {
       "sentinel",
       "raid_st",
       { seed, iterations: 200 },
-      createSimOptions({ potion: "tempered_potion" }),
+      createSimOptions({ potion: "lights_potential" }),
     );
     const noPot = buildSimInput(
       "sentinel",
