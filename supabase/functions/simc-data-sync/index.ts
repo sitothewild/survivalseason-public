@@ -918,7 +918,8 @@ Deno.serve(async (req) => {
       status: "updated",
       sha: latestSha,
       previousSha: cached?.github_sha || null,
-      data: simcData,
+      data: { ...simcData, storageFiles: uploadResults },
+      storageFiles: uploadResults,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
