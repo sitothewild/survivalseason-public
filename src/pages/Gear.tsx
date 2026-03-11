@@ -67,6 +67,19 @@ export default function Gear() {
     }
   }, [refetchEnchants]);
 
+  const handleSyncItemDB = useCallback(async () => {
+    setSyncingItemDB(true);
+    try {
+      const result = await triggerItemDBSync("us");
+      console.log("[Gear] Item DB sync result:", result);
+      await refetchItemDB();
+    } catch (e) {
+      console.error("[Gear] Item DB sync failed:", e);
+    } finally {
+      setSyncingItemDB(false);
+    }
+  }, [refetchItemDB]);
+
   // BiS tooltip state — mirrors sim page hover-tooltip pattern
   const [hoveredBiS, setHoveredBiS] = useState<string | null>(null);
   const [bisTooltipPos, setBisTooltipPos] = useState({ x: 0, y: 0 });
