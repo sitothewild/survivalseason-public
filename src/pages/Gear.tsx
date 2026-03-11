@@ -12,6 +12,7 @@ import {
   GEAR_TRACKS, DAWNCREST_TIERS, UPGRADE_COSTS,
   getBiSList, rankTrinkets, rankEnchantsForSlot,
 } from "@/lib/gearOptimizer";
+import { useBlizzardEnchants, triggerEnchantSnapshot } from "@/hooks/useBlizzardEnchants";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 // ── Shared colour palette (mirrors SurvivalHunterSim) ────────
