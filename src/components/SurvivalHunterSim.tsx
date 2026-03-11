@@ -2459,9 +2459,9 @@ export default function SurvivalHunterSim() {
                       const specTotalSelected = editDraft.enabledTalents.length + 25;
                       const heroTotalSelected = editDraft.enabledHeroTalents.length;
                       const classTotalSelected = (editDraft.enabledClassTalents?.length ?? 0) + 3;
-                      const specBudget = 31;
-                      const heroBudgetVal = 10;
-                      const classBudget = 31;
+                      const specBudget = 34;
+                      const heroBudgetVal = 13;
+                      const classBudget = 34;
 
                       const closeModal = () => { setEditingSlot(null); setEditDraft(null); };
 

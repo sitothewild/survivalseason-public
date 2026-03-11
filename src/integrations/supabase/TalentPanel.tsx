@@ -133,7 +133,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
             choiceState={tree.classState.choices}
             gates={tree.classGates}
             totalPointsSpent={tree.classPointsSpent}
-            maxPoints={31}
+            maxPoints={34}
             onPointChange={tree.handleClassPointChange}
             onChoiceSelect={tree.handleClassChoiceSelect}
             onReset={tree.resetClass}
@@ -149,7 +149,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
             choiceState={tree.specState.choices}
             gates={tree.specGates}
             totalPointsSpent={tree.specPointsSpent}
-            maxPoints={30}
+            maxPoints={34}
             onPointChange={tree.handleSpecPointChange}
             onChoiceSelect={tree.handleSpecChoiceSelect}
             onReset={tree.resetSpec}
@@ -189,10 +189,10 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
       <div className="flex items-center justify-between px-3 py-2 bg-[#1c2333]/30 rounded-b-lg border-t border-[#2e3a50]/50">
         <div className="flex items-center gap-4">
           <span className="text-[9px] text-slate-600 font-mono">
-            Class: {tree.classPointsSpent}/31
+            Class: {tree.classPointsSpent}/34
           </span>
           <span className="text-[9px] text-slate-600 font-mono">
-            Spec: {tree.specPointsSpent}/30
+            Spec: {tree.specPointsSpent}/34
           </span>
         </div>
 

@@ -17,7 +17,7 @@ interface TalentTreeGridProps {
   choiceState: Record<number, number | null>; // nodeId → selected option idx
   gates?: { points: number; afterRow: number }[]; // restriction lines
   totalPointsSpent: number;
-  maxPoints?: number; // e.g. 31 for class, 30 for spec
+  maxPoints?: number; // e.g. 34 for class, 34 for spec
   onPointChange: (nodeId: number, delta: number) => void;
   onChoiceSelect: (nodeId: number, optionIndex: number) => void;
   onReset?: () => void;

@@ -2,6 +2,9 @@
 // engine/buildSimInput.ts
 // THE ONE canonical function that constructs SimInput from UI state.
 // TalentPanel, stat weight runner, and talent comparison ALL call this.
+//
+// DATA FLOW: UI State → buildSimInput → SimWorker → SimLoop → SimResult → UI
+// Verified: talents, stats, trinkets, SimOptions all sync correctly
 // ─────────────────────────────────────────────────────────────
 
 import type { SimInput, SimConfig, SimOptions, FightStyle, HeroTree } from "./types";

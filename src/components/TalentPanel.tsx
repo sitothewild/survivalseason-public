@@ -37,12 +37,11 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
 
   const tree = useTalentTreeData(fetchTalentTree);
 
-  // Switch hero tree AND reset all hero points
+  // Switch hero tree: atomically sets key + auto-fills non-choice nodes
   const handleHeroSwitch = useCallback(
     (heroKey: "sentinel" | "packLeader") => {
       if (heroKey === tree.activeHeroTree) return;
-      tree.resetHero();
-      tree.setActiveHeroTree(heroKey);
+      tree.switchHeroTree(heroKey);
     },
     [tree]
   );
@@ -115,8 +114,8 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <PointBadge label="Class" spent={tree.classPointsSpent} max={31} />
-            <PointBadge label="Spec" spent={tree.specPointsSpent} max={30} />
+            <PointBadge label="Class" spent={tree.classPointsSpent} max={34} />
+            <PointBadge label="Spec" spent={tree.specPointsSpent} max={34} />
           </div>
 
           <div className="flex items-center gap-2">
@@ -198,7 +197,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
             choiceState={tree.classState.choices}
             gates={tree.classGates}
             totalPointsSpent={tree.classPointsSpent}
-            maxPoints={31}
+            maxPoints={34}
             onPointChange={tree.handleClassPointChange}
             onChoiceSelect={tree.handleClassChoiceSelect}
             onReset={tree.resetClass}
@@ -242,7 +241,7 @@ export default function TalentPanel({ fetchTalentTree }: TalentPanelProps) {
             choiceState={tree.specState.choices}
             gates={tree.specGates}
             totalPointsSpent={tree.specPointsSpent}
-            maxPoints={30}
+            maxPoints={34}
             onPointChange={tree.handleSpecPointChange}
             onChoiceSelect={tree.handleSpecChoiceSelect}
             onReset={tree.resetSpec}

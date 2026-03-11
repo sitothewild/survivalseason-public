@@ -53,6 +53,8 @@ interface UseTalentTreeDataReturn {
   // Active hero tree
   activeHeroTree: "sentinel" | "packLeader";
   setActiveHeroTree: (tree: "sentinel" | "packLeader") => void;
+  /** Switch hero tree atomically: sets key + auto-fills non-choice nodes */
+  switchHeroTree: (tree: "sentinel" | "packLeader") => void;
 
   // Actions
   handleClassPointChange: (nodeId: number, delta: number) => void;
@@ -160,8 +162,14 @@ export function useTalentTreeData(
         points: initPoints(mapped.specNodes),
         choices: initChoices(mapped.specNodes),
       });
+      // Hero tree: auto-fill non-choice nodes for the active hero tree (default: sentinel)
+      const activeHeroNodes = mapped.sentinelNodes; // default hero tree
+      const inactiveHeroNodes = mapped.packLeaderNodes;
       setHeroState({
-        points: initPoints([...mapped.sentinelNodes, ...mapped.packLeaderNodes]),
+        points: {
+          ...initPoints(inactiveHeroNodes),
+          ...initHeroPoints(activeHeroNodes),
+        },
         choices: initChoices([...mapped.sentinelNodes, ...mapped.packLeaderNodes]),
       });
 
@@ -206,10 +214,25 @@ export function useTalentTreeData(
     [specState.points]
   );
 
-  // ── Point change handlers
+  // ── Dependents map (reverse lookup: nodeId → nodeIds that list it in lockedBy)
+  const dependentsMap = useMemo(() => {
+    const allNodes = [...classNodes, ...specNodes, ...sentinelNodes, ...packLeaderNodes];
+    const map = new Map<number, number[]>();
+    for (const node of allNodes) {
+      for (const parentId of node.lockedBy) {
+        if (!map.has(parentId)) map.set(parentId, []);
+        map.get(parentId)!.push(node.nodeId);
+      }
+    }
+    return map;
+  }, [classNodes, specNodes, sentinelNodes, packLeaderNodes]);
+
+  // ── Point change handlers (with cap, prerequisite, and dependency enforcement)
   const makePointHandler = (
     setState: React.Dispatch<React.SetStateAction<TalentTreeState>>,
-    nodes: MappedTalentNode[]
+    nodes: MappedTalentNode[],
+    maxPoints: number,
+    gates: { points: number; afterRow: number }[] = []
   ) => {
     return (nodeId: number, delta: number) => {
       const node = nodes.find((n) => n.nodeId === nodeId);
@@ -217,27 +240,66 @@ export function useTalentTreeData(
 
       setState((prev) => {
         const current = prev.points[nodeId] ?? 0;
-        const next = Math.max(0, Math.min(node.maxRank, current + delta));
-        if (next === current) return prev;
+        const totalSpent = Object.values(prev.points).reduce((sum, v) => sum + v, 0);
 
-        return {
-          ...prev,
-          points: { ...prev.points, [nodeId]: next },
-        };
+        if (delta > 0) {
+          // ── ADDING a point ──
+          // Cap check
+          if (totalSpent >= maxPoints) return prev;
+          // Max rank check
+          if (current >= node.maxRank) return prev;
+          // Prerequisite check (all lockedBy nodes must have >= 1 point)
+          if (node.lockedBy.length > 0) {
+            const prereqMet = node.lockedBy.every(
+              (parentId) => (prev.points[parentId] ?? 0) > 0
+            );
+            if (!prereqMet) return prev;
+          }
+          // Gate check
+          for (const gate of gates) {
+            if (node.displayRow >= gate.afterRow && totalSpent < gate.points) {
+              return prev;
+            }
+          }
+
+          return {
+            ...prev,
+            points: { ...prev.points, [nodeId]: current + 1 },
+          };
+        } else if (delta < 0) {
+          // ── REMOVING a point ──
+          if (current <= 0) return prev;
+          const nextVal = current - 1;
+
+          // Dependency protection: if going to 0, check if any dependents have points
+          if (nextVal === 0) {
+            const deps = dependentsMap.get(nodeId) ?? [];
+            for (const depId of deps) {
+              if ((prev.points[depId] ?? 0) > 0) return prev; // blocked
+            }
+          }
+
+          return {
+            ...prev,
+            points: { ...prev.points, [nodeId]: nextVal },
+          };
+        }
+
+        return prev;
       });
     };
   };
 
   const handleClassPointChange = useCallback(
-    makePointHandler(setClassState, classNodes),
-    [classNodes]
+    makePointHandler(setClassState, classNodes, 34, classGates),
+    [classNodes, classGates]
   );
   const handleSpecPointChange = useCallback(
-    makePointHandler(setSpecState, specNodes),
-    [specNodes]
+    makePointHandler(setSpecState, specNodes, 34, specGates),
+    [specNodes, specGates]
   );
   const handleHeroPointChange = useCallback(
-    makePointHandler(setHeroState, [...sentinelNodes, ...packLeaderNodes]),
+    makePointHandler(setHeroState, [...sentinelNodes, ...packLeaderNodes], 13),
     [sentinelNodes, packLeaderNodes]
   );
 
@@ -287,11 +349,34 @@ export function useTalentTreeData(
   }, [specNodes]);
 
   const resetHero = useCallback(() => {
+    // Re-auto-allocate non-choice nodes for the active hero tree
+    const activeNodes = activeHeroTree === "sentinel" ? sentinelNodes : packLeaderNodes;
+    const inactiveNodes = activeHeroTree === "sentinel" ? packLeaderNodes : sentinelNodes;
     setHeroState({
-      points: initPoints([...sentinelNodes, ...packLeaderNodes]),
+      points: {
+        ...initPoints(inactiveNodes),
+        ...initHeroPoints(activeNodes),
+      },
       choices: initChoices([...sentinelNodes, ...packLeaderNodes]),
     });
-  }, [sentinelNodes, packLeaderNodes]);
+  }, [sentinelNodes, packLeaderNodes, activeHeroTree]);
+
+  // Switch hero tree atomically: set new key + auto-fill new tree's non-choice nodes
+  const switchHeroTree = useCallback(
+    (newKey: "sentinel" | "packLeader") => {
+      setActiveHeroTree(newKey);
+      const activeNodes = newKey === "sentinel" ? sentinelNodes : packLeaderNodes;
+      const inactiveNodes = newKey === "sentinel" ? packLeaderNodes : sentinelNodes;
+      setHeroState({
+        points: {
+          ...initPoints(inactiveNodes),
+          ...initHeroPoints(activeNodes),
+        },
+        choices: initChoices([...sentinelNodes, ...packLeaderNodes]),
+      });
+    },
+    [sentinelNodes, packLeaderNodes]
+  );
 
   const resetAll = useCallback(() => {
     resetClass();
@@ -367,6 +452,7 @@ export function useTalentTreeData(
     specGates,
     activeHeroTree,
     setActiveHeroTree,
+    switchHeroTree,
     handleClassPointChange,
     handleSpecPointChange,
     handleHeroPointChange,
@@ -387,6 +473,16 @@ export function useTalentTreeData(
 function initPoints(nodes: MappedTalentNode[]): Record<number, number> {
   const state: Record<number, number> = {};
   for (const n of nodes) state[n.nodeId] = 0;
+  return state;
+}
+
+/** Auto-fill hero tree: non-choice and non-selection nodes get 1 point automatically */
+function initHeroPoints(nodes: MappedTalentNode[]): Record<number, number> {
+  const state: Record<number, number> = {};
+  for (const n of nodes) {
+    // Selection nodes and choice nodes start at 0; everything else auto-fills
+    state[n.nodeId] = (n.nodeType === "choice" || n.nodeType === "selection") ? 0 : 1;
+  }
   return state;
 }
 
