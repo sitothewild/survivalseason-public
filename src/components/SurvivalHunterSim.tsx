@@ -2863,7 +2863,7 @@ export default function SurvivalHunterSim() {
                               const isNone = consumables[k] === 'none';
                               return (
                                 <div key={k} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 40, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
                                   <select
                                     className="ifield"
                                     value={consumables[k]}
