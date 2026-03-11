@@ -1,0 +1,295 @@
+Trivial: Player blezaa enchant '+$k1 Mastery' (id=7192) requires a maximum ilevel of 180, item 'preyseekers_circle' has 233
+SimulationCraft 1201-01 for World of Warcraft 12.0.1.66263 Live (hotfix 2026-03-10/66263, git build HEAD 7207ae0bc1)
+Simulating... ( iterations=100000, threads=32, target_error=0.050, max_time=180, vary_combat_length=0.20, optimal_raid=1, fight_style=None )
+Generating Baseline: blezaa 1/1 [===>................] 2039/10396 537.261 Mean=33857 Error=0.114%
+Generating Baseline: blezaa 1/1 [===>................] 2136/10487 544.582 Mean=33854 Error=0.112%
+Generating Baseline: blezaa 1/1 [===>................] 2214/10557 550.882 Mean=33849 Error=0.110%
+Generating Baseline: blezaa 1/1 [===>................] 2306/10540 557.637 Mean=33853 Error=0.108%
+Generating Baseline: blezaa 1/1 [====>...............] 2404/10639 564.545 Mean=33856 Error=0.106%
+Generating Baseline: blezaa 1/1 [====>...............] 2498/10679 570.749 Mean=33859 Error=0.105%
+Generating Baseline: blezaa 1/1 [====>...............] 2563/10758 574.976 Mean=33861 Error=0.104%
+Generating Baseline: blezaa 1/1 [====>...............] 2632/10766 579.540 Mean=33862 Error=0.102%
+Generating Baseline: blezaa 1/1 [====>...............] 2696/10784 583.103 Mean=33863 Error=0.101%
+Generating Baseline: blezaa 1/1 [====>...............] 2761/10730 586.996 Mean=33865 Error=0.100%
+Generating Baseline: blezaa 1/1 [====>...............] 2851/10800 591.625 Mean=33857 Error=0.098%
+Generating Baseline: blezaa 1/1 [====>...............] 2940/10770 596.326 Mean=33856 Error=0.097%
+Generating Baseline: blezaa 1/1 [=====>..............] 3015/10778 600.193 Mean=33856 Error=0.096%
+Generating Baseline: blezaa 1/1 [=====>..............] 3081/10860 603.506 Mean=33854 Error=0.095%
+Generating Baseline: blezaa 1/1 [=====>..............] 3147/10925 606.538 Mean=33854 Error=0.094%
+Generating Baseline: blezaa 1/1 [=====>..............] 3217/10918 609.810 Mean=33854 Error=0.093%
+Generating Baseline: blezaa 1/1 [=====>..............] 3283/10976 612.495 Mean=33852 Error=0.092%
+Generating Baseline: blezaa 1/1 [=====>..............] 3381/11029 616.944 Mean=33852 Error=0.091%
+Generating Baseline: blezaa 1/1 [=====>..............] 3457/11033 620.286 Mean=33854 Error=0.090%
+Generating Baseline: blezaa 1/1 [=====>..............] 3523/11058 622.670 Mean=33852 Error=0.089%
+Generating Baseline: blezaa 1/1 [=====>..............] 3590/11067 625.030 Mean=33855 Error=0.089%
+Generating Baseline: blezaa 1/1 [======>.............] 3669/11039 628.650 Mean=33855 Error=0.088%
+Generating Baseline: blezaa 1/1 [======>.............] 3734/11029 630.790 Mean=33853 Error=0.087%
+Generating Baseline: blezaa 1/1 [======>.............] 3798/11005 633.202 Mean=33852 Error=0.086%
+Generating Baseline: blezaa 1/1 [======>.............] 3886/11011 636.204 Mean=33848 Error=0.085%
+Generating Baseline: blezaa 1/1 [======>.............] 3983/11027 640.127 Mean=33846 Error=0.084%
+Generating Baseline: blezaa 1/1 [======>.............] 4059/11032 642.438 Mean=33843 Error=0.083%
+Generating Baseline: blezaa 1/1 [======>.............] 4132/11051 644.567 Mean=33845 Error=0.082%
+Generating Baseline: blezaa 1/1 [=======>............] 4198/11070 646.392 Mean=33845 Error=0.082%
+Generating Baseline: blezaa 1/1 [=======>............] 4265/11043 648.584 Mean=33844 Error=0.081%
+Generating Baseline: blezaa 1/1 [=======>............] 4330/11045 650.690 Mean=33845 Error=0.080%
+Generating Baseline: blezaa 1/1 [=======>............] 4432/11081 653.441 Mean=33845 Error=0.080%
+Generating Baseline: blezaa 1/1 [=======>............] 4505/11076 655.477 Mean=33844 Error=0.079%
+Generating Baseline: blezaa 1/1 [=======>............] 4602/11098 658.104 Mean=33845 Error=0.078%
+Generating Baseline: blezaa 1/1 [=======>............] 4667/11116 660.033 Mean=33846 Error=0.077%
+Generating Baseline: blezaa 1/1 [========>...........] 4731/11121 661.356 Mean=33846 Error=0.077%
+Generating Baseline: blezaa 1/1 [========>...........] 4822/11134 663.435 Mean=33845 Error=0.077%
+Generating Baseline: blezaa 1/1 [========>...........] 4909/11149 665.130 Mean=33845 Error=0.076%
+Generating Baseline: blezaa 1/1 [========>...........] 4977/11125 666.007 Mean=33843 Error=0.075%
+Generating Baseline: blezaa 1/1 [========>...........] 5052/11102 667.937 Mean=33843 Error=0.075%
+Generating Baseline: blezaa 1/1 [========>...........] 5117/11090 669.192 Mean=33847 Error=0.074%
+Generating Baseline: blezaa 1/1 [========>...........] 5181/11070 670.794 Mean=33846 Error=0.073%
+Generating Baseline: blezaa 1/1 [=========>..........] 5272/11083 671.739 Mean=33844 Error=0.073%
+Generating Baseline: blezaa 1/1 [=========>..........] 5351/11077 673.401 Mean=33843 Error=0.072%
+Generating Baseline: blezaa 1/1 [=========>..........] 5445/11063 675.218 Mean=33844 Error=0.072%
+Generating Baseline: blezaa 1/1 [=========>..........] 5516/11099 676.423 Mean=33846 Error=0.071%
+Generating Baseline: blezaa 1/1 [=========>..........] 5610/11122 678.118 Mean=33850 Error=0.071%
+Generating Baseline: blezaa 1/1 [=========>..........] 5702/11127 679.536 Mean=33852 Error=0.070%
+Generating Baseline: blezaa 1/1 [=========>..........] 5773/11110 680.600 Mean=33851 Error=0.070%
+Generating Baseline: blezaa 1/1 [=========>..........] 5848/11144 681.518 Mean=33852 Error=0.069%
+Generating Baseline: blezaa 1/1 [==========>.........] 5919/11128 682.699 Mean=33853 Error=0.069%
+Generating Baseline: blezaa 1/1 [==========>.........] 5984/11111 683.623 Mean=33853 Error=0.068%
+Generating Baseline: blezaa 1/1 [==========>.........] 6070/11093 685.217 Mean=33852 Error=0.068%
+Generating Baseline: blezaa 1/1 [==========>.........] 6141/11063 686.642 Mean=33852 Error=0.067%
+Generating Baseline: blezaa 1/1 [==========>.........] 6219/11052 687.975 Mean=33851 Error=0.067%
+Generating Baseline: blezaa 1/1 [==========>.........] 6288/11046 688.711 Mean=33851 Error=0.067%
+Generating Baseline: blezaa 1/1 [===========>........] 6353/11021 689.746 Mean=33850 Error=0.066%
+Generating Baseline: blezaa 1/1 [===========>........] 6448/11023 690.676 Mean=33853 Error=0.066%
+Generating Baseline: blezaa 1/1 [===========>........] 6514/11003 691.221 Mean=33851 Error=0.065%
+Generating Baseline: blezaa 1/1 [===========>........] 6601/11004 692.229 Mean=33851 Error=0.065%
+Generating Baseline: blezaa 1/1 [===========>........] 6694/11015 693.662 Mean=33850 Error=0.064%
+Generating Baseline: blezaa 1/1 [===========>........] 6764/11038 694.607 Mean=33849 Error=0.064%
+Generating Baseline: blezaa 1/1 [===========>........] 6841/11046 695.826 Mean=33849 Error=0.064%
+Generating Baseline: blezaa 1/1 [============>.......] 6907/11044 696.730 Mean=33849 Error=0.063%
+Generating Baseline: blezaa 1/1 [============>.......] 6973/11056 697.619 Mean=33850 Error=0.063%
+Generating Baseline: blezaa 1/1 [============>.......] 7060/11054 698.531 Mean=33850 Error=0.063%
+Generating Baseline: blezaa 1/1 [============>.......] 7128/11076 699.312 Mean=33848 Error=0.063%
+Generating Baseline: blezaa 1/1 [============>.......] 7193/11053 699.906 Mean=33848 Error=0.062%
+Generating Baseline: blezaa 1/1 [============>.......] 7285/11031 700.881 Mean=33847 Error=0.062%
+Generating Baseline: blezaa 1/1 [============>.......] 7371/11042 701.758 Mean=33846 Error=0.061%
+Generating Baseline: blezaa 1/1 [=============>......] 7435/11000 702.746 Mean=33847 Error=0.061%
+Generating Baseline: blezaa 1/1 [=============>......] 7499/11028 703.687 Mean=33845 Error=0.061%
+Generating Baseline: blezaa 1/1 [=============>......] 7591/11027 704.776 Mean=33847 Error=0.060%
+Generating Baseline: blezaa 1/1 [=============>......] 7665/11028 705.826 Mean=33848 Error=0.060%
+Generating Baseline: blezaa 1/1 [=============>......] 7731/11036 706.655 Mean=33849 Error=0.060%
+Generating Baseline: blezaa 1/1 [=============>......] 7804/11041 707.470 Mean=33849 Error=0.060%
+Generating Baseline: blezaa 1/1 [=============>......] 7872/11025 708.373 Mean=33849 Error=0.059%
+Generating Baseline: blezaa 1/1 [=============>......] 7936/10996 709.186 Mean=33848 Error=0.059%
+Generating Baseline: blezaa 1/1 [==============>.....] 8000/10976 709.794 Mean=33848 Error=0.059%
+Generating Baseline: blezaa 1/1 [==============>.....] 8071/10963 710.587 Mean=33848 Error=0.058%
+Generating Baseline: blezaa 1/1 [==============>.....] 8169/10963 711.803 Mean=33847 Error=0.058%
+Generating Baseline: blezaa 1/1 [==============>.....] 8260/10948 712.827 Mean=33847 Error=0.058%
+Generating Baseline: blezaa 1/1 [==============>.....] 8327/10940 713.447 Mean=33847 Error=0.058%
+Generating Baseline: blezaa 1/1 [==============>.....] 8394/10989 714.198 Mean=33846 Error=0.057%
+Generating Baseline: blezaa 1/1 [==============>.....] 8461/10978 714.764 Mean=33845 Error=0.057%
+Generating Baseline: blezaa 1/1 [===============>....] 8527/10981 715.378 Mean=33846 Error=0.057%
+Generating Baseline: blezaa 1/1 [===============>....] 8593/10975 716.202 Mean=33845 Error=0.057%
+Generating Baseline: blezaa 1/1 [===============>....] 8684/11016 717.400 Mean=33848 Error=0.056%
+Generating Baseline: blezaa 1/1 [===============>....] 8777/11006 718.074 Mean=33849 Error=0.056%
+Generating Baseline: blezaa 1/1 [===============>....] 8845/11004 718.989 Mean=33848 Error=0.056%
+Generating Baseline: blezaa 1/1 [===============>....] 8914/11008 719.417 Mean=33846 Error=0.056%
+Generating Baseline: blezaa 1/1 [===============>....] 8985/11001 719.784 Mean=33847 Error=0.056%
+Generating Baseline: blezaa 1/1 [===============>....] 9049/11007 720.249 Mean=33847 Error=0.055%
+Generating Baseline: blezaa 1/1 [================>...] 9120/11008 721.023 Mean=33847 Error=0.055%
+Generating Baseline: blezaa 1/1 [================>...] 9194/11015 721.887 Mean=33845 Error=0.055%
+Generating Baseline: blezaa 1/1 [================>...] 9264/11026 722.641 Mean=33847 Error=0.055%
+Generating Baseline: blezaa 1/1 [================>...] 9331/11026 723.196 Mean=33847 Error=0.054%
+Generating Baseline: blezaa 1/1 [================>...] 9397/11026 723.730 Mean=33846 Error=0.054%
+Generating Baseline: blezaa 1/1 [================>...] 9467/11032 724.191 Mean=33844 Error=0.054%
+Generating Baseline: blezaa 1/1 [================>...] 9535/11032 724.811 Mean=33844 Error=0.054%
+Generating Baseline: blezaa 1/1 [================>...] 9626/11049 725.736 Mean=33844 Error=0.054%
+Generating Baseline: blezaa 1/1 [=================>..] 9697/11028 726.028 Mean=33843 Error=0.053%
+Generating Baseline: blezaa 1/1 [=================>..] 9785/11002 726.792 Mean=33844 Error=0.053%
+Generating Baseline: blezaa 1/1 [=================>..] 9883/11032 727.471 Mean=33844 Error=0.053%
+Generating Baseline: blezaa 1/1 [=================>..] 9947/11038 728.003 Mean=33844 Error=0.053%
+Generating Baseline: blezaa 1/1 [=================>..] 10017/11040 728.638 Mean=33843 Error=0.053%
+Generating Baseline: blezaa 1/1 [=================>..] 10086/11027 729.127 Mean=33842 Error=0.052%
+Generating Baseline: blezaa 1/1 [=================>..] 10158/11004 729.576 Mean=33844 Error=0.052%
+Generating Baseline: blezaa 1/1 [==================>.] 10230/11004 730.190 Mean=33843 Error=0.052%
+Generating Baseline: blezaa 1/1 [==================>.] 10295/10995 730.571 Mean=33844 Error=0.052%
+Generating Baseline: blezaa 1/1 [==================>.] 10360/10988 731.143 Mean=33845 Error=0.052%
+Generating Baseline: blezaa 1/1 [==================>.] 10436/10984 731.616 Mean=33844 Error=0.051%
+Generating Baseline: blezaa 1/1 [==================>.] 10503/10983 732.158 Mean=33845 Error=0.051%
+Generating Baseline: blezaa 1/1 [==================>.] 10578/10984 732.481 Mean=33847 Error=0.051%
+Generating Baseline: blezaa 1/1 [==================>.] 10645/10992 733.105 Mean=33846 Error=0.051%
+Generating Baseline: blezaa 1/1 [==================>.] 10718/10996 733.678 Mean=33846 Error=0.051%
+Generating Baseline: blezaa 1/1 [===================>] 10793/11016 734.199 Mean=33847 Error=0.051%
+Generating Baseline: blezaa 1/1 [===================>] 10862/11035 734.690 Mean=33847 Error=0.050%
+Generating Baseline: blezaa 1/1 [===================>] 10932/11043 734.877 Mean=33846 Error=0.050%
+Generating Baseline: blezaa 1/1 [===================>] 11022/11037 735.430 Mean=33846 Error=0.050%
+Generating Baseline: blezaa 1/1 [===================>] 11059/11059 735.430 Mean=33846 Error=0.050% 469msec
+Merging data from thread-20 ...
+Merging data from thread-15 ...
+Merging data from thread-9 ...
+Merging data from thread-23 ...
+Merging data from thread-5 ...
+Merging data from thread-24 ...
+Merging data from thread-13 ...
+Merging data from thread-25 ...
+Merging data from thread-22 ...
+Merging data from thread-14 ...
+Merging data from thread-7 ...
+Merging data from thread-10 ...
+Merging data from thread-18 ...
+Merging data from thread-21 ...
+Merging data from thread-3 ...
+Merging data from thread-12 ...
+Merging data from thread-11 ...
+Merging data from thread-1 ...
+Merging data from thread-30 ...
+Merging data from thread-8 ...
+Merging data from thread-2 ...
+Merging data from thread-27 ...
+Merging data from thread-4 ...
+Merging data from thread-17 ...
+Merging data from thread-19 ...
+Merging data from thread-29 ...
+Merging data from thread-16 ...
+Merging data from thread-6 ...
+Merging data from thread-26 ...
+Merging data from thread-31 ...
+Merging data from thread-28 ...
+Analyzing actor data ...
+Generating reports...
+DPS Ranking:
+  33846 100.0%  Raid
+  33846  100.0%  blezaa
+HPS Ranking:
+      0 100.0%%  Raid
+Player: blezaa tauren hunter survival 90
+  DPS=33846.085167778045 DPS-Error=16.881013482951406/0.05% DPS-Range=3531.6217659366575/10.43%
+  DPR=1814.5893501629141 RPS-Out=12.465437186540326 RPS-In=12.092054064755448 Resource=focus Waiting=1.1995825092745258 ApM=45.21430551549479
+  Origin: /tmp/uBK2jRg5EJ2DAYpwv6RJFB.armoryv2.profile.json,equipment=/tmp/uBK2jRg5EJ2DAYpwv6RJFB.armoryv2.equipment.json,spec=/tmp/uBK2jRg5EJ2DAYpwv6RJFB.armoryv2.spec.json
+  Talents: C8PAo4YcvOcqUdzB9zV+NhSAcM2wMzYmZb0ssMMDzMNYxMzMzMsMAAAAAAYGzYGmxYGzgx0MAAAAgBAwyyMzsYmZmZmxMDYmtZYBMGzMLMA
+  Core Stats:    strength=380|380(380)  agility=1477|1477(1366)  stamina=13198|13198(13199)  intellect=507|507(507)  spirit=0|0(0)  health=277158|263960  mana=0|0
+  Generic Stats: mastery=24.74%|24.74%(695)  versatility=3.69%|3.69%(199)  leech=0.46%|0.46%(32)  runspeed=7.28%|7.28%(0)
+  Spell Stats:   power=507|507(0)  hit=15.00%|15.00%(0)  crit=21.74%|21.74%(356)  haste=9.84%|9.84%(338)  speed=9.84%|9.84%  manareg=0|0(0)
+  Attack Stats:  power=1477|1477(0)  hit=7.50%|7.50%(0)  crit=21.74%|21.74%(356)  expertise=7.50%/7.50%|7.50%/7.50%(0)  haste=9.84%|9.84%(338)  speed=9.84%|9.84%
+  Defense Stats: armor=900|900(900) miss=3.00%|3.00%  dodge=10.28%|10.28%(0)  parry=0.00%|0.00%(0)  block=0.00%|0.00%(0) crit=0.00%|0.00%  versatility=1.84%|1.84%(199)
+  Priorities (actions.precombat):
+    summon_pet/snapshot_stats
+  Priorities (actions.default):
+    auto_attack/call_action_list,name=cds/call_action_list,name=plst,if=active_enemies<3&talent.howl_of_the_pack_leader
+    call_action_list,name=plcleave,if=active_enemies>2&talent.howl_of_the_pack_leader
+    call_action_list,name=sentst,if=active_enemies<3&!talent.howl_of_the_pack_leader
+    call_action_list,name=sentcleave,if=active_enemies>2&!talent.howl_of_the_pack_leader
+  Priorities (actions.cds):
+    blood_fury,if=buff.takedown.up|cooldown.takedown.ready/use_items,if=buff.takedown.up|cooldown.takedown.ready|!talent.takedown
+    invoke_external_buff,name=power_infusion,if=buff.takedown.up&!buff.power_infusion.up|fight_remains<16/harpoon,if=prev.kill_command
+    ancestral_call,if=buff.takedown.up|cooldown.takedown.ready/fireblood,if=buff.takedown.up|cooldown.takedown.ready
+    berserking,if=buff.takedown.up|cooldown.takedown.ready/muzzle/potion,if=target.time_to_die<25|cooldown.takedown.ready
+    aspect_of_the_eagle,if=target.distance>=6
+  Priorities (actions.plst):
+    kill_command,if=buff.tip_of_the_spear.stack<2&(buff.howl_of_the_pack_leader_wyvern.remains|buff.howl_of_the_pack_leader_boar.remains|buff.howl_of_the_pack_leader_bear.remains)
+    kill_command,if=cooldown.takedown.remains<gcd&buff.tip_of_the_spear.stack<2&!talent.twin_fangs
+    takedown,if=buff.tip_of_the_spear.stack>0&!talent.twin_fangs|buff.tip_of_the_spear.stack=0&talent.twin_fangs/flamefang_pitch
+    boomstick,if=buff.tip_of_the_spear.up/wildfire_bomb,if=fury_of_the_wyvern_extendable&buff.tip_of_the_spear.up
+    raptor_strike,if=buff.tip_of_the_spear.up|!buff.raptor_swipe.up/kill_command,if=cooldown.takedown.remains/wildfire_bomb/takedown
+  Actions:
+    auto_attack_mh            Count= 124.2|  1.449sec  DPE= 2890| 5.90%  DPET= 2145  DPR=     0  pDPS=1997  Miss=19.01%  Hit=  2789|  2625|  2976  Crit=  5691|  5355|  6072|21.76%
+    auto_attack_oh            Count= 124.2|  1.449sec  DPE= 1410| 2.88%  DPET= 1047  DPR=     0  pDPS= 974  Miss=18.97%  Hit=  1361|  1280|  1452  Crit=  2775|  2610|  2963|21.74%
+    boar_charge               Count=   0.0|  0.000sec  DPE=    0| 2.37%  DPET=    0  DPR=     0  pDPS= 799  Miss= 0.00%  Hit= 30192| 23335| 36651  Crit= 61513| 47603| 74769|21.88%
+    boar_charge_cleave        Count=   0.0|  0.000sec  DPE=    0| 2.84%  DPET=    0  DPR=     0  pDPS= 960  Miss= 0.00%  Hit= 36218| 30708| 43982  Crit= 73903| 57124| 89722|21.97%
+    boomstick                 Count=   4.5| 43.929sec  DPE=115561| 0.00%  DPET=39419  DPR=  2305  pDPS=   0  TickCount=    18  UpTime=  6.72%
+    boomstick_damage          Count=  17.9|  9.261sec  DPE=29054| 8.56%  DPET=    0  DPR=     0  pDPS=2905  Miss= 0.00%  Hit= 22836| 19092| 31172  Crit= 51428| 42918| 70074|21.74%
+    harpoon                   Count=   8.4| 21.879sec  DPE=    0| 0.00%  DPET=    0  DPR=     0  pDPS=   0
+    kill_command              Count=  39.7|  4.471sec  DPE=    0| 0.00%  DPET=    0  DPR=     0  pDPS=   0
+    kroluks_warbanner         Count=  14.5| 11.702sec  DPE=11821| 2.83%  DPET=    0  DPR=     0  pDPS= 956  Miss= 0.00%  Hit=  9640|  9612|  9999  Crit= 19667| 19609| 20397|21.84%
+    raptor_strike             Count=  31.0|  5.586sec  DPE=51530|12.19%  DPET=19251  DPR=  1713  pDPS=4127  Miss= 0.00%  Hit= 18830| 12134| 29717  Crit= 42302| 27277| 66804|21.54%
+    raptor_swipe              Count=  30.5|  5.599sec  DPE=28120|14.10%  DPET=    0  DPR=   935  pDPS=4774  Miss= 0.00%  Hit= 22110| 15681| 35240  Crit= 49685| 35250| 76206|21.79%
+    stampede_tick             Count=   0.0|  0.000sec  DPE=    0| 2.30%  DPET=    0  DPR=     0  pDPS= 778  Miss= 0.00%  Hit=  3808|  2806|  4581  Crit=  7766|  5724|  9346|21.93%
+    takedown                  Count=   3.4| 61.740sec  DPE=65417| 0.00%  DPET=48267  DPR=     0  pDPS=   0
+    takedown_damage           Count=   3.4| 61.740sec  DPE=65417| 3.66%  DPET=    0  DPR=     0  pDPS=1240  Miss= 0.00%  Hit= 53233| 48487| 65972  Crit=108492| 98913|134583|22.05%
+    wildfire_bomb             Count=  16.9| 10.473sec  DPE=33166| 0.00%  DPET=24568  DPR=  3307  pDPS=   0
+    wildfire_bomb_bleed       Count=   0.0|  0.000sec  DPE=    0| 4.23%  DPET=    0  DPR=     0  pDPS=1429  TickCount=    85  MissTick= 0.00%  Tick=  2468|  1759|  4397  CritTick=  5032|  3588|  9047|21.69%  UpTime= 47.35%
+    wildfire_bomb_damage      Count=   0.0|  0.000sec  DPE=    0| 4.97%  DPET=    0  DPR=     0  pDPS=1681  Miss= 0.00%  Hit= 14647| 10252| 19082  Crit= 29892| 20914| 38927|21.58%
+   duck (DPS=10383.30072701097)
+    claw                      Count=  57.1|  3.176sec  DPE= 2591| 2.43%  DPET= 2579  DPR=    81  pDPS= 823  Miss= 0.00%  Hit=  2099|  1379|  4502  Crit=  4364|  2870|  9367|21.71%
+    kill_command              Count=  39.7|  4.471sec  DPE= 8001| 5.22%  DPET=    0  DPR=     0  pDPS=1766  Miss= 0.00%  Hit=  6478|  3173|  9798  Crit= 13498|  6601| 20388|21.70%
+    melee                     Count= 125.0|  1.430sec  DPE=  912| 1.87%  DPET=  639  DPR=     0  pDPS= 634  Miss= 0.00%  Hit=   738|   613|  1000  Crit=  1536|  1276|  2082|21.76%
+    strike_as_one             Count=   0.0|  0.000sec  DPE=    0|18.32%  DPET=    0  DPR=     0  pDPS=6201  Miss= 0.00%  Hit=  7872|  3642| 23773  Crit= 16412|  7577| 51058|21.76%
+    takedown                  Count=   3.4| 61.740sec  DPE=50577| 2.83%  DPET=    0  DPR=     0  pDPS= 959  Miss= 0.00%  Hit= 40826| 34205| 60882  Crit= 84758| 71174|126683|22.20%
+   bear (DPS=3777.642204184226)
+    melee                     Count=  40.4|  3.100sec  DPE= 1666| 1.11%  DPET= 1594  DPR=     0  pDPS=1673  Miss= 0.00%  Hit=  1349|  1314|  1421  Crit=  2807|  2735|  2956|21.71%
+    rend_flesh                Count=   3.4| 45.618sec  DPE=24663| 1.39%  DPET=    0  DPR=     0  pDPS=2105  TickCount=    38  MissTick= 0.00%  Tick=  1797|    54|  2443  CritTick=  3737|   111|  5084|21.55%  UpTime= 83.52%
+  Constant Buffs:
+    blessing_of_the_bronze
+  Dynamic Buffs:
+    bloodseeker                      : start=  9.2 refresh=  0.0 interval= 19.2 trigger= 19.2 duration=  9.9 uptime= 50.62%
+    endurance_training               : start=  1.0 refresh=  0.0 interval=  0.0 trigger=  0.0 duration=179.7 uptime=100.00%
+    genius_insight                   : start=  5.0 refresh=  4.9 interval= 35.5 trigger= 16.6 duration= 20.8 uptime= 57.27%
+    hasty_hunt                       : start=  2.3 refresh=  3.6 interval= 34.5 trigger= 12.6 duration= 24.0 uptime= 30.47%
+    hogstrider                       : start=  3.9 refresh=  3.9 interval= 48.0 trigger=  0.0 duration= 18.7 uptime= 40.39%
+    howl_of_the_pack_leader_bear     : start=  3.5 refresh=  0.0 interval= 46.1 trigger= 46.1 duration=  3.2 uptime=  6.20%
+    howl_of_the_pack_leader_boar     : start=  3.9 refresh=  0.0 interval= 47.4 trigger= 47.4 duration=  2.6 uptime=  5.81%
+    howl_of_the_pack_leader_cooldown : start=  9.3 refresh=  0.0 interval= 20.5 trigger= 20.4 duration= 16.8 uptime= 86.60%
+    howl_of_the_pack_leader_wyvern   : start=  4.4 refresh=  0.0 interval= 46.8 trigger= 41.4 duration=  3.3 uptime=  8.05%
+    masterful_hunt                   : start=  2.4 refresh=  3.6 interval= 34.1 trigger= 12.7 duration= 23.7 uptime= 31.26%
+    might_of_the_void                : start=  5.0 refresh=  5.0 interval= 35.4 trigger= 16.5 duration= 20.8 uptime= 57.33%
+    mongoose_fury                    : start=  1.0 refresh= 78.5 interval= 89.3 trigger=  2.3 duration=178.3 uptime= 99.21%
+    raptor_swipe                     : start= 31.0 refresh=  0.0 interval=  5.6 trigger=  5.6 duration=  2.9 uptime= 49.68%  benefit= 49.57%
+    stampede                         : start=  3.4 refresh=  0.0 interval= 61.7 trigger= 61.7 duration=  4.0 uptime=  7.42%
+    stampede_incoming                : start=  3.4 refresh=  0.0 interval= 62.1 trigger= 61.7 duration=  3.5 uptime=  6.67%
+    takedown                         : start=  3.4 refresh=  0.0 interval= 62.1 trigger= 61.7 duration=  7.9 uptime= 14.93%
+    tip_of_the_spear                 : start= 23.5 refresh= 19.5 interval=  7.6 trigger=  4.2 duration=  6.2 uptime= 81.36%
+    tip_of_the_spear_boomstick       : start=  4.5 refresh=  0.0 interval= 44.0 trigger= 44.0 duration=  2.7 uptime=  6.75%
+    versatile_hunt                   : start=  0.5 refresh=  0.8 interval= 34.0 trigger= 12.7 duration= 23.8 uptime=  7.31%
+    wyverns_cry                      : start=  4.3 refresh= 68.9 interval= 46.3 trigger= 46.3 duration= 22.3 uptime= 53.90%
+    bear-bear_summon                 : start=  3.4 refresh=  0.0 interval= 45.5 trigger= 45.5 duration= 11.7 uptime=100.00%
+    bear-pet_damage                  : start=  3.4 refresh=  0.0 interval= 45.5 trigger= 45.5 duration= 11.7 uptime=100.00%
+    duck-bloodseeker                 : start=  9.2 refresh=  0.0 interval= 19.2 trigger= 19.2 duration=  9.9 uptime= 50.62%
+  Up-Times:
+      1.43% : Focus Cap                     
+  Procs:
+     20.46930 |  16.85373sec : delayed_aa_channel
+  Gains:
+       977.7 : Focus Regen  (focus)          (overflow=2.13%)
+       980.0 : Lethal Barbs (focus)          (overflow=1.38%)
+       592.3 : kill_command (focus)        
+       120.2 : takedown     (focus)          (overflow=29.38%)
+    Pet "duck" Gains:
+      1249.0 : Focus Regen  (focus)        
+    Pet "bear" Gains:
+  Waiting:  1.20%
+ *** Targets *** 
+Target: Fluffy_Pillow humanoid tank_dummy unknown 93
+  DTPS=33846.08516777805 DTPS-Error=16.881013482951364/0.05% DTPS-Range=3531.621765936601/10.43%
+  DPR=0 RPS-Out=31219.025770895194 RPS-In=0 Resource=health Waiting=0 ApM=0
+  Core Stats:    strength=0|0(0)  agility=0|0(0)  stamina=0|0(0)  intellect=0|0(0)  spirit=0|0(0)  health=0|4663608  mana=0|0
+  Generic Stats: mastery=0.00%|0.00%(0)  versatility=0.00%|0.00%(0)  leech=0.00%|0.00%(0)  runspeed=7.00%|7.00%(0)
+  Spell Stats:   power=0|0(0)  hit=0.00%|0.00%(0)  crit=0.00%|0.00%(0)  haste=0.00%|0.00%(0)  speed=0.00%|0.00%  manareg=0|0(0)
+  Attack Stats:  power=0|0(0)  hit=0.00%|0.00%(0)  crit=5.00%|5.00%(0)  expertise=0.00%|0.00%(0)  haste=0.00%|0.00%(0)  speed=0.00%|0.00%
+  Defense Stats: armor=1470|1470(1470) miss=3.00%|3.00%  dodge=3.00%|3.00%(0)  parry=3.00%|3.00%(0)  block=3.00%|3.00%(0) crit=0.00%|0.00%  versatility=0.00%|0.00%(0)
+  Priorities (actions.precombat):
+    snapshot_stats
+  Priorities (actions.default):
+  Actions:
+  Constant Buffs:
+    mortal_wounds
+  Dynamic Buffs:
+    bleeding : start= 13.1 refresh=  0.0 interval= 14.0 trigger=  0.0 duration=  8.7 uptime= 63.18%
+  Waiting:  0.00%
+Baseline Performance:
+  Networking    = enabled
+  RNG Engine    = xoshiro256+
+  Iterations    = 11091 (334, 361, 338, 346, 348, 352, 361, 357, 350, 340, 350, 336, 342, 346, 353, 342, 357, 342, 342, 337, 349, 355, 340, 358, 362, 342, 346, 342, 340, 344, 339, 340)
+  TotalEvents   = 22325358
+  MaxEventQueue = 59
+  TargetHealth  = 4663609
+  SimSeconds    = 1987768.229
+  CpuSeconds    = 14.695027365000001
+  WallSeconds   = 0.7448869050000001
+  InitSeconds   = 0.112811348
+  MergeSeconds  = 0.009345558
+  AnalyzeSeconds= 0.035350556000000005
+  SpeedUp       = 135659
+  EndTime       = 2026-03-11 17:14:33+0000
+Waiting:
+     1.20% : blezaa
+text report took 0.00034931000000000003seconds.
+JSON report version 2.0.0 took 0.00242246seconds.
+html report took 0.0073787290000000005seconds.
