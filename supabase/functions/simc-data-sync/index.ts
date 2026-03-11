@@ -85,7 +85,7 @@ function parseSurvivalSpellData(hunterSource: string) {
   const sbMatch = hunterSource.match(/spirit_bond.*?mastery_value/g);
   if (sbMatch) spellData.spirit_bond_mastery_refs = sbMatch.length;
 
-  // Parse Takedown references (Midnight replacement for Coordinated Assault)
+  // Parse Takedown references
   const takedownMatch = hunterSource.match(/takedown/g);
   spellData.takedown_refs = takedownMatch ? takedownMatch.length : 0;
 

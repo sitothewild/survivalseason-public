@@ -67,8 +67,8 @@ const MIDNIGHT_DATA = {
       mongooseFury: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "Raptor Strike increases RS damage by 10% for 8s. Multiple overlaps stack.", always: true },
       strikeAsOne: { dps: 0.08, stTarget: 0.10, aoe: 0.06, desc: "All damaging abilities cause pet to attack.", always: true },
       wildfireBomb: { dps: 0.14, stTarget: 0.11, aoe: 0.22, desc: "No focus cost. Lethal Calibration: +15% crit dmg for 12s.", always: true },
-      takedown: { dps: 0.08, stTarget: 0.12, aoe: 0.06, desc: "Replaces Coordinated Assault. 20% amp for 8s. 1:30 base CD.", always: true },
-      boomstick: { dps: 0.10, stTarget: 0.09, aoe: 0.14, desc: "Replaces FotE. Frontal AoE, 1m CD. Shellshock: +40% ST.", always: true },
+      takedown: { dps: 0.08, stTarget: 0.12, aoe: 0.06, desc: "20% amp for 8s. 1:30 base CD. Core burst window.", always: true },
+      boomstick: { dps: 0.10, stTarget: 0.09, aoe: 0.14, desc: "Frontal AoE, 1m CD. Shellshock: +40% ST.", always: true },
       raptorSwipe: { dps: 0.09, stTarget: 0.04, aoe: 0.16, desc: "Apex talent (4 points). 25% proc → 100% during Takedown.", always: true },
       savagery: { dps: 0.06, stTarget: 0.09, aoe: 0.03, desc: "Reduces Takedown CD by 15/30s.", stPriority: true },
       vulnerability: { dps: 0.05, stTarget: 0.07, aoe: 0.02, desc: "RS and Boomstick deal 20% increased crit damage.", stPriority: true },
@@ -151,7 +151,7 @@ function parseSimcString(simcText) {
     if (key === 'attack_power') result.stats.attackPower = v;
   });
 
-  // Known enchant IDs → display names (Midnight / TWW)
+  // Known enchant IDs → display names (Midnight 12.0)
   const ENCHANT_NAMES: Record<string, string> = {
     '7460': 'Arcane Mastery', '7461': 'Stormrider\'s Fury',
     '7462': 'Stonebound Artistry', '7463': 'Oathsworn\'s Tenacity',
@@ -597,8 +597,8 @@ const CORE_TALENTS: TalentPill[] = [
   { name: 'Mongoose Fury',      type: 'core', points: 2, desc: 'Raptor Strike stacking damage buff, up to 5×. Always talented — backbone of the entire rotation. Each consecutive RS extends the buff duration.' },
   { name: 'Strike as One',      type: 'core', points: 1, desc: 'All your damaging abilities trigger a coordinated pet attack. Core pet-scaling node — affects Kill Command, Claw, and all beast procs.' },
   { name: 'Wildfire Bomb',      type: 'core', points: 2, desc: 'No-focus bomb nuke that ignites the area. Highest single-cast ability value. Enables Lethal Calibration on detonation and benefits from all fire amplifiers.' },
-  { name: 'Takedown',           type: 'core', points: 1, desc: '+20% damage amplifier for 8s. 90s base CD (reduced by Savagery to 60s). Replaces Coordinated Assault. Line up RS stacks + cooldowns inside this window.' },
-  { name: 'Boomstick',          type: 'core', points: 1, desc: 'Frontal cone attack with Shellshock (+40% Boomstick ST damage). 60s CD. Replaces Focus Fire. Triggers Mongoose Rounds and reduces WFB CD via Wildfire Shells.' },
+  { name: 'Takedown',           type: 'core', points: 1, desc: '+20% damage amplifier for 8s. 90s base CD (reduced by Savagery to 60s). Line up RS stacks + cooldowns inside this window.' },
+  { name: 'Boomstick',          type: 'core', points: 1, desc: 'Frontal cone attack with Shellshock (+40% Boomstick ST damage). 60s CD. Triggers Mongoose Rounds and reduces WFB CD via Wildfire Shells.' },
   { name: 'Raptor Swipe',       type: 'core', points: 2, desc: 'Apex 2-point talent. Raptor Strike has a 25% proc chance to strike again for free. During Takedown the proc rate becomes 100% — massive burst synergy.' },
   { name: 'Lethal Calibration', type: 'core', points: 1, desc: 'Wildfire Bomb detonation applies a +15% critical damage buff for 12s. Multiplicative with Vulnerability. Keep WFB on CD to maintain near-100% uptime.' },
 ];
@@ -1184,7 +1184,7 @@ export default function SurvivalHunterSim() {
   useEffect(() => { fetchPatchNotes(); }, []);
 
   // Auto-load SimC data on mount
-  // Deprecated War Within abilities — if found in cached data, it's stale
+  // Deprecated pre-Midnight abilities — if found in cached data, it's stale
   const DEPRECATED_ABILITIES = ['spearhead', 'flanking_strike', 'mongoose_bite', 'coordinated_assault', 'fury_of_the_eagle', 'butchery', 'raptor_bite'];
   const isStaleSimcData = (data: any): boolean => {
     const actionLists = data?.apl?.actionLists;
@@ -1218,7 +1218,7 @@ export default function SurvivalHunterSim() {
           } catch (e) { console.warn('APL build from cache failed:', e); }
         } else {
           // Stale or no cached data, trigger a sync
-          if (cached?.data) console.warn('Cached SimC data contains deprecated War Within abilities — forcing re-sync');
+          if (cached?.data) console.warn('Cached SimC data contains deprecated pre-Midnight abilities — forcing re-sync');
           await handleSimcSync(true);
         }
       } catch (e) {
@@ -3543,7 +3543,7 @@ export default function SurvivalHunterSim() {
               [/\b(wildfire bomb)\b/gi, '#f59e0b'],
               [/\b(sentinel)\b/gi, '#38bdf8'],
               [/\b(pack leader)\b/gi, '#c084fc'],
-              [/\b(coordinated assault)\b/gi, '#e879f9'],
+              [/\b(takedown)\b/gi, '#e879f9'],
             ];
             let result = text;
             keywords.forEach(([rx, color]) => {
@@ -4108,10 +4108,9 @@ export default function SurvivalHunterSim() {
                 { name: "Wildfire Bomb", category: "DAMAGE", cd: "18s (2 charges)", range: "40 yd", cost: "Free", description: "Hurls a bomb at the target, dealing Fire damage on impact and leaving a burning area. Has 2 charges via Grenade Juggler. Triggers Lethal Calibration for +15% crit damage.", whyCast: "Free damage on a charge system — never let both charges cap. Applies Lethal Calibration which buffs your entire rotation's crit damage for 12 seconds.", mistake: "Letting both charges sit at full while pressing other abilities. WFB charges should always be cycling." },
                 { name: "Boomstick", category: "DAMAGE", cd: "60s", range: "40 yd", cost: "Free", description: "Fires a massive frontal cone blast dealing heavy Physical damage. Replaces Fury of the Eagle. Shellshock talent gives +40% single-target damage.", whyCast: "Your highest single-hit damage ability. Use on cooldown for burst. Shellshock makes it devastating in single target.", mistake: "Holding Boomstick for AoE when Shellshock is talented — it's a single-target powerhouse, use it on CD." },
                 { name: "Strike as One", category: "PET", cd: "Passive", range: "Melee (pet)", cost: "None", description: "Every damaging ability you cast causes your pet to immediately strike the target. During Takedown, Raptor Swipe triggers it at 300% damage.", whyCast: "Pure passive throughput — the more buttons you press, the more pet attacks fire. ABC (Always Be Casting) directly increases SaO damage.", mistake: "Having dead GCDs or downtime. Every empty GCD is a missed Strike as One proc." },
-                { name: "Takedown", category: "COOLDOWN", cd: "90s", range: "Melee", cost: "Generates 50 Focus", description: "Deals heavy damage and amplifies all your damage by 20% for 8 seconds. Also generates 50 Focus. Your most important burst cooldown.", whyCast: "20% damage amplification for 8 seconds is enormous. Time your highest damage abilities (Raptor Strike at max Fury, Boomstick) inside this window.", mistake: "Using Takedown when your other CDs aren't ready. Always pair with Coordinated Assault when possible." },
+                { name: "Takedown", category: "COOLDOWN", cd: "90s", range: "Melee", cost: "Generates 50 Focus", description: "Deals heavy damage and amplifies all your damage by 20% for 8 seconds. Also generates 50 Focus. Your most important burst cooldown.", whyCast: "20% damage amplification for 8 seconds is enormous. Time your highest damage abilities (Raptor Strike at max Fury, Boomstick) inside this window.", mistake: "Using Takedown when your other CDs aren't ready. Always pair with Boomstick when possible." },
                 { name: "Flamefang Pitch", category: "DAMAGE", cd: "30s (2 charges)", range: "40 yd", cost: "Free", description: "Throws a fiery projectile that creates a fire puddle on the ground, dealing sustained AoE damage. Great for pre-placing damage on incoming adds.", whyCast: "Free AoE damage on a charge system. Pre-place on pull locations in M+ for passive damage while mobs are gathered.", mistake: "Throwing it at targets that will move out of the puddle immediately." },
                 { name: "Raptor Swipe", category: "DAMAGE", cd: "Passive (proc)", range: "Melee", cost: "Free", description: "Apex talent proc — 25% chance on Raptor Strike, 100% during Takedown. Cleaves nearby enemies. Triggers Strike as One.", whyCast: "Free cleave damage that triggers SaO. During Takedown, every Raptor Strike guarantees a Swipe, making it your highest priority window.", mistake: "Trying to 'fish' for procs outside Takedown. Just play normally — procs come naturally." },
-                { name: "Coordinated Assault", category: "COOLDOWN", cd: "120s", range: "Self", cost: "None", description: "Major 2-minute cooldown that enhances your combat effectiveness. Pair with Takedown for maximum burst.", whyCast: "Your anchor cooldown. Every other CD should be planned around CA's availability at 0:00, 2:00, and 4:00.", mistake: "Using Takedown at 1:30 when CA returns at 2:00. Hold Takedown 30s to align." },
                 { name: "Serpent Sting", category: "DOT", cd: "None", range: "40 yd", cost: "10 Focus", description: "Applies a poison DoT to the target. Low priority in the rotation but useful for maintaining damage during movement phases.", whyCast: "Movement filler — when you can't be in melee, Serpent Sting keeps damage rolling.", mistake: "Refreshing the DoT too early or prioritizing it over melee abilities when in range." },
                 { name: "Pet (Kill Command procs)", category: "PET", cd: "Passive", range: "Pet range", cost: "None", description: "Your pet's auto attacks and special abilities triggered by Kill Command. Pet damage scales with your Attack Power and Mastery (Spirit Bond).", whyCast: "Passive throughput. Keep your pet alive and attacking at all times. Pet damage is 15-20% of your total.", mistake: "Letting your pet die or dismissing it accidentally. Always have Mend Pet ready." },
               ];
@@ -4316,13 +4315,12 @@ export default function SurvivalHunterSim() {
                 <SectionDivider id="sequence" label="SIMULATION TIMELINE" icon="⏱" />
                 {isOpen("sequence") && (() => {
                   const ABBREV: Record<string, string> = {
-                    "Kill Command": "KC", "Mongoose Bite": "MB", "Raptor Strike": "RS",
+                    "Kill Command": "KC", "Raptor Strike": "RS",
                     "Wildfire Bomb": "WFB", "Boomstick": "BS", "Serpent Sting": "SS",
                     "Raptor Swipe": "RSw", "Flamefang Pitch": "FP", "Takedown": "TD",
-                    "Coordinated Assault": "CA", "Strike as One": "SaO",
+                    "Strike as One": "SaO",
                     "Moonlight Chakram": "MC", "Lunar Storm": "LS",
-                    "Auto Attack": "AA", "Flanking Strike": "FS",
-                    "Fury of the Eagle": "FE", "Butchery": "BT", "Carve": "CV",
+                    "Auto Attack": "AA", "Carve": "CV",
                     "Sentinel Owl": "Owl", "Pack Leader Beasts": "PLB",
                     "Vicious Wound": "VW",
                   };
@@ -4669,7 +4667,6 @@ export default function SurvivalHunterSim() {
                   const FIGHT_DUR = 300;
                   const isSent = heroTalent === "sentinel";
                   const COOLDOWNS = [
-                    { name: "Coordinated Assault", cd: 120, color: BAR_COLORS["Coord. Assault"] || "#e879f9", abbr: "CA" },
                     { name: "Takedown", cd: 90, color: BAR_COLORS["Takedown"] || "#93c5fd", abbr: "TD" },
                     { name: "Flamefang Pitch", cd: 60, color: BAR_COLORS["Flamefang Pitch"] || "#22d3ee", abbr: "FP" },
                     { name: "Wildfire Bomb", cd: 18, color: BAR_COLORS["Wildfire Bomb"] || "#f59e0b", abbr: "WFB", chargeReset: true },
@@ -4746,7 +4743,7 @@ export default function SurvivalHunterSim() {
                           <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1.5, color: C.goldLight, fontWeight: 700 }}>KEY PRINCIPLE</span>
                         </div>
                         <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>
-                          <strong style={{ color: C.goldLight }}>Coordinated Assault is your anchor.</strong> Plan every other cooldown to be available when CA comes off cooldown at 2:00 and 4:00. If Takedown is not available during a CA window, you lost a burst window — avoid using Takedown outside of CA when possible in longer fights.
+                          <strong style={{ color: C.goldLight }}>Takedown is your anchor.</strong> Plan every other cooldown to be available when Takedown comes off cooldown at 1:30 and 3:00. Stack Boomstick, Wildfire Bomb charges, and Raptor Strike inside the 8s Takedown window for maximum burst.
                         </p>
                       </div>
                     </CARD>

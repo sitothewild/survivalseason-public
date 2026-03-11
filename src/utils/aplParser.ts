@@ -97,10 +97,10 @@ const DEPRECATED_ABILITIES = ["spearhead", "flanking_strike", "mongoose_bite", "
 
 export function parseSimcAPL(rawAPLText: string): ParsedAPL {
   try {
-    // If fetched APL contains deprecated War Within abilities, reject and use Midnight fallback
+    // If fetched APL contains deprecated pre-Midnight abilities, reject and use Midnight fallback
     const lowerText = rawAPLText.toLowerCase();
     if (DEPRECATED_ABILITIES.some(a => lowerText.includes(a))) {
-      console.warn("SimC APL contains deprecated War Within abilities — using Midnight fallback");
+      console.warn("SimC APL contains deprecated pre-Midnight abilities — using Midnight fallback");
       return FALLBACK_WEIGHTS;
     }
 

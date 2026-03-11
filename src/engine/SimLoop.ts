@@ -35,12 +35,9 @@ const BASE_GCD_MS = 1500;
 const BOSS_ARMOR = 11480; // +3 boss level
 const ARMOR_K = 14014;
 const MELEE_SWING_MS = 3600; // 2H base
-const MONGOOSE_FURY_MAX_STACKS = 5;
-const MONGOOSE_FURY_DURATION_MS = 5000;
 const TIP_MAX_STACKS = 2;
 const TIP_DAMAGE_PER_STACK = 0.25;
 const TAKEDOWN_DURATION_MS = 8000;
-const COORDINATED_ASSAULT_DURATION_MS = 20000;
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
@@ -402,17 +399,8 @@ function executeAbility(
     state.tipOfTheSpearStacks = Math.min(TIP_MAX_STACKS, state.tipOfTheSpearStacks + 1);
   }
 
-  // Mongoose Fury interaction
-  if (spell.consumesMfStacks && state.mongooseFuryStacks > 0) {
-    baseDmg *= 1 + state.mongooseFuryStacks * 0.15;
-  }
-  if (spell.grantsMfStack) {
-    state.mongooseFuryStacks = Math.min(MONGOOSE_FURY_MAX_STACKS, state.mongooseFuryStacks + 1);
-    state.mongooseFuryExpiresMs = state.nowMs + MONGOOSE_FURY_DURATION_MS;
-  }
-
   // Takedown: +20% damage during window
-  if (state.takedownActive && (spell.key === "raptor_strike" || spell.key === "mongoose_bite")) {
+  if (state.takedownActive && spell.key === "raptor_strike") {
     baseDmg *= 1.20;
   }
 
@@ -427,12 +415,6 @@ function executeAbility(
       state.applyAura("potion", durationMs, 1, { [stat]: amount });
       state.cooldowns.use("potion", state.nowMs);
     }
-  }
-
-  // Coordinated Assault
-  if (spell.key === "coordinated_assault") {
-    state.coordinatedAssaultActive = true;
-    state.coordinatedAssaultExpiresMs = state.nowMs + COORDINATED_ASSAULT_DURATION_MS;
   }
 
   // Crit calculation
@@ -473,7 +455,7 @@ function executeAbility(
   handleTierInteractions(state, rng, spell, input);
 
   // Raptor Swipe proc
-  if ((spell.key === "raptor_strike" || spell.key === "mongoose_bite") &&
+  if (spell.key === "raptor_strike" &&
       input.talents.activeTalents.has("raptorSwipe")) {
     const procChance = state.takedownActive ? 1.0 : 0.25;
     if (rng.roll() < procChance) {
@@ -695,7 +677,7 @@ function handlePackLeaderTriggers(
   }
 
   // Frenzied Tear: Raptor Strike/Mongoose Bite → 20% chance extra pet attack
-  if ((spell.key === "raptor_strike" || spell.key === "mongoose_bite") && talents.has("furiousAssault")) {
+  if (spell.key === "raptor_strike" && talents.has("furiousAssault")) {
     if (rollPRD("frenzied_tear", 0.20, rng, prdState)) {
       state.frenziedTearProcs++;
 
@@ -841,9 +823,9 @@ function processTrinkets(
         if (eventType !== "gcd_ready") break;
         if (!state.cooldowns.isReady(cdKey, state.nowMs)) break;
 
-        // Burst alignment: on-use trinkets wait for Takedown or Coordinated Assault
+        // Burst alignment: on-use trinkets wait for Takedown window
         if (trinket.burstAlignable) {
-          if (!state.takedownActive && !state.coordinatedAssaultActive) break;
+          if (!state.takedownActive) break;
         }
 
         const stat = trinket.onUseStat;
@@ -958,20 +940,6 @@ function initializeCooldowns(state: CombatState, talents: { activeTalents: Set<s
     state.cooldowns.init("takedown", 1, cd);
   }
 
-  // Coordinated Assault
-  if (talents.activeTalents.has("coordinatedAssault")) {
-    state.cooldowns.init("coordinated_assault", 1, 120000);
-  }
-
-  // Flanking Strike
-  if (talents.activeTalents.has("flankingStrike")) {
-    state.cooldowns.init("flanking_strike", 1, 30000);
-  }
-
-  // Fury of the Eagle
-  if (talents.activeTalents.has("furyOfTheEagle")) {
-    state.cooldowns.init("fury_of_the_eagle", 1, 45000);
-  }
 }
 
 // ── Scheduling helpers ────────────────────────────────────────

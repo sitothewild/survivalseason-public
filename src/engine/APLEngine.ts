@@ -43,23 +43,22 @@ actions+=/raptor_strike`,
 actions+=/takedown
 actions+=/wildfire_bomb,if=spell_targets>=3|cooldown.wildfire_bomb.charges>=1
 actions+=/boomstick
-actions+=/butchery,if=spell_targets>=3&focus>=30
+actions+=/carve,if=spell_targets>=3&focus>=35
 actions+=/kill_command,if=focus<=70
 actions+=/serpent_sting,if=!dot.serpent_sting.ticking&spell_targets<=5
 actions+=/wildfire_bomb
-actions+=/butchery,if=focus>=50
+actions+=/carve,if=focus>=50
 actions+=/raptor_strike`,
 
   pack_leader_raid_st: `actions=auto_attack
 actions+=/takedown,if=cooldown.kill_command.ready
 actions+=/kill_command,if=focus<=80
-actions+=/mongoose_bite,if=buff.mongoose_fury.stack>=4&buff.mongoose_fury.remains<2
 actions+=/boomstick,if=cooldown.boomstick.ready
 actions+=/wildfire_bomb,if=cooldown.wildfire_bomb.charges>=1
-actions+=/mongoose_bite,if=buff.tip_of_the_spear.stack>=2
+actions+=/raptor_strike,if=buff.tip_of_the_spear.stack>=2&focus>=30
 actions+=/serpent_sting,if=!dot.serpent_sting.ticking
 actions+=/kill_command
-actions+=/mongoose_bite,if=focus>=50
+actions+=/raptor_strike,if=focus>=50
 actions+=/raptor_strike`,
 
   pack_leader_mplus_aoe: `actions=auto_attack
@@ -67,11 +66,10 @@ actions+=/takedown
 actions+=/wildfire_bomb,if=spell_targets>=3|cooldown.wildfire_bomb.charges>=1
 actions+=/boomstick
 actions+=/kill_command,if=focus<=70
-actions+=/butchery,if=spell_targets>=3&focus>=30
-actions+=/mongoose_bite,if=buff.mongoose_fury.stack>=4
+actions+=/carve,if=spell_targets>=3&focus>=35
 actions+=/serpent_sting,if=!dot.serpent_sting.ticking&spell_targets<=5
 actions+=/wildfire_bomb
-actions+=/butchery,if=focus>=50
+actions+=/carve,if=focus>=50
 actions+=/raptor_strike`,
 };
 
@@ -154,7 +152,6 @@ function compileCondition(expr: string): (state: CombatState) => boolean {
     const val = parseInt(buffStack[3]);
     return (s) => {
       if (buff === "tip_of_the_spear") return compare(s.tipOfTheSpearStacks, op, val);
-      if (buff === "mongoose_fury") return compare(s.mongooseFuryStacks, op, val);
       return compare(s.getAuraStacks(buff), op, val);
     };
   }
@@ -166,10 +163,6 @@ function compileCondition(expr: string): (state: CombatState) => boolean {
     const op = buffRemains[2];
     const val = parseInt(buffRemains[3]);
     return (s) => {
-      if (buff === "mongoose_fury") {
-        const remains = Math.max(0, (s.mongooseFuryExpiresMs - s.nowMs) / 1000);
-        return compare(remains, op, val);
-      }
       const aura = s.auras.get(buff);
       const remains = aura ? Math.max(0, (aura.expiresMs - s.nowMs) / 1000) : 0;
       return compare(remains, op, val);
@@ -181,7 +174,6 @@ function compileCondition(expr: string): (state: CombatState) => boolean {
   if (buffUp) {
     const buff = buffUp[1];
     return (s) => {
-      if (buff === "coordinated_assault") return s.coordinatedAssaultActive;
       if (buff === "takedown") return s.takedownActive;
       return s.hasAura(buff);
     };
