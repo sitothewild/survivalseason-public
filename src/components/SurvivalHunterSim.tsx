@@ -2887,7 +2887,7 @@ export default function SurvivalHunterSim() {
                         {/* ── Weapon Enhancement ─────────────── */}
                         <div style={{ marginBottom: 10 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 40, flexShrink: 0, letterSpacing: 1 }}>WEAP</span>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>WEAP</span>
                             <select
                               className="ifield"
                               value={weaponEnhancement}
