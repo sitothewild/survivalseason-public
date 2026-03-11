@@ -1000,6 +1000,14 @@ export default function SurvivalHunterSim() {
   const [aplEditorOpen, setAplEditorOpen] = useState(false);
   const [aplValidation, setAplValidation] = useState<{ valid: boolean; actionCount: number; warnings: string[]; errors: string[] } | null>(null);
   const [copied, setCopied] = useState('');
+  // Stat weight heatmap data: { [targetCount]: StatWeightResult }
+  const [statWeightHeatmap, setStatWeightHeatmap] = useState<Record<number, any> | null>(null);
+  // Gear comparison state
+  const [gearCompareOpen, setGearCompareOpen] = useState(false);
+  const [gearCompareStatA, setGearCompareStatA] = useState<Record<string, number>>({ agility: 0, crit: 0, haste: 0, mastery: 0, vers: 0 });
+  const [gearCompareStatB, setGearCompareStatB] = useState<Record<string, number>>({ agility: 0, crit: 0, haste: 0, mastery: 0, vers: 0 });
+  const [gearCompareResult, setGearCompareResult] = useState<{ dpsA: number; dpsB: number; delta: number; pct: number } | null>(null);
+  const [gearCompareRunning, setGearCompareRunning] = useState(false);
   const [copiedLoadoutId, setCopiedLoadoutId] = useState<string|null>(null);
   // Custom talent loadout slots
   const [customSlots, setCustomSlots] = useState<(CustomLoadout | null)[]>([null, null]);
@@ -1587,6 +1595,26 @@ export default function SurvivalHunterSim() {
       const userResult = simResultToLegacy(userEngineResult, uHeroKey, primaryTarget, fightDuration);
       const optResult = simResultToLegacy(optEngineResult, 'sentinel', primaryTarget, fightDuration);
 
+      // Stat weight heatmap — compute for multiple target counts (non-blocking, fire-and-forget)
+      const heatmapTargets = [1, 3, 5, 8];
+      setStatWeightHeatmap(null);
+      Promise.all(
+        heatmapTargets.map(async (tc) => {
+          const htInput = charToSimInput(
+            parsedChar, heroTalent as HeroTree, tc, fightDuration,
+            currentSimOptions, { customAPL: aplOverride, iterations: 500 },
+          );
+          const htSw = await pool.computeSimStatWeights(
+            heroTalent as HeroTree, htInput.config.fightStyle, currentSimOptions, htInput,
+          );
+          return { tc, sw: htSw };
+        }),
+      ).then((results) => {
+        const hm: Record<number, any> = {};
+        for (const { tc, sw: htSw } of results) hm[tc] = htSw;
+        setStatWeightHeatmap(hm);
+      }).catch(() => { /* non-critical — skip if fails */ });
+
       setStatWeights(swForUI);
       setSimResults(engineResults);
       setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
@@ -1625,6 +1653,79 @@ export default function SurvivalHunterSim() {
   }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, currentSimOptions, simcLiveData, detectedHeroTalent, aplData]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
+
+  /** Generate SimC-compatible profile string from parsed character */
+  const generateSimcExport = useCallback(() => {
+    if (!parsedChar) return '';
+    const c = parsedChar.character || {};
+    const s = parsedChar.stats;
+    const lines: string[] = [];
+    lines.push(`survival_hunter="${c.name || 'SimExport'}"`);
+    if (c.level) lines.push(`level=${c.level}`);
+    if (c.race) lines.push(`race=${c.race}`);
+    lines.push(`spec=survival`);
+    lines.push('');
+    // Stats as ratings
+    lines.push(`agility=${s.agility}`);
+    lines.push(`attack_power=${s.attackPower}`);
+    lines.push(`haste_rating=${Math.round(s.haste * 170)}`);
+    lines.push(`crit_rating=${Math.round(s.crit * 170)}`);
+    lines.push(`mastery_rating=${Math.round(s.mastery * 170)}`);
+    lines.push(`versatility_rating=${Math.round(s.versatility * 205 / 100)}`);
+    lines.push('');
+    // Gear
+    if (parsedChar.gear?.length) {
+      for (const g of parsedChar.gear) {
+        let line = `${g.slot}=,id=${g.itemId || 0}`;
+        if (g.ilvl) line += `,item_level=${g.ilvl}`;
+        if (g.enchant) line += `,enchant=${g.enchant.toLowerCase().replace(/ /g, '_')}`;
+        if (g.gemId) line += `,gem_id=${g.gemId}`;
+        lines.push(`# ${g.name} (${g.ilvl})`);
+        lines.push(line);
+      }
+    }
+    lines.push('');
+    if (parsedChar.talents) lines.push(`talents=${parsedChar.talents}`);
+    return lines.join('\n');
+  }, [parsedChar]);
+
+  /** Gear comparison — run delta sims with stat offsets */
+  const runGearCompare = useCallback(async () => {
+    if (!parsedChar) return;
+    setGearCompareRunning(true);
+    setGearCompareResult(null);
+    const pool = getWorkerPool();
+    try {
+      // Build base input
+      const base = charToSimInput(parsedChar, heroTalent as HeroTree, 1, fightDuration, currentSimOptions);
+      // Item A: add stat deltas
+      const statsA = { ...base.stats };
+      statsA.agility += gearCompareStatA.agility || 0;
+      statsA.critRating += gearCompareStatA.crit || 0;
+      statsA.hasteRating += gearCompareStatA.haste || 0;
+      statsA.masteryRating += gearCompareStatA.mastery || 0;
+      statsA.versatilityRating += gearCompareStatA.vers || 0;
+      statsA.attackPower += gearCompareStatA.agility || 0;
+      // Item B: add stat deltas
+      const statsB = { ...base.stats };
+      statsB.agility += gearCompareStatB.agility || 0;
+      statsB.critRating += gearCompareStatB.crit || 0;
+      statsB.hasteRating += gearCompareStatB.haste || 0;
+      statsB.masteryRating += gearCompareStatB.mastery || 0;
+      statsB.versatilityRating += gearCompareStatB.vers || 0;
+      statsB.attackPower += gearCompareStatB.agility || 0;
+      const inputA = { ...base, stats: statsA, config: { ...base.config, iterations: 1000, seed: 42 } };
+      const inputB = { ...base, stats: statsB, config: { ...base.config, iterations: 1000, seed: 42 } };
+      const [resA, resB] = await Promise.all([pool.runSim(inputA), pool.runSim(inputB)]);
+      const delta = Math.round(resA.meanDps - resB.meanDps);
+      const pct = resB.meanDps > 0 ? +((resA.meanDps / resB.meanDps - 1) * 100).toFixed(2) : 0;
+      setGearCompareResult({ dpsA: Math.round(resA.meanDps), dpsB: Math.round(resB.meanDps), delta, pct });
+    } catch (err) {
+      console.error('Gear compare error:', err);
+    } finally {
+      setGearCompareRunning(false);
+    }
+  }, [parsedChar, heroTalent, fightDuration, currentSimOptions, gearCompareStatA, gearCompareStatB]);
 
   // Helper components (memoized so inputs don't lose focus on state updates)
    const LBL = useCallback(({ children }) => (
@@ -2857,7 +2958,32 @@ export default function SurvivalHunterSim() {
                       <span style={{ fontSize: 10 }}>{aplEditorOpen ? "▲" : "▼"}</span>
                       {aplEditorOpen ? "COLLAPSE" : "APL EDITOR"} {!aplEditorOpen && <span style={{ color: C.textDim }}>(Custom Action Priority List)</span>}
                     </button>
-                    {aplEditorOpen && (
+                    {aplEditorOpen && (() => {
+                      const defaultKey = getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st');
+                      const currentText = customAPL ?? DEFAULT_APLS[defaultKey] ?? '';
+                      const aplLines = currentText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                      const updateFromLines = (lines: string[]) => {
+                        const newText = lines.join('\n');
+                        if (newText === DEFAULT_APLS[defaultKey]) { setCustomAPL(null); } else { setCustomAPL(newText); }
+                        setAplValidation(null);
+                      };
+                      const moveLine = (idx: number, dir: -1 | 1) => {
+                        const newIdx = idx + dir;
+                        if (newIdx < 0 || newIdx >= aplLines.length) return;
+                        const copy = [...aplLines];
+                        [copy[idx], copy[newIdx]] = [copy[newIdx], copy[idx]];
+                        updateFromLines(copy);
+                      };
+                      const removeLine = (idx: number) => {
+                        const copy = aplLines.filter((_, i) => i !== idx);
+                        updateFromLines(copy);
+                      };
+                      const addAbility = (ability: string) => {
+                        const prefix = aplLines.length === 0 ? 'actions=' : 'actions+=/';
+                        updateFromLines([...aplLines, `${prefix}${ability}`]);
+                      };
+                      const KNOWN_ABILITIES = ['auto_attack','raptor_strike','kill_command','wildfire_bomb','boomstick','takedown','serpent_sting','butchery','mongoose_bite','hatchet_toss'];
+                      return (
                       <div style={{ marginTop: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>
@@ -2865,55 +2991,104 @@ export default function SurvivalHunterSim() {
                             {customAPL !== null && <span style={{ color: C.gold, marginLeft: 6 }}>(CUSTOM)</span>}
                           </div>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => {
-                              const text = customAPL ?? DEFAULT_APLS[getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st')] ?? '';
-                              const result = validateAPL(text);
-                              setAplValidation(result);
-                            }}
-                              style={{
-                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                background: C.surface, border: `1px solid ${C.border}`,
-                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
-                                color: C.textMid, transition: "all .15s",
-                              }}>Validate</button>
-                            <button onClick={() => {
-                              setCustomAPL(null);
-                              setAplValidation(null);
-                            }}
-                              style={{
-                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                background: customAPL !== null ? '#2a1f08' : C.surface,
-                                border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
-                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
-                                color: customAPL !== null ? C.goldLight : C.textDim, transition: "all .15s",
-                              }}>Reset to Default</button>
+                            <button onClick={() => { setAplValidation(validateAPL(currentText)); }}
+                              style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer", color: C.textMid }}>Validate</button>
+                            <button onClick={() => { setCustomAPL(null); setAplValidation(null); }}
+                              style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: customAPL !== null ? '#2a1f08' : C.surface, border: `1px solid ${customAPL !== null ? C.gold : C.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer", color: customAPL !== null ? C.goldLight : C.textDim }}>Reset to Default</button>
                           </div>
                         </div>
-                        <textarea
-                          value={customAPL ?? DEFAULT_APLS[getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st')] ?? ''}
-                          onChange={e => {
-                            const val = e.target.value;
-                            const defaultKey = getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st');
-                            // If user typed back to default, reset to null
-                            if (val === DEFAULT_APLS[defaultKey]) {
-                              setCustomAPL(null);
-                            } else {
-                              setCustomAPL(val);
-                            }
-                            setAplValidation(null);
+
+                        {/* Visual line editor */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 8 }}>
+                          {aplLines.map((line, idx) => {
+                            const match = line.match(/^actions(?:\+)?=\/?([a-z_]+)(?:,if=(.+))?$/i);
+                            const ability = match ? match[1] : line;
+                            const conditions = match?.[2] || '';
+                            const isAutoAttack = ability === 'auto_attack';
+                            const abilityColor: Record<string,string> = {
+                              auto_attack: '#64748b', raptor_strike: '#f87171', kill_command: '#60a5fa',
+                              wildfire_bomb: '#f59e0b', boomstick: '#fb923c', takedown: '#a78bfa',
+                              serpent_sting: '#6ee7b7', butchery: '#f472b6', mongoose_bite: '#c084fc',
+                              hatchet_toss: '#94a3b8',
+                            };
+                            return (
+                              <div key={idx} style={{
+                                display: "flex", alignItems: "center", gap: 4, padding: "4px 6px",
+                                background: idx % 2 === 0 ? 'rgba(0,0,0,.15)' : 'transparent',
+                                borderRadius: 4, borderLeft: `3px solid ${abilityColor[ability] || C.textDim}`,
+                              }}>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim, width: 16, textAlign: "right", flexShrink: 0 }}>{idx + 1}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700, color: abilityColor[ability] || C.textMid, minWidth: 100, flexShrink: 0 }}>
+                                  {ability.replace(/_/g, ' ')}
+                                </span>
+                                {conditions && (
+                                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                                    title={conditions}>
+                                    if={conditions}
+                                  </span>
+                                )}
+                                {!conditions && <span style={{ flex: 1 }} />}
+                                <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                                  <button onClick={() => moveLine(idx, -1)} disabled={idx === 0}
+                                    style={{ background: 'transparent', border: 'none', color: idx === 0 ? C.borderSub : C.textDim, cursor: idx === 0 ? 'default' : 'pointer', fontSize: 10, padding: "2px 4px", lineHeight: 1 }}
+                                    title="Move up">▲</button>
+                                  <button onClick={() => moveLine(idx, 1)} disabled={idx === aplLines.length - 1}
+                                    style={{ background: 'transparent', border: 'none', color: idx === aplLines.length - 1 ? C.borderSub : C.textDim, cursor: idx === aplLines.length - 1 ? 'default' : 'pointer', fontSize: 10, padding: "2px 4px", lineHeight: 1 }}
+                                    title="Move down">▼</button>
+                                  {!isAutoAttack && (
+                                    <button onClick={() => removeLine(idx)}
+                                      style={{ background: 'transparent', border: 'none', color: '#7f1d1d', cursor: 'pointer', fontSize: 10, padding: "2px 4px", lineHeight: 1 }}
+                                      title="Remove">✕</button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Add ability picker */}
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+                          <select id="apl-add-ability" style={{
+                            fontFamily: "'Rajdhani',sans-serif", fontSize: 12, background: "#141c2a",
+                            border: `1px solid ${C.border}`, borderRadius: 4, padding: "4px 8px",
+                            color: C.textMid, cursor: "pointer", outline: "none",
+                          }}>
+                            {KNOWN_ABILITIES.filter(a => a !== 'auto_attack').map(a => (
+                              <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>
+                            ))}
+                          </select>
+                          <button onClick={() => {
+                            const sel = (document.getElementById('apl-add-ability') as HTMLSelectElement)?.value;
+                            if (sel) addAbility(sel);
                           }}
-                          spellCheck={false}
-                          style={{
-                            width: "100%", minHeight: 180, maxHeight: 400, resize: "vertical",
-                            background: "#141c2a", border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
-                            borderRadius: 8, color: "#cbd5e1", fontFamily: "'IBM Plex Mono',monospace",
-                            fontSize: 11, lineHeight: 1.6, padding: "10px 12px",
-                            outline: "none", transition: "border-color .2s",
-                          }}
-                        />
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                            style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: "4px 10px", cursor: "pointer", color: C.textMid }}>+ Add</button>
+                        </div>
+
+                        {/* Raw text toggle */}
+                        <details style={{ marginBottom: 6 }}>
+                          <summary style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, cursor: "pointer" }}>Raw APL text</summary>
+                          <textarea
+                            value={currentText}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val === DEFAULT_APLS[defaultKey]) { setCustomAPL(null); } else { setCustomAPL(val); }
+                              setAplValidation(null);
+                            }}
+                            spellCheck={false}
+                            style={{
+                              width: "100%", minHeight: 120, maxHeight: 300, resize: "vertical",
+                              background: "#141c2a", border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
+                              borderRadius: 8, color: "#cbd5e1", fontFamily: "'IBM Plex Mono',monospace",
+                              fontSize: 11, lineHeight: 1.6, padding: "10px 12px",
+                              outline: "none", transition: "border-color .2s", marginTop: 6,
+                            }}
+                          />
+                        </details>
+
+                        {/* Validation status */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>
-                            SimC-style syntax: <code style={{ color: C.textMid, fontSize: 10 }}>actions+=/ability,if=condition1&amp;condition2</code>
+                            {aplLines.length} actions · SimC syntax · Supports & (AND) and | (OR)
                           </div>
                           {aplValidation && (
                             <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700, color: aplValidation.valid ? '#6ee7b7' : '#f87171' }}>
@@ -2924,19 +3099,16 @@ export default function SurvivalHunterSim() {
                         {aplValidation && (aplValidation.errors.length > 0 || aplValidation.warnings.length > 0) && (
                           <div style={{ marginTop: 8, padding: 10, background: "#1a1020", borderRadius: 6, border: `1px solid ${aplValidation.errors.length > 0 ? '#7f1d1d' : '#78350f'}` }}>
                             {aplValidation.errors.map((e, i) => (
-                              <div key={`e${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#f87171', marginBottom: 3 }}>
-                                {e}
-                              </div>
+                              <div key={`e${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#f87171', marginBottom: 3 }}>{e}</div>
                             ))}
                             {aplValidation.warnings.map((w, i) => (
-                              <div key={`w${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#fbbf24', marginBottom: 3 }}>
-                                {w}
-                              </div>
+                              <div key={`w${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#fbbf24', marginBottom: 3 }}>{w}</div>
                             ))}
                           </div>
                         )}
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   {/* Run Simulation button */}
@@ -3148,6 +3320,13 @@ export default function SurvivalHunterSim() {
                                 </div>
                                 <div className="dps-anim" style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 40, fontWeight: 900, color: C.goldLight, lineHeight: 1 }}>{fmt(res.totalDps)}</div>
                                 <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginTop: 2 }}>DPS estimate</div>
+                                {res.stdDev != null && res.iterations && (
+                                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    <span title="95% confidence interval">CI: {fmt(res.p5Dps)}–{fmt(res.p95Dps)}</span>
+                                    <span title="Standard error of the mean">SE: ±{fmt(Math.round(res.stdDev / Math.sqrt(res.iterations)))}</span>
+                                    <span title="Number of iterations">{res.iterations} iter</span>
+                                  </div>
+                                )}
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
                                 <span className="badge" style={{ background: res.hero === "sentinel" ? C.sentBg : C.packBg, color: res.hero === "sentinel" ? C.sentClr : C.packClr, border: `1px solid ${res.hero === "sentinel" ? C.sentBdr : C.packBdr}` }}>{h.icon} {h.name}</span>
@@ -3224,6 +3403,126 @@ export default function SurvivalHunterSim() {
                         </CARD>
                       )}
                     </div>
+
+                    {/* ── Stat Weight Heatmap ────────────────── */}
+                    {statWeightHeatmap && (
+                      <CARD>
+                        <LBL>Stat Weight Heatmap — By Target Count</LBL>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, borderBottom: `1px solid ${C.border}` }}>STAT</th>
+                                {Object.keys(statWeightHeatmap).sort((a, b) => +a - +b).map(tc => (
+                                  <th key={tc} style={{ textAlign: "center", padding: "6px 10px", fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, borderBottom: `1px solid ${C.border}` }}>{tc}T</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {['crit', 'haste', 'mastery', 'vers'].map(stat => {
+                                const statColor: Record<string, string> = { crit: '#f59e0b', haste: '#60a5fa', mastery: '#a78bfa', vers: '#34d399' };
+                                const statLabel: Record<string, string> = { crit: 'Crit', haste: 'Haste', mastery: 'Mastery', vers: 'Vers' };
+                                // Find max normalized value across all targets for heat coloring
+                                const vals = Object.values(statWeightHeatmap).map((sw: any) => sw.normalized[stat] as number);
+                                const maxNorm = Math.max(...vals, 0.01);
+                                return (
+                                  <tr key={stat}>
+                                    <td style={{ padding: "6px 10px", color: statColor[stat], fontWeight: 700, borderBottom: `1px solid ${C.borderSub}` }}>{statLabel[stat]}</td>
+                                    {Object.keys(statWeightHeatmap).sort((a, b) => +a - +b).map(tc => {
+                                      const n = (statWeightHeatmap[+tc] as any).normalized[stat] as number;
+                                      const intensity = Math.min(1, n / maxNorm);
+                                      return (
+                                        <td key={tc} style={{
+                                          textAlign: "center", padding: "6px 10px",
+                                          color: intensity > 0.7 ? C.goldLight : C.textMid,
+                                          fontWeight: intensity > 0.7 ? 700 : 400,
+                                          background: `rgba(217,119,6,${intensity * 0.2})`,
+                                          borderBottom: `1px solid ${C.borderSub}`,
+                                        }}>{n.toFixed(3)}</td>
+                                      );
+                                    })}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 6 }}>
+                          Normalized scale factors (Agility = 1.000) across target counts. Brighter = higher value.
+                        </div>
+                      </CARD>
+                    )}
+
+                    {/* ── Gear Comparison Tool ────────────────── */}
+                    <CARD>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <LBL>Gear Comparison</LBL>
+                        <button onClick={() => setGearCompareOpen(!gearCompareOpen)}
+                          style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer", color: C.textMid }}>
+                          {gearCompareOpen ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                      {gearCompareOpen && (
+                        <div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginBottom: 10 }}>
+                            Enter stat differences for two items. Positive = item adds that much rating.
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                            {[{ label: 'Item A', state: gearCompareStatA, setter: setGearCompareStatA }, { label: 'Item B', state: gearCompareStatB, setter: setGearCompareStatB }].map(({ label, state: st, setter }) => (
+                              <div key={label} style={{ background: C.surface2, borderRadius: 8, padding: 10, border: `1px solid ${C.border}` }}>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>{label}</div>
+                                {['agility', 'crit', 'haste', 'mastery', 'vers'].map(stat => (
+                                  <div key={stat} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textMid, width: 52, textTransform: "capitalize" }}>{stat}</span>
+                                    <input type="number" value={st[stat] || ''} placeholder="0"
+                                      onChange={e => setter((p: any) => ({ ...p, [stat]: parseInt(e.target.value) || 0 }))}
+                                      style={{ width: 70, padding: "3px 6px", fontSize: 11, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, fontFamily: "'IBM Plex Mono',monospace", outline: "none" }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <button onClick={runGearCompare} disabled={gearCompareRunning || !parsedChar}
+                              style={{
+                                fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1, fontWeight: 700,
+                                background: gearCompareRunning ? C.surface2 : C.gold, color: gearCompareRunning ? C.textDim : '#000',
+                                border: 'none', borderRadius: 6, padding: "8px 16px", cursor: gearCompareRunning ? 'not-allowed' : 'pointer',
+                              }}>{gearCompareRunning ? 'SIMMING...' : 'COMPARE'}</button>
+                            {gearCompareResult && (
+                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, display: "flex", gap: 12, alignItems: "center" }}>
+                                <span style={{ color: C.textMid }}>A: <span style={{ color: C.goldLight, fontWeight: 700 }}>{fmt(gearCompareResult.dpsA)}</span></span>
+                                <span style={{ color: C.textMid }}>B: <span style={{ color: C.goldLight, fontWeight: 700 }}>{fmt(gearCompareResult.dpsB)}</span></span>
+                                <span style={{ color: gearCompareResult.delta > 0 ? '#6ee7b7' : gearCompareResult.delta < 0 ? '#f87171' : C.textDim, fontWeight: 700 }}>
+                                  {gearCompareResult.delta > 0 ? '+' : ''}{fmt(gearCompareResult.delta)} ({gearCompareResult.pct > 0 ? '+' : ''}{gearCompareResult.pct}%)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CARD>
+
+                    {/* ── SimC Export ────────────────────────── */}
+                    {parsedChar && (
+                      <CARD>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <LBL>SimC Profile Export</LBL>
+                          <button onClick={() => copy(generateSimcExport(), 'simc_export')}
+                            style={{
+                              fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                              background: copied === 'simc_export' ? '#166534' : C.surface,
+                              border: `1px solid ${copied === 'simc_export' ? '#22c55e' : C.border}`,
+                              borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                              color: copied === 'simc_export' ? '#86efac' : C.textMid, transition: "all .15s",
+                            }}>{copied === 'simc_export' ? 'Copied!' : 'Copy SimC String'}</button>
+                        </div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 4 }}>
+                          Copy your character profile in SimC format for cross-validation in Raidbots or SimulationCraft.
+                        </div>
+                      </CARD>
+                    )}
                   </div>
                 )}
               </div>

@@ -18,6 +18,14 @@ export interface LegacySimResult {
   liveDataUsed: boolean;
   aplDataUsed: boolean;
   timeline?: TimelineEvent[];
+  // Statistical data for convergence display
+  stdDev?: number;
+  p5Dps?: number;
+  p95Dps?: number;
+  minDps?: number;
+  maxDps?: number;
+  medianDps?: number;
+  iterations?: number;
 }
 
 interface LegacyActionCount {
@@ -130,5 +138,12 @@ export function simResultToLegacy(
     liveDataUsed: false,
     aplDataUsed: true,
     timeline: result.timeline,
+    stdDev: result.stdDev,
+    p5Dps: Math.round(result.p5Dps),
+    p95Dps: Math.round(result.p95Dps),
+    minDps: Math.round(result.minDps),
+    maxDps: Math.round(result.maxDps),
+    medianDps: Math.round(result.medianDps),
+    iterations: result.iterations,
   };
 }

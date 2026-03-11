@@ -109,7 +109,7 @@ describe("charToSimInput", () => {
 });
 
 describe("simResultToLegacy", () => {
-  it("converts engine SimResult to legacy shape", () => {
+  it("converts engine SimResult to legacy shape with statistical data", () => {
     const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
     const engineResult = runSimulation(input);
 
@@ -122,6 +122,16 @@ describe("simResultToLegacy", () => {
     expect(legacy.build).toBe("st");
     expect(typeof legacy.breakdown).toBe("object");
     expect(Object.keys(legacy.breakdown).length).toBeGreaterThan(0);
+    // Statistical convergence data should be passed through
+    expect(legacy.stdDev).toBeDefined();
+    expect(legacy.stdDev).toBeGreaterThan(0);
+    expect(legacy.p5Dps).toBeDefined();
+    expect(legacy.p95Dps).toBeDefined();
+    expect(legacy.p5Dps!).toBeLessThanOrEqual(legacy.totalDps);
+    expect(legacy.p95Dps!).toBeGreaterThanOrEqual(legacy.totalDps);
+    expect(legacy.iterations).toBeDefined();
+    expect(legacy.iterations!).toBeGreaterThan(0);
+    expect(legacy.medianDps).toBeDefined();
     // breakdown values should be DPS numbers
     for (const val of Object.values(legacy.breakdown)) {
       expect(typeof val).toBe("number");
