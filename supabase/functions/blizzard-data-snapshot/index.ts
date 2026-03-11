@@ -130,8 +130,73 @@ serve(async (req) => {
       });
     }
 
-    // 7. Fetch key item data for common Survival Hunter gear
-    // (Midnight Season 1 dungeon/raid items commonly used)
+    // 7. Fetch enchant data from Blizzard API
+    console.log("[snapshot] Fetching enchant data (Item Enhancement items)...");
+    const enchantData: any[] = [];
+    const enchantSearchNames = [
+      // Weapon enchants
+      "Authority of", "Stonebound", "Oathsworn",
+      // Chest enchants
+      "Crystalline Radiance", "Council's",
+      // Cloak enchants
+      "Chant of", "Winged Grace",
+      // Wrist enchants
+      "Chant of",
+      // Leg armor kits
+      "Stormbound Armor Kit", "Sunset Spellthread", "Dual Layered Armor Kit",
+      // Boot enchants
+      "Cavalry", "Scout's March", "Defender's March",
+      // Ring enchants
+      "Radiant", "Cursed",
+    ];
+    // De-duplicate search terms
+    const uniqueSearches = [...new Set(enchantSearchNames)];
+    for (let i = 0; i < uniqueSearches.length; i += 5) {
+      const batch = uniqueSearches.slice(i, i + 5);
+      const results = await Promise.allSettled(
+        batch.map(async (name) => {
+          const token = await getAccessToken(region);
+          const host = `${region}.api.blizzard.com`;
+          const url = `https://${host}/data/wow/search/item?namespace=static-${region}&name.en_US=${encodeURIComponent(name)}&itemSubclass.name.en_US=Item%20Enhancement&orderby=id:desc&_pageSize=25`;
+          const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+          if (!resp.ok) return null;
+          return resp.json();
+        })
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value?.results) {
+          enchantData.push(...r.value.results);
+        }
+      }
+    }
+
+    // De-duplicate enchant results by item ID
+    const enchantMap = new Map<number, any>();
+    for (const item of enchantData) {
+      const id = item?.data?.id;
+      if (id && !enchantMap.has(id)) enchantMap.set(id, item.data);
+    }
+    const uniqueEnchants = Array.from(enchantMap.values());
+    console.log(`[snapshot] Found ${uniqueEnchants.length} unique enchant items`);
+
+    // 8. Fetch Enchanting profession skill tiers for Midnight recipes
+    console.log("[snapshot] Fetching Enchanting profession data...");
+    let enchantingProfession: any = null;
+    let enchantingRecipes: any = null;
+    try {
+      enchantingProfession = await blizzardGet("/data/wow/profession/333", region, "static");
+      // Find the Midnight skill tier (latest one)
+      if (enchantingProfession?.skill_tiers?.length) {
+        const latestTier = enchantingProfession.skill_tiers[enchantingProfession.skill_tiers.length - 1];
+        if (latestTier?.id) {
+          enchantingRecipes = await blizzardGet(`/data/wow/profession/333/skill-tier/${latestTier.id}`, region, "static");
+        }
+      }
+    } catch (e) {
+      console.warn("[snapshot] Enchanting profession fetch warning:", (e as Error).message);
+    }
+
+    // 9. Fetch Survival Hunter class data
     console.log("[snapshot] Fetching Survival Hunter class data...");
     const hunterClass = await blizzardGet("/data/wow/playable-class/3", region, "static");
 
@@ -161,6 +226,15 @@ serve(async (req) => {
       } : null,
       spells: spellData,
       spellMedia,
+      enchants: uniqueEnchants,
+      enchantingProfession: enchantingProfession ? {
+        id: enchantingProfession.id,
+        name: enchantingProfession.name,
+        skill_tiers: enchantingProfession.skill_tiers,
+      } : null,
+      enchantingRecipes: enchantingRecipes ? {
+        categories: enchantingRecipes.categories,
+      } : null,
       hunterClass: hunterClass ? {
         id: hunterClass.id,
         name: hunterClass.name,
@@ -172,13 +246,33 @@ serve(async (req) => {
         classTalentNodes: talentTree?.class_talent_nodes?.length || 0,
         specTalentNodes: talentTree?.spec_talent_nodes?.length || 0,
         heroTrees: talentTree?.hero_talent_trees?.length || 0,
+        totalEnchants: uniqueEnchants.length,
       },
     };
 
-    // 8. Cache the snapshot in the database
+    // 10. Cache the snapshot in the database
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Store enchant data separately for easy access
+    const { error: enchantUpsertError } = await supabase
+      .from("simc_data_cache")
+      .upsert({
+        data_key: "blizzard_enchant_data",
+        data: {
+          enchants: uniqueEnchants,
+          enchantingProfession: snapshot.enchantingProfession,
+          enchantingRecipes: snapshot.enchantingRecipes,
+          fetchedAt: snapshot.fetchedAt,
+        },
+        github_sha: `enchant-snapshot-${Date.now()}`,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "data_key" });
+
+    if (enchantUpsertError) {
+      console.warn("[snapshot] Enchant cache upsert warning:", enchantUpsertError.message);
+    }
 
     const { error: upsertError } = await supabase
       .from("simc_data_cache")
@@ -193,7 +287,7 @@ serve(async (req) => {
       console.warn("[snapshot] Cache upsert warning:", upsertError.message);
     }
 
-    console.log(`[snapshot] Complete! ${snapshot.stats.totalSpells} spells, ${snapshot.stats.totalIcons} icons, ${snapshot.stats.classTalentNodes} class nodes, ${snapshot.stats.specTalentNodes} spec nodes`);
+    console.log(`[snapshot] Complete! ${snapshot.stats.totalSpells} spells, ${snapshot.stats.totalIcons} icons, ${snapshot.stats.classTalentNodes} class nodes, ${snapshot.stats.specTalentNodes} spec nodes, ${snapshot.stats.totalEnchants} enchants`);
 
     return new Response(JSON.stringify({
       success: true,

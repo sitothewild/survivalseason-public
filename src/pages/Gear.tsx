@@ -12,6 +12,7 @@ import {
   GEAR_TRACKS, DAWNCREST_TIERS, UPGRADE_COSTS,
   getBiSList, rankTrinkets, rankEnchantsForSlot,
 } from "@/lib/gearOptimizer";
+import { useBlizzardEnchants, triggerEnchantSnapshot } from "@/hooks/useBlizzardEnchants";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 // ── Shared colour palette (mirrors SurvivalHunterSim) ────────
@@ -46,6 +47,22 @@ const GRADE_CLR: Record<string,string> = {
 export default function Gear() {
   const [hero, setHero] = useState<"sentinel"|"packLeader">("sentinel");
   const [bisOpen, setBisOpen] = useState(true);   // open by default — tooltips require visibility
+  const [syncing, setSyncing] = useState(false);
+
+  // Load enchant data from Blizzard API cache
+  const { data: enchantData, refetch: refetchEnchants } = useBlizzardEnchants();
+
+  const handleSyncEnchants = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await triggerEnchantSnapshot("us");
+      await refetchEnchants();
+    } catch (e) {
+      console.error("[Gear] Enchant sync failed:", e);
+    } finally {
+      setSyncing(false);
+    }
+  }, [refetchEnchants]);
 
   // BiS tooltip state — mirrors sim page hover-tooltip pattern
   const [hoveredBiS, setHoveredBiS] = useState<string | null>(null);
@@ -608,7 +625,23 @@ export default function Gear() {
 
           {/* Enchants */}
           <Card>
-            <SecTitle icon="✦">Enchant Recommendations</SecTitle>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <SecTitle icon="✦">Enchant Recommendations</SecTitle>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                {enchantData?.source === "api_cached" && enchantData.fetchedAt && (
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:C.textDim }}>
+                    API {new Date(enchantData.fetchedAt).toLocaleDateString()}
+                  </span>
+                )}
+                <button onClick={handleSyncEnchants} disabled={syncing}
+                  style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:1,
+                    color: syncing ? C.textDim : C.goldLight, background:C.goldBg,
+                    border:`1px solid ${C.gold}`, borderRadius:4, padding:"3px 8px",
+                    cursor: syncing ? "wait" : "pointer", opacity: syncing ? 0.6 : 1 }}>
+                  {syncing ? "SYNCING…" : "⟳ SYNC API"}
+                </button>
+              </div>
+            </div>
             {ENCHANT_SLOTS.map(slot => {
               const ranked = rankEnchantsForSlot(slot, activeWeights, hero);
               if (!ranked.length) return null;
