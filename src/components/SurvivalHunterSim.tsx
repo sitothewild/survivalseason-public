@@ -15,6 +15,7 @@ import {
 import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 import {
   PHIALS, FOOD_BUFFS, POTIONS, WEAPON_ENHANCEMENTS, AUGMENT_RUNES,
+  GEM_FILL_OPTIONS,
 } from "@/engine/consumables";
 import { MIDNIGHT_ENCHANTS } from "@/lib/gearOptimizer";
 import { FULL_RAID_OPTIONS, MPLUS_CASUAL_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
@@ -1032,7 +1033,7 @@ export default function SurvivalHunterSim() {
   // Advanced Options — engine-driven SimOptions state
   const [weaponEnhancement, setWeaponEnhancement] = useState('thalassian_phoenix_oil');
   const [augmentRune, setAugmentRune] = useState(true);
-  const [gemPrimaryStat, setGemPrimaryStat] = useState<'crit' | 'haste' | 'mastery' | 'vers'>('mastery');
+  const [gemPrimaryStat, setGemPrimaryStat] = useState<string>('mastery');
   const [gemSockets, setGemSockets] = useState(6);
   const [hasBlasphemite, setHasBlasphemite] = useState(true);
   const [has2pc, setHas2pc] = useState(false);
@@ -2326,23 +2327,22 @@ export default function SurvivalHunterSim() {
                   <LBL>⚙ Simulation Config</LBL>
 
                   {/* ── Hero Talent + Talent Loadout ───────────── */}
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                       <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>HERO TALENT</div>
                       {/* Talent Loadout pills */}
-                      <div style={{ display: "flex", gap: 4 }}>
+                      <div style={{ display: "flex", gap: 3 }}>
                         {TALENT_LOADOUTS.filter(l => l.heroKey === heroTalent).map(loadout => {
                           const isSel = selectedLoadoutId === loadout.id;
                           const heroClr = heroTalent === 'sentinel' ? C.sentClr : C.packClr;
                           const heroBg  = heroTalent === 'sentinel' ? C.sentBg  : C.packBg;
                           const heroBdr = heroTalent === 'sentinel' ? C.sentBdr : C.packBdr;
-                          // Short label for pill
-                          const shortLabel = loadout.simMode === 'single' ? 'Raid ST' : loadout.simMode === 'multi' ? 'M+ AoE' : 'Cleave';
+                          const shortLabel = loadout.simMode === 'single' ? 'ST' : loadout.simMode === 'multi' ? 'AoE' : 'Clv';
                           return (
                             <button key={loadout.id}
                               onClick={() => { setSelectedLoadoutId(loadout.id); setHeroTalent(loadout.heroKey); setSimMode(loadout.simMode); }}
                               style={{
-                                padding: "3px 10px", borderRadius: 5, cursor: "pointer",
+                                padding: "2px 8px", borderRadius: 4, cursor: "pointer",
                                 fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 700,
                                 letterSpacing: 1, textTransform: "uppercase",
                                 background: isSel ? heroBg : "transparent",
@@ -2356,34 +2356,31 @@ export default function SurvivalHunterSim() {
                         })}
                       </div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
                       {Object.entries(MIDNIGHT_DATA.talents.hero).map(([k, h]) => (
                         <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`}
                           onClick={() => {
                             setHeroTalent(k);
-                            // pick the currently-selected build type for the new hero
                             const curType = selectedLoadoutId.split('-').slice(1).join('-') || 'st';
                             const next = TALENT_LOADOUTS.find(l => l.heroKey === k && l.id === `${k}-${curType}`)
                               || TALENT_LOADOUTS.find(l => l.heroKey === k);
                             if (next) { setSelectedLoadoutId(next.id); setSimMode(next.simMode); }
-                          }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                            <span style={{ fontSize: 17 }}>{h.icon}</span>
-                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, fontWeight: 700, color: k === "sentinel" ? C.sentClr : C.packClr }}>{h.name}</span>
-                            {h.recommended && <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 7, padding: "1px 6px" }}>BEST</span>}
+                          }}
+                          style={{ padding: "6px 8px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                            <span style={{ fontSize: 14 }}>{h.icon}</span>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, fontWeight: 700, color: k === "sentinel" ? C.sentClr : C.packClr }}>{h.name}</span>
+                            {h.recommended && <span className="badge" style={{ background: C.greenBg, color: C.green, border: C.greenBdr, fontSize: 7, padding: "0px 5px" }}>BEST</span>}
                           </div>
-                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textMid }}>{h.weaponPref}</div>
-                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: k === "sentinel" ? C.sentClr : C.packClr, marginTop: 4, fontWeight: 600 }}>ST +{Math.round(h.stBonus * 100)}% · AoE +{Math.round(h.aoeBonus * 100)}%</div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textMid }}>{h.weaponPref} · ST +{Math.round(h.stBonus * 100)}% · AoE +{Math.round(h.aoeBonus * 100)}%</div>
                         </button>
                       ))}
                     </div>
 
-                    {/* ── Custom Talent Slots ── */}
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>CUSTOM LOADOUTS</div>
-                    <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                    {/* ── Custom Talent Slots (compact bar when empty) ── */}
+                    <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
                       {([0, 1] as const).map(slotIdx => {
                         const slot = customSlots[slotIdx];
-                        const isEditing = editingSlot === slotIdx;
                         const slotHeroClr = slot ? (slot.heroKey === 'sentinel' ? C.sentClr : C.packClr) : C.textDim;
                         const slotHeroBg  = slot ? (slot.heroKey === 'sentinel' ? C.sentBg  : C.packBg)  : C.surface2;
                         const slotHeroBdr = slot ? (slot.heroKey === 'sentinel' ? C.sentBdr : C.packBdr) : C.border;
@@ -2398,42 +2395,26 @@ export default function SurvivalHunterSim() {
                                   setSimMode(slot.simMode);
                                 }}
                                 style={{
-                                  borderRadius: 10, padding: "10px 10px 8px", cursor: "pointer",
+                                  borderRadius: 6, padding: "5px 8px", cursor: "pointer",
                                   background: isActive ? slotHeroBg : C.surface2,
-                                  border: `2px solid ${isActive ? slotHeroBdr : slotHeroBdr + '33'}`,
-                                  boxShadow: isActive ? `0 0 14px ${slotHeroClr}22` : undefined,
+                                  border: `1px solid ${isActive ? slotHeroBdr : C.border}`,
                                   transition: "all .15s",
-                                  display: "flex", flexDirection: "column", gap: 4,
+                                  display: "flex", alignItems: "center", gap: 5,
                                 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                  <span style={{ fontSize: 13, lineHeight: 1 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
-                                    color: isActive ? slotHeroClr : C.textSec, letterSpacing: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>
-                                    {slot.name}
-                                  </span>
-                                  <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
-                                    background: '#1a1a2e', color: '#818cf8', border: '1px solid #818cf844',
-                                    borderRadius: 3, padding: "0 4px" }}>CUSTOM</span>
-                                  {isActive && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
-                                    background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
-                                    borderRadius: 3, padding: "0 4px" }}>ACTIVE</span>}
-                                </div>
-                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
-                                  <div style={{ display: "flex", gap: 4 }}>
-                                    <button onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
-                                      title="Edit" style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✏</button>
-                                    <button onClick={e => {
-                                      e.stopPropagation();
-                                      setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
-                                      if (isActive) setSelectedLoadoutId('sentinel-st');
-                                      if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
-                                    }}
-                                      title="Remove" style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 10, cursor: "pointer", padding: "1px 5px", lineHeight: 1.4 }}>✕</button>
-                                  </div>
-                                </div>
+                                <span style={{ fontSize: 11, lineHeight: 1 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
+                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
+                                  color: isActive ? slotHeroClr : C.textSec, letterSpacing: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                                  {slot.name}
+                                </span>
+                                <button onClick={e => { e.stopPropagation(); setEditingSlot(slotIdx); setEditDraft({ ...slot }); }}
+                                  title="Edit" style={{ background: "transparent", border: "none", color: C.textMid, fontSize: 10, cursor: "pointer", padding: "0 3px", lineHeight: 1 }}>✏</button>
+                                <button onClick={e => {
+                                  e.stopPropagation();
+                                  setCustomSlots(prev => { const c = [...prev]; c[slotIdx] = null; return c; });
+                                  if (isActive) setSelectedLoadoutId('sentinel-st');
+                                  if (editingSlot === slotIdx) { setEditingSlot(null); setEditDraft(null); }
+                                }}
+                                  title="Remove" style={{ background: "transparent", border: "none", color: C.red, fontSize: 10, cursor: "pointer", padding: "0 3px", lineHeight: 1 }}>✕</button>
                               </div>
                             ) : (
                               <button
@@ -2442,14 +2423,13 @@ export default function SurvivalHunterSim() {
                                   setEditDraft({ name: `Custom ${slotIdx + 1}`, heroKey: heroTalent as 'sentinel'|'packLeader', simMode: 'single', enabledTalents: [], enabledHeroTalents: [], enabledClassTalents: [] });
                                 }}
                                 style={{
-                                  width: "100%", height: "100%", minHeight: 80, borderRadius: 10, padding: "10px 8px", cursor: "pointer",
-                                  background: isEditing ? C.surface3 : C.surface2,
-                                  border: `2px dashed ${isEditing ? C.textMid : C.border}`,
-                                  color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
-                                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                                  width: "100%", height: 32, borderRadius: 6, cursor: "pointer",
+                                  background: C.surface2, border: `1px dashed ${C.border}`,
+                                  color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 11,
+                                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
                                 }}>
-                                <span style={{ fontSize: 16, opacity: .35 }}>+</span>
-                                <span style={{ fontSize: 8, letterSpacing: 1, fontFamily: "'Orbitron',sans-serif", opacity: .5 }}>ADD CUSTOM</span>
+                                <span style={{ fontSize: 12, opacity: .4 }}>+</span>
+                                <span style={{ fontSize: 8, letterSpacing: 1, fontFamily: "'Orbitron',sans-serif", opacity: .5 }}>CUSTOM {slotIdx + 1}</span>
                               </button>
                             )}
                           </div>
@@ -2723,39 +2703,39 @@ export default function SurvivalHunterSim() {
                         <div key={customId}
                           onClick={() => { setSelectedLoadoutId(customId); setHeroTalent(slot.heroKey); setSimMode(slot.simMode); }}
                           style={{
-                            marginBottom: 8, borderRadius: 10, padding: "12px 14px", cursor: "pointer",
+                            marginBottom: 4, borderRadius: 7, padding: "6px 10px", cursor: "pointer",
                             background: isSel ? heroBgC : C.surface2,
                             border: `1px solid ${isSel ? heroBdrC : C.border}`,
                             transition: "all .15s",
                           }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isSel ? 12 : 0 }}>
-                            <span style={{ fontSize: 15 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: isSel ? 6 : 0 }}>
+                            <span style={{ fontSize: 13 }}>{slot.heroKey === 'sentinel' ? '🌙' : '🐺'}</span>
                             <div style={{ flex: 1 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, fontWeight: 700,
-                                  color: isSel ? heroClrC : C.textSec, letterSpacing: 1.5 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
+                                  color: isSel ? heroClrC : C.textSec, letterSpacing: 1.2 }}>
                                   {slot.name}
                                 </span>
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 9,
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
                                   background: '#1a1a2e', color: '#818cf8', border: '1px solid #818cf844',
-                                  borderRadius: 4, padding: "0 6px" }}>CUSTOM</span>
-                                {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10,
+                                  borderRadius: 3, padding: "0 4px" }}>CUSTOM</span>
+                                {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
                                   background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
-                                  borderRadius: 4, padding: "0 6px" }}>ACTIVE</span>}
-                              </div>
-                              <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 1 }}>
-                                {slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'Raid ST' : slot.simMode === 'multi' ? 'M+ AoE' : 'Cleave'}
+                                  borderRadius: 3, padding: "0 4px" }}>ACTIVE</span>}
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>
+                                  · {slot.heroKey === 'sentinel' ? 'Sentinel' : 'Pack Leader'} · {slot.simMode === 'single' ? 'ST' : slot.simMode === 'multi' ? 'AoE' : 'Cleave'}
+                                </span>
                               </div>
                             </div>
-                            <div style={{ display: "flex", gap: 4 }}>
+                            <div style={{ display: "flex", gap: 3 }}>
                               <button onClick={e => { e.stopPropagation(); setEditingSlot(idx as 0|1); setEditDraft({ ...slot }); }}
-                                style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textMid, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>✏</button>
+                                style={{ background: "transparent", border: "none", color: C.textMid, fontSize: 10, cursor: "pointer", padding: "0 3px" }}>✏</button>
                               <button onClick={e => {
                                 e.stopPropagation();
                                 setCustomSlots(prev => { const c = [...prev]; c[idx] = null; return c; });
                                 if (isSel) setSelectedLoadoutId('sentinel-st');
                               }}
-                                style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 4, color: C.red, fontSize: 11, cursor: "pointer", padding: "2px 6px" }}>✕</button>
+                                style={{ background: "transparent", border: "none", color: C.red, fontSize: 10, cursor: "pointer", padding: "0 3px" }}>✕</button>
                             </div>
                           </div>
 
@@ -2821,88 +2801,81 @@ export default function SurvivalHunterSim() {
                     })}
                   </div>
 
-                  {/* Fight Duration */}
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT DURATION — <span style={{ color: C.goldLight }}>{dL(fightDuration)}</span></div>
-                    <input type="range" min={60} max={600} step={30} value={fightDuration} onChange={e => setFightDuration(+e.target.value)} style={{ width: "100%", accentColor: C.gold }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>1 min</span><span>5 min</span><span>10 min</span></div>
+                  {/* ── FIGHT CONFIG (Duration + Style merged) ──── */}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>FIGHT CONFIG — <span style={{ color: C.goldLight }}>{dL(fightDuration)}</span></div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                      <input type="range" min={60} max={600} step={30} value={fightDuration} onChange={e => setFightDuration(+e.target.value)} style={{ flex: 1, accentColor: C.gold }} />
+                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, flexShrink: 0 }}>1m–10m</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4 }}>
+                      {Object.entries(FIGHT_STYLES).map(([k, v]) => (
+                        <button key={k} onClick={() => setFightStyle(k)}
+                          style={{
+                            background: fightStyle === k ? C.goldBg : C.surface,
+                            border: `1px solid ${fightStyle === k ? C.gold : C.border}`,
+                            borderRadius: 5, padding: "4px 6px", cursor: "pointer", textAlign: "center", transition: "all .15s",
+                          }}>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: fightStyle === k ? 800 : 600, color: fightStyle === k ? C.goldLight : C.textMid }}>{v.label}</div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Advanced Options — collapses downward, collapsed by default */}
-                  <div style={{ marginBottom: 16 }}>
+                  <div style={{ marginBottom: 10 }}>
                     <button className="adv-toggle" onClick={() => setShowAdv(!showAdv)}>
                       <span style={{ fontSize: 10 }}>{showAdv ? "▲" : "▼"}</span>
-                      {showAdv ? "COLLAPSE" : "ADVANCED OPTIONS"} {!showAdv && <span style={{ color: C.textDim }}>(Buffs / Consumables / Fight Style)</span>}
+                      {showAdv ? "COLLAPSE" : "ADVANCED OPTIONS"} {!showAdv && <span style={{ color: C.textDim }}>(Buffs / Consumables)</span>}
                     </button>
                     {showAdv && (
-                      <div style={{ marginTop: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
-                        {/* ── Fight Style ─────────────────────── */}
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>FIGHT STYLE</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                            {Object.entries(FIGHT_STYLES).map(([k, v]) => (
-                              <button key={k} onClick={() => setFightStyle(k)}
+                      <div style={{ marginTop: 6, padding: 10, background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
+
+                        {/* ── Raid Buffs (2×2 grid) ──────────── */}
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>RAID BUFFS</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
+                            {Object.entries(RAID_BUFFS).map(([k, b]) => (
+                              <label key={k}
+                                onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}
                                 style={{
-                                  background: fightStyle === k ? C.goldBg : C.surface,
-                                  border: `1px solid ${fightStyle === k ? C.gold : C.border}`,
-                                  borderRadius: 8, padding: "8px 10px", cursor: "pointer", textAlign: "left", transition: "all .15s",
-                                  boxShadow: fightStyle === k ? `0 0 8px rgba(217,119,6,.25)` : 'none',
+                                  display: "flex", alignItems: "center", gap: 5, padding: "4px 6px", cursor: "pointer",
+                                  background: raidBuffs[k] ? 'rgba(251,191,36,.06)' : 'transparent',
+                                  borderRadius: 4, border: `1px solid ${raidBuffs[k] ? C.gold + '44' : 'transparent'}`,
+                                  transition: "background .15s",
                                 }}>
-                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: fightStyle === k ? 800 : 600, color: fightStyle === k ? C.goldLight : C.textMid }}>{v.label}</div>
-                                <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: fightStyle === k ? '#a16207' : C.textDim }}>{v.desc} · {Math.round(v.mult * 100)}%</div>
-                              </button>
+                                <input type="checkbox" checked={raidBuffs[k]} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: raidBuffs[k] ? 700 : 500, color: raidBuffs[k] ? C.goldLight : C.textMid, transition: "color .15s" }}>
+                                  {b.icon} {b.label}
+                                </span>
+                              </label>
                             ))}
                           </div>
                         </div>
 
-                        {/* ── Raid Buffs ──────────────────────── */}
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>RAID BUFFS</div>
-                          {Object.entries(RAID_BUFFS).map(([k, b]) => (
-                            <label key={k}
-                              onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}
-                              style={{
-                                display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", cursor: "pointer",
-                                borderBottom: `1px solid ${C.borderSub}`,
-                                background: raidBuffs[k] ? 'rgba(251,191,36,.05)' : 'transparent',
-                                borderRadius: 4, transition: "background .15s",
-                              }}>
-                              <input type="checkbox" checked={raidBuffs[k]} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: raidBuffs[k] ? 800 : 500, color: raidBuffs[k] ? C.goldLight : C.textMid, flex: 1, transition: "color .15s, font-weight .15s" }}>
-                                {b.icon} {b.label}
-                              </span>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: raidBuffs[k] ? 700 : 400, color: raidBuffs[k] ? '#a16207' : C.textDim }}>
-                                {b.stat}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-
                         {/* ── Consumables ─────────────────────── */}
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CONSUMABLES</div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>CONSUMABLES</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             {Object.entries(CONSUMABLES).map(([k, d]) => {
                               const isNone = consumables[k] === 'none';
                               return (
-                                <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
-                                  <div style={{ flex: 1, position: "relative" }}>
-                                    <select
-                                      className="ifield"
-                                      value={consumables[k]}
-                                      onChange={e => setConsumables(p => ({ ...p, [k]: e.target.value }))}
-                                      style={{
-                                        width: "100%", padding: "6px 10px", fontSize: 13,
-                                        color: isNone ? C.textDim : C.goldLight,
-                                        fontWeight: isNone ? 400 : 700,
-                                        background: isNone ? C.surface3 : C.goldBg,
-                                        border: `1px solid ${isNone ? C.border : C.gold}`,
-                                        borderRadius: 6, cursor: "pointer",
-                                      }}>
-                                      {d.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                                    </select>
-                                  </div>
+                                <div key={k} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 40, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
+                                  <select
+                                    className="ifield"
+                                    value={consumables[k]}
+                                    onChange={e => setConsumables(p => ({ ...p, [k]: e.target.value }))}
+                                    style={{
+                                      flex: 1, height: 28, padding: "0 8px", fontSize: 11,
+                                      color: isNone ? C.textDim : C.goldLight,
+                                      fontWeight: isNone ? 400 : 700,
+                                      background: isNone ? C.surface3 : C.goldBg,
+                                      border: `1px solid ${isNone ? C.border : C.gold}`,
+                                      borderRadius: 4, cursor: "pointer",
+                                    }}>
+                                    {d.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                                  </select>
                                 </div>
                               );
                             })}
@@ -2910,89 +2883,87 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Weapon Enhancement ─────────────── */}
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>WEAPON ENHANCEMENT</div>
-                          <select
-                            className="ifield"
-                            value={weaponEnhancement}
-                            onChange={e => setWeaponEnhancement(e.target.value)}
-                            style={{
-                              width: "100%", padding: "6px 10px", fontSize: 13,
-                              color: weaponEnhancement === 'none' ? C.textDim : C.goldLight,
-                              fontWeight: weaponEnhancement === 'none' ? 400 : 700,
-                              background: weaponEnhancement === 'none' ? C.surface3 : C.goldBg,
-                              border: `1px solid ${weaponEnhancement === 'none' ? C.border : C.gold}`,
-                              borderRadius: 6, cursor: "pointer",
-                            }}>
-                            <option value="none">None</option>
-                            {WEAPON_ENHANCEMENTS.map(w => (
-                              <option key={w.key} value={w.key}>{w.name} {w.type === 'flat_stat' && w.ratingAmount ? `(+${w.ratingAmount} ${w.stat})` : `(${w.school} proc)`}</option>
-                            ))}
-                          </select>
-                          {weaponEnhancement !== 'none' && (() => {
-                            const enh = WEAPON_ENHANCEMENTS.find(w => w.key === weaponEnhancement);
-                            return enh ? <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 4 }}>{enh.notes}</div> : null;
-                          })()}
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 40, flexShrink: 0, letterSpacing: 1 }}>WEAP</span>
+                            <select
+                              className="ifield"
+                              value={weaponEnhancement}
+                              onChange={e => setWeaponEnhancement(e.target.value)}
+                              title={(() => { const enh = WEAPON_ENHANCEMENTS.find(w => w.key === weaponEnhancement); return enh?.notes ?? ''; })()}
+                              style={{
+                                flex: 1, height: 28, padding: "0 8px", fontSize: 11,
+                                color: weaponEnhancement === 'none' ? C.textDim : C.goldLight,
+                                fontWeight: weaponEnhancement === 'none' ? 400 : 700,
+                                background: weaponEnhancement === 'none' ? C.surface3 : C.goldBg,
+                                border: `1px solid ${weaponEnhancement === 'none' ? C.border : C.gold}`,
+                                borderRadius: 4, cursor: "pointer",
+                              }}>
+                              <option value="none">None</option>
+                              {WEAPON_ENHANCEMENTS.map(w => (
+                                <option key={w.key} value={w.key}>{w.name} {w.type === 'flat_stat' && w.ratingAmount ? `(+${w.ratingAmount} ${w.stat})` : `(${w.school} proc)`}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
 
                         {/* ── Augment Rune + Tier Set ─────────── */}
-                        <div style={{ marginBottom: 14, display: "flex", gap: 16, flexWrap: "wrap" }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                        <div style={{ marginBottom: 8, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
                             onClick={() => setAugmentRune(!augmentRune)}>
-                            <input type="checkbox" checked={augmentRune} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: augmentRune ? 700 : 500, color: augmentRune ? C.goldLight : C.textMid }}>Augment Rune (+52 Agi)</span>
+                            <input type="checkbox" checked={augmentRune} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: augmentRune ? 700 : 500, color: augmentRune ? C.goldLight : C.textMid }}>Rune +52 Agi</span>
                           </label>
                           {(() => {
                             const tierInfo = parsedChar?.gear ? detectTierSet(parsedChar.gear) : null;
-                            const tierLabel = tierInfo ? ` (${tierInfo.tierCount}/5 equipped)` : '';
+                            const tierLabel = tierInfo ? ` (${tierInfo.tierCount}/5)` : '';
                             return (<>
-                              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                              <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
                                 onClick={() => setHas2pc(!has2pc)}>
-                                <input type="checkbox" checked={has2pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has2pc ? 700 : 500, color: has2pc ? C.goldLight : C.textMid }}>2pc Tier{tierLabel}</span>
+                                <input type="checkbox" checked={has2pc} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: has2pc ? 700 : 500, color: has2pc ? C.goldLight : C.textMid }}>2pc{tierLabel}</span>
                               </label>
-                              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                              <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
                                 onClick={() => setHas4pc(!has4pc)}>
-                                <input type="checkbox" checked={has4pc} readOnly style={{ accentColor: C.gold, width: 14, height: 14, cursor: "pointer" }} />
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: has4pc ? 700 : 500, color: has4pc ? C.goldLight : C.textMid }}>4pc Tier</span>
+                                <input type="checkbox" checked={has4pc} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: has4pc ? 700 : 500, color: has4pc ? C.goldLight : C.textMid }}>4pc</span>
                               </label>
                             </>);
                           })()}
                         </div>
 
-                        {/* ── Gems ───────────────────────────── */}
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>GEMS</div>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Sockets:</span>
+                        {/* ── Gems & Enchants (merged) ──────── */}
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>GEMS & ENCHANTS</div>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>Sockets</span>
                               <select className="ifield" value={gemSockets} onChange={e => setGemSockets(+e.target.value)}
-                                style={{ width: 52, padding: "4px 6px", fontSize: 12, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, cursor: "pointer" }}>
+                                style={{ width: 44, height: 24, padding: "0 4px", fontSize: 11, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 3, color: C.goldLight, cursor: "pointer" }}>
                                 {[0,1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}</option>)}
                               </select>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Fill:</span>
-                              <select className="ifield" value={gemPrimaryStat} onChange={e => setGemPrimaryStat(e.target.value as any)}
-                                style={{ width: 90, padding: "4px 6px", fontSize: 12, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, cursor: "pointer" }}>
-                                <option value="mastery">Mastery</option>
-                                <option value="crit">Crit</option>
-                                <option value="haste">Haste</option>
-                                <option value="vers">Versatility</option>
-                              </select>
-                            </div>
-                            <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+                            <select className="ifield" value={gemPrimaryStat} onChange={e => setGemPrimaryStat(e.target.value)}
+                              style={{ width: 155, height: 24, padding: "0 6px", fontSize: 10, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 3, color: C.goldLight, cursor: "pointer" }}>
+                              <optgroup label="Single (88)">
+                                {GEM_FILL_OPTIONS.filter(g => !g.stat2).map(g => (
+                                  <option key={g.key} value={g.key}>{g.label}</option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="Dual (44+44)">
+                                {GEM_FILL_OPTIONS.filter(g => g.stat2).map(g => (
+                                  <option key={g.key} value={g.key}>{g.label}</option>
+                                ))}
+                              </optgroup>
+                            </select>
+                            <label style={{ display: "flex", alignItems: "center", gap: 3, cursor: "pointer" }}
                               onClick={() => setHasBlasphemite(!hasBlasphemite)}>
-                              <input type="checkbox" checked={hasBlasphemite} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: hasBlasphemite ? C.goldLight : C.textDim }}>Blasphemite</span>
+                              <input type="checkbox" checked={hasBlasphemite} readOnly style={{ accentColor: C.gold, width: 11, height: 11, cursor: "pointer" }} />
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: hasBlasphemite ? C.goldLight : C.textDim }}>Blasphemite</span>
                             </label>
                           </div>
-                        </div>
-
-                        {/* ── Enchants ────────────────────────── */}
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>ENCHANTS</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim }}>ENCHANTS</div>
                             <div style={{ display: "flex", gap: 4 }}>
                               <button onClick={() => setEnchantMode('auto')}
                                 style={{
@@ -3013,18 +2984,18 @@ export default function SurvivalHunterSim() {
                             </div>
                           </div>
                           {enchantMode === 'auto' && (
-                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>
-                              BiS enchants for {heroTalent === 'packLeader' ? 'Pack Leader' : 'Sentinel'} auto-applied to all slots.
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>
+                              BiS enchants for {heroTalent === 'packLeader' ? 'Pack Leader' : 'Sentinel'} auto-applied.
                             </div>
                           )}
                           {enchantMode === 'manual' && (
                             <>
-                              <button className="adv-toggle" onClick={() => setShowEnchants(!showEnchants)} style={{ marginBottom: showEnchants ? 8 : 0 }}>
-                                <span style={{ fontSize: 10 }}>{showEnchants ? "▲" : "▼"}</span>
-                                {showEnchants ? "Hide Slots" : "Show Slots"}
+                              <button className="adv-toggle" onClick={() => setShowEnchants(!showEnchants)} style={{ marginBottom: showEnchants ? 4 : 0, fontSize: 10 }}>
+                                <span style={{ fontSize: 9 }}>{showEnchants ? "▲" : "▼"}</span>
+                                {showEnchants ? "Hide" : "Show Slots"}
                               </button>
                               {showEnchants && (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                                   {(() => {
                                     const slotSet = new Map<string, typeof MIDNIGHT_ENCHANTS>();
                                     for (const e of MIDNIGHT_ENCHANTS) {
@@ -3032,16 +3003,16 @@ export default function SurvivalHunterSim() {
                                       slotSet.get(e.slot)!.push(e);
                                     }
                                     return Array.from(slotSet.entries()).map(([slot, enchants]) => (
-                                      <div key={slot} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 50, flexShrink: 0, letterSpacing: 1 }}>{slot}</span>
+                                      <div key={slot} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                        <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{slot}</span>
                                         <select className="ifield"
                                           value={manualEnchants[slot] ?? ''}
                                           onChange={e => setManualEnchants(p => ({ ...p, [slot]: e.target.value }))}
                                           style={{
-                                            flex: 1, padding: "4px 8px", fontSize: 12,
+                                            flex: 1, height: 24, padding: "0 6px", fontSize: 10,
                                             background: manualEnchants[slot] ? C.goldBg : C.surface3,
                                             border: `1px solid ${manualEnchants[slot] ? C.gold : C.border}`,
-                                            borderRadius: 4, cursor: "pointer",
+                                            borderRadius: 3, cursor: "pointer",
                                             color: manualEnchants[slot] ? C.goldLight : C.textDim,
                                           }}>
                                           <option value="">None</option>
@@ -3059,7 +3030,7 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Preset Buttons ─────────────────── */}
-                        <div style={{ display: "flex", gap: 6 }}>
+                        <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
                           {[
                             { label: 'Full Raid', preset: FULL_RAID_OPTIONS },
                             { label: 'M+ Casual', preset: MPLUS_CASUAL_OPTIONS },
@@ -3067,7 +3038,6 @@ export default function SurvivalHunterSim() {
                           ].map(({ label, preset }) => (
                             <button key={label} onClick={() => {
                               setRaidBuffs({ battleShout: preset.raidBuffs.battleShout, markOfTheWild: preset.raidBuffs.markOfTheWild, mysticTouch: preset.raidBuffs.mysticTouch, huntersMark: preset.raidBuffs.huntersMark });
-                              // Map engine keys back to UI keys
                               const phialRev: Record<string, string> = { fleeting_magisters: 'fleetingMagisters', fleeting_alacrity: 'fleetingAlacrity', fleeting_determination: 'fleetingDetermination', none: 'none' };
                               const foodRev: Record<string, string> = { silvermoon_parade: 'silvermoonParade', thalassian_feast: 'thalassianFeast', amani_feast: 'amaniFeast', none: 'none' };
                               const potRev: Record<string, string> = { lights_potential: 'lightsPotential', none: 'none' };
@@ -3082,9 +3052,9 @@ export default function SurvivalHunterSim() {
                               setEnchantMode('auto');
                             }}
                               style={{
-                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 700,
                                 background: C.surface, border: `1px solid ${C.border}`,
-                                borderRadius: 6, padding: "5px 12px", cursor: "pointer",
+                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
                                 color: C.textMid, transition: "all .15s",
                               }}>
                               {label}
@@ -3096,7 +3066,7 @@ export default function SurvivalHunterSim() {
                   </div>
 
                   {/* ── APL Editor ────────────────────────── */}
-                  <div style={{ marginBottom: 16 }}>
+                  <div style={{ marginBottom: 8 }}>
                     <button className="adv-toggle" onClick={() => setAplEditorOpen(!aplEditorOpen)}>
                       <span style={{ fontSize: 10 }}>{aplEditorOpen ? "▲" : "▼"}</span>
                       {aplEditorOpen ? "COLLAPSE" : "APL EDITOR"} {!aplEditorOpen && <span style={{ color: C.textDim }}>(Custom Action Priority List)</span>}

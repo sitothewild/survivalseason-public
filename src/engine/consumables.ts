@@ -318,16 +318,39 @@ export interface GemStatProfile {
   vers: number;
 }
 
+/** Midnight gem fill options with display names and stat ratings. */
+export const GEM_FILL_OPTIONS = [
+  // Single-stat gems (88 rating each) — "Flawless" cuts
+  { key: "mastery",       label: "Masterful Garnet",       stat1: "mastery", stat2: null,     r1: 88, r2: 0  },
+  { key: "crit",          label: "Deadly Onyx",            stat1: "crit",    stat2: null,     r1: 88, r2: 0  },
+  { key: "haste",         label: "Quick Topaz",            stat1: "haste",   stat2: null,     r1: 88, r2: 0  },
+  { key: "vers",          label: "Versatile Aquamarine",   stat1: "vers",    stat2: null,     r1: 88, r2: 0  },
+  // Dual-stat gems (44+44 split) — "Algari" combo cuts
+  { key: "mastery_crit",  label: "Masterful Ruby",         stat1: "mastery", stat2: "crit",   r1: 44, r2: 44 },
+  { key: "mastery_haste", label: "Masterful Amethyst",     stat1: "mastery", stat2: "haste",  r1: 44, r2: 44 },
+  { key: "mastery_vers",  label: "Masterful Sapphire",     stat1: "mastery", stat2: "vers",   r1: 44, r2: 44 },
+  { key: "crit_mastery",  label: "Deadly Emerald",         stat1: "crit",    stat2: "mastery",r1: 44, r2: 44 },
+  { key: "crit_haste",    label: "Deadly Amethyst",        stat1: "crit",    stat2: "haste",  r1: 44, r2: 44 },
+  { key: "crit_vers",     label: "Deadly Sapphire",        stat1: "crit",    stat2: "vers",   r1: 44, r2: 44 },
+  { key: "haste_mastery", label: "Quick Ruby",             stat1: "haste",   stat2: "mastery",r1: 44, r2: 44 },
+  { key: "haste_crit",    label: "Quick Emerald",          stat1: "haste",   stat2: "crit",   r1: 44, r2: 44 },
+  { key: "haste_vers",    label: "Quick Sapphire",         stat1: "haste",   stat2: "vers",   r1: 44, r2: 44 },
+  { key: "vers_mastery",  label: "Versatile Ruby",         stat1: "vers",    stat2: "mastery",r1: 44, r2: 44 },
+  { key: "vers_crit",     label: "Versatile Emerald",      stat1: "vers",    stat2: "crit",   r1: 44, r2: 44 },
+  { key: "vers_haste",    label: "Versatile Sapphire",     stat1: "vers",    stat2: "haste",  r1: 44, r2: 44 },
+] as const;
+
 /**
  * Calculate total stats from gem configuration.
+ * Supports single-stat (88 rating) and dual-stat (44+44 split) gems.
  * @param totalSockets Number of gem sockets in gear
- * @param primaryGemStat The stat of non-unique gems (crit/mastery/haste/vers)
+ * @param primaryGemStat The stat key (e.g., "mastery" or "mastery_crit")
  * @param hasBlasphemite Whether Elusive Blasphemite is socketed
  * @param blasphemiteBonusPerSocket +6 all secondaries per socket (default 6)
  */
 export function calcGemStats(
   totalSockets: number,
-  primaryGemStat: "crit" | "haste" | "mastery" | "vers",
+  primaryGemStat: string,
   hasBlasphemite: boolean = true,
   blasphemiteBonusPerSocket: number = 6,
 ): GemStatProfile {
@@ -344,11 +367,19 @@ export function calcGemStats(
     result.vers += bonusPerStat;
   }
 
-  // Remaining sockets filled with primary gem (unique gem doesn't add base stat)
-  // Each non-unique gem gives ~88 rating of its stat at Hero track
-  const SECONDARY_GEM_RATING = 88;
+  // Find the gem definition
+  const gem = GEM_FILL_OPTIONS.find(g => g.key === primaryGemStat);
   const fillGems = hasBlasphemite ? totalSockets - 1 : totalSockets;
-  result[primaryGemStat] += fillGems * SECONDARY_GEM_RATING;
+
+  if (gem) {
+    result[gem.stat1 as keyof GemStatProfile] += fillGems * gem.r1;
+    if (gem.stat2) {
+      result[gem.stat2 as keyof GemStatProfile] += fillGems * gem.r2;
+    }
+  } else {
+    // Fallback: treat as single mastery gem
+    result.mastery += fillGems * 88;
+  }
 
   return result;
 }
