@@ -1670,18 +1670,20 @@ export default function SurvivalHunterSim() {
       // Build SimInput for each target count and run via WorkerPool
       // Capture timeline on the primary target count (first entry) for Report tab
       const aplOverride = customAPL ?? undefined;
+      // Use the imported build's detected hero talent when available, fall back to UI selector
+      const activeHero: HeroTree = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'pack_leader' : heroTalent) as HeroTree;
       const engineResults = await Promise.all(
         targets.map(async (t, idx) => {
           const input = charToSimInput(
             parsedChar,
-            heroTalent as HeroTree,
+            activeHero,
             t,
             fightDuration,
             currentSimOptions,
             { captureTimeline: idx === 0, customAPL: aplOverride },
           );
           const result = await pool.runSim(input);
-          return simResultToLegacy(result, heroTalent as HeroTree, t, fightDuration);
+          return simResultToLegacy(result, activeHero, t, fightDuration);
         }),
       );
 
