@@ -2835,8 +2835,8 @@ export default function SurvivalHunterSim() {
 
                         {/* ── Raid Buffs (2×2 grid) ──────────── */}
                         <div style={{ marginBottom: 10 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>RAID BUFFS</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>RAID BUFFS</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             {Object.entries(RAID_BUFFS).map(([k, b]) => (
                               <label key={k}
                                 onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}
