@@ -125,11 +125,10 @@ describe("applySimOptions", () => {
     expect(result.stats.masteryRating).toBeGreaterThan(base.masteryRating);
   });
 
-  it("injects phial stats (Tempering Sanity = flat agi)", () => {
+  it("injects phial stats (Fleeting Determination = flat agi)", () => {
     const base = makeBaseStats();
-    // Use a baseline without phial to compare
     const noPhial = applySimOptions(base, { ...NAKED_OPTIONS, phial: "none" }, "sentinel");
-    const withPhial = applySimOptions(base, { ...NAKED_OPTIONS, phial: "tempering_sanity" }, "sentinel");
+    const withPhial = applySimOptions(base, { ...NAKED_OPTIONS, phial: "fleeting_determination" }, "sentinel");
 
     expect(withPhial.stats.agility).toBe(noPhial.stats.agility + 360);
     expect(withPhial.stats.attackPower).toBeGreaterThan(noPhial.stats.attackPower);
