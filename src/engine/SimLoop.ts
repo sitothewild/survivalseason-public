@@ -468,7 +468,7 @@ function executeAbility(
   handleTierInteractions(state, rng, spell, input);
 
   // Raptor Swipe proc
-  if ((spell.key === "raptor_strike" || spell.key === "mongoose_bite") &&
+  if (spell.key === "raptor_strike" &&
       input.talents.activeTalents.has("raptorSwipe")) {
     const procChance = state.takedownActive ? 1.0 : 0.25;
     if (rng.roll() < procChance) {
