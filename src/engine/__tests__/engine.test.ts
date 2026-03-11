@@ -428,6 +428,7 @@ function createTestInput(hero: HeroTree, seed: number): SimInput {
   return {
     config: {
       durationMs: 300000,
+      durationVariance: 0.1,
       iterations: 100,
       fightStyle: "raid_st",
       targets: 1,
