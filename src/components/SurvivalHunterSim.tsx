@@ -3669,6 +3669,42 @@ export default function SurvivalHunterSim() {
                                       });
                                   }
 
+                                  // Full combat log from iteration 0
+                                  const combatLog = (res as any).combatLog;
+                                  if (combatLog && combatLog.length > 0) {
+                                    lines.push("");
+                                    lines.push("  ============================================================");
+                                    lines.push("  COMBAT LOG — Iteration 0 (Full Event-by-Event Trace)");
+                                    lines.push("  ============================================================");
+                                    lines.push("");
+                                    lines.push("  " + "Time".padEnd(10) + "Type".padEnd(16) + "Ability".padEnd(26) + "Detail");
+                                    lines.push("  " + "-".repeat(80));
+                                    for (const entry of combatLog) {
+                                      const timeSec = (entry.tMs / 1000).toFixed(2);
+                                      const mins = Math.floor(entry.tMs / 60000);
+                                      const secs = ((entry.tMs % 60000) / 1000).toFixed(2);
+                                      const ts = `${mins}:${secs.padStart(5, '0')}`;
+                                      let detail = entry.detail || '';
+                                      if (entry.type === 'damage') {
+                                        detail = `${(entry.damage ?? 0).toLocaleString()} dmg${entry.isCrit ? ' (CRIT)' : ''} T${entry.target ?? 0}`;
+                                      } else if (entry.type === 'buff_apply') {
+                                        detail = `Applied [${entry.stacks ?? 1}] ${detail}`;
+                                      } else if (entry.type === 'buff_stack') {
+                                        detail = `Stack ${detail}`;
+                                      } else if (entry.type === 'buff_expire') {
+                                        detail = `Expired [${entry.stacks ?? 0}]`;
+                                      } else if (entry.type === 'focus_spend' || entry.type === 'focus_gain') {
+                                        detail = `Focus: ${detail} (now ${entry.focus ?? 0})`;
+                                      } else if (entry.type === 'cast') {
+                                        detail = `${detail} → ${(entry.damage ?? 0).toLocaleString()} dmg  [Focus: ${entry.focus ?? 0}]`;
+                                      }
+                                      const abilityName = (entry.ability || '').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                                      lines.push("  " + ts.padEnd(10) + entry.type.padEnd(16) + abilityName.padEnd(26) + detail);
+                                    }
+                                    lines.push("");
+                                    lines.push(`  Total combat log events: ${combatLog.length}`);
+                                  }
+
                                   lines.push("");
                                   lines.push(`Timestamp: ${new Date().toISOString()}`);
                                   lines.push("========================================");

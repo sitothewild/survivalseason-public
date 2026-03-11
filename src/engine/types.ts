@@ -172,6 +172,7 @@ export interface SimResult {
     frenziedTearProcs?: number;
   };
   timeline?: TimelineEvent[];
+  combatLog?: import("./CombatState").CombatLogEntry[];
 }
 
 export interface TimelineEvent {

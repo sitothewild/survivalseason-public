@@ -143,6 +143,7 @@ export function runSimulation(input: SimInput): SimResult {
   };
   const totalPerTarget = new Map<number, number>();
   let capturedTimeline: TimelineEvent[] | undefined;
+  let capturedCombatLog: import("./CombatState").CombatLogEntry[] | undefined;
 
   // Adaptive iteration: check target_error every BATCH_SIZE iterations
   // Like SimC's target_error option — stop early when SE% < threshold
@@ -164,6 +165,11 @@ export function runSimulation(input: SimInput): SimResult {
       : config.durationMs;
 
     const state = new CombatState(stats, config.hero, config.targets, input.buffMults);
+
+    // Enable combat log for iteration 0 when timeline capture is on
+    if (iter === 0 && config.captureTimeline) {
+      state.combatLogEnabled = true;
+    }
 
     // Initialize cooldowns
     initializeCooldowns(state, talents);
@@ -207,6 +213,9 @@ export function runSimulation(input: SimInput): SimResult {
 
     if (iterResult.timeline) {
       capturedTimeline = iterResult.timeline;
+    }
+    if (iter === 0 && state.combatLogEnabled) {
+      capturedCombatLog = state.combatLog;
     }
 
     // Adaptive early-stop: check convergence at batch boundaries
@@ -286,6 +295,7 @@ export function runSimulation(input: SimInput): SimResult {
     perTarget,
     heroCounters: avgCounters,
     timeline: capturedTimeline,
+    combatLog: capturedCombatLog,
   };
 }
 
@@ -531,13 +541,19 @@ function executeAbility(
   // Spend/gain focus
   if (spell.focusCost > 0) {
     state.focus -= spell.focusCost;
+    state.logFocus(spell.key, -spell.focusCost, "spend");
   } else if (spell.focusCost < 0) {
-    state.focus = Math.min(state.maxFocus, state.focus - spell.focusCost);
+    const gained = -spell.focusCost;
+    state.focus = Math.min(state.maxFocus, state.focus + gained);
+    state.logFocus(spell.key, gained, "gain");
   }
 
   // Use cooldown
   if (spell.cooldownMs > 0) {
     state.cooldowns.use(spell.key, state.nowMs);
+    if (state.combatLogEnabled) {
+      state.combatLog.push({ tMs: state.nowMs, type: "cooldown_use", ability: spell.key, detail: `CD ${(spell.cooldownMs / 1000).toFixed(1)}s` });
+    }
   }
 
   // FIX #3: AP = Agility (not doubled). Pet AP = hunter AP * 0.6
@@ -590,6 +606,7 @@ function executeAbility(
   if (input.talents.activeTalents.has("sicEm") || input.talents.activeTalents.has("lethalBarbs")) {
     if (spell.key === "kill_command" || spell.key === "raptor_strike") {
       state.focus = Math.min(state.maxFocus, state.focus + FOCUS_VALUES.lethal_barbs_bonus);
+      state.logFocus("lethal_barbs", FOCUS_VALUES.lethal_barbs_bonus, "gain");
     }
   }
 
@@ -597,6 +614,7 @@ function executeAbility(
   if (spell.key === "takedown") {
     state.takedownActive = true;
     state.takedownExpiresMs = state.nowMs + TAKEDOWN_DURATION_MS;
+    state.logProc("takedown", `Takedown active — 20% damage amp for ${(TAKEDOWN_DURATION_MS / 1000).toFixed(0)}s`);
 
     // Pet Takedown component: pet does its own strike (from SimC: pet takedown = 1304 pDPS)
     const petAp = state.currentAP * PET_AP_SCALING;
@@ -705,7 +723,9 @@ function executeAbility(
       // First stack: start the 14s timer
       state.mongooseFuryExpiresMs = state.nowMs + MONGOOSE_FURY_DURATION_MS;
     }
+    const oldStacks = state.mongooseFuryStacks;
     state.mongooseFuryStacks = Math.min(MONGOOSE_FURY_MAX_STACKS, state.mongooseFuryStacks + 1);
+    state.logProc("mongoose_fury", `Mongoose Fury ${oldStacks} → ${state.mongooseFuryStacks}`);
   }
 
   // FIX #5: Strike as One triggers when Tip of the Spear is consumed (per SimC)
@@ -784,6 +804,17 @@ function executeAbility(
       target: 0,
     });
   }
+  // Cast event in combat log
+  if (state.combatLogEnabled) {
+    state.combatLog.push({
+      tMs: state.nowMs,
+      type: "cast",
+      ability: spell.key,
+      damage: Math.round(finalDamage * effectiveTargets),
+      focus: Math.round(state.focus),
+      detail: `${spell.label || spell.key}${isCrit ? " (CRIT)" : ""}`,
+    });
+  }
 }
 
 // ── Mongoose Fury: which abilities are affected ───────────────
@@ -803,6 +834,7 @@ function incrementPackCounter(state: CombatState, input: SimInput, rng: RNG): vo
   if (state.packCounter >= 4 && input.talents.activeTalents.has("packCoordination")) {
     state.packCounter = 0;
     state.packCoordinationProcs++;
+    state.logProc("pack_coordination", "Pack Coordination triggered");
 
     const pcSpell = SPELL_DB["pack_coordination"];
     if (pcSpell) {
@@ -1172,6 +1204,7 @@ function handleSentinelTriggers(
     if (state.sentinelCounter >= SENTINEL_COUNTER.threshold) {
       state.sentinelCounter = 0;
       state.sentinelOwlProcs++;
+      state.logProc("sentinel_owl", "Sentinel Owl summoned");
 
       // Sentinel Owl damage
       const owlSpell = SPELL_DB["sentinel_owl"];
@@ -1194,6 +1227,7 @@ function handleSentinelTriggers(
       if (talents.has("lunarStorm")) {
         if (rollPRD("lunar_storm", PROC_CHANCES.lunar_storm, rng, prdState)) {
           state.lunarStormProcs++;
+          state.logProc("lunar_storm", "Lunar Storm proc");
           const dotInfo = DOT_DB["lunar_storm_dot"];
           if (dotInfo) {
             for (let t = 0; t < Math.min(state.numTargets, 5); t++) {
@@ -1230,6 +1264,7 @@ function handlePackLeaderTriggers(
   if (spell.key === "kill_command" && talents.has("viciousHunt")) {
     if (rollPRD("vicious_hunt", PROC_CHANCES.vicious_hunt, rng, prdState)) {
       state.viciousHuntProcs++;
+      state.logProc("vicious_hunt", "Vicious Hunt proc → dire beast");
       const dotInfo = DOT_DB["vicious_wound_dot"];
       if (dotInfo) {
         applyDot(state, queue, "vicious_wound_dot", 0, dotInfo, state.currentAP);
@@ -1246,6 +1281,7 @@ function handlePackLeaderTriggers(
   if (spell.key === "raptor_strike" && talents.has("furiousAssault")) {
     if (rollPRD("frenzied_tear", PROC_CHANCES.frenzied_tear, rng, prdState)) {
       state.frenziedTearProcs++;
+      state.logProc("frenzied_tear", "Frenzied Tear proc → extra SaO");
 
       const petAp = state.currentAP * PET_AP_SCALING;
       const { damage: petDmg, isCrit: petCrit } = computeDamage(
