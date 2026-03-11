@@ -2548,76 +2548,7 @@ export default function SurvivalHunterSim() {
                       );
                     })()}
 
-                    {/* Talent Loadout cards — 3 builds for the active hero */}
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>TALENT LOADOUT</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
-                    {(() => {
-                      const loadouts = TALENT_LOADOUTS.filter(l => l.heroKey === heroTalent);
-                      const heroClr  = heroTalent === 'sentinel' ? C.sentClr : C.packClr;
-                      const heroBg   = heroTalent === 'sentinel' ? C.sentBg  : C.packBg;
-                      const heroBdr  = heroTalent === 'sentinel' ? C.sentBdr : C.packBdr;
-                      return loadouts.map(loadout => {
-                        const isSel = selectedLoadoutId === loadout.id;
-                        return (
-                          <div key={loadout.id}
-                            onClick={() => { setSelectedLoadoutId(loadout.id); setHeroTalent(loadout.heroKey); setSimMode(loadout.simMode); }}
-                            style={{
-                              borderRadius: 10, padding: "10px 10px 8px", cursor: "pointer",
-                              background: isSel ? heroBg : C.surface2,
-                              border: `2px solid ${isSel ? heroBdr : heroBdr + '33'}`,
-                              boxShadow: isSel ? `0 0 14px ${heroClr}22` : undefined,
-                              transition: "all .15s",
-                              display: "flex", flexDirection: "column", gap: 4,
-                            }}>
-
-                            {/* Header */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                              <span style={{ fontSize: 13, lineHeight: 1 }}>{loadout.icon}</span>
-                              <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, fontWeight: 700,
-                                color: isSel ? heroClr : C.textSec, letterSpacing: 1.2 }}>
-                                {loadout.name}
-                              </span>
-                              {isSel && <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 8,
-                                background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}`,
-                                borderRadius: 3, padding: "0 4px" }}>ACTIVE</span>}
-                            </div>
-
-                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {loadout.scenario}
-                            </div>
-
-                            {/* DPS deltas */}
-                            <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
-                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#4ade80', fontWeight: 700 }}>ST +{Math.round(loadout.stDelta*100)}%</span>
-                              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: '#f97316', fontWeight: 700 }}>AoE +{Math.round(loadout.aoeDelta*100)}%</span>
-                            </div>
-
-                            {/* Copy talent string button */}
-                            {isSel && (
-                              <button
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  navigator.clipboard.writeText(loadout.exportString);
-                                  setCopiedLoadoutId(loadout.id);
-                                  setTimeout(() => setCopiedLoadoutId(null), 2000);
-                                }}
-                                style={{
-                                  marginTop: 4, width: "100%",
-                                  fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5,
-                                  padding: "6px 0", borderRadius: 7, cursor: "pointer",
-                                  background: copiedLoadoutId === loadout.id ? C.greenBg : C.surface3,
-                                  border: `1px solid ${copiedLoadoutId === loadout.id ? C.green : C.border}`,
-                                  color: copiedLoadoutId === loadout.id ? C.green : C.textMid,
-                                  transition: "all .2s",
-                                }}>
-                                {copiedLoadoutId === loadout.id ? '✓ COPIED' : '⎘ COPY STRING'}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()}
-                    </div>
+                    {/* Talent loadout pills moved to header row above hero talent boxes */}
 
                     {/* Custom loadout cards (saved slots that match current hero) */}
                     {customSlots.map((slot, idx) => {
