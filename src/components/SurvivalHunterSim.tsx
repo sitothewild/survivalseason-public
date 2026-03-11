@@ -1857,7 +1857,7 @@ export default function SurvivalHunterSim() {
             <div className="sim-3col" style={{ display: "grid", gridTemplateColumns: "35% 65%", gap: 16, alignItems: "start" }}>
 
               {/* ═══ LEFT COLUMN — Inputs + Character + Gear (35%) ═══ */}
-              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div className="sim-left-col" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {/* Armory / SimC — tabbed single card */}
                 <CARD style={{ display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
                   {/* Tab bar */}
@@ -2162,6 +2162,17 @@ export default function SurvivalHunterSim() {
                     </div>
                   </div>
                 </CARD>
+
+                {/* Run Simulation button — below Current Talents */}
+                <button
+                  className="sim-btn"
+                  onClick={handleSim}
+                  disabled={!parsedChar || isSimming}
+                  style={{ marginTop: 6, ...(parsedChar && !isSimming ? { animation: "goldPulse 2s ease-in-out infinite" } : { opacity: 0.5 }) }}
+                >
+                  {isSimming ? "⟳ SIMULATING..." : "▶ RUN SIMULATION"}
+                </button>
+                {!parsedChar && <p style={{ textAlign: "center", color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, marginTop: 4 }}>Parse your character first</p>}
               </div>
 
               {/* ═══ RIGHT COLUMN — Simulation Config (65%) ═══ */}
@@ -3021,17 +3032,7 @@ export default function SurvivalHunterSim() {
                     )}
                   </div>
 
-                  {/* Run Simulation button */}
-                  <div style={{ flex: 1 }} />
-                  <button
-                    className="sim-btn"
-                    onClick={handleSim}
-                    disabled={!parsedChar || isSimming}
-                    style={parsedChar && !isSimming ? { animation: "goldPulse 2s ease-in-out infinite" } : { opacity: 0.5 }}
-                  >
-                    {isSimming ? "⟳ SIMULATING..." : "▶ RUN SIMULATION"}
-                  </button>
-                  {!parsedChar && <p style={{ textAlign: "center", color: C.textDim, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, marginTop: 8 }}>Parse your character first</p>}
+                  {/* Run Simulation button moved to left column */}
                 </CARD>
               </div>
             </div>
