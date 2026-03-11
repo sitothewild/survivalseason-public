@@ -2856,9 +2856,9 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Consumables ─────────────────────── */}
-                        <div style={{ marginBottom: 10 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>CONSUMABLES</div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>CONSUMABLES</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             {Object.entries(CONSUMABLES).map(([k, d]) => {
                               const isNone = consumables[k] === 'none';
                               return (
