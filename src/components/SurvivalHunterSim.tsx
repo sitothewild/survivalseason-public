@@ -2935,8 +2935,8 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Gems & Enchants (merged) ──────── */}
-                        <div style={{ marginBottom: 10 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>GEMS & ENCHANTS</div>
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>GEMS & ENCHANTS</div>
                           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                               <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>Sockets</span>
