@@ -111,11 +111,11 @@ describe("applySimOptions", () => {
     expect(result.stats.critRating).toBeGreaterThan(base.critRating);
   });
 
-  it("injects phial stats (Alchemical Chaos)", () => {
+  it("injects phial stats (Fleeting Magisters)", () => {
     const base = makeBaseStats();
     const options: SimOptions = {
       ...NAKED_OPTIONS,
-      phial: "alchemical_chaos",
+      phial: "fleeting_magisters",
     };
 
     const result = applySimOptions(base, options, "sentinel");
