@@ -322,6 +322,16 @@ export function equipmentToSimData(fullData: any, region = "us") {
       console.warn('[Armory Talent Debug] Could not find talent data. This is likely due to a known Blizzard API bug (11.2+). Full specializations response:', JSON.stringify(specs, null, 2)?.slice(0, 1000));
       return null;
     })(),
+    heroTalentTree: (() => {
+      // active_hero_talent_tree is at the top level of the specializations response
+      const specs = fullData?.specializations;
+      const heroTree = specs?.active_hero_talent_tree;
+      if (heroTree?.name) {
+        console.log('[Armory Talent Debug] active_hero_talent_tree:', heroTree.name, 'id:', heroTree.id);
+        return heroTree.name;
+      }
+      return null;
+    })(),
     valid: true,
     errors: [],
     media: fullData.media,
