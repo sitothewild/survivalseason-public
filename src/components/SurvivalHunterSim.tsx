@@ -1572,21 +1572,22 @@ export default function SurvivalHunterSim() {
 
   // Build SimOptions from UI state
   const currentSimOptions = useMemo((): SimOptions => {
-    // Map old consumable keys to engine keys
+    // Map UI consumable keys to engine keys
     const phialMap: Record<string, string> = {
-      flaskOfAlchemicalChaos: 'alchemical_chaos',
-      flaskOfTemperingSanity: 'tempering_sanity',
+      fleetingMagisters: 'fleeting_magisters',
+      fleetingAlacrity: 'fleeting_alacrity',
+      fleetingDetermination: 'fleeting_determination',
       none: 'none',
     };
     const foodMap: Record<string, string> = {
-      mastery: 'mastery_food',
-      crit: 'crit_food',
-      haste: 'haste_food',
+      silvermoonParade: 'silvermoon_parade',
+      thalassianFeast: 'thalassian_feast',
+      amaniFeast: 'amani_feast',
+      farstriderRations: 'farstrider_rations',
       none: 'none',
     };
     const potionMap: Record<string, string> = {
-      tempered: 'tempered_potion',
-      frontLoaded: 'potion_of_unwavering_focus',
+      lightsPotential: 'lights_potential',
       none: 'none',
     };
 
