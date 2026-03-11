@@ -428,11 +428,7 @@ function executeAbility(
     }
   }
 
-  // Coordinated Assault
-  if (spell.key === "coordinated_assault") {
-    state.coordinatedAssaultActive = true;
-    state.coordinatedAssaultExpiresMs = state.nowMs + COORDINATED_ASSAULT_DURATION_MS;
-  }
+  // (Coordinated Assault removed in Midnight 12.0)
 
   // Crit calculation
   let critMult = 2.0 + spell.bonusCritMult;
