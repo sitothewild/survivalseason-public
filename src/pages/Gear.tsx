@@ -47,11 +47,13 @@ const GRADE_CLR: Record<string,string> = {
 
 export default function Gear() {
   const [hero, setHero] = useState<"sentinel"|"packLeader">("sentinel");
-  const [bisOpen, setBisOpen] = useState(true);   // open by default — tooltips require visibility
+  const [bisOpen, setBisOpen] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncingItemDB, setSyncingItemDB] = useState(false);
 
   // Load enchant data from Blizzard API cache
   const { data: enchantData, refetch: refetchEnchants } = useBlizzardEnchants();
+  const { data: itemDB, refetch: refetchItemDB } = useBlizzardItemDB();
 
   const handleSyncEnchants = useCallback(async () => {
     setSyncing(true);
