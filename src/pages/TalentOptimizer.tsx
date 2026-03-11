@@ -54,8 +54,6 @@ export default function TalentOptimizer() {
     if (!treeRef.current) return;
     const talents = treeRef.current.getSelectedTalents();
     const heroKey = treeRef.current.getActiveHeroKey();
-    const heroTree = heroKey === "packLeader" ? "pack_leader" : "sentinel";
-
     const selectedTalents = talents.map(t => ({
       nodeId: 0,
       talentId: 0,
@@ -66,7 +64,7 @@ export default function TalentOptimizer() {
     }));
 
     const result = buildSimcProfile(selectedTalents, {
-      heroTree: heroTree as any,
+      heroTree: heroKey,
       fightStyle,
     });
 
@@ -218,6 +216,38 @@ export default function TalentOptimizer() {
               </div>
             </div>
             </div>
+          </div>
+
+          {/* BiS info banner */}
+          <div style={{
+            marginTop:12,
+            padding:"12px 16px",
+            background:"rgba(15,21,32,.7)",
+            border:"1px solid #2e3a50",
+            borderRadius:8,
+            display:"flex",
+            gap:16,
+            alignItems:"center",
+            flexWrap:"wrap",
+          }}>
+            <span style={{
+              fontFamily:"'Orbitron',sans-serif", fontSize:9, letterSpacing:2,
+              color:C.gold, textTransform:"uppercase", fontWeight:700, flexShrink:0,
+            }}>
+              SimC Export Includes
+            </span>
+            {[
+              { label:"Gear", value:"Full BiS (276 ilvl)" },
+              { label:"Enchants", value:"Top-ranked per slot" },
+              { label:"Gems", value:"Elusive Blasphemite + Masterful Garnet" },
+              { label:"Consumables", value:"Flask + Combat Pot + Food + Rune" },
+              { label:"Buffs", value:"All raid buffs enabled" },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+                <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:9, color:C.textDim, letterSpacing:1, textTransform:"uppercase" }}>{label}</span>
+                <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:12, color:C.textSec, fontWeight:600 }}>{value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </main>

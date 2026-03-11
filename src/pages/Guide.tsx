@@ -5,7 +5,7 @@
 //    tier set math (2pc + 4pc), talent delta analysis, SimC APL display
 // ⚠️ Needs update: No explicit stat priority ranking table (stats are implicit in weight calculations)
 // ❌ Missing: Formal stat priority section, point budget reference (34/34/13)
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { NavLink } from "@/components/NavLink";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -16,7 +16,9 @@ import {
   ROW_GATES,
 } from "@/lib/theorycrafting";
 import HeroTalentTree from "@/components/HeroTalentTree";
-import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
+import { BlizzardTalentTree, type BlizzardTalentTreeHandle } from "@/components/BlizzardTalentTree";
+import { buildSimcProfile } from "@/utils/simcProfileBuilder";
+import type { FightStyle } from "@/utils/simcProfileBuilder";
 import survivalIconImg from "@/assets/survival-icon.png";
 import talentOptimizerBg from "@/assets/talent-optimizer-bg.png";
 
@@ -43,6 +45,28 @@ export default function Guide() {
   const [targets, setTargets]     = useState(1);
   const [simcData, setSimcData]   = useState<any>(null);
   const [simcLoading, setSimcLoading] = useState(true);
+  const [talentCopied, setTalentCopied] = useState(false);
+  const treeRef = useRef<BlizzardTalentTreeHandle>(null);
+
+  // Map target count → fight style for preset loading
+  const guideFightStyle: FightStyle = targets <= 1 ? "st" : targets <= 3 ? "cleave" : "aoe";
+
+  const handleCopyTalents = useCallback(() => {
+    if (!treeRef.current) return;
+    const talents = treeRef.current.getSelectedTalents();
+    const heroKey = treeRef.current.getActiveHeroKey();
+    const mapped = talents.map(t => ({
+      nodeId: 0, talentId: 0, spellId: t.spellId,
+      name: t.name, rank: t.rank, section: t.section as "class" | "spec" | "hero",
+    }));
+    const result = buildSimcProfile(mapped, {
+      heroTree: heroKey,
+      fightStyle: guideFightStyle,
+    });
+    navigator.clipboard.writeText(result.profileString);
+    setTalentCopied(true);
+    setTimeout(() => setTalentCopied(false), 2000);
+  }, [guideFightStyle]);
 
   const isSent  = hero === "sentinel";
   const heroClr = isSent ? C.sentClr  : C.packClr;
@@ -216,7 +240,22 @@ export default function Guide() {
             SECTION — Talent Tree (BlizzardTalentTree component)
         ═══════════════════════════════════════════════════ */}
         <Card span style={{ marginBottom:20 }}>
-          <Lbl>🌲 Talent Tree — {isSent ? 'Sentinel' : 'Pack Leader'}</Lbl>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <Lbl>🌲 Talent Tree — {isSent ? 'Sentinel' : 'Pack Leader'}</Lbl>
+            <button
+              onClick={handleCopyTalents}
+              style={{
+                fontFamily:"'Rajdhani',sans-serif", fontSize:12, fontWeight:700,
+                padding:"6px 16px", borderRadius:6, cursor:"pointer",
+                border:`1px solid ${talentCopied ? "#38bdf8" : heroClr}`,
+                background: talentCopied ? "rgba(56,189,248,.15)" : heroBg,
+                color: talentCopied ? "#38bdf8" : heroClr,
+                letterSpacing:1, transition:"all .2s ease",
+              }}
+            >
+              {talentCopied ? "✓ Copied!" : "📋 Copy Talent String"}
+            </button>
+          </div>
           <div style={{
             position:"relative",
             border:`1px solid #2e3a50`,
@@ -239,8 +278,11 @@ export default function Guide() {
             }} />
             <div style={{ width:"100%", overflowX:"auto", overflow:"clip visible", position:"relative", zIndex:2 }}>
               <BlizzardTalentTree
+                ref={treeRef}
                 heroKey={hero === "sentinel" ? "sentinel" : "packLeader"}
                 onHeroChange={(h) => setHero(h === "sentinel" ? "sentinel" : "packLeader")}
+                fightStyle={guideFightStyle}
+                readOnly
               />
             </div>
           </div>

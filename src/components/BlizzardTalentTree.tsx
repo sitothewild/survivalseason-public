@@ -393,7 +393,7 @@ function InteractiveTalentNode({
 function TreeSection({
   label, nodes, maxPts, rowGates, externalGateMet = true,
   onTalentChange, compact = false, tree: externalTree,
-  onGlobalHover,
+  onGlobalHover, readOnly = false,
 }: {
   label: string;
   nodes: TalentNodeDef[];
@@ -404,6 +404,7 @@ function TreeSection({
   compact?: boolean;
   tree?: UseTalentTreeReturn;
   onGlobalHover?: (info: TooltipInfo | null) => void;
+  readOnly?: boolean;
 }) {
   const internalTree = useTalentTree(nodes, maxPts, rowGates, externalGateMet);
   const tree = externalTree ?? internalTree;
@@ -429,6 +430,7 @@ function TreeSection({
 
   const handleRightClick = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.preventDefault();
+    if (readOnly) return;
     const node = nodes.find(n => n.id === nodeId);
     if (node?.type === 'choice') {
       tree.selectChoice(nodeId, -1);
@@ -437,17 +439,19 @@ function TreeSection({
       tree.deallocatePoint(nodeId);
       onTalentChange?.(nodeId, Math.max(0, (tree.state.points[nodeId] ?? 0) - 1));
     }
-  }, [tree, nodes, onTalentChange]);
+  }, [tree, nodes, onTalentChange, readOnly]);
 
   const handleLeftClick = useCallback((nodeId: string) => {
+    if (readOnly) return;
     tree.allocatePoint(nodeId);
     onTalentChange?.(nodeId, (tree.state.points[nodeId] ?? 0) + 1);
-  }, [tree, onTalentChange]);
+  }, [tree, onTalentChange, readOnly]);
 
   const handleChoice = useCallback((nodeId: string, side: 0 | 1) => {
+    if (readOnly) return;
     tree.selectChoice(nodeId, side);
     onTalentChange?.(nodeId, 1, side);
-  }, [tree, onTalentChange]);
+  }, [tree, onTalentChange, readOnly]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -459,20 +463,22 @@ function TreeSection({
           color: pointColor(tree.totalPoints, maxPts) }}>
           {tree.totalPoints} / {maxPts}
         </span>
-        <button
-          onClick={() => tree.reset()}
-          title="Reset tree"
-          style={{
-            width: 22, height: 22, borderRadius: 4, border: `1px solid #444`,
-            background: "#222", color: "#888", cursor: "pointer", fontSize: 12,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "border-color .15s, color .15s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#888"; }}
-        >
-          ↺
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => tree.reset()}
+            title="Reset tree"
+            style={{
+              width: 22, height: 22, borderRadius: 4, border: `1px solid #444`,
+              background: "#222", color: "#888", cursor: "pointer", fontSize: 12,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "border-color .15s, color .15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#888"; }}
+          >
+            ↺
+          </button>
+        )}
       </div>
 
       {/* Tree panel */}
@@ -530,6 +536,8 @@ export interface BlizzardTalentTreeProps {
   onClassToggle?: (key: string, selected: boolean) => void;
   onTalentConfigChange?: (config: Record<string, any>) => void;
   fightStyle?: FightStyle;
+  /** When true, tree is display-only — no clicking, no reset buttons */
+  readOnly?: boolean;
 }
 
 export interface BlizzardTalentTreeHandle {
@@ -544,6 +552,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
   onClassToggle,
   classSelectedKeys,
   fightStyle,
+  readOnly = false,
 }, ref) {
   const [internalHeroKey, setInternalHeroKey] = useState<"sentinel" | "packLeader">("sentinel");
   const activeHeroKey = heroKeyProp ?? internalHeroKey;
@@ -639,6 +648,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
       const preset = getPresetBuild(activeHeroKey, fightStyle);
       specTree.loadBuild(preset.spec);
       heroTree.loadBuild(preset.hero);
+      classTree.loadBuild(preset.class);
     }
   }, [fightStyle, activeHeroKey]);
 
@@ -658,6 +668,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
             rowGates={CLASS_ROW_GATES}
             tree={classTree}
             onGlobalHover={handleGlobalHover}
+            readOnly={readOnly}
           />
 
           {/* HERO TREE + APEX (center) */}
@@ -665,8 +676,8 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
             {/* Hero switcher — single large circle toggle */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12 }}>
               <button
-                onClick={handleHeroSwitch}
-                title={`Switch to ${isSentinel ? "Pack Leader" : "Sentinel"}`}
+                onClick={readOnly ? undefined : handleHeroSwitch}
+                title={readOnly ? (isSentinel ? "Sentinel" : "Pack Leader") : `Switch to ${isSentinel ? "Pack Leader" : "Sentinel"}`}
                 style={{
                   width: 100, height: 100, borderRadius: "50%",
                   border: `3px solid ${isSentinel ? "#7dd3fc" : "#d8b4fe"}`,
@@ -712,9 +723,11 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
               }}>
                 {isSentinel ? "Sentinel" : "Pack Leader"}
               </span>
-              <span style={{ fontSize: 8, color: "#666", marginTop: 2, fontFamily: "'Rajdhani',sans-serif" }}>
-                Click to switch
-              </span>
+              {!readOnly && (
+                <span style={{ fontSize: 8, color: "#666", marginTop: 2, fontFamily: "'Rajdhani',sans-serif" }}>
+                  Click to switch
+                </span>
+              )}
             </div>
 
 
@@ -727,14 +740,15 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
               compact
               tree={heroTree}
               onGlobalHover={handleGlobalHover}
+              readOnly={readOnly}
             />
 
             {/* APEX TALENT (under hero tree) */}
-            <ApexSection tree={specTree} onGlobalHover={handleGlobalHover} />
+            <ApexSection tree={specTree} onGlobalHover={handleGlobalHover} readOnly={readOnly} />
           </div>
 
           {/* SURVIVAL SPEC TREE (right) */}
-          <SpecTreeSection tree={specTree} onGlobalHover={handleGlobalHover} />
+          <SpecTreeSection tree={specTree} onGlobalHover={handleGlobalHover} readOnly={readOnly} />
         </div>
       </div>
 
@@ -754,7 +768,7 @@ export const BlizzardTalentTree = forwardRef<BlizzardTalentTreeHandle, BlizzardT
 });
 
 // Apex section rendered under the Hero tree
-function ApexSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void }) {
+function ApexSection({ tree, onGlobalHover, readOnly = false }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void; readOnly?: boolean }) {
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(APEX_NODES, true), []);
   const tipTimer = useRef<number>();
 
@@ -806,8 +820,8 @@ function ApexSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlo
                 nodeState={nodeState}
                 pts={pts}
                 choiceSide={undefined}
-                onLeftClick={() => tree.allocatePoint(node.id)}
-                onRightClick={(e) => { e.preventDefault(); tree.deallocatePoint(node.id); }}
+                onLeftClick={() => { if (!readOnly) tree.allocatePoint(node.id); }}
+                onRightClick={(e) => { e.preventDefault(); if (!readOnly) tree.deallocatePoint(node.id); }}
                 onChoiceClick={() => {}}
                 onHover={handleHover}
               />
@@ -891,7 +905,7 @@ function StaticTooltipPanel({ info }: { info: TooltipInfo | null }) {
 }
 
 // Survival spec tree (uses shared tree state from parent)
-function SpecTreeSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void }) {
+function SpecTreeSection({ tree, onGlobalHover, readOnly = false }: { tree: UseTalentTreeReturn; onGlobalHover?: (info: TooltipInfo | null) => void; readOnly?: boolean }) {
   const { minRow, minCol, w, h } = useMemo(() => gridBounds(SURVIVAL_NODES), []);
 
   const tipTimer = useRef<number>();
@@ -922,19 +936,21 @@ function SpecTreeSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; o
           color: pointColor(tree.totalPoints, SPEC_MAX_PTS) }}>
           {tree.totalPoints} / {SPEC_MAX_PTS}
         </span>
-        <button
-          onClick={() => tree.reset()}
-          title="Reset tree"
-          style={{
-            width: 22, height: 22, borderRadius: 4, border: `1px solid #444`,
-            background: "#222", color: "#888", cursor: "pointer", fontSize: 12,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#888"; }}
-        >
-          ↺
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => tree.reset()}
+            title="Reset tree"
+            style={{
+              width: 22, height: 22, borderRadius: 4, border: `1px solid #444`,
+              background: "#222", color: "#888", cursor: "pointer", fontSize: 12,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#888"; }}
+          >
+            ↺
+          </button>
+        )}
       </div>
 
       {/* Tree panel */}
@@ -966,9 +982,9 @@ function SpecTreeSection({ tree, onGlobalHover }: { tree: UseTalentTreeReturn; o
                 nodeState={nodeState}
                 pts={pts}
                 choiceSide={choiceSide}
-                onLeftClick={() => tree.allocatePoint(node.id)}
-                onRightClick={(e) => { e.preventDefault(); tree.deallocatePoint(node.id); }}
-                onChoiceClick={(side) => tree.selectChoice(node.id, side)}
+                onLeftClick={() => { if (!readOnly) tree.allocatePoint(node.id); }}
+                onRightClick={(e) => { e.preventDefault(); if (!readOnly) tree.deallocatePoint(node.id); }}
+                onChoiceClick={(side) => { if (!readOnly) tree.selectChoice(node.id, side); }}
                 onHover={handleHover}
               />
             </div>
