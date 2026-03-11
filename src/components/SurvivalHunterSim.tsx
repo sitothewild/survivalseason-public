@@ -789,6 +789,8 @@ const BAR_COLORS = {
 const bClr = k => BAR_COLORS[k] || "#64748b";
 const fmt = n => n >= 1000000 ? `${(n / 1000000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 const dL = d => `${Math.floor(d / 60)}:${String(d % 60).padStart(2, "0")}`;
+/** Normalize engine hero key ('pack_leader') to UI key ('packLeader') */
+const toUIHero = (h: string): string => h === 'pack_leader' ? 'packLeader' : h;
 
 // Realm data
 const REALM_DATA: Record<string, string[]> = {
@@ -3265,8 +3267,8 @@ export default function SurvivalHunterSim() {
                           >
                             <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: selectedBuild === 'user' ? C.sentClr : C.textMid, marginBottom: 10 }}>YOUR BUILD {selectedBuild === 'user' ? '▼' : ''}</div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                              <span className="badge" style={{ background: userSimResult.hero === 'sentinel' ? C.sentBg : C.packBg, color: userSimResult.hero === 'sentinel' ? C.sentClr : C.packClr, border: `1px solid ${userSimResult.hero === 'sentinel' ? C.sentBdr : C.packBdr}` }}>
-                                {MIDNIGHT_DATA.talents.hero[userSimResult.hero]?.icon} {MIDNIGHT_DATA.talents.hero[userSimResult.hero]?.name || userSimResult.hero}
+                              <span className="badge" style={{ background: toUIHero(userSimResult.hero) === 'sentinel' ? C.sentBg : C.packBg, color: toUIHero(userSimResult.hero) === 'sentinel' ? C.sentClr : C.packClr, border: `1px solid ${toUIHero(userSimResult.hero) === 'sentinel' ? C.sentBdr : C.packBdr}` }}>
+                                {MIDNIGHT_DATA.talents.hero[toUIHero(userSimResult.hero)]?.icon} {MIDNIGHT_DATA.talents.hero[toUIHero(userSimResult.hero)]?.name || userSimResult.hero}
                               </span>
                             </div>
                             <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 28, fontWeight: 900, color: C.textPri, lineHeight: 1, marginBottom: 6 }}>
@@ -3428,7 +3430,8 @@ export default function SurvivalHunterSim() {
                         }
                         return simResults;
                       })().map((res, ri) => {
-                        const aplOrderedNames = aplData ? (getRotationWeights(aplData, res.hero === 'packLeader' ? 'packLeader' : 'sentinel', res.build === 'aoe' ? 'aoe' : 'st') ? aplData[res.hero === 'packLeader' ? 'packLeader' : 'sentinel'][res.build === 'aoe' ? 'aoe' : 'st']?.ordered : null) : null;
+                        const uiHero = toUIHero(res.hero) as 'packLeader' | 'sentinel';
+                        const aplOrderedNames = aplData ? (getRotationWeights(aplData, uiHero, res.build === 'aoe' ? 'aoe' : 'st') ? aplData[uiHero][res.build === 'aoe' ? 'aoe' : 'st']?.ordered : null) : null;
                         const entries = Object.entries(res.breakdown);
                         const sorted = aplSortMode === 'apl' && aplOrderedNames
                           ? entries.sort((a, b) => {
@@ -3438,7 +3441,7 @@ export default function SurvivalHunterSim() {
                             })
                           : entries.sort((a, b) => (b[1] as number) - (a[1] as number));
                         const maxVal = Math.max(...entries.map(e => e[1] as number));
-                        const h = MIDNIGHT_DATA.talents.hero[res.hero];
+                        const h = MIDNIGHT_DATA.talents.hero[toUIHero(res.hero)];
                         return (
                           <div key={ri} className="result-anim" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, animationDelay: `${ri * .1}s` }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
@@ -3457,7 +3460,7 @@ export default function SurvivalHunterSim() {
                                 )}
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-                                <span className="badge" style={{ background: res.hero === "sentinel" ? C.sentBg : C.packBg, color: res.hero === "sentinel" ? C.sentClr : C.packClr, border: `1px solid ${res.hero === "sentinel" ? C.sentBdr : C.packBdr}` }}>{h.icon} {h.name}</span>
+                                <span className="badge" style={{ background: uiHero === "sentinel" ? C.sentBg : C.packBg, color: uiHero === "sentinel" ? C.sentClr : C.packClr, border: `1px solid ${uiHero === "sentinel" ? C.sentBdr : C.packBdr}` }}>{h?.icon} {h?.name}</span>
                                 <span className="badge" style={{ background: C.surface2, color: C.textMid, border: `1px solid ${C.border}` }}>{dL(res.duration)}</span>
                               </div>
                             </div>
