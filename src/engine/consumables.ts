@@ -23,28 +23,28 @@ export interface PhialDef {
 
 export const PHIALS: PhialDef[] = [
   {
-    key: "alchemical_chaos",
-    name: "Flask of Alchemical Chaos",
+    key: "fleeting_magisters",
+    name: "Fleeting Flask of the Magisters",
     stat: "mixed",
     ratingAmount: 0,
     mixedRatings: { crit: 430, haste: 430, mastery: 430, vers: 0 },
     isProcBased: true,
-    procUptime: 0.33, // randomly buffs one stat at a time
-    notes: "Randomly buffs Crit, Haste, or Mastery by ~430 rating. Effective avg: ~143 of each. BiS for most builds due to high total budget.",
+    procUptime: 0.33,
+    notes: "BiS flask. Randomly buffs Crit, Haste, or Mastery by ~430 rating. High total budget.",
   },
   {
-    key: "tempering_sanity",
-    name: "Flask of Tempering Sanity",
+    key: "fleeting_alacrity",
+    name: "Fleeting Flask of Alacrity",
+    stat: "haste",
+    ratingAmount: 580,
+    notes: "+580 Haste. Use if you need consistent haste.",
+  },
+  {
+    key: "fleeting_determination",
+    name: "Fleeting Flask of Determination",
     stat: "agi",
     ratingAmount: 360,
-    notes: "Flat +360 Agility. Simpler than Alchemical Chaos but slightly less total value. Use if you prefer consistency.",
-  },
-  {
-    key: "saving_grace",
-    name: "Flask of Saving Grace",
-    stat: "vers",
-    ratingAmount: 580,
-    notes: "+580 Versatility. Defensive/hybrid option. Not recommended for pure DPS.",
+    notes: "Flat +360 Agility. Simpler than Magisters but slightly less total value.",
   },
 ];
 
@@ -60,29 +60,29 @@ export interface FoodDef {
 
 export const FOOD_BUFFS: FoodDef[] = [
   {
-    key: "mastery_food",
-    name: "Feast of the Midnight Masquerade (Mastery)",
+    key: "silvermoon_parade",
+    name: "Silvermoon Parade",
     stat: "mastery",
     ratingAmount: 90,
-    notes: "+90 Mastery. BiS food for Pack Leader and default Sentinel choice.",
+    notes: "BiS food. +90 Mastery. Best for both Pack Leader and Sentinel.",
   },
   {
-    key: "crit_food",
-    name: "Feast of the Midnight Masquerade (Crit)",
+    key: "thalassian_feast",
+    name: "Thalassian Feast",
     stat: "crit",
     ratingAmount: 90,
-    notes: "+90 Crit. Alternative for Sentinel when crit is highest weight.",
+    notes: "+90 Crit. Alternative when crit is your highest weight.",
   },
   {
-    key: "haste_food",
-    name: "Feast of the Midnight Masquerade (Haste)",
+    key: "amani_feast",
+    name: "Amani Feast",
     stat: "haste",
     ratingAmount: 90,
-    notes: "+90 Haste. Use if haste is your top stat weight (uncommon).",
+    notes: "+90 Haste. Use if haste is top stat weight (uncommon).",
   },
   {
-    key: "vers_food",
-    name: "Feast of the Midnight Masquerade (Vers)",
+    key: "farstrider_rations",
+    name: "Farstrider's Rations",
     stat: "vers",
     ratingAmount: 90,
     notes: "+90 Versatility. Defensive. Not recommended for DPS.",
@@ -106,22 +106,22 @@ export interface PotionDef {
 
 export const POTIONS: PotionDef[] = [
   {
-    key: "tempered_potion",
-    name: "Tempered Potion",
+    key: "lights_potential",
+    name: "Light's Potential",
     stat: "agi",
     ratingAmount: 3648,
     durationSec: 30,
     cooldownSec: 300,
-    notes: "+3648 Agility for 30s. Use on pull aligned with Takedown. Standard DPS potion.",
+    notes: "+3648 Agility for 30s. BiS combat potion. Use on pull aligned with Takedown.",
   },
   {
-    key: "potion_of_unwavering_focus",
-    name: "Potion of Unwavering Focus",
+    key: "silvermoon_health",
+    name: "Silvermoon Health Potion",
     stat: "agi",
-    ratingAmount: 4860,
-    durationSec: 25,
+    ratingAmount: 0,
+    durationSec: 0,
     cooldownSec: 300,
-    notes: "+4860 Agility for 25s but you cannot move. Use on Patchwerk fights only.",
+    notes: "Health potion — no DPS. Use for emergency healing in progression.",
   },
 ];
 
@@ -148,46 +148,38 @@ export interface WeaponEnhancementDef {
 
 export const WEAPON_ENHANCEMENTS: WeaponEnhancementDef[] = [
   {
-    key: "algari_mana_oil",
-    name: "Algari Mana Oil",
-    type: "flat_stat",
-    stat: "crit",
-    ratingAmount: 124,
-    notes: "+124 Crit Rating. Cheap, always-on. Good default for melee.",
-  },
-  {
-    key: "oil_of_deep_toxins",
-    name: "Oil of Deep Toxins",
+    key: "thalassian_phoenix_oil",
+    name: "Thalassian Phoenix Oil",
     type: "damage_proc",
-    dmgApCoef: 0.32,
-    dmgCPM: 8.5,
-    school: "nature",
-    notes: "Nature damage proc, ~8.5 PPM. Bypasses armor. Competitive with flat stat oils on long fights.",
+    dmgApCoef: 0.35,
+    dmgCPM: 9.0,
+    school: "fire",
+    notes: "BiS weapon buff. Fire damage proc, ~9 PPM. Bypasses armor. Best overall weapon enhancement for Survival.",
   },
   {
-    key: "bubbling_wax",
-    name: "Bubbling Wax",
-    type: "flat_stat",
-    stat: "mastery",
-    ratingAmount: 124,
-    notes: "+124 Mastery Rating. Best for Pack Leader (Spirit Bond scaling).",
-  },
-  {
-    key: "ironclaw_whetstone",
-    name: "Ironclaw Whetstone",
-    type: "flat_stat",
-    stat: "crit",
-    ratingAmount: 168,
-    notes: "+168 Crit Rating. Higher budget weapon stone. BiS for Sentinel.",
-  },
-  {
-    key: "howling_rune",
-    name: "Howling Rune",
+    key: "amani_poison",
+    name: "Amani Poison",
     type: "damage_proc",
     dmgApCoef: 0.28,
     dmgCPM: 10.0,
     school: "nature",
-    notes: "Nature damage proc, ~10 PPM. Highest proc frequency weapon enhancement. Bypasses armor.",
+    notes: "Nature damage proc, ~10 PPM. Alternative to Phoenix Oil — slightly lower per-proc but higher frequency.",
+  },
+  {
+    key: "silvermoon_whetstone",
+    name: "Silvermoon Whetstone",
+    type: "flat_stat",
+    stat: "crit",
+    ratingAmount: 168,
+    notes: "+168 Crit Rating. Flat stat alternative to proc-based oils.",
+  },
+  {
+    key: "farstrider_oil",
+    name: "Farstrider's Oil",
+    type: "flat_stat",
+    stat: "mastery",
+    ratingAmount: 124,
+    notes: "+124 Mastery Rating. Budget weapon enhancement for Pack Leader.",
   },
 ];
 
@@ -203,8 +195,8 @@ export interface AugmentRuneDef {
 
 export const AUGMENT_RUNES: AugmentRuneDef[] = [
   {
-    key: "crystallized_augment_rune",
-    name: "Crystallized Augment Rune",
+    key: "void_touched_augment_rune",
+    name: "Void-Touched Augment Rune",
     stat: "agi",
     ratingAmount: 52,
     notes: "+52 Agility. Always use in raid. Persists through death.",

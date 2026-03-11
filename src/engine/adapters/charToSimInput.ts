@@ -144,9 +144,7 @@ export function charToSimInput(
   // Determine fight style from targets
   const fightStyle: FightStyle = targets <= 1
     ? "raid_st"
-    : targets <= 3
-      ? "raid_cleave"
-      : "mplus_pull";
+    : "mplus_pull";
 
   const isAoe = targets > 1;
   const talents = buildTalentStateFromConfig(hero, isAoe ? "aoe" : "st");

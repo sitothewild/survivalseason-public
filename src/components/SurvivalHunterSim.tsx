@@ -33,6 +33,23 @@ import { DEFAULT_APLS, getDefaultAPLKey, validateAPL } from "@/engine/APLEngine"
 
 const SURVIVAL_ICON = survivalIconImg;
 
+// Blizzard CDN icon filenames for professions
+const PROFESSION_ICONS: Record<string, string> = {
+  'Blacksmithing': 'trade_blacksmithing',
+  'Leatherworking': 'trade_leatherworking',
+  'Tailoring': 'trade_tailoring',
+  'Engineering': 'trade_engineering',
+  'Enchanting': 'trade_engraving',
+  'Alchemy': 'trade_alchemy',
+  'Inscription': 'inv_inscription_tradeskill01',
+  'Jewelcrafting': 'inv_misc_gem_01',
+  'Mining': 'trade_mining',
+  'Herbalism': 'trade_herbalism',
+  'Skinning': 'inv_misc_pelt_wolf_01',
+  'Cooking': 'inv_misc_food_15',
+  'Fishing': 'trade_fishing',
+};
+
 const MIDNIGHT_DATA = {
   classAura: 1.20,
   petApScaling: 0.60,
@@ -221,6 +238,35 @@ function parseSimcString(simcText) {
   });
   if (result.gear.length > 0) { result.character.avgIlvl = Math.round(result.gear.reduce((sum, g) => sum + (g.ilvl || 0), 0) / result.gear.filter(g => g.ilvl > 0).length) || 0; }
   const talentLine = lines.find(l => /^talents=/.test(l)); if (talentLine) result.talents = talentLine.replace('talents=', '').trim();
+
+  // Detect hero talent tree from SimC data
+  // Method 1: Check the active Saved Loadout comment name (e.g., "# Saved Loadout: Mythic Pack")
+  const talentLineIdx = lines.findIndex(l => /^talents=/.test(l));
+  if (talentLineIdx > 0) {
+    // The Saved Loadout comment is typically 1-2 lines above the active talents= line
+    for (let i = Math.max(0, talentLineIdx - 3); i < talentLineIdx; i++) {
+      const loadoutMatch = lines[i].match(/^#\s*Saved Loadout:\s*(.+)/i);
+      if (loadoutMatch) {
+        const loadoutName = loadoutMatch[1].toLowerCase();
+        if (loadoutName.includes('pack') || loadoutName.includes('pl ')) {
+          result.heroTalentTree = 'Pack Leader';
+        } else if (loadoutName.includes('sent') || loadoutName.includes('sentinel')) {
+          result.heroTalentTree = 'Sentinel';
+        }
+        break;
+      }
+    }
+  }
+
+  // Method 2: Check SimC spec comment header for hero talent hints
+  if (!result.heroTalentTree) {
+    const headerComment = lines.find(l => /^#.*(?:pack.?leader|sentinel)/i.test(l));
+    if (headerComment) {
+      if (/pack.?leader/i.test(headerComment)) result.heroTalentTree = 'Pack Leader';
+      else if (/sentinel/i.test(headerComment)) result.heroTalentTree = 'Sentinel';
+    }
+  }
+
   if (result.character.name || result.stats.agility > 0 || result.gear.length > 0) result.valid = true;
   else result.errors.push("Could not parse character data.");
 
@@ -812,9 +858,9 @@ const RAID_BUFFS = {
 };
 
 const CONSUMABLES = {
-  flask: { label: 'Flask', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'flaskOfAlchemicalChaos', label: 'Alchemical Chaos', mult: 1.035 },{ key: 'flaskOfTemperingSanity', label: 'Tempering Sanity', mult: 1.03 }] },
-  food: { label: 'Food', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'mastery', label: 'Mastery (+90)', mult: 1.025 },{ key: 'crit', label: 'Crit (+90)', mult: 1.02 },{ key: 'haste', label: 'Haste (+90)', mult: 1.018 }] },
-  potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'tempered', label: 'Tempered Potion', mult: 1.02 },{ key: 'frontLoaded', label: 'Unwavering Focus', mult: 1.025 }] },
+  flask: { label: 'Flask', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'fleetingMagisters', label: 'Fleeting Flask of the Magisters', mult: 1.035 },{ key: 'fleetingAlacrity', label: 'Fleeting Flask of Alacrity', mult: 1.03 },{ key: 'fleetingDetermination', label: 'Fleeting Flask of Determination', mult: 1.03 }] },
+  food: { label: 'Food', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'silvermoonParade', label: 'Silvermoon Parade (+90 Mastery)', mult: 1.025 },{ key: 'thalassianFeast', label: 'Thalassian Feast (+90 Crit)', mult: 1.02 },{ key: 'amaniFeast', label: 'Amani Feast (+90 Haste)', mult: 1.018 }] },
+  potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'lightsPotential', label: "Light's Potential", mult: 1.02 }] },
 };
 
 // (TalentTreeGrid and its constants removed — replaced by BlizzardTalentTree component)
@@ -982,9 +1028,9 @@ export default function SurvivalHunterSim() {
   const [simMode, setSimMode] = useState('single');
   const [fightStyle, setFightStyle] = useState('patchwerk');
   const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({ battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true });
-  const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered' });
+  const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'fleetingMagisters', food: 'silvermoonParade', potion: 'lightsPotential' });
   // Advanced Options — engine-driven SimOptions state
-  const [weaponEnhancement, setWeaponEnhancement] = useState('ironclaw_whetstone');
+  const [weaponEnhancement, setWeaponEnhancement] = useState('thalassian_phoenix_oil');
   const [augmentRune, setAugmentRune] = useState(true);
   const [gemPrimaryStat, setGemPrimaryStat] = useState<'crit' | 'haste' | 'mastery' | 'vers'>('mastery');
   const [gemSockets, setGemSockets] = useState(6);
@@ -1029,6 +1075,7 @@ export default function SurvivalHunterSim() {
   const [armoryError, setArmoryError] = useState('');
   const [armoryAvatar, setArmoryAvatar] = useState('');
   const [itemEnrichLoading, setItemEnrichLoading] = useState(false);
+  const [professions, setProfessions] = useState<any[] | null>(null);
 
   // Talent pill tooltip
   const [hoveredTalent, setHoveredTalent] = useState<TalentPill | null>(null);
@@ -1272,11 +1319,12 @@ export default function SurvivalHunterSim() {
       setParsedChar(null);
       setImportedTalentSource(null);
       setImportedTalentString('');
+      setProfessions(null);
     }
     setSimResults(null);
   }, [simcInput]);
 
-  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); };
+  const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); setProfessions(null); };
 
   const handleArmoryLookup = useCallback(async () => {
     const realmSlug = armoryRealm || resolvedRealmSlug;
@@ -1310,6 +1358,33 @@ export default function SurvivalHunterSim() {
       setImportedTalentSource('armory');
       setImportedTalentString(simData?.talents || '');
       setSimResults(null);
+      // Extract professions data
+      
+      if (fullData.professions?.primaries || fullData.professions?.secondaries) {
+        const profs: any[] = [];
+        for (const p of (fullData.professions?.primaries || [])) {
+          const latestTier = p.tiers?.[p.tiers.length - 1];
+          profs.push({
+            name: p.profession?.name || 'Unknown',
+            professionId: p.profession?.id,
+            skillPoints: latestTier?.skill_points ?? 0,
+            maxSkillPoints: latestTier?.max_skill_points ?? 0,
+            specializations: (p.specializations || []).map((s: any) => s.name || s.specialization?.name).filter(Boolean),
+          });
+        }
+        for (const p of (fullData.professions?.secondaries || [])) {
+          profs.push({
+            name: p.profession?.name || 'Unknown',
+            skillPoints: p.tiers?.[p.tiers.length - 1]?.skill_points ?? 0,
+            maxSkillPoints: p.tiers?.[p.tiers.length - 1]?.max_skill_points ?? 0,
+            specializations: [],
+            secondary: true,
+          });
+        }
+        setProfessions(profs);
+      } else {
+        setProfessions(null);
+      }
       // Auto-scroll to sim config after successful armory load
       setTimeout(() => {
         document.getElementById("sim-config")?.scrollIntoView({ behavior: "smooth" });
@@ -1344,6 +1419,7 @@ export default function SurvivalHunterSim() {
       setParsedChar(null);
       setImportedTalentSource(null);
       setImportedTalentString('');
+      setProfessions(null);
     } finally {
       setArmoryLoading(false);
     }
@@ -1356,26 +1432,36 @@ export default function SurvivalHunterSim() {
   }, [importedTalentString]);
 
   const detectedHeroTalent = useMemo(() => {
+    // Priority 1: Use the heroTalentTree field from Blizzard API or SimC parser
+    if (parsedChar?.heroTalentTree) {
+      const name = parsedChar.heroTalentTree.toLowerCase();
+      if (name.includes('pack leader') || name.includes('pack_leader')) return 'Pack Leader';
+      if (name.includes('sentinel')) return 'Sentinel';
+    }
+
     const raw = (importedTalentString || '').trim();
     if (!raw) return 'Unknown';
 
-    // WoW talent loadout codes encode hero talent choice
-    // Pack Leader markers: 'Mgx', 'cMgx', 'MG' patterns in the encoded string
-    // Sentinel markers: 'MWg', 'cMWg', 'MW' patterns
-    // Also check for keyword patterns from SimC talent comments
+    // Priority 2: Decode hero tree from WoW talent loadout string
+    // The talent string has a shared prefix, then hero-specific markers after position ~24-28
+    // Pack Leader strings contain 'cM2w' or 'M2w' after the common prefix
+    // Sentinel strings contain 'cMWg' or 'MWg' after the common prefix
+    const afterPrefix = raw.length > 20 ? raw.substring(20) : raw;
+    
+    // Check for Pack Leader indicators in the encoded string
+    if (afterPrefix.includes('M2w') || afterPrefix.includes('Mgx') || afterPrefix.includes('cM2w') || afterPrefix.includes('cMgx')) return 'Pack Leader';
+    
+    // Check for Sentinel indicators in the encoded string
+    if (afterPrefix.includes('MWg') || afterPrefix.includes('cMWg')) return 'Sentinel';
+
+    // Priority 3: SimC keyword patterns
     const lowerRaw = raw.toLowerCase();
-    
-    // Check for Pack Leader indicators
-    if (raw.includes('Mgx') || raw.includes('cMgx') || raw.includes('mgx')) return 'Pack Leader';
     if (lowerRaw.includes('pack_leader') || lowerRaw.includes('packleader')) return 'Pack Leader';
-    
-    // Check for Sentinel indicators  
-    if (raw.includes('MWg') || raw.includes('cMWg') || raw.includes('mwg')) return 'Sentinel';
     if (lowerRaw.includes('sentinel')) return 'Sentinel';
 
     // Fallback: if talent string exists but we can't detect, return Unknown
     return 'Unknown';
-  }, [importedTalentString]);
+  }, [importedTalentString, parsedChar]);
 
   const userHeroKey = useMemo(() => {
     if (detectedHeroTalent === 'Sentinel') return 'sentinel';
@@ -1494,21 +1580,22 @@ export default function SurvivalHunterSim() {
 
   // Build SimOptions from UI state
   const currentSimOptions = useMemo((): SimOptions => {
-    // Map old consumable keys to engine keys
+    // Map UI consumable keys to engine keys
     const phialMap: Record<string, string> = {
-      flaskOfAlchemicalChaos: 'alchemical_chaos',
-      flaskOfTemperingSanity: 'tempering_sanity',
+      fleetingMagisters: 'fleeting_magisters',
+      fleetingAlacrity: 'fleeting_alacrity',
+      fleetingDetermination: 'fleeting_determination',
       none: 'none',
     };
     const foodMap: Record<string, string> = {
-      mastery: 'mastery_food',
-      crit: 'crit_food',
-      haste: 'haste_food',
+      silvermoonParade: 'silvermoon_parade',
+      thalassianFeast: 'thalassian_feast',
+      amaniFeast: 'amani_feast',
+      farstriderRations: 'farstrider_rations',
       none: 'none',
     };
     const potionMap: Record<string, string> = {
-      tempered: 'tempered_potion',
-      frontLoaded: 'potion_of_unwavering_focus',
+      lightsPotential: 'lights_potential',
       none: 'none',
     };
 
@@ -1729,7 +1816,7 @@ export default function SurvivalHunterSim() {
 
   // Helper components (memoized so inputs don't lose focus on state updates)
    const LBL = useCallback(({ children }) => (
-    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10, fontWeight: 700 }}>
+    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 14, letterSpacing: 3, color: '#e2e8f0', textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 10, fontWeight: 900 }}>
       {children}
       <div style={{ flex: 1, height: 1, background: C.borderSub }} />
     </div>
@@ -1746,7 +1833,7 @@ export default function SurvivalHunterSim() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;}
-        .tab-btn{background:transparent;border:none;border-bottom:3px solid transparent;padding:12px 24px;color:#64748b;font-family:"Rajdhani",sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+        .tab-btn{background:transparent;border:none;border-bottom:3px solid transparent;padding:12px 24px;color:#38bdf8;font-family:"Orbitron",sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
         .tab-btn.active{color:#fbbf24;border-bottom-color:#d97706;}
         .site-nav-link{font-family:"Rajdhani",sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;color:#64748b;padding:10px 18px;border-bottom:3px solid transparent;transition:color .2s,border-color .2s;display:inline-block;}
         .site-nav-link:hover{color:#94a3b8;}
@@ -2087,8 +2174,52 @@ export default function SurvivalHunterSim() {
                   )}
                 </CARD>
 
+                {/* Professions — shown after armory import */}
+                <CARD style={{ marginTop: 6 }}>
+                  <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>PROFESSIONS</div>
+                    {professions && professions.filter((p: any) => !p.secondary).length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {professions.filter((p: any) => !p.secondary).map((p: any, i: number) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            {p.professionId && (
+                              <img
+                                src={`https://render.worldofwarcraft.com/us/icons/56/${PROFESSION_ICONS[p.name] || 'trade_blacksmithing'}.jpg`}
+                                alt={p.name}
+                                style={{ width: 22, height: 22, borderRadius: 4, border: `1px solid ${C.border}`, flexShrink: 0 }}
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            )}
+                            <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 700, color: C.goldLight, minWidth: 100 }}>
+                              {p.name}
+                            </span>
+                            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.textSec }}>
+                              {p.skillPoints}/{p.maxSkillPoints}
+                            </span>
+                            {p.specializations?.length > 0 && (
+                              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                                {p.specializations.map((s: string, j: number) => (
+                                  <span key={j} style={{
+                                    fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 600,
+                                    color: C.sentClr, background: C.surface, border: `1px solid ${C.borderSub}`,
+                                    borderRadius: 4, padding: "1px 6px", letterSpacing: 0.5,
+                                  }}>{s}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: '#5a6a82' }}>
+                        {parsedChar ? 'No profession data available' : 'AWAITING IMPORT'}
+                      </span>
+                    )}
+                  </div>
+                </CARD>
+
                 {/* Current Talents — always visible */}
-                <CARD style={{ marginTop: 12 }}>
+                <CARD style={{ marginTop: 6 }}>
                   <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                     <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>CURRENT TALENTS</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
@@ -2284,7 +2415,7 @@ export default function SurvivalHunterSim() {
                             tabIndex={-1}
                             onKeyDown={e => { if (e.key === 'Escape') closeModal(); }}
                             style={{
-                              position: "fixed", inset: 16, zIndex: 9991,
+                              position: "fixed", inset: "24px 8%", zIndex: 9991,
                               display: "flex", flexDirection: "column",
                               background: "#0d1117", border: `1px solid ${C.border}`,
                               borderRadius: 14, overflow: "hidden",
@@ -2925,9 +3056,9 @@ export default function SurvivalHunterSim() {
                             <button key={label} onClick={() => {
                               setRaidBuffs({ battleShout: preset.raidBuffs.battleShout, markOfTheWild: preset.raidBuffs.markOfTheWild, mysticTouch: preset.raidBuffs.mysticTouch, huntersMark: preset.raidBuffs.huntersMark });
                               // Map engine keys back to UI keys
-                              const phialRev: Record<string, string> = { alchemical_chaos: 'flaskOfAlchemicalChaos', tempering_sanity: 'flaskOfTemperingSanity', none: 'none' };
-                              const foodRev: Record<string, string> = { mastery_food: 'mastery', crit_food: 'crit', haste_food: 'haste', none: 'none' };
-                              const potRev: Record<string, string> = { tempered_potion: 'tempered', potion_of_unwavering_focus: 'frontLoaded', none: 'none' };
+                              const phialRev: Record<string, string> = { fleeting_magisters: 'fleetingMagisters', fleeting_alacrity: 'fleetingAlacrity', fleeting_determination: 'fleetingDetermination', none: 'none' };
+                              const foodRev: Record<string, string> = { silvermoon_parade: 'silvermoonParade', thalassian_feast: 'thalassianFeast', amani_feast: 'amaniFeast', none: 'none' };
+                              const potRev: Record<string, string> = { lights_potential: 'lightsPotential', none: 'none' };
                               setConsumables({ flask: phialRev[preset.phial] ?? 'none', food: foodRev[preset.food] ?? 'none', potion: potRev[preset.potion] ?? 'none' });
                               setWeaponEnhancement(preset.weaponEnhancement);
                               setAugmentRune(preset.augmentRune);
@@ -3607,7 +3738,7 @@ export default function SurvivalHunterSim() {
             {/* ═══ SECTION 1: OPTIMAL BUILDS ═══ */}
             <div>
               <LBL>🌿 Optimal Talent Builds</LBL>
-              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
+              <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 16, fontWeight: 700, color: C.textMid, marginBottom: 8 }}>Community-verified · Midnight 12.0.1 Pre-Season</p>
 
               {/* Legend */}
               <div style={{ display: "flex", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
@@ -3616,9 +3747,9 @@ export default function SurvivalHunterSim() {
                   { label: 'Single Target', dot: '#d8b4fe', bg: '#1e1040', sup: 'ST' },
                   { label: 'Multi-Target', dot: '#6ee7b7', bg: '#0f2a1a', sup: 'AoE' },
                 ].map(l => (
-                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>
+                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Rajdhani',sans-serif", fontSize: 15, fontWeight: 700, color: C.textDim }}>
                     {l.sup ? (
-                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: l.dot, background: l.bg, padding: '2px 5px', borderRadius: 3, fontWeight: 700 }}>{l.sup}</span>
+                      <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: l.dot, background: l.bg, padding: '2px 6px', borderRadius: 3, fontWeight: 700 }}>{l.sup}</span>
                     ) : (
                       <span style={{ color: l.dot, fontSize: 14 }}>●</span>
                     )}
@@ -3630,7 +3761,7 @@ export default function SurvivalHunterSim() {
               {/* ST Divider */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
-                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', fontWeight: 700 }}>SINGLE TARGET</span>
+                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 12, letterSpacing: 3, color: '#1c2333', fontWeight: 900 }}>SINGLE TARGET</span>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
               </div>
 
@@ -3694,7 +3825,7 @@ export default function SurvivalHunterSim() {
               {/* AoE Divider */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
-                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 3, color: '#1c2333', fontWeight: 700 }}>AOE / M+</span>
+                <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 12, letterSpacing: 3, color: '#1c2333', fontWeight: 900 }}>AOE / M+</span>
                 <div style={{ flex: 1, height: 1, background: C.borderSub }} />
               </div>
 

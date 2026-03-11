@@ -676,7 +676,7 @@ function handlePackLeaderTriggers(
     }
   }
 
-  // Frenzied Tear: Raptor Strike/Mongoose Bite → 20% chance extra pet attack
+  // Frenzied Tear: Raptor Strike → 20% chance extra pet attack
   if (spell.key === "raptor_strike" && talents.has("furiousAssault")) {
     if (rollPRD("frenzied_tear", 0.20, rng, prdState)) {
       state.frenziedTearProcs++;
@@ -746,11 +746,14 @@ function applySpellDots(
     }
   }
 
-  // Serpent Sting
-  if (spell.key === "serpent_sting") {
-    const dotInfo = DOT_DB["serpent_sting"];
+  // Flamefang Pitch DoT
+  if (spell.key === "flamefang_pitch") {
+    const dotInfo = DOT_DB["flamefang_pitch_dot"];
     if (dotInfo) {
-      applyDot(state, queue, "serpent_sting", 0, dotInfo, state.currentAP);
+      const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
+      for (let t = 0; t < targets; t++) {
+        applyDot(state, queue, "flamefang_pitch_dot", t, dotInfo, state.currentAP);
+      }
     }
   }
 }
@@ -940,6 +943,20 @@ function initializeCooldowns(state: CombatState, talents: { activeTalents: Set<s
     state.cooldowns.init("takedown", 1, cd);
   }
 
+  // Flamefang Pitch: 1 charge, 15s
+  if (talents.activeTalents.has("flamefangPitch")) {
+    state.cooldowns.init("flamefang_pitch", 1, 15000);
+  }
+
+  // Moonlight Chakram: 1 charge, 20s
+  if (talents.activeTalents.has("moonlightChakram")) {
+    state.cooldowns.init("moonlight_chakram", 1, 20000);
+  }
+
+  // Death Chakram: 1 charge, 45s
+  if (talents.activeTalents.has("deathChakram")) {
+    state.cooldowns.init("death_chakram", 1, 45000);
+  }
 }
 
 // ── Scheduling helpers ────────────────────────────────────────

@@ -1,8 +1,12 @@
 // @ts-nocheck
 import { useRef, useState, useEffect } from "react";
+import type { FightStyle } from "@/utils/simcProfileBuilder";
+import { buildSimcProfile } from "@/utils/simcProfileBuilder";
 import { NavLink } from "@/components/NavLink";
-import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
+import { BlizzardTalentTree, type BlizzardTalentTreeHandle } from "@/components/BlizzardTalentTree";
+import { toast } from "@/hooks/use-toast";
 import survivalIconImg from "@/assets/survival-icon.png";
+import talentOptimizerBg from "@/assets/talent-optimizer-bg.png";
 
 const C = {
   pageBg:"#d4dae2", surface:"#1c2333", surface2:"#242d3f", surface3:"#2c3750",
@@ -23,7 +27,11 @@ const NAV_LINKS = [
 export default function TalentOptimizer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
+  const treeRef = useRef<BlizzardTalentTreeHandle>(null);
   const [treeScale, setTreeScale] = useState(1);
+  const [isHovering, setIsHovering] = useState(false);
+  const [fightStyle, setFightStyle] = useState<FightStyle>("st");
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -41,6 +49,36 @@ export default function TalentOptimizer() {
     requestAnimationFrame(measure);
     return () => ro.disconnect();
   }, []);
+
+  const handleCopySimc = () => {
+    if (!treeRef.current) return;
+    const talents = treeRef.current.getSelectedTalents();
+    const heroKey = treeRef.current.getActiveHeroKey();
+    const heroTree = heroKey === "packLeader" ? "pack_leader" : "sentinel";
+
+    const selectedTalents = talents.map(t => ({
+      nodeId: 0,
+      talentId: 0,
+      spellId: t.spellId,
+      name: t.name,
+      rank: t.rank,
+      section: t.section,
+    }));
+
+    const result = buildSimcProfile(selectedTalents, {
+      heroTree: heroTree as any,
+      fightStyle,
+    });
+
+    navigator.clipboard.writeText(result.profileString).then(() => {
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+      toast({
+        title: "SimC string copied!",
+        description: `${result.summary.talentCount} talents · ${result.summary.gearSlots} gear slots · ${result.summary.fightStyle}`,
+      });
+    });
+  };
 
   return (
     <div style={{ minHeight:"100vh", background:C.pageBg, color:C.textPri,
@@ -103,37 +141,124 @@ export default function TalentOptimizer() {
       </header>
 
       {/* ── Page body ─────────────────────────────────────── */}
-      <main style={{ maxWidth:1400, margin:"0 auto", padding:"32px 28px 64px" }}>
+      <main style={{ maxWidth:1470, margin:"0 auto", padding:"32px 28px 64px" }}>
         <h1 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:22, fontWeight:900,
           color:C.sentClr, letterSpacing:3, margin:0, marginBottom:24, textTransform:"uppercase" }}>
           Talent Optimizer
         </h1>
 
-        {/* Dark panel wrapping the talent tree — matches Custom Loadout style */}
+        {/* Outer darker panel */}
         <div style={{
-          background:"linear-gradient(160deg,#0d1117 0%,#1c2333 50%,#0f1a2e 100%)",
-          border:`1px solid ${C.border}`,
-          borderRadius:12,
-          padding:"24px 16px 32px",
-          overflow:"hidden",
+          background:"linear-gradient(160deg,#0d1117 0%,#121a28 50%,#0f1520 100%)",
+          border:`1px solid #1a2236`,
+          borderRadius:14,
+          padding:"20px 16px 24px",
         }}>
-          <div ref={containerRef} style={{ width:"100%", overflow:"hidden" }}>
-            <div
-              ref={innerRef}
-              style={{
-                transformOrigin:"top center",
-                transform:`scale(${treeScale})`,
-                display:"inline-flex",
-                justifyContent:"center",
-                width:"100%",
-                minWidth:"fit-content",
-              }}
-            >
-              <BlizzardTalentTree />
+          {/* Inner lighter panel with the talent tree */}
+          <div
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            style={{
+              background: `linear-gradient(160deg,#1a2235 0%,#1e2940 50%,#1a2538 100%)`,
+              border:`1px solid #2e3a50`,
+              borderRadius:10,
+              padding:"24px 16px 32px",
+              overflow:"visible",
+              position:"relative",
+            }}>
+            {/* Background image layer with conditional blur */}
+            <div style={{
+              position:"absolute", inset:0, borderRadius:10,
+              backgroundImage:`url(${talentOptimizerBg})`,
+              backgroundSize:"cover", backgroundPosition:"center",
+              transition:"filter .4s ease",
+              filter: isHovering ? "blur(3px) brightness(0.6)" : "none",
+              pointerEvents:"none",
+              zIndex:0,
+            }} />
+            {/* Content layer */}
+            <div style={{ position:"relative", zIndex:1 }}>
+            {/* Fight style toggle + Copy SimC — top right, stacked */}
+            <div style={{ position:"absolute", top:10, right:14, zIndex:10, display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
+              <FightStyleToggle active={fightStyle} onChange={setFightStyle} />
+              <button
+                onClick={handleCopySimc}
+                style={{
+                  padding:"4px 14px",
+                  fontSize:10,
+                  fontFamily:"'Rajdhani',sans-serif",
+                  fontWeight:700,
+                  letterSpacing:1.5,
+                  textTransform:"uppercase",
+                  border:`1px solid ${copyFeedback ? "rgba(56,189,248,.5)" : "rgba(217,119,6,.4)"}`,
+                  borderRadius:6,
+                  cursor:"pointer",
+                  transition:"all .2s",
+                  background: copyFeedback ? "rgba(56,189,248,.15)" : "rgba(217,119,6,.15)",
+                  color: copyFeedback ? "#38bdf8" : "#fbbf24",
+                }}
+              >
+                {copyFeedback ? "✓ Copied!" : "📋 Copy SimC"}
+              </button>
+            </div>
+            <div ref={containerRef} style={{ width:"100%", overflow:"visible" }}>
+              <div
+                ref={innerRef}
+                style={{
+                  transformOrigin:"top left",
+                  transform:`scale(${treeScale})`,
+                  display:"inline-flex",
+                  justifyContent:"flex-start",
+                  width:"100%",
+                  minWidth:"fit-content",
+                  paddingLeft:"2%",
+                }}
+              >
+                <BlizzardTalentTree ref={treeRef} fightStyle={fightStyle} />
+              </div>
+            </div>
             </div>
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function FightStyleToggle({ active, onChange }: { active: FightStyle; onChange: (fs: FightStyle) => void }) {
+  const styles: { key: FightStyle; label: string }[] = [
+    { key: "st", label: "ST" },
+    { key: "cleave", label: "Cleave" },
+    { key: "aoe", label: "AoE" },
+  ];
+
+  return (
+    <div style={{
+      display: "flex", borderRadius: 6, overflow: "hidden",
+      border: "1px solid #2e3a50",
+    }}>
+      {styles.map(({ key, label }) => (
+        <button
+          key={key}
+          onClick={() => onChange(key)}
+          style={{
+            padding: "4px 12px",
+            fontSize: 10,
+            fontFamily: "'Rajdhani',sans-serif",
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            textTransform: "uppercase",
+            border: "none",
+            cursor: "pointer",
+            transition: "all .15s",
+            background: active === key ? "rgba(217,119,6,.25)" : "rgba(15,21,32,.7)",
+            color: active === key ? "#fbbf24" : "#5a6a82",
+            borderRight: "1px solid #2e3a50",
+          }}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

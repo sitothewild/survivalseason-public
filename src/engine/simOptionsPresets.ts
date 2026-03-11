@@ -13,10 +13,10 @@ export const FULL_RAID_OPTIONS: SimOptions = {
     mysticTouch: true,
     huntersMark: true,
   },
-  phial: "alchemical_chaos",
-  food: "mastery_food",
-  potion: "tempered_potion",
-  weaponEnhancement: "ironclaw_whetstone",
+  phial: "fleeting_magisters",
+  food: "silvermoon_parade",
+  potion: "lights_potential",
+  weaponEnhancement: "thalassian_phoenix_oil",
   augmentRune: true,
   enchants: "auto",
   gems: {
@@ -36,10 +36,10 @@ export const MPLUS_CASUAL_OPTIONS: SimOptions = {
     mysticTouch: false,   // no monk in many groups
     huntersMark: true,
   },
-  phial: "alchemical_chaos",
-  food: "mastery_food",
+  phial: "fleeting_magisters",
+  food: "silvermoon_parade",
   potion: "none",
-  weaponEnhancement: "algari_mana_oil",
+  weaponEnhancement: "farstrider_oil",
   augmentRune: false,
   enchants: "auto",
   gems: {

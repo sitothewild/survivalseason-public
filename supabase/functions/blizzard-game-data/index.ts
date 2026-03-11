@@ -160,6 +160,14 @@ serve(async (req) => {
         break;
       }
 
+      // Get spell media (icon URL)
+      case "spell-media": {
+        const { spellId } = params;
+        if (!spellId) throw new Error("spellId is required");
+        result = await blizzardGet(`/data/wow/media/spell/${spellId}`, region, "static");
+        break;
+      }
+
       // Search spells by name
       case "spell-search": {
         const { name, page = 1 } = params;
@@ -389,8 +397,54 @@ serve(async (req) => {
         break;
       }
 
+      // Search for enchant items (Item Enhancement consumables)
+      case "enchant-search": {
+        const { name, slot, page = 1 } = params;
+        const token = await getAccessToken(region);
+        const host = `${region}.api.blizzard.com`;
+        // Item class 0 = Consumable, subclass 6 = Item Enhancement (enchants, armor kits, etc.)
+        // We can also search by name for specific enchants
+        let searchUrl = `https://${host}/data/wow/search/item?namespace=static-${region}&orderby=id:desc&_page=${page}`;
+        if (name) searchUrl += `&name.en_US=${encodeURIComponent(name)}`;
+        // Filter to Item Enhancement category
+        searchUrl += `&itemSubclass.name.en_US=Item%20Enhancement`;
+        const resp = await fetch(searchUrl, { headers: { Authorization: `Bearer ${token}` } });
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`Enchant search failed: ${resp.status} ${text}`);
+        }
+        result = await resp.json();
+        break;
+      }
+
+      // Get profession index
+      case "profession-index": {
+        result = await blizzardGet("/data/wow/profession/index", region, "static");
+        break;
+      }
+
+      // Get profession recipes (e.g., Enchanting = profession 333)
+      case "profession-recipes": {
+        const { professionId, skillTierId } = params;
+        if (!professionId) throw new Error("professionId is required");
+        if (skillTierId) {
+          result = await blizzardGet(`/data/wow/profession/${professionId}/skill-tier/${skillTierId}`, region, "static");
+        } else {
+          result = await blizzardGet(`/data/wow/profession/${professionId}`, region, "static");
+        }
+        break;
+      }
+
+      // Get a specific recipe
+      case "recipe": {
+        const { recipeId } = params;
+        if (!recipeId) throw new Error("recipeId is required");
+        result = await blizzardGet(`/data/wow/recipe/${recipeId}`, region, "static");
+        break;
+      }
+
       default:
-        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, spell, spell-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch, talent-tree-index, talent-tree, talent-tree-nodes, talent-tree-full`);
+        throw new Error(`Unknown action: ${action}. Supported: item, item-media, item-search, item-search, enchant-search, profession-index, profession-recipes, recipe, spell, spell-search, specialization, class, item-classes, item-subclass, item-set, races, items-batch, talent-tree-index, talent-tree, talent-tree-nodes, talent-tree-full`);
     }
 
     return new Response(JSON.stringify(result), {

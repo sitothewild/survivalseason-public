@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // engine/SpellDB.ts
 // Spell definitions, DoT rules, and ability metadata for the sim.
-// All AP coefficients from sc_hunter.cpp (Midnight branch).
+// All AP coefficients from sc_hunter.cpp (Midnight 12.0 branch).
 // ─────────────────────────────────────────────────────────────
 
 export type DamageSchool = "physical" | "nature" | "fire" | "shadow" | "arcane";
@@ -47,9 +47,10 @@ export interface DotInfo {
   aoeTargetCap: number;
 }
 
-// ── Spell Registry ────────────────────────────────────────────
+// ── Spell Registry (Midnight 12.0) ───────────────────────────
 
 export const SPELL_DB: Record<string, SpellInfo> = {
+  // ─── Core Abilities ────────────────────────────────────────
   auto_attack: {
     id: 0, key: "auto_attack", label: "Auto Attack",
     apCoef: 0.85, focusCost: 0, cooldownMs: 0, charges: 0,
@@ -82,6 +83,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     triggersGcd: true, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
   },
+  // ─── Midnight 12.0 New Abilities ───────────────────────────
   boomstick: {
     id: 0, key: "boomstick", label: "Boomstick",
     apCoef: 3.60, focusCost: 0, cooldownMs: 60000, charges: 1,
@@ -114,6 +116,30 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     triggersGcd: true, requiresTalent: "carve", requiresHero: "",
     consumesTots: true, grantsTotsStack: false,
   },
+  flamefang_pitch: {
+    id: 0, key: "flamefang_pitch", label: "Flamefang Pitch",
+    apCoef: 1.20, focusCost: 0, cooldownMs: 15000, charges: 1,
+    gcdMs: 1500, school: "fire", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "flamefangPitch", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+  },
+  moonlight_chakram: {
+    id: 0, key: "moonlight_chakram", label: "Moonlight Chakram",
+    apCoef: 0.90, focusCost: 0, cooldownMs: 20000, charges: 1,
+    gcdMs: 1500, school: "arcane", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "moonlightChakram", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+  },
+  death_chakram: {
+    id: 375891, key: "death_chakram", label: "Death Chakram",
+    apCoef: 0.75, focusCost: 0, cooldownMs: 45000, charges: 1,
+    gcdMs: 1500, school: "shadow", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "deathChakram", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+  },
   raptor_swipe: {
     id: 0, key: "raptor_swipe", label: "Raptor Swipe",
     apCoef: 1.85, focusCost: 0, cooldownMs: 0, charges: 0,
@@ -130,7 +156,26 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     triggersGcd: false, requiresTalent: "strikeAsOne", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
   },
-  // Sentinel hero
+  // ─── Pet Abilities ─────────────────────────────────────────
+  pet_claw: {
+    id: 16827, key: "pet_claw", label: "Pet (Claw)",
+    apCoef: 0.40, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  pet_melee: {
+    id: 0, key: "pet_melee", label: "Pet Melee",
+    apCoef: 0.30, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
+  // ─── Sentinel Hero Tree ────────────────────────────────────
   lunar_storm: {
     id: 450384, key: "lunar_storm", label: "Lunar Storm",
     apCoef: 1.20, focusCost: 0, cooldownMs: 0, charges: 0,
@@ -138,6 +183,15 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "lunarStorm", requiresHero: "sentinel",
     consumesTots: false, grantsTotsStack: false,
+  },
+  sentinel_mark: {
+    id: 0, key: "sentinel_mark", label: "Sentinel Mark",
+    apCoef: 0.60, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "arcane", isPet: false, aoeTargetCap: 8,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "", requiresHero: "sentinel",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
   },
   sentinel_owl: {
     id: 0, key: "sentinel_owl", label: "Sentinel Owl",
@@ -147,7 +201,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     triggersGcd: false, requiresTalent: "", requiresHero: "sentinel",
     consumesTots: false, grantsTotsStack: false,
   },
-  // Pack Leader hero
+  // ─── Pack Leader Hero Tree ─────────────────────────────────
   pack_leader_beasts: {
     id: 0, key: "pack_leader_beasts", label: "Pack Leader Beasts",
     apCoef: 2.20, focusCost: 0, cooldownMs: 0, charges: 0,
@@ -172,17 +226,20 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     triggersGcd: false, requiresTalent: "packCoordination", requiresHero: "pack_leader",
     consumesTots: false, grantsTotsStack: false,
   },
+  bear_rend: {
+    id: 0, key: "bear_rend", label: "Bear (Rend + Melee)",
+    apCoef: 0.45, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "", requiresHero: "pack_leader",
+    consumesTots: false, grantsTotsStack: false,
+    consumesMfStacks: false, grantsMfStack: false,
+  },
 };
 
-// ── DoT Registry ──────────────────────────────────────────────
+// ── DoT Registry (Midnight 12.0) ─────────────────────────────
 
 export const DOT_DB: Record<string, DotInfo> = {
-  serpent_sting: {
-    key: "serpent_sting", spellKey: "serpent_sting",
-    pandemic: true, durationMs: 12000, tickIntervalMs: 3000,
-    apCoef: 0.25, snapshots: ["ap"], school: "nature",
-    bypassesArmor: true, aoeTargetCap: 1,
-  },
   wildfire_bomb_dot: {
     key: "wildfire_bomb_dot", spellKey: "wildfire_bomb",
     pandemic: true, durationMs: 6000, tickIntervalMs: 1000,
@@ -213,6 +270,12 @@ export const DOT_DB: Record<string, DotInfo> = {
     apCoef: 0.30, snapshots: [], school: "arcane",
     bypassesArmor: true, aoeTargetCap: 5,
   },
+  flamefang_pitch_dot: {
+    key: "flamefang_pitch_dot", spellKey: "flamefang_pitch",
+    pandemic: true, durationMs: 8000, tickIntervalMs: 2000,
+    apCoef: 0.20, snapshots: ["ap"], school: "fire",
+    bypassesArmor: true, aoeTargetCap: 5,
+  },
 };
 
 // ── Multi-Target Rules ────────────────────────────────────────
@@ -224,15 +287,24 @@ export interface AoeRule {
 }
 
 export const AOE_RULES: Record<string, AoeRule> = {
-  raptor_strike:      { targetCap: 1, splitDamage: false },
-  kill_command:       { targetCap: 1, splitDamage: false },
-  wildfire_bomb:      { targetCap: 8, splitDamage: false },
-  carve:              { targetCap: 5, splitDamage: false },
-  sentinel_owl:       { targetCap: 8, splitDamage: false },
-  lunar_storm:        { targetCap: 5, splitDamage: false },
-  pack_leader_beasts: { targetCap: 3, splitDamage: false },
-  serpent_sting:      { targetCap: 1, splitDamage: false },
-  boomstick:          { targetCap: 5, splitDamage: false },
-  raptor_swipe:       { targetCap: 5, splitDamage: false },
-  strike_as_one:      { targetCap: 1, splitDamage: false },
+  raptor_strike:        { targetCap: 1, splitDamage: false },
+  kill_command:         { targetCap: 1, splitDamage: false },
+  wildfire_bomb:        { targetCap: 8, splitDamage: false },
+  boomstick:            { targetCap: 5, splitDamage: false },
+  takedown:             { targetCap: 1, splitDamage: false },
+  carve:                { targetCap: 5, splitDamage: false },
+  serpent_sting:        { targetCap: 1, splitDamage: false },
+  flamefang_pitch:      { targetCap: 5, splitDamage: false },
+  moonlight_chakram:    { targetCap: 5, splitDamage: false },
+  death_chakram:        { targetCap: 5, splitDamage: false },
+  raptor_swipe:         { targetCap: 5, splitDamage: false },
+  strike_as_one:        { targetCap: 1, splitDamage: false },
+  sentinel_owl:         { targetCap: 8, splitDamage: false },
+  sentinel_mark:        { targetCap: 8, splitDamage: false },
+  lunar_storm:          { targetCap: 5, splitDamage: false },
+  pack_leader_beasts:   { targetCap: 3, splitDamage: false },
+  pack_coordination:    { targetCap: 1, splitDamage: false },
+  bear_rend:            { targetCap: 1, splitDamage: false },
+  pet_claw:             { targetCap: 1, splitDamage: false },
+  pet_melee:            { targetCap: 1, splitDamage: false },
 };

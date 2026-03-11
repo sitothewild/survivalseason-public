@@ -265,10 +265,9 @@ describe("SpellDB", () => {
   });
 
   it("has DoT definitions", () => {
-    expect(DOT_DB["serpent_sting"]).toBeDefined();
     expect(DOT_DB["wildfire_bomb_dot"]).toBeDefined();
-    expect(DOT_DB["serpent_sting"].pandemic).toBe(true);
-    expect(DOT_DB["serpent_sting"].snapshots).toContain("ap");
+    expect(DOT_DB["wildfire_bomb_dot"].school).toBe("fire");
+    expect(DOT_DB["flamefang_pitch_dot"]).toBeDefined();
     // Internal bleeding does NOT snapshot
     expect(DOT_DB["internal_bleeding"].snapshots).toEqual([]);
   });
@@ -286,7 +285,7 @@ describe("Determinism", () => {
     const r2 = runSimulation(input);
 
     expect(r1.meanDps).toBe(r2.meanDps);
-    expect(r1.totalDamage).toBeUndefined(); // not on result, but breakdown should match
+    // breakdown should match across identical seed runs
     expect(r1.breakdown.length).toBe(r2.breakdown.length);
     for (let i = 0; i < r1.breakdown.length; i++) {
       expect(r1.breakdown[i].damage).toBe(r2.breakdown[i].damage);
@@ -408,7 +407,7 @@ function createTestInput(hero: HeroTree, seed: number): SimInput {
     "flanked", "primalSurge", "raptorSwipe",
     "alphaPredator", "keenEyesight", "masterMarksman",
     "serratedShots", "deathChakram", "killerInstinct",
-    "flankerAdvantage",
+    "flankerAdvantage", "flamefangPitch", "moonlightChakram",
   ]);
 
   // Add hero-specific talents

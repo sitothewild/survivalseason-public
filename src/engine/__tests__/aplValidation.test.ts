@@ -73,7 +73,7 @@ actions+=/raptor_strike`);
   it("accepts known condition patterns without warnings", () => {
     const result = validateAPL(`actions=auto_attack
 actions+=/raptor_strike,if=focus>=60&buff.tip_of_the_spear.stack>=2
-actions+=/serpent_sting,if=!dot.serpent_sting.ticking
+actions+=/wildfire_bomb,if=cooldown.wildfire_bomb.charges>=1
 actions+=/kill_command,if=cooldown.kill_command.ready`);
     expect(result.valid).toBe(true);
     expect(result.warnings).toHaveLength(0);
@@ -174,12 +174,12 @@ describe("getDefaultAPLKey", () => {
     expect(getDefaultAPLKey("sentinel", "raid_st")).toBe("sentinel_raid_st");
   });
 
-  it("returns pack_leader_raid_st for packLeader + raid_st", () => {
-    expect(getDefaultAPLKey("packLeader", "raid_st")).toBe("pack_leader_raid_st");
+  it("returns pack_leader_raid_st for pack_leader + raid_st", () => {
+    expect(getDefaultAPLKey("pack_leader", "raid_st")).toBe("pack_leader_raid_st");
   });
 
   it("returns mplus_aoe for non-raid fight styles", () => {
     expect(getDefaultAPLKey("sentinel", "mplus_pull")).toBe("sentinel_mplus_aoe");
-    expect(getDefaultAPLKey("packLeader", "raid_cleave")).toBe("pack_leader_mplus_aoe");
+    expect(getDefaultAPLKey("pack_leader", "mplus_pull")).toBe("pack_leader_mplus_aoe");
   });
 });
