@@ -2965,7 +2965,7 @@ export default function SurvivalHunterSim() {
                             </label>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim }}>ENCHANTS</div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 1.5, color: C.textDim }}>ENCHANTS</div>
                             <div style={{ display: "flex", gap: 4 }}>
                               <button onClick={() => setEnchantMode('auto')}
                                 style={{
