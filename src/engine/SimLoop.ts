@@ -40,7 +40,6 @@ const MONGOOSE_FURY_DURATION_MS = 5000;
 const TIP_MAX_STACKS = 2;
 const TIP_DAMAGE_PER_STACK = 0.25;
 const TAKEDOWN_DURATION_MS = 8000;
-const COORDINATED_ASSAULT_DURATION_MS = 20000;
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
