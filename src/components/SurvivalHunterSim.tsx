@@ -1028,9 +1028,9 @@ export default function SurvivalHunterSim() {
   const [simMode, setSimMode] = useState('single');
   const [fightStyle, setFightStyle] = useState('patchwerk');
   const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({ battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true });
-  const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered' });
+  const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'fleetingMagisters', food: 'silvermoonParade', potion: 'lightsPotential' });
   // Advanced Options — engine-driven SimOptions state
-  const [weaponEnhancement, setWeaponEnhancement] = useState('ironclaw_whetstone');
+  const [weaponEnhancement, setWeaponEnhancement] = useState('thalassian_phoenix_oil');
   const [augmentRune, setAugmentRune] = useState(true);
   const [gemPrimaryStat, setGemPrimaryStat] = useState<'crit' | 'haste' | 'mastery' | 'vers'>('mastery');
   const [gemSockets, setGemSockets] = useState(6);
