@@ -98,7 +98,7 @@ export function simResultToLegacy(
       avgHit: Math.round(ab.avgHit),
       crits: Math.round(ab.casts * 0.3), // Approximate crit rate
       dps: Math.round(ab.dps),
-      percentage: ab.pctOfTotal * 100,
+      percentage: ab.pctOfTotal,
     };
   }
 

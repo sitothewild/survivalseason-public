@@ -51,7 +51,7 @@ export const MPLUS_CASUAL_OPTIONS: SimOptions = {
   has4pc: true,
 };
 
-/** Naked: no external buffs, no consumables, no enhancements */
+/** Naked: no external buffs, no consumables, no enhancements, no tier, no gems/enchants */
 export const NAKED_OPTIONS: SimOptions = {
   raidBuffs: {
     battleShout: false,
@@ -64,14 +64,14 @@ export const NAKED_OPTIONS: SimOptions = {
   potion: "none",
   weaponEnhancement: "none",
   augmentRune: false,
-  enchants: "auto",
+  enchants: {},
   gems: {
-    totalSockets: 6,
+    totalSockets: 0,
     primaryStat: "mastery",
-    hasBlasphemite: true,
+    hasBlasphemite: false,
   },
-  has2pc: true,
-  has4pc: true,
+  has2pc: false,
+  has4pc: false,
 };
 
 /** Default = full raid */
