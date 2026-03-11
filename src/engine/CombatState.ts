@@ -7,6 +7,19 @@
 import type { HeroTree, PlayerStats, ResolvedBuffMultipliers } from "./types";
 import { COMBAT_RATINGS, MASTERY_SPIRIT_BOND, BUFF_DURATIONS, FOCUS_VALUES } from "./simcSpellData";
 
+// ── Combat Log Entry ──────────────────────────────────────────
+
+export interface CombatLogEntry {
+  tMs: number;
+  type: "cast" | "damage" | "buff_apply" | "buff_expire" | "buff_stack" | "focus_spend" | "focus_gain" | "dot_apply" | "dot_tick" | "dot_expire" | "proc" | "auto" | "cooldown_use";
+  ability: string;
+  detail?: string;
+  damage?: number;
+  isCrit?: boolean;
+  target?: number;
+  focus?: number;
+  stacks?: number;
+}
 // ── Aura (buff/debuff) ────────────────────────────────────────
 
 export interface Aura {
@@ -234,6 +247,10 @@ export class CombatState {
   hero: HeroTree;
   numTargets: number;
 
+  // Combat log (detailed event-by-event log for debugging/output)
+  combatLog: CombatLogEntry[] = [];
+  combatLogEnabled: boolean = false;
+
   // External buff multipliers (from SimOptions)
   /** Multiplicative damage modifier from raid debuffs (Mystic Touch, Hunter's Mark) */
   externalDmgMult: number = 1.0;
@@ -296,9 +313,15 @@ export class CombatState {
   applyAura(key: string, durationMs: number, maxStacks: number, statBuff?: Partial<Record<string, number>>): void {
     const existing = this.auras.get(key);
     if (existing) {
+      const oldStacks = existing.stacks;
       existing.expiresMs = this.nowMs + durationMs;
       existing.stacks = Math.min(existing.stacks + 1, maxStacks);
       if (statBuff) existing.statBuff = statBuff;
+      if (this.combatLogEnabled && existing.stacks !== oldStacks) {
+        this.combatLog.push({ tMs: this.nowMs, type: "buff_stack", ability: key, stacks: existing.stacks, detail: `${oldStacks} → ${existing.stacks}` });
+      } else if (this.combatLogEnabled) {
+        this.combatLog.push({ tMs: this.nowMs, type: "buff_apply", ability: key, stacks: existing.stacks, detail: "refreshed" });
+      }
     } else {
       this.auras.set(key, {
         key,
@@ -307,6 +330,9 @@ export class CombatState {
         maxStacks,
         statBuff,
       });
+      if (this.combatLogEnabled) {
+        this.combatLog.push({ tMs: this.nowMs, type: "buff_apply", ability: key, stacks: 1, detail: `${(durationMs / 1000).toFixed(1)}s` });
+      }
     }
     this.recalcStats();
   }
@@ -335,16 +361,25 @@ export class CombatState {
   tickAuras(): void {
     for (const [key, aura] of this.auras) {
       if (aura.expiresMs <= this.nowMs) {
+        if (this.combatLogEnabled) {
+          this.combatLog.push({ tMs: this.nowMs, type: "buff_expire", ability: key, stacks: aura.stacks });
+        }
         this.auras.delete(key);
       }
     }
     // Also check specific buffs
     if (this.takedownExpiresMs > 0 && this.nowMs >= this.takedownExpiresMs) {
+      if (this.combatLogEnabled) {
+        this.combatLog.push({ tMs: this.nowMs, type: "buff_expire", ability: "takedown", detail: "damage amp ended" });
+      }
       this.takedownActive = false;
       this.takedownExpiresMs = 0;
     }
     // Mongoose Fury: 14s duration, refresh DISABLED
     if (this.mongooseFuryExpiresMs > 0 && this.nowMs >= this.mongooseFuryExpiresMs) {
+      if (this.combatLogEnabled) {
+        this.combatLog.push({ tMs: this.nowMs, type: "buff_expire", ability: "mongoose_fury", stacks: this.mongooseFuryStacks, detail: "expired" });
+      }
       this.mongooseFuryStacks = 0;
       this.mongooseFuryExpiresMs = 0;
     }
@@ -367,6 +402,9 @@ export class CombatState {
     if (targetId >= 0 && targetId < this.targets.length) {
       this.targets[targetId].damage += finalDmg;
       this.perTargetDamage.set(targetId, (this.perTargetDamage.get(targetId) ?? 0) + finalDmg);
+    }
+    if (this.combatLogEnabled) {
+      this.combatLog.push({ tMs: this.nowMs, type: "damage", ability: abilityKey, damage: Math.round(finalDmg), isCrit, target: targetId });
     }
   }
 
@@ -402,6 +440,25 @@ export class CombatState {
       this.targets[i].clear();
       this.perTargetDamage.set(i, 0);
     }
+    this.combatLog = [];
     this.recalcStats();
+  }
+
+  /** Log a focus change event */
+  logFocus(ability: string, amount: number, type: "spend" | "gain"): void {
+    if (!this.combatLogEnabled) return;
+    this.combatLog.push({
+      tMs: this.nowMs,
+      type: type === "spend" ? "focus_spend" : "focus_gain",
+      ability,
+      focus: Math.round(this.focus),
+      detail: `${type === "spend" ? "-" : "+"}${Math.round(Math.abs(amount))} → ${Math.round(this.focus)}`,
+    });
+  }
+
+  /** Log a proc event */
+  logProc(ability: string, detail?: string): void {
+    if (!this.combatLogEnabled) return;
+    this.combatLog.push({ tMs: this.nowMs, type: "proc", ability, detail });
   }
 }
