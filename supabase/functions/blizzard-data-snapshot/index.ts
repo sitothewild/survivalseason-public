@@ -250,10 +250,29 @@ serve(async (req) => {
       },
     };
 
-    // 8. Cache the snapshot in the database
+    // 10. Cache the snapshot in the database
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Store enchant data separately for easy access
+    const { error: enchantUpsertError } = await supabase
+      .from("simc_data_cache")
+      .upsert({
+        data_key: "blizzard_enchant_data",
+        data: {
+          enchants: uniqueEnchants,
+          enchantingProfession: snapshot.enchantingProfession,
+          enchantingRecipes: snapshot.enchantingRecipes,
+          fetchedAt: snapshot.fetchedAt,
+        },
+        github_sha: `enchant-snapshot-${Date.now()}`,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "data_key" });
+
+    if (enchantUpsertError) {
+      console.warn("[snapshot] Enchant cache upsert warning:", enchantUpsertError.message);
+    }
 
     const { error: upsertError } = await supabase
       .from("simc_data_cache")
@@ -268,7 +287,7 @@ serve(async (req) => {
       console.warn("[snapshot] Cache upsert warning:", upsertError.message);
     }
 
-    console.log(`[snapshot] Complete! ${snapshot.stats.totalSpells} spells, ${snapshot.stats.totalIcons} icons, ${snapshot.stats.classTalentNodes} class nodes, ${snapshot.stats.specTalentNodes} spec nodes`);
+    console.log(`[snapshot] Complete! ${snapshot.stats.totalSpells} spells, ${snapshot.stats.totalIcons} icons, ${snapshot.stats.classTalentNodes} class nodes, ${snapshot.stats.specTalentNodes} spec nodes, ${snapshot.stats.totalEnchants} enchants`);
 
     return new Response(JSON.stringify({
       success: true,
