@@ -209,7 +209,11 @@ export const BUFF_DURATIONS = {
   tip_of_the_spear:    { durationMs: 10000, maxStacks: 2, dmgPerStack: 0.25 },
   takedown_window:     { durationMs: 8000 },
   mongoose_fury:       { durationMs: 14000, maxStacks: 5, dmgPerStack: 0.15 },
-  bloodseeker:         { durationMs: 12000, hastePctPerTarget: 3.0 },
+  bloodseeker:         { durationMs: 12000, attackSpeedPctPerTarget: 10.0 },
+  /** Shellshock: Boomstick +40% ST damage, -5% per additional target */
+  shellshock:          { stBonusPct: 0.40, reductionPerTarget: 0.05, durationMs: 5000 },
+  /** Flanked: during Takedown window, +100% attack speed */
+  flanked_attack_speed: 1.0,
   sentinels_wisdom:    { durationMs: 15000, maxStacks: 5, critPctPerStack: 3.0 },
   hogstrider:          { durationMs: 15000 },  // hogstrider_buff spell 472640
   wyverns_cry:         { durationMs: 20000, maxStacks: 10, petDmgPerStack: 0.05 },
@@ -230,6 +234,27 @@ export const PROC_CHANCES = {
   frenzied_tear:        0.20,
   /** Tier 4pc: WFB detonation resets Boomstick CD */
   tier_4pc_boomstick:   0.20,
+} as const;
+
+// ── Talent Effect Values ────────────────────────────────────
+// Per-talent numeric effects extracted from SimC spell data.
+
+export const TALENT_EFFECTS = {
+  /** Primal Surge: KC grants +1 extra TotS stack; TotS damage per stack +5% (25%→30%) */
+  primal_surge_extra_stacks: 1,
+  primal_surge_tots_dmg_per_stack: 0.30,
+  /** Twin Fangs: Takedown grants 3 TotS stacks (instead of default 0) */
+  twin_fangs_takedown_tots: 3,
+  /** Killer Companion: Kill Command damage +10% per rank (2 ranks) */
+  killer_companion_kc_pct_per_rank: 0.10,
+  /** Sweeping Spear: Raptor Strike +10% damage per rank (2 ranks) */
+  sweeping_spear_rs_pct_per_rank: 0.10,
+  /** Flanked: Takedown +50% damage, +4 cleave targets */
+  flanked_takedown_dmg_pct: 0.50,
+  flanked_extra_targets: 4,
+  /** Wildfire Infusion: KC +15% damage, KC reduces WFB CD by 1s */
+  wildfire_infusion_kc_pct: 0.15,
+  wildfire_infusion_wfb_cdr_ms: 1000,
 } as const;
 
 // ── Sentinel Owl Counter ────────────────────────────────────

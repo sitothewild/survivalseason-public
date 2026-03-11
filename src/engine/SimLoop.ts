@@ -47,6 +47,7 @@ import {
   HOWL_BEAST_CYCLE,
   FOCUS_VALUES,
   WEAPON_NORMS,
+  TALENT_EFFECTS,
 } from "./simcSpellData";
 
 // ── Constants (sourced from simcSpellData.ts) ─────────────────
@@ -83,7 +84,7 @@ const STAMPEDE_AP_COEF = AP.stampede;
 const STAMPEDE_DURATION_MS = HOWL_BEAST_CYCLE.stampedeDurationMs;
 const STAMPEDE_TICK_MS = HOWL_BEAST_CYCLE.stampedeTickMs;
 const WYVERN_CRY_PET_DAMAGE_BONUS = BUFF_DURATIONS.wyverns_cry.petDmgPerStack;
-const BLOODSEEKER_HASTE_PER_TARGET = BUFF_DURATIONS.bloodseeker.hastePctPerTarget;
+const BLOODSEEKER_ATTACK_SPEED_PER_TARGET = BUFF_DURATIONS.bloodseeker.attackSpeedPctPerTarget / 100; // 0.10
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
@@ -542,16 +543,24 @@ function executeAbility(
   }
 
   // Tip of the Spear consumption + Strike as One trigger
+  // Primal Surge: increases TotS damage per stack from 25% → 30%
   let consumedTip = false;
   if (spell.consumesTots && state.tipOfTheSpearStacks > 0) {
-    baseDmg *= 1 + state.tipOfTheSpearStacks * TIP_DAMAGE_PER_STACK;
+    const totsDmgPerStack = input.talents.activeTalents.has("primalSurge")
+      ? TALENT_EFFECTS.primal_surge_tots_dmg_per_stack
+      : TIP_DAMAGE_PER_STACK;
+    baseDmg *= 1 + state.tipOfTheSpearStacks * totsDmgPerStack;
     state.tipOfTheSpearStacks = 0;
     consumedTip = true;
   }
 
   // Kill Command grants ToTS stacks
+  // Primal Surge: KC grants +1 additional TotS stack (2 total per KC)
   if (spell.grantsTotsStack) {
-    state.tipOfTheSpearStacks = Math.min(TIP_MAX_STACKS, state.tipOfTheSpearStacks + 1);
+    const extraStacks = input.talents.activeTalents.has("primalSurge")
+      ? TALENT_EFFECTS.primal_surge_extra_stacks : 0;
+    const stacksToGrant = 1 + extraStacks;
+    state.tipOfTheSpearStacks = Math.min(TIP_MAX_STACKS, state.tipOfTheSpearStacks + stacksToGrant);
   }
 
   // Lethal Barbs (sic_em): Kill Command and Raptor Strike generate bonus focus
@@ -582,9 +591,44 @@ function executeAbility(
     }
   }
 
+  // Twin Fangs: Takedown grants 3 TotS stacks
+  if (spell.key === "takedown" && input.talents.activeTalents.has("twinFangs")) {
+    state.tipOfTheSpearStacks = Math.min(TIP_MAX_STACKS,
+      state.tipOfTheSpearStacks + TALENT_EFFECTS.twin_fangs_takedown_tots);
+  }
+
   // Takedown: +20% damage during window for melee spenders
   if (state.takedownActive && (spell.key === "raptor_strike" || spell.key === "kill_command")) {
     baseDmg *= 1.20;
+  }
+
+  // ── Talent damage modifiers ──────────────────────────────────
+
+  // Sweeping Spear: +10% Raptor Strike damage per rank (2 ranks = +20%)
+  if (spell.key === "raptor_strike" && input.talents.activeTalents.has("sweepingSpear")) {
+    baseDmg *= 1 + TALENT_EFFECTS.sweeping_spear_rs_pct_per_rank * 2;
+  }
+
+  // Killer Companion: +10% Kill Command damage per rank (2 ranks = +20%)
+  if (spell.key === "kill_command" && input.talents.activeTalents.has("killerCompanion")) {
+    baseDmg *= 1 + TALENT_EFFECTS.killer_companion_kc_pct_per_rank * 2;
+  }
+
+  // Wildfire Infusion: +15% Kill Command damage
+  if (spell.key === "kill_command" && input.talents.activeTalents.has("wildfireInfusion")) {
+    baseDmg *= 1 + TALENT_EFFECTS.wildfire_infusion_kc_pct;
+  }
+
+  // Shellshock: Boomstick +40% ST damage, -5% per additional target
+  if (spell.key === "boomstick" && input.talents.activeTalents.has("shellshock")) {
+    const shellshockBonus = Math.max(0,
+      BUFF_DURATIONS.shellshock.stBonusPct - (state.numTargets - 1) * BUFF_DURATIONS.shellshock.reductionPerTarget);
+    baseDmg *= 1 + shellshockBonus;
+  }
+
+  // Flanked: Takedown +50% damage
+  if (spell.key === "takedown" && input.talents.activeTalents.has("flanked")) {
+    baseDmg *= 1 + TALENT_EFFECTS.flanked_takedown_dmg_pct;
   }
 
   // Crit calculation
@@ -600,10 +644,14 @@ function executeAbility(
   }
 
   // AoE target scaling
+  // Flanked: Takedown strikes 4 additional nearby targets
   const aoeRule = AOE_RULES[spell.key];
-  const effectiveTargets = aoeRule
+  let effectiveTargets = aoeRule
     ? Math.min(state.numTargets, aoeRule.targetCap)
     : 1;
+  if (spell.key === "takedown" && input.talents.activeTalents.has("flanked")) {
+    effectiveTargets = Math.min(state.numTargets, 1 + TALENT_EFFECTS.flanked_extra_targets);
+  }
 
   for (let t = 0; t < effectiveTargets; t++) {
     const targetDmg = aoeRule?.splitDamage ? finalDamage / effectiveTargets : finalDamage;
@@ -613,17 +661,19 @@ function executeAbility(
   // Apply DoTs if applicable
   applySpellDots(state, spell, queue);
 
-  // Bloodseeker: +3% haste per bleeding target (modeled as aura)
+  // Bloodseeker: +10% attack speed per bleeding target (multiplicative, NOT haste)
+  // SimC: s /= 1 + buffs.bloodseeker->check_stack_value() where default_value = 0.10
   if (input.talents.activeTalents.has("bloodseeker")) {
     let bleedingTargets = 0;
     for (const t of state.targets) {
       if (t.dots.size > 0) bleedingTargets++;
     }
-    if (bleedingTargets > 0) {
-      // Apply as haste rating buff: 3% haste per target (35.0 rating per 1%)
-      const hasteAmount = bleedingTargets * BLOODSEEKER_HASTE_PER_TARGET * COMBAT_RATINGS.haste;
-      state.applyAura("bloodseeker", 12000, 1, { haste: hasteAmount });
-    }
+    state.bloodseekerStacks = bleedingTargets;
+  }
+
+  // Wildfire Infusion: Kill Command reduces Wildfire Bomb cooldown by 1s
+  if (spell.key === "kill_command" && input.talents.activeTalents.has("wildfireInfusion")) {
+    state.cooldowns.reduceCooldown("wildfire_bomb", TALENT_EFFECTS.wildfire_infusion_wfb_cdr_ms, state.nowMs);
   }
 
   // FIX #4: Raptor Strike triggers Mongoose Fury stack
@@ -777,9 +827,11 @@ function handleAutoAttack(
 
   state.recordDamage("auto_attack", dmg, isCrit, 0);
 
-  // Schedule next auto
+  // Schedule next auto (Bloodseeker: multiplicative attack speed bonus)
   const hasteMult = 1 + state.currentHastePct / 100;
-  const swingMs = Math.round(meleeSwingMs / hasteMult);
+  const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
+  const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
+  const swingMs = Math.round(meleeSwingMs / (hasteMult * bloodseekerMult * flankedAsMult));
   queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
 
   if (capture) {
@@ -819,7 +871,9 @@ function handleOffHandAutoAttack(
   state.recordDamage("auto_attack_oh", dmg, isCrit, 0);
 
   const hasteMult = 1 + state.currentHastePct / 100;
-  const swingMs = Math.round((ohSpeed * 1000) / hasteMult);
+  const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
+  const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
+  const swingMs = Math.round((ohSpeed * 1000) / (hasteMult * bloodseekerMult * flankedAsMult));
   queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
 
   if (capture) {
@@ -846,9 +900,10 @@ function handlePetMelee(
   // Pet melee is physical, armor already applied by computeDamage
   state.recordDamage("pet_melee", dmg, isCrit, 0);
 
-  // Schedule next pet melee
+  // Schedule next pet melee (Bloodseeker affects pet attack speed too)
   const hasteMult = 1 + state.currentHastePct / 100;
-  const nextMs = state.nowMs + Math.round(PET_SWING_MS / hasteMult);
+  const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
+  const nextMs = state.nowMs + Math.round(PET_SWING_MS / (hasteMult * bloodseekerMult));
   if (nextMs <= endMs) {
     queue.enqueue({ tMs: nextMs, priority: EventPriority.AUTO_ATTACK, type: "pet_melee" });
   }
@@ -875,9 +930,10 @@ function handlePetClaw(
     incrementPackCounter(state, input, rng);
   }
 
-  // Schedule next claw
+  // Schedule next claw (Bloodseeker affects pet too)
   const hasteMult = 1 + state.currentHastePct / 100;
-  const nextMs = state.nowMs + Math.round(PET_CLAW_CD_MS / hasteMult);
+  const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
+  const nextMs = state.nowMs + Math.round(PET_CLAW_CD_MS / (hasteMult * bloodseekerMult));
   if (nextMs <= endMs) {
     queue.enqueue({ tMs: nextMs, priority: EventPriority.AUTO_ATTACK, type: "pet_claw" });
   }
