@@ -953,19 +953,19 @@ function initializeCooldowns(state: CombatState, talents: { activeTalents: Set<s
     state.cooldowns.init("takedown", 1, cd);
   }
 
-  // Coordinated Assault
-  if (talents.activeTalents.has("coordinatedAssault")) {
-    state.cooldowns.init("coordinated_assault", 1, 120000);
+  // Flamefang Pitch: 1 charge, 15s
+  if (talents.activeTalents.has("flamefangPitch")) {
+    state.cooldowns.init("flamefang_pitch", 1, 15000);
   }
 
-  // Flanking Strike
-  if (talents.activeTalents.has("flankingStrike")) {
-    state.cooldowns.init("flanking_strike", 1, 30000);
+  // Moonlight Chakram: 1 charge, 20s
+  if (talents.activeTalents.has("moonlightChakram")) {
+    state.cooldowns.init("moonlight_chakram", 1, 20000);
   }
 
-  // Fury of the Eagle
-  if (talents.activeTalents.has("furyOfTheEagle")) {
-    state.cooldowns.init("fury_of_the_eagle", 1, 45000);
+  // Death Chakram: 1 charge, 45s
+  if (talents.activeTalents.has("deathChakram")) {
+    state.cooldowns.init("death_chakram", 1, 45000);
   }
 }
 
