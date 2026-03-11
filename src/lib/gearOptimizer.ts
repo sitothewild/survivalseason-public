@@ -334,96 +334,170 @@ export interface EnchantDef {
 }
 
 export const MIDNIGHT_ENCHANTS: EnchantDef[] = [
-  // ─ Weapon ─
+  // ─ Weapon (Main Hand / 2H) ─
   {
-    id: 7462, name: 'Stonebound Artistry', slot: 'Weapon',
+    id: 52977, name: 'Enchant Weapon - Arcane Mastery', slot: 'Weapon',
     stat: 'mastery', primaryRating: 1018,
-    sentinelRank: 2, packLeaderRank: 1,
-    notes: 'Highest Mastery weapon enchant. BiS for Pack Leader (Spirit Bond pet scaling). Sentinel prefers Radiant Power for crit synergy but this is a strong second.',
+    sentinelRank: 1, packLeaderRank: 1,
+    notes: 'BiS weapon enchant for both specs. Mastery (Spirit Bond) scales pet damage + player damage. Use on Main Hand or 2H.',
   },
   {
-    id: 7466, name: 'Authority of Radiant Power', slot: 'Weapon',
+    id: 52976, name: 'Enchant Weapon - Acuity of the Ren\'dorei', slot: 'Weapon',
     stat: 'crit', primaryRating: 1018,
-    sentinelRank: 1, packLeaderRank: 2,
-    notes: "Highest Crit weapon enchant. BiS for Sentinel — Moonlight Chakram crits, Lethal Calibration, Vulnerability, and Stargazer all multiply crit value. Pack Leader prefers Stonebound Artistry.",
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: "Crit weapon enchant. Use on Off Hand if dual-wielding. Sentinel can use as MH alternative if crit-starved.",
   },
   {
-    id: 7464, name: 'Authority of Air', slot: 'Weapon',
+    id: 52975, name: 'Enchant Weapon - Flames of the Sin\'dorei', slot: 'Weapon',
     stat: 'haste', primaryRating: 1018,
     sentinelRank: 3, packLeaderRank: 3,
-    notes: 'Highest Haste weapon enchant. Use only if heavily haste-starved (below 12%). Generally outperformed by Crit or Mastery for Survival.',
+    notes: 'Haste weapon enchant. Only use if severely haste-starved (<12%).',
+  },
+  {
+    id: 52946, name: 'Enchant Weapon - Strength of Halazzi', slot: 'Weapon',
+    stat: 'agi', primaryRating: 680,
+    sentinelRank: 3, packLeaderRank: 3,
+    notes: 'Flat Agility weapon enchant. Lower total value than secondary stat enchants for Survival.',
+  },
+  {
+    id: 52947, name: "Enchant Weapon - Jan'alai's Precision", slot: 'Weapon',
+    stat: 'crit', primaryRating: 900,
+    sentinelRank: 2, packLeaderRank: 3,
+    notes: 'Crit proc weapon enchant. Alternative to Arcane Mastery for Sentinel crit builds.',
+  },
+  {
+    id: 52948, name: "Enchant Weapon - Berserker's Rage", slot: 'Weapon',
+    stat: 'haste', primaryRating: 900,
+    sentinelRank: 3, packLeaderRank: 3,
+    notes: 'Haste proc weapon enchant. Niche use only.',
+  },
+  // ─ Head ─
+  {
+    id: 52965, name: 'Enchant Helm - Empowered Rune of Avoidance', slot: 'Head',
+    stat: 'utility', primaryRating: 0,
+    sentinelRank: 1, packLeaderRank: 1,
+    notes: 'BiS helm enchant. Avoidance reduces AoE damage taken — pure survivability, no DPS alternatives for head slot.',
+  },
+  {
+    id: 52964, name: 'Enchant Helm - Rune of Avoidance', slot: 'Head',
+    stat: 'utility', primaryRating: 0,
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: 'Budget version of Empowered Rune of Avoidance. Use if Empowered version is unavailable.',
+  },
+  {
+    id: 52952, name: 'Enchant Helm - Empowered Blessing of Speed', slot: 'Head',
+    stat: 'utility', primaryRating: 0,
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: 'Movement speed helm enchant. Alternative to Avoidance for M+ kiting.',
+  },
+  // ─ Shoulders ─
+  {
+    id: 52957, name: "Enchant Shoulders - Amirdrassil's Grace", slot: 'Shoulders',
+    stat: 'utility', primaryRating: 0,
+    sentinelRank: 1, packLeaderRank: 1,
+    notes: "BiS shoulder enchant. Healing proc on damage taken — best survivability option.",
+  },
+  {
+    id: 52956, name: "Enchant Shoulders - Nature's Grace", slot: 'Shoulders',
+    stat: 'utility', primaryRating: 0,
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: "Alternative shoulder enchant with nature-themed healing.",
+  },
+  {
+    id: 52942, name: 'Enchant Shoulders - Flight of the Eagle', slot: 'Shoulders',
+    stat: 'agi', primaryRating: 120,
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: 'Flat Agility shoulder enchant. Minor DPS gain over utility options.',
   },
   // ─ Chest ─
   {
-    id: 7355, name: 'Crystalline Radiance', slot: 'Chest',
+    id: 52950, name: 'Enchant Chest - Mark of the Worldsoul', slot: 'Chest',
     stat: 'mixed', primaryRating: 0, secondaryRating: 180,
     sentinelRank: 1, packLeaderRank: 1,
-    notes: 'Splits ~180 of each secondary (Crit/Haste/Mastery/Vers). Net stat value is high due to all-stat distribution. Best chest enchant for both specs.',
+    notes: 'BiS chest enchant. Splits ~180 of each secondary (Crit/Haste/Mastery/Vers). High net stat value.',
   },
-  // ─ Cloak ─
+  {
+    id: 52935, name: 'Enchant Chest - Mark of Nalorakk', slot: 'Chest',
+    stat: 'mastery', primaryRating: 360,
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: 'Single-stat Mastery chest enchant. Use if mastery is heavily weighted.',
+  },
+  {
+    id: 52949, name: 'Enchant Chest - Mark of the Rootwarden', slot: 'Chest',
+    stat: 'vers', primaryRating: 360,
+    sentinelRank: 3, packLeaderRank: 3,
+    notes: 'Versatility chest enchant. Defensive option for progression.',
+  },
+  // ─ Cloak ─ (no new Midnight cloak enchants — utility only)
   {
     id: 7409, name: 'Winged Grace', slot: 'Cloak',
     stat: 'utility', primaryRating: 0,
     sentinelRank: 1, packLeaderRank: 1,
-    notes: 'Movement speed. No DPS impact. Standard cloak enchant for all specs — negligible throughput alternatives exist.',
+    notes: 'Movement speed. Standard cloak enchant — no DPS alternatives.',
   },
-  // ─ Bracers ─
+  // ─ Wrist ─
   {
     id: 7594, name: '+16 Agility', slot: 'Wrist',
     stat: 'agi', primaryRating: 16,
     sentinelRank: 1, packLeaderRank: 1,
-    notes: 'Flat Agility is always best-in-slot for bracers. 16 Agility scales with all damage modifiers.',
+    notes: 'Flat Agility bracer enchant. Always BiS for wrist slot.',
   },
   // ─ Legs ─
   {
-    id: 7529, name: 'Stormbound Armor Kit', slot: 'Legs',
+    id: 7529, name: "Forest Hunter's Armor Kit", slot: 'Legs',
     stat: 'mixed', primaryRating: 0, secondaryRating: 200,
     sentinelRank: 1, packLeaderRank: 1,
-    notes: 'Best physical DPS leg armor kit. Mixed Crit+Mastery stats — both valuable for Survival.',
+    notes: "BiS leg armor kit for physical DPS. Mixed Crit+Mastery stats from Leatherworking.",
   },
   // ─ Boots ─
   {
-    id: 7418, name: "Cavalry's March", slot: 'Boots',
+    id: 52938, name: "Enchant Boots - Lynx's Dexterity", slot: 'Boots',
+    stat: 'agi', primaryRating: 480,
+    sentinelRank: 1, packLeaderRank: 1,
+    notes: "BiS boot enchant — Agility + movement speed. Best for both specs.",
+  },
+  {
+    id: 52953, name: "Enchant Boots - Shaladrassil's Roots", slot: 'Boots',
     stat: 'mastery', primaryRating: 480,
-    sentinelRank: 2, packLeaderRank: 1,
-    notes: '+480 Mastery. BiS boots enchant for Pack Leader. Sentinel can use this or Scout\'s March depending on stat caps.',
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: 'Mastery boot enchant. Alternative if you prefer raw secondary stat.',
   },
   {
-    id: 7420, name: "Scout's March", slot: 'Boots',
-    stat: 'haste', primaryRating: 480,
-    sentinelRank: 3, packLeaderRank: 3,
-    notes: '+480 Haste. Third-best boots enchant. Use if heavily haste capped.',
-  },
-  {
-    id: 7419, name: "Defender's March", slot: 'Boots',
-    stat: 'vers', primaryRating: 480,
-    sentinelRank: 3, packLeaderRank: 3,
-    notes: '+480 Versatility. Defensive choice. Not recommended for pure DPS.',
+    id: 52966, name: "Enchant Boots - Farstrider's Hunt", slot: 'Boots',
+    stat: 'crit', primaryRating: 480,
+    sentinelRank: 2, packLeaderRank: 3,
+    notes: "Crit boot enchant. Sentinel alternative for crit stacking.",
   },
   // ─ Rings ─
   {
-    id: 7342, name: 'Radiant Mastery', slot: 'Ring',
+    id: 52941, name: "Enchant Ring - Zul'jin's Mastery", slot: 'Ring',
     stat: 'mastery', primaryRating: 804,
-    sentinelRank: 2, packLeaderRank: 1,
-    notes: '+804 Mastery per ring. Pack Leader: run 2× Radiant Mastery for maximum Spirit Bond value. Sentinel: 1× Mastery + 1× Crit is optimal.',
+    sentinelRank: 1, packLeaderRank: 1,
+    notes: "BiS ring enchant for both specs. +804 Mastery per ring. Run on both rings for maximum Spirit Bond value.",
   },
   {
-    id: 7344, name: 'Radiant Crit', slot: 'Ring',
+    id: 52940, name: 'Enchant Ring - Eyes of the Eagle', slot: 'Ring',
     stat: 'crit', primaryRating: 804,
-    sentinelRank: 1, packLeaderRank: 2,
-    notes: '+804 Crit Strike per ring. Sentinel BiS ring enchant — stack with Radiant Mastery on the other ring. Pack Leader can use if crit is lower than mastery.',
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: '+804 Crit per ring. Sentinel alternative — mix with Mastery on the other ring.',
   },
   {
-    id: 7343, name: 'Radiant Haste', slot: 'Ring',
+    id: 52967, name: 'Enchant Ring - Thalassian Haste', slot: 'Ring',
     stat: 'haste', primaryRating: 804,
     sentinelRank: 3, packLeaderRank: 3,
-    notes: '+804 Haste per ring. Use only if significantly haste capped vs crit/mastery.',
+    notes: '+804 Haste per ring. Use only if heavily haste-starved.',
   },
   {
-    id: 7345, name: 'Radiant Versatility', slot: 'Ring',
+    id: 52968, name: 'Enchant Ring - Thalassian Versatility', slot: 'Ring',
     stat: 'vers', primaryRating: 804,
     sentinelRank: 3, packLeaderRank: 3,
-    notes: '+804 Versatility. Worst ring enchant for DPS — flat multiplier scales least with Survival talents.',
+    notes: '+804 Versatility. Worst ring enchant for DPS.',
+  },
+  {
+    id: 52939, name: 'Enchant Ring - Amani Mastery', slot: 'Ring',
+    stat: 'mastery', primaryRating: 600,
+    sentinelRank: 2, packLeaderRank: 2,
+    notes: "Budget mastery ring enchant. Lower rating than Zul'jin's Mastery but cheaper to craft.",
   },
 ];
 
