@@ -16,6 +16,7 @@ export interface PresetBuild {
 }
 
 // ── Spec tree: core nodes taken in ALL builds (30 pts) ───────
+// Budget: 30 core + 4 variable = 34 total (incl. 4 apex points)
 
 const SPEC_CORE_POINTS: Record<string, number> = {
   kill_command: 1, wildfire_bomb: 1, raptor_strike: 1,
@@ -23,7 +24,7 @@ const SPEC_CORE_POINTS: Record<string, number> = {
   lunge: 1, boomstick: 1, strike_as_one: 1,
   bomb_choice: 1, quick_reload: 1,
   mongoose_fury: 1, ammo_choice: 1, shellshock: 1,
-  bloody_claws: 1, bonding: 1, sweeping_spear: 2, vuln_choice: 1,
+  bloody_claws: 1, sweeping_spear: 2, vuln_choice: 1,
   takedown: 1, killer_companion: 2,
   twin_fangs: 1, savagery: 2, wfb_infusion: 1,
   flanked: 1, primal_surge: 1,
@@ -41,7 +42,7 @@ const SPEC_CORE_CHOICES: Record<string, 0 | 1> = {
 // ── Spec variable nodes per build ────────────────────────────
 
 const SPEC_VARIABLES: Record<string, Record<string, number>> = {
-  // Sentinel ST: flankerAdvantage + filler (34 pts total)
+  // Sentinel ST: flankerAdvantage + filler (30 core + 4 var = 34 total)
   sentinel_st: { flankers_advantage: 1, improved_wfb: 2, sic_em: 1 },
   // Sentinel Cleave: same as ST
   sentinel_cleave: { flankers_advantage: 1, improved_wfb: 2, sic_em: 1 },

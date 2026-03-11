@@ -152,7 +152,7 @@ export function runSimulation(input: SimInput): SimResult {
     // Variance creates uniform distribution: [duration * (1-v), duration * (1+v)]
     const variance = config.durationVariance ?? 0;
     const iterDurationMs = variance > 0
-      ? Math.round(config.durationMs * (1 - variance + 2 * variance * rng.random()))
+      ? Math.round(config.durationMs * (1 - variance + 2 * variance * rng.roll()))
       : config.durationMs;
 
     const state = new CombatState(stats, config.hero, config.targets, input.buffMults);

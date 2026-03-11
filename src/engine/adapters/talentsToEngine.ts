@@ -69,7 +69,7 @@ export function buildTalentStateFromConfig(
     "guerrillaTactics", "tipOfTheSpear", "lunge",
     "boomstick", "strikeAsOne", "flamebreak",
     "quickReload", "mongooseFury", "wildfireShells",
-    "shellshock", "wallop", "bonding", "sweepingSpear",
+    "shellshock", "wallop", "sweepingSpear",
     "blackrockMunitions", "takedown", "killerCompanion",
     "twinFangs", "savagery", "wildfireInfusion",
     "flanked", "primalSurge", "raptorSwipe",
