@@ -15,6 +15,7 @@ import {
 import { BlizzardTalentTree } from "@/components/BlizzardTalentTree";
 import {
   PHIALS, FOOD_BUFFS, POTIONS, WEAPON_ENHANCEMENTS, AUGMENT_RUNES,
+  GEM_FILL_OPTIONS,
 } from "@/engine/consumables";
 import { MIDNIGHT_ENCHANTS } from "@/lib/gearOptimizer";
 import { FULL_RAID_OPTIONS, MPLUS_CASUAL_OPTIONS, NAKED_OPTIONS } from "@/engine/simOptionsPresets";
@@ -1032,7 +1033,7 @@ export default function SurvivalHunterSim() {
   // Advanced Options — engine-driven SimOptions state
   const [weaponEnhancement, setWeaponEnhancement] = useState('thalassian_phoenix_oil');
   const [augmentRune, setAugmentRune] = useState(true);
-  const [gemPrimaryStat, setGemPrimaryStat] = useState<'crit' | 'haste' | 'mastery' | 'vers'>('mastery');
+  const [gemPrimaryStat, setGemPrimaryStat] = useState<string>('mastery');
   const [gemSockets, setGemSockets] = useState(6);
   const [hasBlasphemite, setHasBlasphemite] = useState(true);
   const [has2pc, setHas2pc] = useState(false);
@@ -2973,12 +2974,18 @@ export default function SurvivalHunterSim() {
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                               <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Fill:</span>
-                              <select className="ifield" value={gemPrimaryStat} onChange={e => setGemPrimaryStat(e.target.value as any)}
-                                style={{ width: 90, padding: "4px 6px", fontSize: 12, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, cursor: "pointer" }}>
-                                <option value="mastery">Mastery</option>
-                                <option value="crit">Crit</option>
-                                <option value="haste">Haste</option>
-                                <option value="vers">Versatility</option>
+                              <select className="ifield" value={gemPrimaryStat} onChange={e => setGemPrimaryStat(e.target.value)}
+                                style={{ width: 170, padding: "4px 6px", fontSize: 11, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, cursor: "pointer" }}>
+                                <optgroup label="Single Stat (88)">
+                                  {GEM_FILL_OPTIONS.filter(g => !g.stat2).map(g => (
+                                    <option key={g.key} value={g.key}>{g.label}</option>
+                                  ))}
+                                </optgroup>
+                                <optgroup label="Dual Stat (44+44)">
+                                  {GEM_FILL_OPTIONS.filter(g => g.stat2).map(g => (
+                                    <option key={g.key} value={g.key}>{g.label}</option>
+                                  ))}
+                                </optgroup>
                               </select>
                             </div>
                             <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}

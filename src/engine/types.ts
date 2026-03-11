@@ -7,6 +7,15 @@
 export type FightStyle = "raid_st" | "mplus_pull" | "dungeon_slice";
 export type HeroTree = "sentinel" | "pack_leader";
 
+/** Gem fill stat — single stat (88 rating) or dual stat (44+44 split).
+ *  Dual-stat names use format "stat1_stat2" matching Midnight gem cuts. */
+export type GemFillStat =
+  | "crit" | "haste" | "mastery" | "vers"                          // Single-stat (88)
+  | "mastery_crit" | "mastery_haste" | "mastery_vers"              // Mastery combos
+  | "crit_mastery" | "crit_haste" | "crit_vers"                    // Crit combos
+  | "haste_mastery" | "haste_crit" | "haste_vers"                  // Haste combos
+  | "vers_mastery" | "vers_crit" | "vers_haste";                   // Vers combos
+
 // ── SimConfig ─────────────────────────────────────────────────
 
 export interface SimConfig {
@@ -219,7 +228,8 @@ export interface SimOptions {
   // ── Gems ────────────────────────────────────────────────
   gems: {
     totalSockets: number;
-    primaryStat: "crit" | "haste" | "mastery" | "vers";
+    /** Single-stat or dual-stat gem fill. Dual-stat splits 44+44 instead of 88 single. */
+    primaryStat: GemFillStat;
     hasBlasphemite: boolean;
   };
 
