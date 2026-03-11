@@ -12,6 +12,7 @@ export type HeroKey = 'sentinel' | 'packLeader';
 export interface PresetBuild {
   spec: TalentTreeState;
   hero: TalentTreeState;
+  class: TalentTreeState;
 }
 
 // ── Spec tree: core nodes taken in ALL builds (30 pts) ───────
@@ -87,6 +88,35 @@ const PACK_LEADER_HERO: TalentTreeState = {
   },
 };
 
+// ── Hunter class tree (34 pts — standard Survival PvE) ──────
+// Core DPS + utility. Same across all builds.
+
+const CLASS_PRESET: TalentTreeState = {
+  points: {
+    // Row 0 — start nodes
+    h_rejuvenating_wind: 1, h_sotf: 1, h_posthaste: 1,
+    // Row 1
+    h_natural_mending: 2, h_padded_armor: 1, h_hunters_avoidance: 1,
+    // Row 2
+    h_combat_experience: 1, h_improved_cheetah: 1, h_concussive_shot: 1,
+    // Row 3
+    h_precision_strikes: 1, h_muzzle: 1, h_serrated_tips: 2,
+    // Row 4 (gate 8)
+    h_pathfinding: 1, h_disruptive_rounds: 1, h_improved_feign: 2, h_misdirection: 1,
+    // Row 5
+    h_trigger_finger: 2, h_trap_choice: 1, h_touch_of_grass: 2, h_camouflage: 1,
+    // Row 6
+    h_improved_turtle: 1, h_specialized_arsenal: 1, h_scouts_instincts: 1,
+    // Row 7 (gate 23)
+    h_lone_survivor: 1, h_binding_shot: 1, h_born_to_be_wild: 2,
+    // Row 8
+    h_keen_eyesight: 2,
+  },
+  choiceSelections: {
+    h_trap_choice: 0, // Tar Trap (over Scare Beast)
+  },
+};
+
 // ── Public API ───────────────────────────────────────────────
 
 export function getPresetBuild(
@@ -102,5 +132,6 @@ export function getPresetBuild(
   return {
     spec: { points: specPoints, choiceSelections: specChoices },
     hero: heroKey === 'sentinel' ? SENTINEL_HERO : PACK_LEADER_HERO,
+    class: CLASS_PRESET,
   };
 }
