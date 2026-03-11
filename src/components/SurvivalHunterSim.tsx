@@ -2939,7 +2939,7 @@ export default function SurvivalHunterSim() {
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>GEMS & ENCHANTS</div>
                           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>Sockets</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>Sockets</span>
                               <select className="ifield" value={gemSockets} onChange={e => setGemSockets(+e.target.value)}
                                 style={{ width: 44, height: 24, padding: "0 4px", fontSize: 11, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 3, color: C.goldLight, cursor: "pointer" }}>
                                 {[0,1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}</option>)}
