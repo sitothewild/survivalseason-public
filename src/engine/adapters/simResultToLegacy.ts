@@ -33,12 +33,12 @@ export interface LegacySimResult {
 }
 
 export interface HeroCounters {
-  sentinelOwlProcs: number;
-  lunarStormProcs: number;
-  eyesOfEagleResets: number;
-  viciousHuntProcs: number;
-  packCoordinationProcs: number;
-  frenziedTearProcs: number;
+  sentinelOwlProcs?: number;
+  lunarStormProcs?: number;
+  eyesOfEagleResets?: number;
+  viciousHuntProcs?: number;
+  packCoordinationProcs?: number;
+  frenziedTearProcs?: number;
 }
 
 interface LegacyActionCount {
