@@ -2835,8 +2835,8 @@ export default function SurvivalHunterSim() {
 
                         {/* ── Raid Buffs (2×2 grid) ──────────── */}
                         <div style={{ marginBottom: 10 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>RAID BUFFS</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>RAID BUFFS</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             {Object.entries(RAID_BUFFS).map(([k, b]) => (
                               <label key={k}
                                 onClick={() => setRaidBuffs(p => ({ ...p, [k]: !p[k] }))}
@@ -2856,14 +2856,14 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Consumables ─────────────────────── */}
-                        <div style={{ marginBottom: 10 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>CONSUMABLES</div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>CONSUMABLES</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             {Object.entries(CONSUMABLES).map(([k, d]) => {
                               const isNone = consumables[k] === 'none';
                               return (
                                 <div key={k} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 40, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
+                                  <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>{d.label}</span>
                                   <select
                                     className="ifield"
                                     value={consumables[k]}
@@ -2885,9 +2885,9 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Weapon Enhancement ─────────────── */}
-                        <div style={{ marginBottom: 10 }}>
+                        <div style={{ marginBottom: 12 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, color: C.textDim, width: 40, flexShrink: 0, letterSpacing: 1 }}>WEAP</span>
+                            <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: C.textDim, width: 44, flexShrink: 0, letterSpacing: 1 }}>WEAP</span>
                             <select
                               className="ifield"
                               value={weaponEnhancement}
@@ -2935,11 +2935,11 @@ export default function SurvivalHunterSim() {
                         </div>
 
                         {/* ── Gems & Enchants (merged) ──────── */}
-                        <div style={{ marginBottom: 10 }}>
-                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 4 }}>GEMS & ENCHANTS</div>
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 11, letterSpacing: 2, color: C.textDim, marginBottom: 6 }}>GEMS & ENCHANTS</div>
                           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim }}>Sockets</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>Sockets</span>
                               <select className="ifield" value={gemSockets} onChange={e => setGemSockets(+e.target.value)}
                                 style={{ width: 44, height: 24, padding: "0 4px", fontSize: 11, background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 3, color: C.goldLight, cursor: "pointer" }}>
                                 {[0,1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}</option>)}
@@ -2961,11 +2961,11 @@ export default function SurvivalHunterSim() {
                             <label style={{ display: "flex", alignItems: "center", gap: 3, cursor: "pointer" }}
                               onClick={() => setHasBlasphemite(!hasBlasphemite)}>
                               <input type="checkbox" checked={hasBlasphemite} readOnly style={{ accentColor: C.gold, width: 11, height: 11, cursor: "pointer" }} />
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: hasBlasphemite ? C.goldLight : C.textDim }}>Blasphemite</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: hasBlasphemite ? C.goldLight : C.textDim }}>Blasphemite</span>
                             </label>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 7, letterSpacing: 1.5, color: C.textDim }}>ENCHANTS</div>
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, letterSpacing: 1.5, color: C.textDim }}>ENCHANTS</div>
                             <div style={{ display: "flex", gap: 4 }}>
                               <button onClick={() => setEnchantMode('auto')}
                                 style={{
