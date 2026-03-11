@@ -38,6 +38,7 @@ export function buildSimInput(
     durationMs: fightStyle === "raid_st" ? 300_000
               : fightStyle === "mplus_pull" ? 40_000
               : 180_000,
+    durationVariance: 0.2, // ±20% variance like SimC default
     iterations: 1000,
     fightStyle,
     targets: fightStyle === "raid_st" ? 1 : 5,

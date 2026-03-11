@@ -11,6 +11,8 @@ export type HeroTree = "sentinel" | "pack_leader";
 
 export interface SimConfig {
   durationMs: number;
+  /** Fight duration variance as fraction (0.0-1.0). SimC default is 0.2 (±20%). */
+  durationVariance: number;
   iterations: number;
   fightStyle: FightStyle;
   targets: number;

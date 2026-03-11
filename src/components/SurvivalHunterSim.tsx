@@ -1198,6 +1198,8 @@ export default function SurvivalHunterSim() {
   const [importedTalentString, setImportedTalentString] = useState<string>('');
   const [userSimResult, setUserSimResult] = useState<any>(null);
   const [optimalSimResult, setOptimalSimResult] = useState<any>(null);
+  /** Which comparison build is selected to display in the DPS results: 'user' or 'optimal' */
+  const [selectedBuild, setSelectedBuild] = useState<'user' | 'optimal'>('user');
   // APL parser state
   const [aplData, setAplData] = useState<ParsedAPL | null>(null);
   const [aplSortMode, setAplSortMode] = useState<'dps' | 'apl'>('dps');
@@ -3275,8 +3277,17 @@ export default function SurvivalHunterSim() {
                         {/* Two build columns + center delta */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 0, marginBottom: 16 }}>
                           {/* YOUR BUILD */}
-                          <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: "10px 0 0 10px", padding: 16 }}>
-                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textMid, marginBottom: 10 }}>YOUR BUILD</div>
+                          <div
+                            onClick={() => setSelectedBuild('user')}
+                            style={{
+                              background: C.surface2,
+                              border: `1px solid ${selectedBuild === 'user' ? C.sentClr : C.border}`,
+                              borderRadius: "10px 0 0 10px", padding: 16, cursor: "pointer",
+                              boxShadow: selectedBuild === 'user' ? `inset 0 0 20px rgba(56,189,248,.08)` : 'none',
+                              transition: "all .2s ease",
+                            }}
+                          >
+                            <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: selectedBuild === 'user' ? C.sentClr : C.textMid, marginBottom: 10 }}>YOUR BUILD {selectedBuild === 'user' ? '▼' : ''}</div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                               <span className="badge" style={{ background: userSimResult.hero === 'sentinel' ? C.sentBg : C.packBg, color: userSimResult.hero === 'sentinel' ? C.sentClr : C.packClr, border: `1px solid ${userSimResult.hero === 'sentinel' ? C.sentBdr : C.packBdr}` }}>
                                 {MIDNIGHT_DATA.talents.hero[userSimResult.hero]?.icon} {MIDNIGHT_DATA.talents.hero[userSimResult.hero]?.name || userSimResult.hero}
@@ -3326,9 +3337,18 @@ export default function SurvivalHunterSim() {
                           </div>
 
                           {/* OPTIMAL BUILD */}
-                          <div style={{ background: C.goldBg, border: `1px solid ${C.gold}`, borderRadius: "0 10px 10px 0", padding: 16 }}>
+                          <div
+                            onClick={() => setSelectedBuild('optimal')}
+                            style={{
+                              background: C.goldBg,
+                              border: `1px solid ${selectedBuild === 'optimal' ? C.goldLight : C.gold}`,
+                              borderRadius: "0 10px 10px 0", padding: 16, cursor: "pointer",
+                              boxShadow: selectedBuild === 'optimal' ? `inset 0 0 20px rgba(251,191,36,.12)` : 'none',
+                              transition: "all .2s ease",
+                            }}
+                          >
                             <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.goldLight, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                              ★ OPTIMAL BUILD
+                              {selectedBuild === 'optimal' ? '▼ ' : ''}★ OPTIMAL BUILD
                               <span 
                                 title="Optimal build derived from first-principles AP coefficient math and SimC APL data for Midnight 12.0 Pre-Season 1. Updated as the meta evolves."
                                 style={{ cursor: "help", fontFamily: "sans-serif", fontSize: 11, color: C.textMid, opacity: 0.7 }}
@@ -3409,7 +3429,7 @@ export default function SurvivalHunterSim() {
                     )}
 
                     {/* DPS Results */}
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 4 }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 4, alignItems: "center" }}>
                       <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, alignSelf: 'center', marginRight: 4 }}>SORT BY:</span>
                       {(['dps', 'apl'] as const).map(mode => (
                         <button key={mode} onClick={() => setAplSortMode(mode)}
@@ -3424,7 +3444,14 @@ export default function SurvivalHunterSim() {
                       ))}
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: simResults.length > 1 ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr", gap: 16 }}>
-                      {simResults.map((res, ri) => {
+                      {((): any[] => {
+                        // When a comparison build is selected, show that build as the primary result
+                        const selectedRes = selectedBuild === 'optimal' && optimalSimResult ? optimalSimResult : userSimResult;
+                        if (selectedRes && userSimResult && optimalSimResult) {
+                          return [selectedRes];
+                        }
+                        return simResults;
+                      })().map((res, ri) => {
                         const aplOrderedNames = aplData ? (getRotationWeights(aplData, res.hero === 'packLeader' ? 'packLeader' : 'sentinel', res.build === 'aoe' ? 'aoe' : 'st') ? aplData[res.hero === 'packLeader' ? 'packLeader' : 'sentinel'][res.build === 'aoe' ? 'aoe' : 'st']?.ordered : null) : null;
                         const entries = Object.entries(res.breakdown);
                         const sorted = aplSortMode === 'apl' && aplOrderedNames
@@ -3470,6 +3497,104 @@ export default function SurvivalHunterSim() {
                                   </div>
                                 </div>
                               ))}
+                            </div>
+                            {/* Export buttons */}
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.borderSub}` }}>
+                              <button
+                                onClick={() => {
+                                  const data = {
+                                    version: "1.0",
+                                    simEngine: "SurvivalSeason",
+                                    timestamp: new Date().toISOString(),
+                                    config: {
+                                      hero: res.hero,
+                                      targets: res.targets,
+                                      duration: res.duration,
+                                      iterations: res.iterations,
+                                      fightDurationVariance: "±20%",
+                                    },
+                                    summary: {
+                                      totalDps: Math.round(res.totalDps),
+                                      p5Dps: Math.round(res.p5Dps ?? 0),
+                                      p95Dps: Math.round(res.p95Dps ?? 0),
+                                      stdDev: Math.round(res.stdDev ?? 0),
+                                    },
+                                    breakdown: Object.fromEntries(
+                                      Object.entries(res.breakdown).sort((a: any, b: any) => b[1] - a[1]).map(([k, v]: [string, any]) => [k, { dps: Math.round(v), pct: +(v / res.totalDps * 100).toFixed(1) }])
+                                    ),
+                                    statWeights: statWeights ?? null,
+                                  };
+                                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url; a.download = `sim-data-${res.hero}-${res.targets}t.json`;
+                                  a.click(); URL.revokeObjectURL(url);
+                                }}
+                                style={{
+                                  fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 700,
+                                  background: C.surface2, border: `1px solid ${C.border}`,
+                                  borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                                  color: C.textMid, transition: "all .15s", letterSpacing: 1,
+                                }}
+                                title="Download structured simulation data"
+                              >
+                                📥 data.json
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const lines: string[] = [];
+                                  lines.push("========================================");
+                                  lines.push("SurvivalSeason Simulation Output");
+                                  lines.push("========================================");
+                                  lines.push(`Timestamp:    ${new Date().toISOString()}`);
+                                  lines.push(`Hero Talent:  ${res.hero}`);
+                                  lines.push(`Targets:      ${res.targets}`);
+                                  lines.push(`Duration:     ${res.duration}s (±20% variance)`);
+                                  lines.push(`Iterations:   ${res.iterations ?? 'N/A'}`);
+                                  lines.push(`Fight Style:  Patchwerk`);
+                                  lines.push("");
+                                  lines.push("--- RESULTS ---");
+                                  lines.push(`DPS:          ${Math.round(res.totalDps).toLocaleString()}`);
+                                  lines.push(`95% CI:       ${Math.round(res.p5Dps ?? 0).toLocaleString()} - ${Math.round(res.p95Dps ?? 0).toLocaleString()}`);
+                                  lines.push(`Std Dev:      ${Math.round(res.stdDev ?? 0).toLocaleString()}`);
+                                  if (res.iterations) lines.push(`Std Error:    ±${Math.round((res.stdDev ?? 0) / Math.sqrt(res.iterations)).toLocaleString()}`);
+                                  lines.push("");
+                                  lines.push("--- DPS BREAKDOWN ---");
+                                  lines.push("Ability".padEnd(28) + "DPS".padStart(10) + "Pct".padStart(8));
+                                  lines.push("-".repeat(46));
+                                  Object.entries(res.breakdown)
+                                    .sort((a: any, b: any) => b[1] - a[1])
+                                    .forEach(([k, v]: [string, any]) => {
+                                      lines.push(`${k.padEnd(28)}${Math.round(v).toLocaleString().padStart(10)}${(v / res.totalDps * 100).toFixed(1).padStart(7)}%`);
+                                    });
+                                  if (statWeights) {
+                                    lines.push("");
+                                    lines.push("--- STAT WEIGHTS ---");
+                                    lines.push(`Base DPS: ${statWeights.baseDps.toLocaleString()}`);
+                                    Object.entries(statWeights.weights)
+                                      .sort((a: any, b: any) => b[1].normalized - a[1].normalized)
+                                      .forEach(([stat, w]: [string, any]) => {
+                                        lines.push(`  ${stat.padEnd(14)} ${w.normalized.toFixed(3)}`);
+                                      });
+                                  }
+                                  lines.push("");
+                                  lines.push("========================================");
+                                  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url; a.download = `sim-output-${res.hero}-${res.targets}t.txt`;
+                                  a.click(); URL.revokeObjectURL(url);
+                                }}
+                                style={{
+                                  fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 700,
+                                  background: C.surface2, border: `1px solid ${C.border}`,
+                                  borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                                  color: C.textMid, transition: "all .15s", letterSpacing: 1,
+                                }}
+                                title="Download formatted simulation output"
+                              >
+                                📄 output.txt
+                              </button>
                             </div>
                           </div>
                         );
