@@ -2171,7 +2171,35 @@ export default function SurvivalHunterSim() {
 
                   {/* ── Hero Talent + Talent Loadout ───────────── */}
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>HERO TALENT</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>HERO TALENT</div>
+                      {/* Talent Loadout pills */}
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {TALENT_LOADOUTS.filter(l => l.heroKey === heroTalent).map(loadout => {
+                          const isSel = selectedLoadoutId === loadout.id;
+                          const heroClr = heroTalent === 'sentinel' ? C.sentClr : C.packClr;
+                          const heroBg  = heroTalent === 'sentinel' ? C.sentBg  : C.packBg;
+                          const heroBdr = heroTalent === 'sentinel' ? C.sentBdr : C.packBdr;
+                          // Short label for pill
+                          const shortLabel = loadout.simMode === 'single' ? 'Raid ST' : loadout.simMode === 'multi' ? 'M+ AoE' : 'Cleave';
+                          return (
+                            <button key={loadout.id}
+                              onClick={() => { setSelectedLoadoutId(loadout.id); setHeroTalent(loadout.heroKey); setSimMode(loadout.simMode); }}
+                              style={{
+                                padding: "3px 10px", borderRadius: 5, cursor: "pointer",
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 700,
+                                letterSpacing: 1, textTransform: "uppercase",
+                                background: isSel ? heroBg : "transparent",
+                                border: `1px solid ${isSel ? heroBdr : C.border}`,
+                                color: isSel ? heroClr : C.textDim,
+                                transition: "all .15s",
+                              }}>
+                              {loadout.icon} {shortLabel}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                       {Object.entries(MIDNIGHT_DATA.talents.hero).map(([k, h]) => (
                         <button key={k} className={`${k === "sentinel" ? "hero-sent" : "hero-pack"} ${heroTalent === k ? "sel" : ""}`}
