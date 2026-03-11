@@ -36,10 +36,10 @@ export const MPLUS_CASUAL_OPTIONS: SimOptions = {
     mysticTouch: false,   // no monk in many groups
     huntersMark: true,
   },
-  phial: "alchemical_chaos",
-  food: "mastery_food",
+  phial: "fleeting_magisters",
+  food: "silvermoon_parade",
   potion: "none",
-  weaponEnhancement: "algari_mana_oil",
+  weaponEnhancement: "farstrider_oil",
   augmentRune: false,
   enchants: "auto",
   gems: {
