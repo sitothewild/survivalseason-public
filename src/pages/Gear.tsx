@@ -654,7 +654,14 @@ export default function Gear() {
                     color: syncing ? C.textDim : C.goldLight, background:C.goldBg,
                     border:`1px solid ${C.gold}`, borderRadius:4, padding:"3px 8px",
                     cursor: syncing ? "wait" : "pointer", opacity: syncing ? 0.6 : 1 }}>
-                  {syncing ? "SYNCING…" : "⟳ SYNC API"}
+                  {syncing ? "SYNCING…" : "⟳ SYNC ENCHANTS"}
+                </button>
+                <button onClick={handleSyncItemDB} disabled={syncingItemDB}
+                  style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:1,
+                    color: syncingItemDB ? C.textDim : "#38bdf8", background:"#0c1e35",
+                    border:`1px solid #1a3a5c`, borderRadius:4, padding:"3px 8px",
+                    cursor: syncingItemDB ? "wait" : "pointer", opacity: syncingItemDB ? 0.6 : 1 }}>
+                  {syncingItemDB ? "BUILDING DB…" : "⟳ SYNC ITEM DB"}
                 </button>
               </div>
             </div>
