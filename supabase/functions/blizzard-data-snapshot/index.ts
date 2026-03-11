@@ -226,6 +226,15 @@ serve(async (req) => {
       } : null,
       spells: spellData,
       spellMedia,
+      enchants: uniqueEnchants,
+      enchantingProfession: enchantingProfession ? {
+        id: enchantingProfession.id,
+        name: enchantingProfession.name,
+        skill_tiers: enchantingProfession.skill_tiers,
+      } : null,
+      enchantingRecipes: enchantingRecipes ? {
+        categories: enchantingRecipes.categories,
+      } : null,
       hunterClass: hunterClass ? {
         id: hunterClass.id,
         name: hunterClass.name,
@@ -237,6 +246,7 @@ serve(async (req) => {
         classTalentNodes: talentTree?.class_talent_nodes?.length || 0,
         specTalentNodes: talentTree?.spec_talent_nodes?.length || 0,
         heroTrees: talentTree?.hero_talent_trees?.length || 0,
+        totalEnchants: uniqueEnchants.length,
       },
     };
 
