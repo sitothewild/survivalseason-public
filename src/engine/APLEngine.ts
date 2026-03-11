@@ -82,6 +82,9 @@ export function parseAPL(aplText: string): CompiledAPL {
   const actions: APLAction[] = [];
 
   for (const line of lines) {
+    // Skip comment lines
+    if (line.startsWith("#") || line.startsWith("//")) continue;
+
     // Match: actions=ability or actions+=/ability,if=conditions
     const match = line.match(/^actions(?:\+)?=\/?([a-z_]+)(?:,if=(.+))?$/i);
     if (!match) continue;
@@ -91,13 +94,24 @@ export function parseAPL(aplText: string): CompiledAPL {
 
     const conditions: APLCondition[] = [];
     if (condStr) {
-      // Split on & for AND conditions
+      // Split on & for AND conditions, but each part may contain | for OR
       const parts = condStr.split("&");
       for (const part of parts) {
-        conditions.push({
-          raw: part.trim(),
-          evaluate: compileCondition(part.trim()),
-        });
+        const trimmed = part.trim();
+        // Check for OR groups (pipe-separated)
+        if (trimmed.includes("|")) {
+          const orParts = trimmed.split("|").map(p => p.trim());
+          const orFns = orParts.map(p => compileCondition(p));
+          conditions.push({
+            raw: trimmed,
+            evaluate: (s) => orFns.some(fn => fn(s)),
+          });
+        } else {
+          conditions.push({
+            raw: trimmed,
+            evaluate: compileCondition(trimmed),
+          });
+        }
       }
     }
 
@@ -330,11 +344,15 @@ export function validateAPL(aplText: string): APLValidationResult {
     if (condStr) {
       const parts = condStr.split("&");
       for (const part of parts) {
-        const p = part.trim();
-        // Basic syntax check: should match known condition patterns
-        const knownPattern = /^(!?)(focus|cooldown\.|buff\.|dot\.|spell_targets)/;
-        if (!knownPattern.test(p)) {
-          warnings.push(`Line ${i + 1}: condition "${p}" may not be recognized`);
+        // Split OR groups and validate each sub-condition
+        const orParts = part.trim().split("|");
+        for (const orPart of orParts) {
+          const p = orPart.trim();
+          // Basic syntax check: should match known condition patterns
+          const knownPattern = /^(!?)(focus|cooldown\.|buff\.|dot\.|spell_targets)/;
+          if (!knownPattern.test(p)) {
+            warnings.push(`Line ${i + 1}: condition "${p}" may not be recognized`);
+          }
         }
       }
     }

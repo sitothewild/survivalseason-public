@@ -69,6 +69,43 @@ describe("charToSimInput", () => {
     expect(noTier.stats.has2pc).toBe(false);
     expect(noTier.stats.has4pc).toBe(false);
   });
+
+  it("resolves trinkets from gear itemIds when available", () => {
+    const charWithTrinkets: ParsedCharData = {
+      ...SAMPLE_CHAR,
+      gear: [
+        { slot: "trinket1", ilvl: 276, itemId: "225600", name: "Moonwarden's Focal Lens" },
+        { slot: "trinket2", ilvl: 276, itemId: "225601", name: "Abyssal Night Effigy" },
+      ],
+    };
+    const input = charToSimInput(charWithTrinkets, "sentinel", 1, 300, FULL_RAID_OPTIONS);
+    expect(input.trinkets[0].id).toBe(225600);
+    expect(input.trinkets[1].id).toBe(225601);
+  });
+
+  it("falls back to BiS trinkets for unknown itemIds", () => {
+    const charWithUnknown: ParsedCharData = {
+      ...SAMPLE_CHAR,
+      gear: [
+        { slot: "trinket1", ilvl: 276, itemId: "999999", name: "Unknown Trinket" },
+      ],
+    };
+    const input = charToSimInput(charWithUnknown, "sentinel", 1, 300, FULL_RAID_OPTIONS);
+    // Should still have 2 trinkets (unknown falls back to default)
+    expect(input.trinkets[0]).toBeDefined();
+    expect(input.trinkets[1]).toBeDefined();
+    expect(input.trinkets[0].id).toBeDefined();
+  });
+
+  it("falls back to BiS when no gear provided", () => {
+    const charNoGear: ParsedCharData = {
+      ...SAMPLE_CHAR,
+      gear: [],
+    };
+    const input = charToSimInput(charNoGear, "sentinel", 1, 300, FULL_RAID_OPTIONS);
+    expect(input.trinkets[0]).toBeDefined();
+    expect(input.trinkets[1]).toBeDefined();
+  });
 });
 
 describe("simResultToLegacy", () => {

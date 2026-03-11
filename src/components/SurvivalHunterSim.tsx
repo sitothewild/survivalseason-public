@@ -1554,21 +1554,29 @@ export default function SurvivalHunterSim() {
         }),
       );
 
-      // Stat weights — kept analytical (fast, no engine run needed)
-      const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
-      // Compute externalMult for the analytical stat weights path
-      let externalMult = 1.0;
-      externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
-      if (currentSimOptions.raidBuffs.battleShout) externalMult *= 1.05;
-      if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
-      if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
-      if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
-      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'alchemical_chaos' ? 1.035 : 1.03;
-      if (currentSimOptions.food !== 'none') externalMult *= 1.02;
-      if (currentSimOptions.potion !== 'none') externalMult *= currentSimOptions.potion === 'potion_of_unwavering_focus' ? 1.025 : 1.02;
-      if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
-      if (currentSimOptions.augmentRune) externalMult *= 1.005;
-      const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
+      // Stat weights — engine-derived using user's actual character data
+      const swBaseInput = charToSimInput(
+        parsedChar, heroTalent as HeroTree, primaryTarget, fightDuration,
+        currentSimOptions, { customAPL: aplOverride },
+      );
+      const sw = await pool.computeSimStatWeights(
+        heroTalent as HeroTree,
+        swBaseInput.config.fightStyle,
+        currentSimOptions,
+        swBaseInput,
+      );
+
+      // Convert engine StatWeightResult to the UI shape legacy stat weights uses
+      const swForUI = {
+        baseDps: Math.round(sw.baseDps),
+        weights: {
+          Agility: { perPoint: sw.weights.agility, perRating: sw.weights.agility, delta: 200, bump: 200, normalized: 1.0 },
+          Crit: { perPoint: sw.weights.crit * 170, perRating: sw.weights.crit, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.crit },
+          Haste: { perPoint: sw.weights.haste * 170, perRating: sw.weights.haste, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.haste },
+          Mastery: { perPoint: sw.weights.mastery * 170, perRating: sw.weights.mastery, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.mastery },
+          Vers: { perPoint: sw.weights.vers * 205, perRating: sw.weights.vers, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.vers },
+        },
+      };
 
       // User vs optimal comparison — run via engine
       const uHeroKey = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent) as HeroTree;
@@ -1579,7 +1587,7 @@ export default function SurvivalHunterSim() {
       const userResult = simResultToLegacy(userEngineResult, uHeroKey, primaryTarget, fightDuration);
       const optResult = simResultToLegacy(optEngineResult, 'sentinel', primaryTarget, fightDuration);
 
-      setStatWeights(sw);
+      setStatWeights(swForUI);
       setSimResults(engineResults);
       setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
       setUserSimResult(userResult);
@@ -3180,7 +3188,21 @@ export default function SurvivalHunterSim() {
                               </div>
                             ))}
                           </div>
-                          <div style={{ marginTop: 10, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Normalized to Agility = 1.000 · Base DPS: {fmt(statWeights.baseDps)}</div>
+                          <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Normalized to Agility = 1.000 · Base DPS: {fmt(statWeights.baseDps)}</div>
+                            <button onClick={() => {
+                              const w = statWeights.weights;
+                              const pawn = `( Pawn: v1: "SurvivalSim": Agility=${w.Agility.normalized.toFixed(2)}, CriticalStrike=${w.Crit.normalized.toFixed(2)}, Haste=${w.Haste.normalized.toFixed(2)}, Mastery=${w.Mastery.normalized.toFixed(2)}, Versatility=${w.Vers.normalized.toFixed(2)} )`;
+                              copy(pawn, 'pawn');
+                            }}
+                              style={{
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                background: copied === 'pawn' ? '#166534' : C.surface,
+                                border: `1px solid ${copied === 'pawn' ? '#22c55e' : C.border}`,
+                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                                color: copied === 'pawn' ? '#86efac' : C.textMid, transition: "all .15s",
+                              }}>{copied === 'pawn' ? 'Copied!' : 'Copy Pawn String'}</button>
+                          </div>
                         </CARD>
                       )}
 
