@@ -265,10 +265,9 @@ describe("SpellDB", () => {
   });
 
   it("has DoT definitions", () => {
-    expect(DOT_DB["serpent_sting"]).toBeDefined();
     expect(DOT_DB["wildfire_bomb_dot"]).toBeDefined();
-    expect(DOT_DB["serpent_sting"].pandemic).toBe(true);
-    expect(DOT_DB["serpent_sting"].snapshots).toContain("ap");
+    expect(DOT_DB["wildfire_bomb_dot"].school).toBe("fire");
+    expect(DOT_DB["flamefang_pitch_dot"]).toBeDefined();
     // Internal bleeding does NOT snapshot
     expect(DOT_DB["internal_bleeding"].snapshots).toEqual([]);
   });
