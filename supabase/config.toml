@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.blizzard-data-snapshot]
 verify_jwt = false
+
+[functions.blizzard-item-db]
+verify_jwt = false
