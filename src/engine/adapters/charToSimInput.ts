@@ -127,7 +127,7 @@ export function charToSimInput(
   const baseStats: PlayerStats = {
     agility: s.agility || 1500,
     stamina: Math.round((s.agility || 1500) * 0.9),
-    attackPower: s.attackPower || Math.round((s.agility || 1500) * 1.05),
+    attackPower: 0, // AP = Agility for hunters; bonus AP from buffs applied later
     critRating: percentToRating(s.crit || 0, "crit"),
     hasteRating: percentToRating(s.haste || 0, "haste"),
     masteryRating: percentToRating(s.mastery || 0, "mastery"),

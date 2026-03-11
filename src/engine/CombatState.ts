@@ -192,6 +192,17 @@ export class CombatState {
   sentinelWisdomStacks: number = 0;
   packCounter: number = 0;
 
+  // Mongoose Fury: stacks on Raptor Strike, +15% per stack, max 5
+  mongooseFuryStacks: number = 0;
+
+  // Pack Leader: Howl of the Pack Leader beast cycle (0=Wyvern, 1=Boar, 2=Bear)
+  howlBeastCycle: number = 0;
+  // Wyvern's Cry: stacking pet damage buff
+  wyvernsCryStacks: number = 0;
+  wyvernsCryExpiresMs: number = 0;
+  // Stampede: pending flag (KC sets it, next beast consumption fires stampede)
+  stampedePending: boolean = false;
+
   // Hero counters for reporting
   sentinelOwlProcs: number = 0;
   lunarStormProcs: number = 0;
@@ -266,7 +277,10 @@ export class CombatState {
     }
 
     const totalAgi = s.agility + bonusAgi;
-    this.currentAP = totalAgi + s.attackPower; // simplified AP calc
+    // FIX #3: For hunters, AP = Agility + any bonus AP from buffs/options.
+    // attackPower field holds bonus AP beyond agility (e.g., Battle Shout, augment rune).
+    // It should NOT duplicate agility.
+    this.currentAP = totalAgi + (s.attackPower ?? 0);
     this.currentCritPct = (s.critRating + bonusCrit) / 180 + 5; // base 5% crit
     this.currentHastePct = (s.hasteRating + bonusHaste) / 170;
     this.currentMasteryPct = (s.masteryRating + bonusMastery) / 180;
@@ -358,6 +372,11 @@ export class CombatState {
     this.sentinelCounter = 0;
     this.sentinelWisdomStacks = 0;
     this.packCounter = 0;
+    this.mongooseFuryStacks = 0;
+    this.howlBeastCycle = 0;
+    this.wyvernsCryStacks = 0;
+    this.wyvernsCryExpiresMs = 0;
+    this.stampedePending = false;
     this.sentinelOwlProcs = 0;
     this.lunarStormProcs = 0;
     this.eyesOfEagleResets = 0;

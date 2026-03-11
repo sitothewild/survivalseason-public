@@ -91,6 +91,6 @@ export function addPrimaryStat(
 ): SimInput {
   const stats = { ...base.stats };
   stats.agility += amount;
-  stats.attackPower += amount;
+  // AP = Agility for hunters; no separate attackPower bump
   return { ...base, stats };
 }
