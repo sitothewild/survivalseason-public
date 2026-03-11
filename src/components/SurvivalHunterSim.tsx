@@ -1036,11 +1036,11 @@ export default function SurvivalHunterSim() {
   const [weaponEnhancement, setWeaponEnhancement] = useState('thalassian_phoenix_oil');
   const [augmentRune, setAugmentRune] = useState(true);
   const [gemPrimaryStat, setGemPrimaryStat] = useState<string>('mastery');
-  const [gemSockets, setGemSockets] = useState(6);
+  const [gemSockets, setGemSockets] = useState(0);
   const [hasBlasphemite, setHasBlasphemite] = useState(true);
   const [has2pc, setHas2pc] = useState(false);
   const [has4pc, setHas4pc] = useState(false);
-  const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('auto');
+  const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('manual');
   const [manualEnchants, setManualEnchants] = useState<Record<string, string>>({});
   const [showEnchants, setShowEnchants] = useState(false);
   const [showAdv, setShowAdv] = useState(true);
@@ -3074,7 +3074,8 @@ export default function SurvivalHunterSim() {
                               setHasBlasphemite(preset.gems.hasBlasphemite);
                               setHas2pc(preset.has2pc);
                               setHas4pc(preset.has4pc);
-                              setEnchantMode('auto');
+                              setEnchantMode(preset.enchants === 'auto' ? 'auto' : 'manual');
+                              if (preset.enchants !== 'auto') setManualEnchants(preset.enchants);
                             }}
                               style={{
                                 fontFamily: "'Rajdhani',sans-serif", fontSize: 10, fontWeight: 700,
@@ -3317,18 +3318,30 @@ export default function SurvivalHunterSim() {
                             <div style={{ width: 1, flex: 1, background: C.borderSub }} />
                             {(() => {
                               const diff = optimalSimResult.totalDps - userSimResult.totalDps;
-                              const isOptimal = diff <= 0;
+                              const userIsOptimal = diff <= 0;
+                              const absDiff = Math.abs(diff);
                               return (
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 0" }}>
-                                  {isOptimal ? (
-                                    <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}` }}>✓ OPTIMAL</span>
+                                  {userIsOptimal ? (
+                                    <>
+                                      <span style={{ fontSize: 18, color: C.green }}>◄</span>
+                                      <span className="badge" style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBdr}` }}>✓ OPTIMAL</span>
+                                      {absDiff > 0 && (
+                                        <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.green, textAlign: "center", maxWidth: 70 }}>
+                                          +{fmt(absDiff)} ahead
+                                        </span>
+                                      )}
+                                    </>
                                   ) : (
                                     <>
-                                      <span style={{ fontSize: 18, color: C.gold }}>→</span>
+                                      <span style={{ fontSize: 18, color: C.gold }}>►</span>
                                       <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid ${C.gold}` }}>
-                                        ▲ +{fmt(diff)} DPS
+                                        OPTIMAL ►
                                       </span>
-                                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, textAlign: "center", maxWidth: 60 }}>possible</span>
+                                      <span className="badge" style={{ background: C.goldBg, color: C.goldLight, border: `1px solid ${C.gold}` }}>
+                                        +{fmt(absDiff)} DPS
+                                      </span>
+                                      <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: C.textDim, textAlign: "center", maxWidth: 70 }}>switch for more</span>
                                     </>
                                   )}
                                 </div>
