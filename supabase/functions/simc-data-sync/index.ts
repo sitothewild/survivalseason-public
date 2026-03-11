@@ -36,7 +36,6 @@ async function fetchRawFile(path: string): Promise<string> {
 // ─── APL Parser ────────────────────────────────────────────
 
 function parseSurvivalAPL(aplSource: string) {
-  // Extract just the survival section — use matching pairs to avoid mixing ptr/non-ptr markers.
   const ptrStart = aplSource.indexOf("//survival_ptr_apl_start");
   const ptrEnd   = aplSource.indexOf("//survival_ptr_apl_end");
   const stdStart = aplSource.indexOf("//survival_apl_start");
@@ -44,16 +43,15 @@ function parseSurvivalAPL(aplSource: string) {
 
   let start = -1, end = -1;
   if (ptrStart >= 0 && ptrEnd > ptrStart) {
-    start = ptrStart; end = ptrEnd;         // ptr pair takes priority
+    start = ptrStart; end = ptrEnd;
   } else if (stdStart >= 0 && stdEnd > stdStart) {
-    start = stdStart; end = stdEnd;          // fall back to standard pair
+    start = stdStart; end = stdEnd;
   }
 
   if (start < 0 || end < 0) return { error: "Could not find survival APL section" };
   
   const section = aplSource.slice(start, end);
   
-  // Parse action lists
   const actionLists: Record<string, string[]> = {};
   const actionPattern = /(\w+)->add_action\(\s*"([^"]+)"(?:\s*,\s*"([^"]*)")?\s*\)/g;
   let match;
@@ -69,116 +67,704 @@ function parseSurvivalAPL(aplSource: string) {
   return { actionLists, rawLength: section.length };
 }
 
-// ─── Spell Data Parser (from sc_hunter.cpp) ────────────────
+// ─── Consumable Parser ─────────────────────────────────────
 
-function parseSurvivalSpellData(hunterSource: string) {
-  const spellData: Record<string, any> = {};
+function parseConsumables(aplSource: string) {
+  const consumables: Record<string, string> = {};
   
-  // Extract survival-relevant spell references and multipliers
-  // Look for patterns like: p()->talents.raptor_strike, effectN(X).percent()
+  // Parse survival-specific consumables for level > 80
+  const potionMatch = aplSource.match(/potion.*?HUNTER_SURVIVAL\s*\)\s*\?\s*"([^"]+)"/);
+  if (potionMatch) consumables.potion = potionMatch[1];
   
-  // Parse Tip of the Spear values
-  const totsMatch = hunterSource.match(/tip_of_the_spear.*?effectN\s*\(\s*(\d+)\s*\).*?percent/g);
-  if (totsMatch) spellData.tip_of_the_spear_refs = totsMatch.length;
+  const flaskMatch = aplSource.match(/flask.*?HUNTER_SURVIVAL\s*\)\s*\?\s*"([^"]+)"/);
+  if (flaskMatch) consumables.flask = flaskMatch[1];
+  
+  const foodMatch = aplSource.match(/food.*?true_level\s*>\s*80\s*\)\s*\?\s*"([^"]+)"/);
+  if (foodMatch) consumables.food = foodMatch[1];
+  
+  const runeMatch = aplSource.match(/rune.*?true_level\s*>\s*80\s*\)\s*\?\s*"([^"]+)"/);
+  if (runeMatch) consumables.rune = runeMatch[1];
 
-  // Parse Spirit Bond mastery scaling
-  const sbMatch = hunterSource.match(/spirit_bond.*?mastery_value/g);
-  if (sbMatch) spellData.spirit_bond_mastery_refs = sbMatch.length;
+  const tempEnchMatch = aplSource.match(/HUNTER_SURVIVAL\s*\)\s*\?\s*"([^"]+)"\s*:\s*"main_hand/);
+  if (tempEnchMatch) consumables.temporary_enchant = tempEnchMatch[1];
+  
+  return consumables;
+}
 
-  // Parse Takedown references
-  const takedownMatch = hunterSource.match(/takedown/g);
-  spellData.takedown_refs = takedownMatch ? takedownMatch.length : 0;
+// ─── Comprehensive Spell Data Parser ───────────────────────
 
-  // Extract hardcoded multiplier values (e.g., *= 1.xxx patterns near survival spells)
-  const multiplierPattern = /\/\/.*?(?:survival|sv|raptor|wildfire|kill_command|boomstick|takedown).*?\n.*?\*=\s*([0-9.]+)/gi;
-  const multipliers: { context: string; value: number }[] = [];
-  let mMatch;
-  while ((mMatch = multiplierPattern.exec(hunterSource)) !== null) {
-    multipliers.push({ context: mMatch[0].trim().slice(0, 120), value: parseFloat(mMatch[1]) });
-  }
-  spellData.hardcoded_multipliers = multipliers;
+interface SpellEntry {
+  name: string;
+  simcKey: string;
+  spellIds: number[];
+  type: "active" | "passive" | "buff" | "debuff" | "dot" | "proc" | "mastery";
+  section: "class" | "survival" | "sentinel" | "pack_leader" | "dark_ranger" | "tier_set";
+  implemented: boolean;
+  utility: boolean;
+  cooldown?: string;
+  charges?: number;
+  focusCost?: number;
+  focusGain?: number;
+  description?: string;
+  modifiers: SpellModifier[];
+  affectedBy: string[];
+  affectsSpells: string[];
+  buffData?: BuffInfo;
+  procData?: ProcInfo;
+  notes: string[];
+}
 
-  // Extract key Midnight Survival spell implementations
-  const survivalSpells: Record<string, any> = {};
+interface SpellModifier {
+  type: "damage_pct" | "damage_flat" | "cooldown_reduction" | "duration_mod" | "crit_chance" | 
+        "crit_damage" | "haste" | "mastery_scaling" | "aoe_targets" | "execute_threshold" |
+        "proc_chance" | "dot_mod" | "auto_attack_speed" | "focus_regen" | "pet_damage";
+  value: number | string;
+  effectNum?: number;
+  source: string;
+  condition?: string;
+}
 
-  const rsSection = extractSpellSection(hunterSource, "raptor_strike");
-  if (rsSection) survivalSpells.raptor_strike = { found: true, length: rsSection.length };
+interface BuffInfo {
+  duration?: string;
+  maxStacks?: number;
+  defaultValue?: string;
+  refreshBehavior?: string;
+  invalidates?: string[];
+}
 
-  const kcSection = extractSpellSection(hunterSource, "kill_command_sv");
-  if (kcSection) survivalSpells.kill_command = { found: true, length: kcSection.length };
+interface ProcInfo {
+  chance: number | string;
+  rppm?: boolean;
+  triggerSpell?: string;
+}
 
-  const wfbSection = extractSpellSection(hunterSource, "wildfire_bomb");
-  if (wfbSection) survivalSpells.wildfire_bomb = { found: true, length: wfbSection.length };
+function parseSurvivalSpellData(src: string) {
+  const db: Record<string, SpellEntry> = {};
 
-  const boomstickSection = extractSpellSection(hunterSource, "boomstick");
-  if (boomstickSection) survivalSpells.boomstick = { found: true, length: boomstickSection.length };
+  // ─── 1. Extract all talent spell_data_ptr_t declarations ──────
+  parseTalentDeclarations(src, db);
 
-  const takedownSection = extractSpellSection(hunterSource, "takedown");
-  if (takedownSection) survivalSpells.takedown = { found: true, length: takedownSection.length };
+  // ─── 2. Extract find_talent_spell / find_spell ID mappings ────
+  parseSpellIdMappings(src, db);
 
-  const chakramSection = extractSpellSection(hunterSource, "moonlight_chakram");
-  if (chakramSection) survivalSpells.moonlight_chakram = { found: true, length: chakramSection.length };
+  // ─── 3. Extract damage multiplier chains ──────────────────────
+  parseDamageMultipliers(src, db);
 
-  spellData.survival_spells = survivalSpells;
+  // ─── 4. Extract buff definitions from create_buffs() ──────────
+  parseBuffDefinitions(src, db);
 
-  // Extract buff data from create_buffs section
-  const createBuffsIdx = hunterSource.indexOf("void hunter_t::create_buffs()");
-  const initGainsIdx = hunterSource.indexOf("void hunter_t::init_gains()");
-  const buffsSection = (createBuffsIdx >= 0 && initGainsIdx > createBuffsIdx)
-    ? hunterSource.slice(createBuffsIdx, initGainsIdx)
-    : "";
+  // ─── 5. Extract cooldown data ─────────────────────────────────
+  parseCooldownData(src, db);
 
-  const buffData: Record<string, any> = {};
+  // ─── 6. Extract affected_by relationships ─────────────────────
+  parseAffectedByRelationships(src, db);
 
-  const takedownBuff = buffsSection.match(/takedown.*?default_value\s*\(\s*([0-9.]+)/);
-  if (takedownBuff) buffData.takedown_default_value = parseFloat(takedownBuff[1]);
+  // ─── 7. Extract proc/trigger data ─────────────────────────────
+  parseProcData(src, db);
 
-  const spiritBondBuff = buffsSection.match(/spirit_bond.*?default_value\s*\(\s*([0-9.]+)/);
-  if (spiritBondBuff) buffData.spirit_bond_default_value = parseFloat(spiritBondBuff[1]);
+  // ─── 8. Extract Survival spell implementations ────────────────
+  const spellImplementations = parseSurvivalSpellImplementations(src);
 
-  spellData.buff_data = buffData;
+  // ─── 9. Extract tier set bonuses ──────────────────────────────
+  const tierSets = parseTierSets(src);
 
-  // Extract Midnight tier set bonus info
-  const tierPatterns = [
-    /midnight_sv_\dpc/g,
-    /winning_streak/g,
-    /strike_it_rich/g,
+  // ─── 10. Extract key hardcoded values & special mechanics ─────
+  const mechanics = parseSpecialMechanics(src);
+
+  return {
+    spellDatabase: db,
+    spellImplementations,
+    tierSets,
+    mechanics,
+    totalSpellEntries: Object.keys(db).length,
+  };
+}
+
+// ─── 1. Talent Declarations ─────────────────────────────────
+
+function parseTalentDeclarations(src: string, db: Record<string, SpellEntry>) {
+  // Find the talents_t struct
+  const talentsStart = src.indexOf("struct talents_t");
+  const talentsEnd = src.indexOf("} talents;");
+  if (talentsStart < 0 || talentsEnd < 0) return;
+  
+  const talentBlock = src.slice(talentsStart, talentsEnd);
+  
+  // Match spell_data_ptr_t declarations with optional comments
+  const declPattern = /spell_data_ptr_t\s+(\w+)\s*;(?:\s*\/\/(.*))?/g;
+  let m;
+  
+  let currentSection: SpellEntry["section"] = "class";
+  const sectionMarkers: [string, SpellEntry["section"]][] = [
+    ["// Hunter Tree", "class"],
+    ["// Beast Mastery Tree", "class"],
+    ["// Marksmanship Tree", "class"],
+    ["// Survival Tree", "survival"],
+    ["// Dark Ranger", "dark_ranger"],
+    ["// Pack Leader", "pack_leader"],
+    ["// Sentinel", "sentinel"],
   ];
-  spellData.tier_set_refs = {};
-  tierPatterns.forEach(pattern => {
-    const matches = hunterSource.match(pattern);
-    if (matches) {
-      spellData.tier_set_refs[pattern.source] = matches.length;
-    }
-  });
   
-  return spellData;
+  while ((m = declPattern.exec(talentBlock)) !== null) {
+    const key = m[1];
+    const comment = (m[2] || "").trim();
+    
+    // Determine section from position
+    for (const [marker, sec] of sectionMarkers) {
+      const markerIdx = talentBlock.indexOf(marker);
+      if (markerIdx >= 0 && markerIdx < m.index) {
+        currentSection = sec;
+      }
+    }
+    
+    const isUtility = comment.toLowerCase().includes("utility") || comment.toLowerCase().includes("won't implement");
+    const isNotImpl = comment.toLowerCase().includes("not implemented");
+    
+    db[key] = {
+      name: formatTalentName(key),
+      simcKey: key,
+      spellIds: [],
+      type: guessSpellType(key),
+      section: currentSection,
+      implemented: !isUtility && !isNotImpl,
+      utility: isUtility,
+      modifiers: [],
+      affectedBy: [],
+      affectsSpells: [],
+      notes: comment ? [comment] : [],
+    };
+  }
+}
+
+function formatTalentName(key: string): string {
+  return key
+    .replace(/_(?:buff|dmg|dot|spell|data|bleed|energize|debuff|damage|pet|player|trigger|summon|ready)$/i, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/\bBm\b/i, "BM")
+    .replace(/\bSv\b/i, "SV")
+    .replace(/\bMm\b/i, "MM");
+}
+
+function guessSpellType(key: string): SpellEntry["type"] {
+  if (key.includes("_buff")) return "buff";
+  if (key.includes("_debuff")) return "debuff";
+  if (key.includes("_dot") || key.includes("_bleed")) return "dot";
+  if (key.includes("_dmg") || key.includes("_damage")) return "active";
+  return "passive";
+}
+
+// ─── 2. Spell ID Mappings ───────────────────────────────────
+
+function parseSpellIdMappings(src: string, db: Record<string, SpellEntry>) {
+  // Parse: talents.xxx = find_talent_spell( ... "Name" ... );
+  const talentSpellPattern = /talents\.(\w+)\s*=\s*find_talent_spell\s*\(\s*talent_tree::\w+\s*,\s*"([^"]+)"/g;
+  let m;
+  while ((m = talentSpellPattern.exec(src)) !== null) {
+    const key = m[1];
+    const name = m[2];
+    if (db[key]) {
+      db[key].name = name;
+    }
+  }
+  
+  // Parse: talents.xxx = find_spell( ID );
+  // Also: talents.xxx = talents.yyy.ok() ? find_spell( ID ) : ...
+  const findSpellPattern = /talents\.(\w+)\s*=\s*(?:\w+\.ok\(\)\s*\?\s*)?find_spell\s*\(\s*(\d+)\s*\)/g;
+  while ((m = findSpellPattern.exec(src)) !== null) {
+    const key = m[1];
+    const spellId = parseInt(m[2]);
+    if (db[key]) {
+      db[key].spellIds.push(spellId);
+    }
+  }
+
+  // Parse direct find_talent_spell calls that reference specific spell IDs
+  const findTalentPattern = /talents\.(\w+)\s*=\s*find_talent_spell\s*\([^)]+\)/g;
+  while ((m = findTalentPattern.exec(src)) !== null) {
+    // Already handled above
+  }
+}
+
+// ─── 3. Damage Multiplier Extraction ────────────────────────
+
+function parseDamageMultipliers(src: string, db: Record<string, SpellEntry>) {
+  // Pattern: am *= 1 + p()->talents.xxx->effectN( N ).percent();
+  const pctPattern = /(?:am|m|da|ta|bonus)\s*\*=\s*1\s*\+\s*p\(\)->(talents|mastery|buffs)\.(\w+)->(?:effectN\s*\(\s*(\d+)\s*\)\.(?:percent|mastery_value)|check_(?:stack_)?value)\(\)/g;
+  let m;
+  while ((m = pctPattern.exec(src)) !== null) {
+    const category = m[1];
+    const key = m[2];
+    const effectNum = m[3] ? parseInt(m[3]) : undefined;
+    
+    // Find what function this is in (the spell being modified)
+    const contextStart = src.lastIndexOf("struct ", m.index);
+    const contextMatch = src.slice(contextStart, contextStart + 200).match(/struct\s+(\w+)/);
+    const context = contextMatch ? contextMatch[1] : "unknown";
+    
+    if (db[key]) {
+      db[key].modifiers.push({
+        type: category === "mastery" ? "mastery_scaling" : "damage_pct",
+        value: `effectN(${effectNum || "?"}).percent()`,
+        effectNum,
+        source: `${category}.${key}`,
+        condition: context,
+      });
+    }
+  }
+
+  // Pattern: am *= 1.xxxx (hardcoded values)
+  const hardcodedPattern = /(?:am|m|da|ta)\s*\*=\s*(1\.\d+)/g;
+  while ((m = hardcodedPattern.exec(src)) !== null) {
+    const value = parseFloat(m[1]);
+    if (value > 1.001 && value < 2.0) {
+      // Find surrounding context
+      const lineStart = src.lastIndexOf("\n", m.index);
+      const lineEnd = src.indexOf("\n", m.index + m[0].length);
+      const line = src.slice(lineStart, lineEnd).trim();
+      
+      // Find containing function/struct
+      const contextStart = src.lastIndexOf("struct ", m.index);
+      const contextMatch = src.slice(contextStart, contextStart + 200).match(/struct\s+(\w+)/);
+      const context = contextMatch ? contextMatch[1] : "";
+      
+      // Only record survival-related ones
+      if (/survival|raptor|wildfire|kill_command|boomstick|takedown|tip_of_the_spear|mongoose|sentinel|pack_leader|wyvern|lunar|chakram|flamefang/i.test(context + line)) {
+        // Store in a generic "hardcoded" entry
+        const contextKey = context.replace(/_t$/, "");
+        if (db[contextKey]) {
+          db[contextKey].modifiers.push({
+            type: "damage_pct",
+            value,
+            source: "hardcoded",
+            condition: line.slice(0, 120),
+          });
+        }
+      }
+    }
+  }
+
+  // Extract composite_da_multiplier and composite_ta_multiplier chains for key survival spells
+  extractMultiplierChain(src, db, "composite_da_multiplier", "direct");
+  extractMultiplierChain(src, db, "composite_ta_multiplier", "periodic");
+  extractMultiplierChain(src, db, "composite_crit_damage_bonus_multiplier", "crit_bonus");
+  extractMultiplierChain(src, db, "composite_target_da_multiplier", "target_direct");
+}
+
+function extractMultiplierChain(src: string, db: Record<string, SpellEntry>, funcName: string, label: string) {
+  // Find all overrides of this function
+  const funcPattern = new RegExp(`${funcName}\\s*\\([^)]*\\)\\s*(?:const\\s*)?override\\s*\\{`, "g");
+  let m;
+  while ((m = funcPattern.exec(src)) !== null) {
+    // Determine which struct this belongs to
+    let searchBack = m.index;
+    let structName = "";
+    for (let i = 0; i < 20; i++) {
+      searchBack = src.lastIndexOf("struct ", searchBack - 1);
+      if (searchBack < 0) break;
+      const sm = src.slice(searchBack, searchBack + 200).match(/struct\s+(\w+)/);
+      if (sm) { structName = sm[1]; break; }
+    }
+    
+    // Extract body until closing brace at same depth
+    const bodyStart = m.index + m[0].length;
+    let depth = 1;
+    let bodyEnd = bodyStart;
+    for (let i = bodyStart; i < src.length && i < bodyStart + 2000; i++) {
+      if (src[i] === "{") depth++;
+      if (src[i] === "}") { depth--; if (depth === 0) { bodyEnd = i; break; } }
+    }
+    
+    const body = src.slice(bodyStart, bodyEnd);
+    
+    // Find all multiplier applications in this body
+    const multPattern = /p\(\)->(talents|buffs|mastery)\.(\w+)/g;
+    let mm;
+    const references: string[] = [];
+    while ((mm = multPattern.exec(body)) !== null) {
+      references.push(`${mm[1]}.${mm[2]}`);
+    }
+    
+    if (references.length > 0) {
+      const cleanName = structName.replace(/_t$/, "");
+      if (!db[`__${label}_${cleanName}`]) {
+        // Store as metadata note
+        for (const ref of references) {
+          const parts = ref.split(".");
+          const talentKey = parts[1];
+          if (db[talentKey]) {
+            db[talentKey].affectsSpells.push(`${cleanName} (${label})`);
+          }
+        }
+      }
+    }
+  }
+}
+
+// ─── 4. Buff Definitions ────────────────────────────────────
+
+function parseBuffDefinitions(src: string, db: Record<string, SpellEntry>) {
+  const createBuffsIdx = src.indexOf("void hunter_t::create_buffs()");
+  if (createBuffsIdx < 0) return;
+  
+  // Find end of create_buffs
+  let depth = 0;
+  let endIdx = createBuffsIdx;
+  const startBrace = src.indexOf("{", createBuffsIdx);
+  for (let i = startBrace; i < src.length && i < startBrace + 10000; i++) {
+    if (src[i] === "{") depth++;
+    if (src[i] === "}") { depth--; if (depth === 0) { endIdx = i; break; } }
+  }
+  
+  const buffsSection = src.slice(createBuffsIdx, endIdx);
+  
+  // Parse make_buff patterns
+  const buffPattern = /buffs\.(\w+)\s*=\s*\n?\s*make_buff\s*\(\s*this\s*,\s*"([^"]+)"/g;
+  let m;
+  while ((m = buffPattern.exec(buffsSection)) !== null) {
+    const key = m[1];
+    const buffName = m[2];
+    
+    // Extract the full chain until the semicolon
+    const chainStart = m.index;
+    const chainEnd = buffsSection.indexOf(";", chainStart);
+    const chain = buffsSection.slice(chainStart, chainEnd);
+    
+    const buffInfo: BuffInfo = {};
+    
+    // default_value_from_effect
+    const dvMatch = chain.match(/set_default_value_from_effect\s*\(\s*(\d+)\s*\)/);
+    if (dvMatch) buffInfo.defaultValue = `effectN(${dvMatch[1]})`;
+    
+    // set_default_value
+    const dvRaw = chain.match(/set_default_value\s*\(\s*([^)]+)\s*\)/);
+    if (dvRaw) buffInfo.defaultValue = dvRaw[1].trim();
+    
+    // max_stacks or stack behavior
+    if (chain.includes("ASYNCHRONOUS")) buffInfo.refreshBehavior = "asynchronous";
+    if (chain.includes("DISABLED")) buffInfo.refreshBehavior = "disabled";
+    if (chain.includes("DURATION")) buffInfo.refreshBehavior = "duration";
+    if (chain.includes("EXTEND")) buffInfo.refreshBehavior = "extend";
+    
+    // invalidate cache
+    const invalidates: string[] = [];
+    const invPattern = /add_invalidate\s*\(\s*(\w+)\s*\)/g;
+    let im;
+    while ((im = invPattern.exec(chain)) !== null) {
+      invalidates.push(im[1]);
+    }
+    if (invalidates.length) buffInfo.invalidates = invalidates;
+    
+    const dbKey = key;
+    if (db[dbKey]) {
+      db[dbKey].buffData = buffInfo;
+      db[dbKey].type = "buff";
+    } else {
+      db[dbKey] = {
+        name: buffName,
+        simcKey: dbKey,
+        spellIds: [],
+        type: "buff",
+        section: guessSectionFromKey(dbKey),
+        implemented: true,
+        utility: false,
+        modifiers: [],
+        affectedBy: [],
+        affectsSpells: [],
+        buffData: buffInfo,
+        notes: [],
+      };
+    }
+  }
+}
+
+function guessSectionFromKey(key: string): SpellEntry["section"] {
+  if (/howl|pack|wyvern|boar|bear|hogstrider|stampede|ursine|sharpened_claws|fury_of_the_wyvern|lethal_barbs|no_mercy|hoof_and_blade|wyverns_gaze|sharpened_fangs/.test(key)) return "pack_leader";
+  if (/sentinel|stargazer|moonlight|lunar|twilight|stalk_and_strike|open_fire|cant_miss|invigorating|arcane_talons|radiant_edge|moons_blessing|sanctified/.test(key)) return "sentinel";
+  if (/black_arrow|bleak|corpsecaller|dark_|ebon|shadow_|wailing|blighted|banshees|the_bell|umbral|pact_of|withering_fire/.test(key)) return "dark_ranger";
+  if (/raptor|wildfire|kill_command_sv|boomstick|takedown|flamefang|mongoose|tip_of_the_spear|bloodseeker|wallop|sweeping|bonding|vulnerability|blackrock|outland|explosives_expert|twin_fangs|savagery_sv|wildfire_infusion|grenade|flanked|lethal_calibration|primal_surge|raptor_swipe|shellshock|sic_em|quick_reload|flankers|two_against|shrapnel|flamebreak|strike_as_one|shower_of_blood|lunge|guerrilla/.test(key)) return "survival";
+  return "class";
+}
+
+// ─── 5. Cooldown Data ───────────────────────────────────────
+
+function parseCooldownData(src: string, db: Record<string, SpellEntry>) {
+  // Extract cooldown references from the cooldowns struct
+  const cdPattern = /cooldowns\.(\w+)\s*=\s*get_cooldown\s*\(\s*"([^"]+)"\s*\)/g;
+  let m;
+  const cooldownKeys = new Set<string>();
+  while ((m = cdPattern.exec(src)) !== null) {
+    cooldownKeys.add(m[1]);
+  }
+  
+  // Parse cooldown adjustments: cooldowns.xxx->adjust( -talents.yyy->effectN(N).time_value() )
+  const adjustPattern = /cooldowns\.(\w+)->adjust\s*\(\s*-p\(\)->talents\.(\w+)->effectN\s*\(\s*(\d+)\s*\)\.time_value/g;
+  while ((m = adjustPattern.exec(src)) !== null) {
+    const cdTarget = m[1];
+    const talentSource = m[2];
+    const effectNum = parseInt(m[3]);
+    
+    if (db[talentSource]) {
+      db[talentSource].modifiers.push({
+        type: "cooldown_reduction",
+        value: `effectN(${effectNum}).time_value()`,
+        effectNum,
+        source: `cooldown:${cdTarget}`,
+      });
+    }
+  }
+}
+
+// ─── 6. Affected-By Relationships ───────────────────────────
+
+function parseAffectedByRelationships(src: string, db: Record<string, SpellEntry>) {
+  // The hunter_action_t constructor sets up affected_by relationships
+  const abStart = src.indexOf("affected_by.unnatural_causes = parse_damage_affecting_aura");
+  if (abStart < 0) return;
+  
+  const abEnd = src.indexOf("}", abStart);
+  const abBlock = src.slice(abStart, abEnd);
+  
+  // parse_damage_affecting_aura patterns  
+  const pdaPattern = /affected_by\.(\w+)\s*=\s*parse_damage_affecting_aura\s*\(\s*this\s*,\s*p->(talents|mastery)\.(\w+)\s*\)/g;
+  let m;
+  while ((m = pdaPattern.exec(abBlock)) !== null) {
+    const affectedName = m[1];
+    const talentKey = m[3];
+    if (db[talentKey]) {
+      db[talentKey].notes.push(`Affects via parse_damage_affecting_aura: ${affectedName}`);
+      db[talentKey].type = db[talentKey].type === "passive" ? "buff" : db[talentKey].type;
+    }
+  }
+  
+  // check_affected_by patterns
+  const cabPattern = /affected_by\.(\w+)\s*=\s*check_affected_by\s*\(\s*this\s*,\s*p->(talents|mastery)\.(\w+)/g;
+  while ((m = cabPattern.exec(abBlock)) !== null) {
+    const affectedName = m[1];
+    const talentKey = m[3];
+    if (db[talentKey]) {
+      db[talentKey].notes.push(`Affects via check_affected_by: ${affectedName}`);
+    }
+  }
+}
+
+// ─── 7. Proc Data ───────────────────────────────────────────
+
+function parseProcData(src: string, db: Record<string, SpellEntry>) {
+  // rng().roll patterns
+  const rollPattern = /rng\(\)\.roll\s*\(\s*(?:p\(\)->)?(?:talents|deathblow)\.(\w+)(?:->effectN\s*\(\s*(\d+)\s*\)\.percent\(\))?/g;
+  let m;
+  while ((m = rollPattern.exec(src)) !== null) {
+    const key = m[1];
+    if (db[key]) {
+      db[key].procData = {
+        chance: m[2] ? `effectN(${m[2]}).percent()` : "variable",
+      };
+    }
+  }
+  
+  // rppm patterns
+  const rppmPattern = /rppm\.(\w+)->trigger\(\)/g;
+  while ((m = rppmPattern.exec(src)) !== null) {
+    const key = m[1];
+    if (db[key]) {
+      db[key].procData = { chance: "RPPM", rppm: true };
+    }
+  }
+}
+
+// ─── 8. Survival Spell Implementations ──────────────────────
+
+function parseSurvivalSpellImplementations(src: string) {
+  const spells: Record<string, any> = {};
+  
+  const survivalSpellNames = [
+    "raptor_strike", "raptor_strike_base", "melee_focus_spender",
+    "wildfire_bomb", "wildfire_bomb_base",
+    "kill_command", "takedown", "flamefang_pitch",
+    "boomstick", "harpoon", "hatchet_toss", "melee",
+    "moonlight_chakram", "lunar_storm", "sanctified_armaments",
+    "boar_charge", "stampede",
+  ];
+  
+  for (const name of survivalSpellNames) {
+    const section = extractSpellSection(src, name);
+    if (section) {
+      const info: any = {
+        found: true,
+        length: section.length,
+      };
+      
+      // Extract key values from implementation
+      
+      // AOE targets
+      const aoeMatch = section.match(/aoe\s*=\s*(-?\d+)/);
+      if (aoeMatch) info.aoeTargets = parseInt(aoeMatch[1]);
+      
+      const reducedAoe = section.match(/reduced_aoe_targets\s*=\s*(?:p->talents\.\w+->effectN\s*\(\s*\d+\s*\)\.base_value\(\)|(\d+))/);
+      if (reducedAoe) info.reducedAoeTargets = reducedAoe[1] ? parseInt(reducedAoe[1]) : "from_spell_data";
+      
+      // Focus interactions
+      const focusGain = section.match(/energize_amount\s*=\s*(?:p->talents\.(\w+)->effectN\s*\(\s*\d+\s*\)\.base_value\(\)|(\d+))/);
+      if (focusGain) info.focusGain = focusGain[2] ? parseInt(focusGain[2]) : focusGain[1];
+      
+      // Tip of the Spear interactions
+      if (section.includes("tip_of_the_spear")) {
+        info.tipOfTheSpearInteraction = true;
+        const tipTrigger = section.match(/tip_of_the_spear->trigger\s*\(\s*(\d+)?\s*\)/);
+        if (tipTrigger) info.tipStacks = tipTrigger[1] ? parseInt(tipTrigger[1]) : 1;
+        if (section.includes("decrement")) info.tipConsumes = true;
+        if (section.includes("decrements_tip_of_the_spear = false")) info.tipConsumes = false;
+      }
+      
+      // Sentinel's Mark interactions
+      if (section.includes("sentinels_mark")) {
+        info.sentinelsMarkInteraction = true;
+        if (section.includes("sentinels_mark->expire")) info.consumesSentinelsMark = true;
+        if (section.includes("trigger_lunar_storm")) info.triggersLunarStorm = true;
+      }
+      
+      // Moonlight Chakram interactions
+      if (section.includes("moonlight_chakram")) {
+        info.moonlightChakramInteraction = true;
+        const bounceLimit = section.match(/bounce_limit\s*=.*?effectN\s*\(\s*(\d+)\s*\)\.base_value/);
+        if (bounceLimit) info.bounceEffectNum = parseInt(bounceLimit[1]);
+      }
+      
+      // Howl of the Pack Leader
+      if (section.includes("howl_of_the_pack_leader")) {
+        info.howlInteraction = true;
+        if (section.includes("consume_howl")) info.consumesHowl = true;
+        if (section.includes("trigger_howl")) info.triggersHowl = true;
+      }
+      
+      // Mongoose Fury
+      if (section.includes("mongoose_fury->trigger")) {
+        info.triggersMongooseFury = true;
+      }
+      
+      // Wildfire bomb cooldown reduction
+      if (section.includes("wildfire_bomb->adjust") || section.includes("wildfire_infusion")) {
+        info.reducesWildfireBombCd = true;
+      }
+      
+      // Strike as One
+      if (section.includes("strike_as_one")) {
+        info.triggersStrikeAsOne = true;
+      }
+      
+      spells[name] = info;
+    }
+  }
+  
+  return spells;
+}
+
+// ─── 9. Tier Set Bonuses ────────────────────────────────────
+
+function parseTierSets(src: string) {
+  const tierSets: Record<string, any> = {};
+  
+  // Match: tier_set.mid_s1_sv_2pc = sets->set( HUNTER_SURVIVAL, MID1, B2 );
+  const tierPattern = /tier_set\.(\w+)\s*=\s*sets->set\s*\(\s*HUNTER_(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)/g;
+  let m;
+  while ((m = tierPattern.exec(src)) !== null) {
+    tierSets[m[1]] = {
+      spec: m[2],
+      tier: m[3],
+      piece: m[4],
+    };
+  }
+  
+  // Find associated spell IDs
+  const tierSpellPattern = /tier_set\.(\w+)\.ok\(\)\s*\?\s*find_spell\s*\(\s*(\d+)\s*\)/g;
+  while ((m = tierSpellPattern.exec(src)) !== null) {
+    if (tierSets[m[1]]) {
+      tierSets[m[1]].associatedSpellId = parseInt(m[2]);
+    }
+  }
+  
+  return tierSets;
+}
+
+// ─── 10. Special Mechanics ──────────────────────────────────
+
+function parseSpecialMechanics(src: string) {
+  const mechanics: Record<string, any> = {};
+  
+  // Mastery: Spirit Bond scaling
+  const spiritBondSection = src.match(/spirit_bond.*?mastery_value\(\)/g);
+  mechanics.spiritBondMasteryRefs = spiritBondSection ? spiritBondSection.length : 0;
+  
+  // Unnatural Causes hardcoded execute multiplier
+  if (src.includes("1.0476")) {
+    mechanics.unnaturalCausesExecuteMultiplier = 1.0476;
+    // Find the threshold
+    const threshMatch = src.match(/unnatural_causes->effectN\s*\(\s*3\s*\)\.base_value\(\)/);
+    mechanics.unnaturalCausesExecuteThreshold = threshMatch ? "effectN(3).base_value()" : "unknown";
+  }
+  
+  // Outland Venom bug
+  if (src.includes("Outland Venom is only giving half")) {
+    mechanics.outlandVenomBug = "Value halved when bugs=true";
+  }
+  
+  // AP coefficient source
+  mechanics.apPerAgility = 1; // base.attack_power_per_agility = 1
+  mechanics.baseGcd = "1.5s";
+  mechanics.baseDistance = { survival: 5, ranged: 40 };
+  
+  // Pet AP scaling
+  const petApMatch = src.match(/owner_coeff\.ap_from_ap\s*=\s*([0-9.]+)/g);
+  if (petApMatch) {
+    mechanics.petApCoefficients = petApMatch.map(s => {
+      const v = s.match(/=\s*([0-9.]+)/);
+      return v ? parseFloat(v[1]) : 0;
+    });
+  }
+  
+  // Bloodseeker max stacks
+  const bsMax = src.match(/bloodseeker.*?max_stack/);
+  mechanics.bloodseekerUsesMaxStack = !!bsMax;
+  
+  // Wildfire Bomb primary target bonus
+  const wfbBonus = src.match(/wildfire_bomb->effectN\s*\(\s*3\s*\)\.percent\(\)/);
+  mechanics.wildfireBombPrimaryTargetBonus = wfbBonus ? "effectN(3).percent()" : "not found";
+  
+  // Radiant Edge stacking multiplier
+  if (src.includes("pow( 1 + p()->talents.radiant_edge")) {
+    mechanics.radiantEdgeStacking = "Exponential: pow(1 + effectN(1).percent(), bounces + 1)";
+  }
+  
+  // Fury of the Wyvern extension cap
+  const fotwCap = src.match(/fury_of_the_wyvern\.cap\s*=\s*timespan_t::from_seconds\s*\(\s*p->talents\.fury_of_the_wyvern->effectN\s*\(\s*(\d+)\s*\)/);
+  if (fotwCap) mechanics.furyOfTheWyvernCapEffect = parseInt(fotwCap[1]);
+  
+  return mechanics;
 }
 
 function extractSpellSection(source: string, spellName: string): string | null {
-  // Find struct definition for the spell
   const pattern = new RegExp(`struct\\s+${spellName}_t[^{]*\\{`, "i");
   const match = source.match(pattern);
   if (!match || match.index === undefined) return null;
   
-  // Find matching closing brace (simplified — count braces)
   let depth = 0;
   let start = match.index;
-  for (let i = start; i < source.length && i < start + 5000; i++) {
+  for (let i = start; i < source.length && i < start + 8000; i++) {
     if (source[i] === "{") depth++;
     if (source[i] === "}") {
       depth--;
       if (depth === 0) return source.slice(start, i + 1);
     }
   }
-  return source.slice(start, Math.min(start + 2000, source.length));
+  return source.slice(start, Math.min(start + 3000, source.length));
 }
 
 // ─── Build the processed sim data ──────────────────────────
 
-function buildSimcData(aplData: any, spellData: any, sha: string) {
+function buildSimcData(aplData: any, spellData: any, consumables: any, sha: string) {
   return {
-    version: "simc-midnight",
+    version: "simc-midnight-v2",
     branch: BRANCH,
     sha,
     fetchedAt: new Date().toISOString(),
@@ -186,8 +772,11 @@ function buildSimcData(aplData: any, spellData: any, sha: string) {
     // Parsed APL rotation priorities
     apl: aplData,
     
-    // Spell implementation data
+    // Comprehensive spell database
     spells: spellData,
+    
+    // Consumable recommendations
+    consumables,
     
     // Extracted rotation summary for quick reference
     rotationSummary: {
@@ -259,7 +848,8 @@ Deno.serve(async (req) => {
     // Parse
     const aplData = parseSurvivalAPL(aplSource);
     const spellData = parseSurvivalSpellData(hunterSource);
-    const simcData = buildSimcData(aplData, spellData, latestSha);
+    const consumables = parseConsumables(aplSource);
+    const simcData = buildSimcData(aplData, spellData, consumables, latestSha);
     
     // Upsert into cache
     const upsertPayload = {
