@@ -1689,11 +1689,11 @@ export default function SurvivalHunterSim() {
 
       // Stat weights — engine-derived using user's actual character data
       const swBaseInput = charToSimInput(
-        parsedChar, heroTalent as HeroTree, primaryTarget, fightDuration,
+        parsedChar, activeHero, primaryTarget, fightDuration,
         currentSimOptions, { customAPL: aplOverride },
       );
       const sw = await pool.computeSimStatWeights(
-        heroTalent as HeroTree,
+        activeHero,
         swBaseInput.config.fightStyle,
         currentSimOptions,
         swBaseInput,
@@ -1712,9 +1712,9 @@ export default function SurvivalHunterSim() {
       };
 
       // User vs optimal comparison — both use the same imported gear
-      // "Your Build" = user's detected hero talent from Armory/SimC import
+      // "Your Build" = user's detected hero talent from Armory/SimC import (same as activeHero)
       // "Optimal Build" = the selected hero talent from the UI config selector
-      const uHeroKey = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'pack_leader' : heroTalent) as HeroTree;
+      const uHeroKey = activeHero;
       const optHeroKey = heroTalent as HeroTree;
       const [userEngineResult, optEngineResult] = await Promise.all([
         pool.runSim(charToSimInput(parsedChar, uHeroKey, primaryTarget, fightDuration, currentSimOptions)),
@@ -1729,11 +1729,11 @@ export default function SurvivalHunterSim() {
       Promise.all(
         heatmapTargets.map(async (tc) => {
           const htInput = charToSimInput(
-            parsedChar, heroTalent as HeroTree, tc, fightDuration,
+            parsedChar, activeHero, tc, fightDuration,
             currentSimOptions, { customAPL: aplOverride, iterations: 500 },
           );
           const htSw = await pool.computeSimStatWeights(
-            heroTalent as HeroTree, htInput.config.fightStyle, currentSimOptions, htInput,
+            activeHero, htInput.config.fightStyle, currentSimOptions, htInput,
           );
           return { tc, sw: htSw };
         }),
