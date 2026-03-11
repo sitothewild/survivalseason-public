@@ -759,11 +759,14 @@ function applySpellDots(
     }
   }
 
-  // Serpent Sting
-  if (spell.key === "serpent_sting") {
-    const dotInfo = DOT_DB["serpent_sting"];
+  // Flamefang Pitch DoT
+  if (spell.key === "flamefang_pitch") {
+    const dotInfo = DOT_DB["flamefang_pitch_dot"];
     if (dotInfo) {
-      applyDot(state, queue, "serpent_sting", 0, dotInfo, state.currentAP);
+      const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
+      for (let t = 0; t < targets; t++) {
+        applyDot(state, queue, "flamefang_pitch_dot", t, dotInfo, state.currentAP);
+      }
     }
   }
 }
