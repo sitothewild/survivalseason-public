@@ -1479,7 +1479,7 @@ export default function SurvivalHunterSim() {
 
   const userHeroKey = useMemo(() => {
     if (detectedHeroTalent === 'Sentinel') return 'sentinel';
-    if (detectedHeroTalent === 'Pack Leader') return 'packLeader';
+    if (detectedHeroTalent === 'Pack Leader') return 'pack_leader';
     return heroTalent;
   }, [detectedHeroTalent, heroTalent]);
 
@@ -1706,14 +1706,17 @@ export default function SurvivalHunterSim() {
         },
       };
 
-      // User vs optimal comparison — run via engine
-      const uHeroKey = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent) as HeroTree;
+      // User vs optimal comparison — both use the same imported gear
+      // "Your Build" = user's detected hero talent from Armory/SimC import
+      // "Optimal Build" = the selected hero talent from the UI config selector
+      const uHeroKey = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'pack_leader' : heroTalent) as HeroTree;
+      const optHeroKey = heroTalent as HeroTree;
       const [userEngineResult, optEngineResult] = await Promise.all([
         pool.runSim(charToSimInput(parsedChar, uHeroKey, primaryTarget, fightDuration, currentSimOptions)),
-        pool.runSim(charToSimInput(parsedChar, 'sentinel', primaryTarget, fightDuration, currentSimOptions)),
+        pool.runSim(charToSimInput(parsedChar, optHeroKey, primaryTarget, fightDuration, currentSimOptions)),
       ]);
       const userResult = simResultToLegacy(userEngineResult, uHeroKey, primaryTarget, fightDuration);
-      const optResult = simResultToLegacy(optEngineResult, 'sentinel', primaryTarget, fightDuration);
+      const optResult = simResultToLegacy(optEngineResult, optHeroKey, primaryTarget, fightDuration);
 
       // Stat weight heatmap — compute for multiple target counts (non-blocking, fire-and-forget)
       const heatmapTargets = [1, 3, 5, 8];
@@ -1758,9 +1761,9 @@ export default function SurvivalHunterSim() {
       const results = targets.map(t => runSimulation(parsedChar, t, fightDuration, heroTalent, t === 1 ? 'st' : 'aoe', externalMult, simcLiveData, aplData));
       const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
       const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
-      const uHeroKey = detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent;
+      const uHeroKey = detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'pack_leader' : heroTalent;
       const userResult = runSimulation(parsedChar, primaryTarget, fightDuration, uHeroKey, primaryBuild, externalMult, simcLiveData, aplData);
-      const optResult = runSimulation(parsedChar, primaryTarget, fightDuration, 'sentinel', primaryBuild, externalMult, simcLiveData, aplData);
+      const optResult = runSimulation(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
 
       setStatWeights(sw);
       setSimResults(results);
