@@ -13,6 +13,7 @@ import {
   getBiSList, rankTrinkets, rankEnchantsForSlot,
 } from "@/lib/gearOptimizer";
 import { useBlizzardEnchants, triggerEnchantSnapshot } from "@/hooks/useBlizzardEnchants";
+import { useBlizzardItemDB, triggerItemDBSync } from "@/hooks/useBlizzardItemDB";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 // ── Shared colour palette (mirrors SurvivalHunterSim) ────────
@@ -46,11 +47,13 @@ const GRADE_CLR: Record<string,string> = {
 
 export default function Gear() {
   const [hero, setHero] = useState<"sentinel"|"packLeader">("sentinel");
-  const [bisOpen, setBisOpen] = useState(true);   // open by default — tooltips require visibility
+  const [bisOpen, setBisOpen] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncingItemDB, setSyncingItemDB] = useState(false);
 
   // Load enchant data from Blizzard API cache
   const { data: enchantData, refetch: refetchEnchants } = useBlizzardEnchants();
+  const { data: itemDB, refetch: refetchItemDB } = useBlizzardItemDB();
 
   const handleSyncEnchants = useCallback(async () => {
     setSyncing(true);
@@ -63,6 +66,19 @@ export default function Gear() {
       setSyncing(false);
     }
   }, [refetchEnchants]);
+
+  const handleSyncItemDB = useCallback(async () => {
+    setSyncingItemDB(true);
+    try {
+      const result = await triggerItemDBSync("us");
+      console.log("[Gear] Item DB sync result:", result);
+      await refetchItemDB();
+    } catch (e) {
+      console.error("[Gear] Item DB sync failed:", e);
+    } finally {
+      setSyncingItemDB(false);
+    }
+  }, [refetchItemDB]);
 
   // BiS tooltip state — mirrors sim page hover-tooltip pattern
   const [hoveredBiS, setHoveredBiS] = useState<string | null>(null);
@@ -638,7 +654,14 @@ export default function Gear() {
                     color: syncing ? C.textDim : C.goldLight, background:C.goldBg,
                     border:`1px solid ${C.gold}`, borderRadius:4, padding:"3px 8px",
                     cursor: syncing ? "wait" : "pointer", opacity: syncing ? 0.6 : 1 }}>
-                  {syncing ? "SYNCING…" : "⟳ SYNC API"}
+                  {syncing ? "SYNCING…" : "⟳ SYNC ENCHANTS"}
+                </button>
+                <button onClick={handleSyncItemDB} disabled={syncingItemDB}
+                  style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:1,
+                    color: syncingItemDB ? C.textDim : "#38bdf8", background:"#0c1e35",
+                    border:`1px solid #1a3a5c`, borderRadius:4, padding:"3px 8px",
+                    cursor: syncingItemDB ? "wait" : "pointer", opacity: syncingItemDB ? 0.6 : 1 }}>
+                  {syncingItemDB ? "BUILDING DB…" : "⟳ SYNC ITEM DB"}
                 </button>
               </div>
             </div>
