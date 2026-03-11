@@ -137,7 +137,7 @@ describe("applySimOptions", () => {
   it("injects food stats", () => {
     const base = makeBaseStats();
     const noFood = applySimOptions(base, { ...NAKED_OPTIONS, food: "none" }, "sentinel");
-    const withFood = applySimOptions(base, { ...NAKED_OPTIONS, food: "mastery_food" }, "sentinel");
+    const withFood = applySimOptions(base, { ...NAKED_OPTIONS, food: "silvermoon_parade" }, "sentinel");
 
     expect(withFood.stats.masteryRating).toBe(noFood.stats.masteryRating + 90);
   });
