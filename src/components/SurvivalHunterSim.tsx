@@ -4430,9 +4430,11 @@ export default function SurvivalHunterSim() {
               const critLookup: Record<string, number> = {};
               for (const ab of engineBD) critLookup[ab.label] = ab.critPct ?? 0;
 
-              // Hero talent proc data from engine
-              const hc = primary.heroCounters || {};
-              const isPL = heroTalent === 'packLeader';
+              // Use the hero from the actual sim result, not the UI selector
+              const simHero = primary.hero || heroTalent;
+              const isPL = simHero === 'packLeader' || simHero === 'pack_leader';
+              const heroLabel = isPL ? '🐾 Pack Leader' : '🦉 Sentinel';
+              const heroColor = isPL ? C.packClr : C.sentClr;
               const heroProcs = isPL
                 ? [
                     { label: "Pack Coordination", value: hc.packCoordinationProcs ?? 0 },
@@ -4457,7 +4459,7 @@ export default function SurvivalHunterSim() {
                 const lines = [
                   `SURVIVAL HUNTER SIM REPORT`,
                   `═══════════════════════════`,
-                  `Hero: ${heroTalent === 'sentinel' ? 'Sentinel' : 'Pack Leader'} | Targets: ${targetCount} | Duration: ${dL(fightDuration)} | Style: ${FIGHT_STYLES[fightStyle]?.label || 'Patchwerk'}`,
+                  `Hero: ${isPL ? 'Pack Leader' : 'Sentinel'} | Targets: ${targetCount} | Duration: ${dL(fightDuration)} | Style: ${FIGHT_STYLES[fightStyle]?.label || 'Patchwerk'}`,
                   `TOTAL DPS: ${fmt(Math.round(totalDps))}`,
                   ``,
                   `ABILITY BREAKDOWN`,
@@ -4521,7 +4523,7 @@ export default function SurvivalHunterSim() {
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                     {[
-                      { label: "HERO", value: heroTalent === 'sentinel' ? '🦉 Sentinel' : '🐾 Pack Leader', color: heroTalent === 'sentinel' ? C.sentClr : C.packClr },
+                      { label: "HERO", value: heroLabel, color: heroColor },
                       { label: "TARGETS", value: `${targetCount}T`, color: C.textPri },
                       { label: "DURATION", value: dL(fightDuration), color: C.textMid },
                     ].map(chip => (
@@ -4550,7 +4552,7 @@ export default function SurvivalHunterSim() {
                         <LBL>📊 Simulation Summary</LBL>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
                           {[
-                            { label: "HERO", value: heroTalent === 'sentinel' ? '🦉 Sentinel' : '🐾 Pack Leader', color: heroTalent === 'sentinel' ? C.sentClr : C.packClr },
+                            { label: "HERO", value: heroLabel, color: heroColor },
                             { label: "DURATION", value: dL(fightDuration), color: C.goldLight },
                             { label: "TARGETS", value: `${targetCount}T`, color: C.textPri },
                             { label: "STYLE", value: FIGHT_STYLES[fightStyle]?.label?.replace(/^[^\s]+\s/, '') || 'Patchwerk', color: C.textMid },
@@ -4726,7 +4728,7 @@ export default function SurvivalHunterSim() {
                     "Vicious Wound": "VW",
                   };
 
-                  const isSentinel = heroTalent === 'sentinel';
+                  const isSentinel = !isPL;
                   const rawTimeline = primary?.timeline;
 
                   // Filter to first 30s of cast events (skip auto/dot for lane view)
