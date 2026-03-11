@@ -185,11 +185,11 @@ describe("applySimOptions", () => {
     expect(result.buffMults.versPctBonus).toBeCloseTo(3.0);
   });
 
-  it("returns potion aura for tempered potion", () => {
+  it("returns potion aura for Light's Potential", () => {
     const base = makeBaseStats();
     const options: SimOptions = {
       ...NAKED_OPTIONS,
-      potion: "tempered_potion",
+      potion: "lights_potential",
     };
 
     const result = applySimOptions(base, options, "sentinel");
