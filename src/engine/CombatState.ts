@@ -198,6 +198,9 @@ export class CombatState {
   mongooseFuryStacks: number = 0;
   mongooseFuryExpiresMs: number = 0;
 
+  // Bloodseeker: +10% attack speed per bleeding target (multiplicative, NOT haste)
+  bloodseekerStacks: number = 0;
+
   // Pack Leader: Howl of the Pack Leader beast cycle (0=Wyvern, 1=Boar, 2=Bear)
   howlBeastCycle: number = 0;
   // Wyvern's Cry: stacking pet damage buff
@@ -380,6 +383,7 @@ export class CombatState {
     this.sentinelWisdomStacks = 0;
     this.packCounter = 0;
     this.mongooseFuryStacks = 0;
+    this.bloodseekerStacks = 0;
     this.howlBeastCycle = 0;
     this.wyvernsCryStacks = 0;
     this.wyvernsCryExpiresMs = 0;
