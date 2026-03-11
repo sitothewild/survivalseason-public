@@ -69,10 +69,47 @@ describe("charToSimInput", () => {
     expect(noTier.stats.has2pc).toBe(false);
     expect(noTier.stats.has4pc).toBe(false);
   });
+
+  it("resolves trinkets from gear itemIds when available", () => {
+    const charWithTrinkets: ParsedCharData = {
+      ...SAMPLE_CHAR,
+      gear: [
+        { slot: "trinket1", ilvl: 276, itemId: "225600", name: "Moonwarden's Focal Lens" },
+        { slot: "trinket2", ilvl: 276, itemId: "225601", name: "Abyssal Night Effigy" },
+      ],
+    };
+    const input = charToSimInput(charWithTrinkets, "sentinel", 1, 300, FULL_RAID_OPTIONS);
+    expect(input.trinkets[0].id).toBe(225600);
+    expect(input.trinkets[1].id).toBe(225601);
+  });
+
+  it("falls back to BiS trinkets for unknown itemIds", () => {
+    const charWithUnknown: ParsedCharData = {
+      ...SAMPLE_CHAR,
+      gear: [
+        { slot: "trinket1", ilvl: 276, itemId: "999999", name: "Unknown Trinket" },
+      ],
+    };
+    const input = charToSimInput(charWithUnknown, "sentinel", 1, 300, FULL_RAID_OPTIONS);
+    // Should still have 2 trinkets (unknown falls back to default)
+    expect(input.trinkets[0]).toBeDefined();
+    expect(input.trinkets[1]).toBeDefined();
+    expect(input.trinkets[0].id).toBeDefined();
+  });
+
+  it("falls back to BiS when no gear provided", () => {
+    const charNoGear: ParsedCharData = {
+      ...SAMPLE_CHAR,
+      gear: [],
+    };
+    const input = charToSimInput(charNoGear, "sentinel", 1, 300, FULL_RAID_OPTIONS);
+    expect(input.trinkets[0]).toBeDefined();
+    expect(input.trinkets[1]).toBeDefined();
+  });
 });
 
 describe("simResultToLegacy", () => {
-  it("converts engine SimResult to legacy shape", () => {
+  it("converts engine SimResult to legacy shape with statistical data", () => {
     const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
     const engineResult = runSimulation(input);
 
@@ -85,6 +122,16 @@ describe("simResultToLegacy", () => {
     expect(legacy.build).toBe("st");
     expect(typeof legacy.breakdown).toBe("object");
     expect(Object.keys(legacy.breakdown).length).toBeGreaterThan(0);
+    // Statistical convergence data should be passed through
+    expect(legacy.stdDev).toBeDefined();
+    expect(legacy.stdDev).toBeGreaterThan(0);
+    expect(legacy.p5Dps).toBeDefined();
+    expect(legacy.p95Dps).toBeDefined();
+    expect(legacy.p5Dps!).toBeLessThanOrEqual(legacy.totalDps);
+    expect(legacy.p95Dps!).toBeGreaterThanOrEqual(legacy.totalDps);
+    expect(legacy.iterations).toBeDefined();
+    expect(legacy.iterations!).toBeGreaterThan(0);
+    expect(legacy.medianDps).toBeDefined();
     // breakdown values should be DPS numbers
     for (const val of Object.values(legacy.breakdown)) {
       expect(typeof val).toBe("number");

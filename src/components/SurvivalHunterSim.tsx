@@ -84,8 +84,8 @@ const MIDNIGHT_DATA = {
       mongooseFury: { dps: 0.10, stTarget: 0.14, aoe: 0.06, desc: "Raptor Strike increases RS damage by 10% for 8s. Multiple overlaps stack.", always: true },
       strikeAsOne: { dps: 0.08, stTarget: 0.10, aoe: 0.06, desc: "All damaging abilities cause pet to attack.", always: true },
       wildfireBomb: { dps: 0.14, stTarget: 0.11, aoe: 0.22, desc: "No focus cost. Lethal Calibration: +15% crit dmg for 12s.", always: true },
-      takedown: { dps: 0.08, stTarget: 0.12, aoe: 0.06, desc: "Replaces Coordinated Assault. 20% amp for 8s. 1:30 base CD.", always: true },
-      boomstick: { dps: 0.10, stTarget: 0.09, aoe: 0.14, desc: "Replaces FotE. Frontal AoE, 1m CD. Shellshock: +40% ST.", always: true },
+      takedown: { dps: 0.08, stTarget: 0.12, aoe: 0.06, desc: "20% amp for 8s. 1:30 base CD. Core burst window.", always: true },
+      boomstick: { dps: 0.10, stTarget: 0.09, aoe: 0.14, desc: "Frontal AoE, 1m CD. Shellshock: +40% ST.", always: true },
       raptorSwipe: { dps: 0.09, stTarget: 0.04, aoe: 0.16, desc: "Apex talent (4 points). 25% proc → 100% during Takedown.", always: true },
       savagery: { dps: 0.06, stTarget: 0.09, aoe: 0.03, desc: "Reduces Takedown CD by 15/30s.", stPriority: true },
       vulnerability: { dps: 0.05, stTarget: 0.07, aoe: 0.02, desc: "RS and Boomstick deal 20% increased crit damage.", stPriority: true },
@@ -168,7 +168,7 @@ function parseSimcString(simcText) {
     if (key === 'attack_power') result.stats.attackPower = v;
   });
 
-  // Known enchant IDs → display names (Midnight / TWW)
+  // Known enchant IDs → display names (Midnight 12.0)
   const ENCHANT_NAMES: Record<string, string> = {
     '7460': 'Arcane Mastery', '7461': 'Stormrider\'s Fury',
     '7462': 'Stonebound Artistry', '7463': 'Oathsworn\'s Tenacity',
@@ -643,8 +643,8 @@ const CORE_TALENTS: TalentPill[] = [
   { name: 'Mongoose Fury',      type: 'core', points: 2, desc: 'Raptor Strike stacking damage buff, up to 5×. Always talented — backbone of the entire rotation. Each consecutive RS extends the buff duration.' },
   { name: 'Strike as One',      type: 'core', points: 1, desc: 'All your damaging abilities trigger a coordinated pet attack. Core pet-scaling node — affects Kill Command, Claw, and all beast procs.' },
   { name: 'Wildfire Bomb',      type: 'core', points: 2, desc: 'No-focus bomb nuke that ignites the area. Highest single-cast ability value. Enables Lethal Calibration on detonation and benefits from all fire amplifiers.' },
-  { name: 'Takedown',           type: 'core', points: 1, desc: '+20% damage amplifier for 8s. 90s base CD (reduced by Savagery to 60s). Replaces Coordinated Assault. Line up RS stacks + cooldowns inside this window.' },
-  { name: 'Boomstick',          type: 'core', points: 1, desc: 'Frontal cone attack with Shellshock (+40% Boomstick ST damage). 60s CD. Replaces Focus Fire. Triggers Mongoose Rounds and reduces WFB CD via Wildfire Shells.' },
+  { name: 'Takedown',           type: 'core', points: 1, desc: '+20% damage amplifier for 8s. 90s base CD (reduced by Savagery to 60s). Line up RS stacks + cooldowns inside this window.' },
+  { name: 'Boomstick',          type: 'core', points: 1, desc: 'Frontal cone attack with Shellshock (+40% Boomstick ST damage). 60s CD. Triggers Mongoose Rounds and reduces WFB CD via Wildfire Shells.' },
   { name: 'Raptor Swipe',       type: 'core', points: 2, desc: 'Apex 2-point talent. Raptor Strike has a 25% proc chance to strike again for free. During Takedown the proc rate becomes 100% — massive burst synergy.' },
   { name: 'Lethal Calibration', type: 'core', points: 1, desc: 'Wildfire Bomb detonation applies a +15% critical damage buff for 12s. Multiplicative with Vulnerability. Keep WFB on CD to maintain near-100% uptime.' },
 ];
@@ -1046,6 +1046,14 @@ export default function SurvivalHunterSim() {
   const [aplEditorOpen, setAplEditorOpen] = useState(false);
   const [aplValidation, setAplValidation] = useState<{ valid: boolean; actionCount: number; warnings: string[]; errors: string[] } | null>(null);
   const [copied, setCopied] = useState('');
+  // Stat weight heatmap data: { [targetCount]: StatWeightResult }
+  const [statWeightHeatmap, setStatWeightHeatmap] = useState<Record<number, any> | null>(null);
+  // Gear comparison state
+  const [gearCompareOpen, setGearCompareOpen] = useState(false);
+  const [gearCompareStatA, setGearCompareStatA] = useState<Record<string, number>>({ agility: 0, crit: 0, haste: 0, mastery: 0, vers: 0 });
+  const [gearCompareStatB, setGearCompareStatB] = useState<Record<string, number>>({ agility: 0, crit: 0, haste: 0, mastery: 0, vers: 0 });
+  const [gearCompareResult, setGearCompareResult] = useState<{ dpsA: number; dpsB: number; delta: number; pct: number } | null>(null);
+  const [gearCompareRunning, setGearCompareRunning] = useState(false);
   const [copiedLoadoutId, setCopiedLoadoutId] = useState<string|null>(null);
   // Custom talent loadout slots
   const [customSlots, setCustomSlots] = useState<(CustomLoadout | null)[]>([null, null]);
@@ -1223,7 +1231,7 @@ export default function SurvivalHunterSim() {
   useEffect(() => { fetchPatchNotes(); }, []);
 
   // Auto-load SimC data on mount
-  // Deprecated War Within abilities — if found in cached data, it's stale
+  // Deprecated pre-Midnight abilities — if found in cached data, it's stale
   const DEPRECATED_ABILITIES = ['spearhead', 'flanking_strike', 'mongoose_bite', 'coordinated_assault', 'fury_of_the_eagle', 'butchery', 'raptor_bite'];
   const isStaleSimcData = (data: any): boolean => {
     const actionLists = data?.apl?.actionLists;
@@ -1257,7 +1265,7 @@ export default function SurvivalHunterSim() {
           } catch (e) { console.warn('APL build from cache failed:', e); }
         } else {
           // Stale or no cached data, trigger a sync
-          if (cached?.data) console.warn('Cached SimC data contains deprecated War Within abilities — forcing re-sync');
+          if (cached?.data) console.warn('Cached SimC data contains deprecated pre-Midnight abilities — forcing re-sync');
           await handleSimcSync(true);
         }
       } catch (e) {
@@ -1641,21 +1649,29 @@ export default function SurvivalHunterSim() {
         }),
       );
 
-      // Stat weights — kept analytical (fast, no engine run needed)
-      const primaryBuild = primaryTarget === 1 ? 'st' : 'aoe';
-      // Compute externalMult for the analytical stat weights path
-      let externalMult = 1.0;
-      externalMult *= FIGHT_STYLES[fightStyle]?.mult || 1.0;
-      if (currentSimOptions.raidBuffs.battleShout) externalMult *= 1.05;
-      if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
-      if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
-      if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
-      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'fleeting_magisters' ? 1.035 : 1.03;
-      if (currentSimOptions.food !== 'none') externalMult *= 1.02;
-      if (currentSimOptions.potion !== 'none') externalMult *= 1.02;
-      if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
-      if (currentSimOptions.augmentRune) externalMult *= 1.005;
-      const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
+      // Stat weights — engine-derived using user's actual character data
+      const swBaseInput = charToSimInput(
+        parsedChar, heroTalent as HeroTree, primaryTarget, fightDuration,
+        currentSimOptions, { customAPL: aplOverride },
+      );
+      const sw = await pool.computeSimStatWeights(
+        heroTalent as HeroTree,
+        swBaseInput.config.fightStyle,
+        currentSimOptions,
+        swBaseInput,
+      );
+
+      // Convert engine StatWeightResult to the UI shape legacy stat weights uses
+      const swForUI = {
+        baseDps: Math.round(sw.baseDps),
+        weights: {
+          Agility: { perPoint: sw.weights.agility, perRating: sw.weights.agility, delta: 200, bump: 200, normalized: 1.0 },
+          Crit: { perPoint: sw.weights.crit * 170, perRating: sw.weights.crit, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.crit },
+          Haste: { perPoint: sw.weights.haste * 170, perRating: sw.weights.haste, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.haste },
+          Mastery: { perPoint: sw.weights.mastery * 170, perRating: sw.weights.mastery, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.mastery },
+          Vers: { perPoint: sw.weights.vers * 205, perRating: sw.weights.vers, delta: 200, bump: 200, ratingBump: 200, normalized: sw.normalized.vers },
+        },
+      };
 
       // User vs optimal comparison — run via engine
       const uHeroKey = (detectedHeroTalent === 'Sentinel' ? 'sentinel' : detectedHeroTalent === 'Pack Leader' ? 'packLeader' : heroTalent) as HeroTree;
@@ -1666,7 +1682,27 @@ export default function SurvivalHunterSim() {
       const userResult = simResultToLegacy(userEngineResult, uHeroKey, primaryTarget, fightDuration);
       const optResult = simResultToLegacy(optEngineResult, 'sentinel', primaryTarget, fightDuration);
 
-      setStatWeights(sw);
+      // Stat weight heatmap — compute for multiple target counts (non-blocking, fire-and-forget)
+      const heatmapTargets = [1, 3, 5, 8];
+      setStatWeightHeatmap(null);
+      Promise.all(
+        heatmapTargets.map(async (tc) => {
+          const htInput = charToSimInput(
+            parsedChar, heroTalent as HeroTree, tc, fightDuration,
+            currentSimOptions, { customAPL: aplOverride, iterations: 500 },
+          );
+          const htSw = await pool.computeSimStatWeights(
+            heroTalent as HeroTree, htInput.config.fightStyle, currentSimOptions, htInput,
+          );
+          return { tc, sw: htSw };
+        }),
+      ).then((results) => {
+        const hm: Record<number, any> = {};
+        for (const { tc, sw: htSw } of results) hm[tc] = htSw;
+        setStatWeightHeatmap(hm);
+      }).catch(() => { /* non-critical — skip if fails */ });
+
+      setStatWeights(swForUI);
       setSimResults(engineResults);
       setOptimalTalents(getOptimalTalents(targets[targets.length - 1], heroTalent));
       setUserSimResult(userResult);
@@ -1704,6 +1740,79 @@ export default function SurvivalHunterSim() {
   }, [parsedChar, heroTalent, fightDuration, simMode, fightStyle, currentSimOptions, simcLiveData, detectedHeroTalent, aplData]);
 
   const copy = (str, key) => { navigator.clipboard.writeText(str).then(() => { setCopied(key); setTimeout(() => setCopied(''), 2000); }); };
+
+  /** Generate SimC-compatible profile string from parsed character */
+  const generateSimcExport = useCallback(() => {
+    if (!parsedChar) return '';
+    const c = parsedChar.character || {};
+    const s = parsedChar.stats;
+    const lines: string[] = [];
+    lines.push(`survival_hunter="${c.name || 'SimExport'}"`);
+    if (c.level) lines.push(`level=${c.level}`);
+    if (c.race) lines.push(`race=${c.race}`);
+    lines.push(`spec=survival`);
+    lines.push('');
+    // Stats as ratings
+    lines.push(`agility=${s.agility}`);
+    lines.push(`attack_power=${s.attackPower}`);
+    lines.push(`haste_rating=${Math.round(s.haste * 170)}`);
+    lines.push(`crit_rating=${Math.round(s.crit * 170)}`);
+    lines.push(`mastery_rating=${Math.round(s.mastery * 170)}`);
+    lines.push(`versatility_rating=${Math.round(s.versatility * 205 / 100)}`);
+    lines.push('');
+    // Gear
+    if (parsedChar.gear?.length) {
+      for (const g of parsedChar.gear) {
+        let line = `${g.slot}=,id=${g.itemId || 0}`;
+        if (g.ilvl) line += `,item_level=${g.ilvl}`;
+        if (g.enchant) line += `,enchant=${g.enchant.toLowerCase().replace(/ /g, '_')}`;
+        if (g.gemId) line += `,gem_id=${g.gemId}`;
+        lines.push(`# ${g.name} (${g.ilvl})`);
+        lines.push(line);
+      }
+    }
+    lines.push('');
+    if (parsedChar.talents) lines.push(`talents=${parsedChar.talents}`);
+    return lines.join('\n');
+  }, [parsedChar]);
+
+  /** Gear comparison — run delta sims with stat offsets */
+  const runGearCompare = useCallback(async () => {
+    if (!parsedChar) return;
+    setGearCompareRunning(true);
+    setGearCompareResult(null);
+    const pool = getWorkerPool();
+    try {
+      // Build base input
+      const base = charToSimInput(parsedChar, heroTalent as HeroTree, 1, fightDuration, currentSimOptions);
+      // Item A: add stat deltas
+      const statsA = { ...base.stats };
+      statsA.agility += gearCompareStatA.agility || 0;
+      statsA.critRating += gearCompareStatA.crit || 0;
+      statsA.hasteRating += gearCompareStatA.haste || 0;
+      statsA.masteryRating += gearCompareStatA.mastery || 0;
+      statsA.versatilityRating += gearCompareStatA.vers || 0;
+      statsA.attackPower += gearCompareStatA.agility || 0;
+      // Item B: add stat deltas
+      const statsB = { ...base.stats };
+      statsB.agility += gearCompareStatB.agility || 0;
+      statsB.critRating += gearCompareStatB.crit || 0;
+      statsB.hasteRating += gearCompareStatB.haste || 0;
+      statsB.masteryRating += gearCompareStatB.mastery || 0;
+      statsB.versatilityRating += gearCompareStatB.vers || 0;
+      statsB.attackPower += gearCompareStatB.agility || 0;
+      const inputA = { ...base, stats: statsA, config: { ...base.config, iterations: 1000, seed: 42 } };
+      const inputB = { ...base, stats: statsB, config: { ...base.config, iterations: 1000, seed: 42 } };
+      const [resA, resB] = await Promise.all([pool.runSim(inputA), pool.runSim(inputB)]);
+      const delta = Math.round(resA.meanDps - resB.meanDps);
+      const pct = resB.meanDps > 0 ? +((resA.meanDps / resB.meanDps - 1) * 100).toFixed(2) : 0;
+      setGearCompareResult({ dpsA: Math.round(resA.meanDps), dpsB: Math.round(resB.meanDps), delta, pct });
+    } catch (err) {
+      console.error('Gear compare error:', err);
+    } finally {
+      setGearCompareRunning(false);
+    }
+  }, [parsedChar, heroTalent, fightDuration, currentSimOptions, gearCompareStatA, gearCompareStatB]);
 
   // Helper components (memoized so inputs don't lose focus on state updates)
    const LBL = useCallback(({ children }) => (
@@ -2950,7 +3059,32 @@ export default function SurvivalHunterSim() {
                       <span style={{ fontSize: 10 }}>{aplEditorOpen ? "▲" : "▼"}</span>
                       {aplEditorOpen ? "COLLAPSE" : "APL EDITOR"} {!aplEditorOpen && <span style={{ color: C.textDim }}>(Custom Action Priority List)</span>}
                     </button>
-                    {aplEditorOpen && (
+                    {aplEditorOpen && (() => {
+                      const defaultKey = getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st');
+                      const currentText = customAPL ?? DEFAULT_APLS[defaultKey] ?? '';
+                      const aplLines = currentText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                      const updateFromLines = (lines: string[]) => {
+                        const newText = lines.join('\n');
+                        if (newText === DEFAULT_APLS[defaultKey]) { setCustomAPL(null); } else { setCustomAPL(newText); }
+                        setAplValidation(null);
+                      };
+                      const moveLine = (idx: number, dir: -1 | 1) => {
+                        const newIdx = idx + dir;
+                        if (newIdx < 0 || newIdx >= aplLines.length) return;
+                        const copy = [...aplLines];
+                        [copy[idx], copy[newIdx]] = [copy[newIdx], copy[idx]];
+                        updateFromLines(copy);
+                      };
+                      const removeLine = (idx: number) => {
+                        const copy = aplLines.filter((_, i) => i !== idx);
+                        updateFromLines(copy);
+                      };
+                      const addAbility = (ability: string) => {
+                        const prefix = aplLines.length === 0 ? 'actions=' : 'actions+=/';
+                        updateFromLines([...aplLines, `${prefix}${ability}`]);
+                      };
+                      const KNOWN_ABILITIES = ['auto_attack','raptor_strike','kill_command','wildfire_bomb','boomstick','takedown','serpent_sting','butchery','mongoose_bite','hatchet_toss'];
+                      return (
                       <div style={{ marginTop: 8, padding: 14, background: C.surface2, borderRadius: 10, border: `1px solid ${C.border}`, animation: "fadeUp .2s ease" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                           <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim }}>
@@ -2958,55 +3092,104 @@ export default function SurvivalHunterSim() {
                             {customAPL !== null && <span style={{ color: C.gold, marginLeft: 6 }}>(CUSTOM)</span>}
                           </div>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => {
-                              const text = customAPL ?? DEFAULT_APLS[getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st')] ?? '';
-                              const result = validateAPL(text);
-                              setAplValidation(result);
-                            }}
-                              style={{
-                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                background: C.surface, border: `1px solid ${C.border}`,
-                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
-                                color: C.textMid, transition: "all .15s",
-                              }}>Validate</button>
-                            <button onClick={() => {
-                              setCustomAPL(null);
-                              setAplValidation(null);
-                            }}
-                              style={{
-                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
-                                background: customAPL !== null ? '#2a1f08' : C.surface,
-                                border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
-                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
-                                color: customAPL !== null ? C.goldLight : C.textDim, transition: "all .15s",
-                              }}>Reset to Default</button>
+                            <button onClick={() => { setAplValidation(validateAPL(currentText)); }}
+                              style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer", color: C.textMid }}>Validate</button>
+                            <button onClick={() => { setCustomAPL(null); setAplValidation(null); }}
+                              style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: customAPL !== null ? '#2a1f08' : C.surface, border: `1px solid ${customAPL !== null ? C.gold : C.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer", color: customAPL !== null ? C.goldLight : C.textDim }}>Reset to Default</button>
                           </div>
                         </div>
-                        <textarea
-                          value={customAPL ?? DEFAULT_APLS[getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st')] ?? ''}
-                          onChange={e => {
-                            const val = e.target.value;
-                            const defaultKey = getDefaultAPLKey(heroTalent as HeroTree, fightStyle === 'st_raid' ? 'raid_st' : fightStyle === 'mplus_aoe' ? 'mplus_pull' : 'raid_st');
-                            // If user typed back to default, reset to null
-                            if (val === DEFAULT_APLS[defaultKey]) {
-                              setCustomAPL(null);
-                            } else {
-                              setCustomAPL(val);
-                            }
-                            setAplValidation(null);
+
+                        {/* Visual line editor */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 8 }}>
+                          {aplLines.map((line, idx) => {
+                            const match = line.match(/^actions(?:\+)?=\/?([a-z_]+)(?:,if=(.+))?$/i);
+                            const ability = match ? match[1] : line;
+                            const conditions = match?.[2] || '';
+                            const isAutoAttack = ability === 'auto_attack';
+                            const abilityColor: Record<string,string> = {
+                              auto_attack: '#64748b', raptor_strike: '#f87171', kill_command: '#60a5fa',
+                              wildfire_bomb: '#f59e0b', boomstick: '#fb923c', takedown: '#a78bfa',
+                              serpent_sting: '#6ee7b7', butchery: '#f472b6', mongoose_bite: '#c084fc',
+                              hatchet_toss: '#94a3b8',
+                            };
+                            return (
+                              <div key={idx} style={{
+                                display: "flex", alignItems: "center", gap: 4, padding: "4px 6px",
+                                background: idx % 2 === 0 ? 'rgba(0,0,0,.15)' : 'transparent',
+                                borderRadius: 4, borderLeft: `3px solid ${abilityColor[ability] || C.textDim}`,
+                              }}>
+                                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C.textDim, width: 16, textAlign: "right", flexShrink: 0 }}>{idx + 1}</span>
+                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700, color: abilityColor[ability] || C.textMid, minWidth: 100, flexShrink: 0 }}>
+                                  {ability.replace(/_/g, ' ')}
+                                </span>
+                                {conditions && (
+                                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                                    title={conditions}>
+                                    if={conditions}
+                                  </span>
+                                )}
+                                {!conditions && <span style={{ flex: 1 }} />}
+                                <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                                  <button onClick={() => moveLine(idx, -1)} disabled={idx === 0}
+                                    style={{ background: 'transparent', border: 'none', color: idx === 0 ? C.borderSub : C.textDim, cursor: idx === 0 ? 'default' : 'pointer', fontSize: 10, padding: "2px 4px", lineHeight: 1 }}
+                                    title="Move up">▲</button>
+                                  <button onClick={() => moveLine(idx, 1)} disabled={idx === aplLines.length - 1}
+                                    style={{ background: 'transparent', border: 'none', color: idx === aplLines.length - 1 ? C.borderSub : C.textDim, cursor: idx === aplLines.length - 1 ? 'default' : 'pointer', fontSize: 10, padding: "2px 4px", lineHeight: 1 }}
+                                    title="Move down">▼</button>
+                                  {!isAutoAttack && (
+                                    <button onClick={() => removeLine(idx)}
+                                      style={{ background: 'transparent', border: 'none', color: '#7f1d1d', cursor: 'pointer', fontSize: 10, padding: "2px 4px", lineHeight: 1 }}
+                                      title="Remove">✕</button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Add ability picker */}
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+                          <select id="apl-add-ability" style={{
+                            fontFamily: "'Rajdhani',sans-serif", fontSize: 12, background: "#141c2a",
+                            border: `1px solid ${C.border}`, borderRadius: 4, padding: "4px 8px",
+                            color: C.textMid, cursor: "pointer", outline: "none",
+                          }}>
+                            {KNOWN_ABILITIES.filter(a => a !== 'auto_attack').map(a => (
+                              <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>
+                            ))}
+                          </select>
+                          <button onClick={() => {
+                            const sel = (document.getElementById('apl-add-ability') as HTMLSelectElement)?.value;
+                            if (sel) addAbility(sel);
                           }}
-                          spellCheck={false}
-                          style={{
-                            width: "100%", minHeight: 180, maxHeight: 400, resize: "vertical",
-                            background: "#141c2a", border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
-                            borderRadius: 8, color: "#cbd5e1", fontFamily: "'IBM Plex Mono',monospace",
-                            fontSize: 11, lineHeight: 1.6, padding: "10px 12px",
-                            outline: "none", transition: "border-color .2s",
-                          }}
-                        />
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                            style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: "4px 10px", cursor: "pointer", color: C.textMid }}>+ Add</button>
+                        </div>
+
+                        {/* Raw text toggle */}
+                        <details style={{ marginBottom: 6 }}>
+                          <summary style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, cursor: "pointer" }}>Raw APL text</summary>
+                          <textarea
+                            value={currentText}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val === DEFAULT_APLS[defaultKey]) { setCustomAPL(null); } else { setCustomAPL(val); }
+                              setAplValidation(null);
+                            }}
+                            spellCheck={false}
+                            style={{
+                              width: "100%", minHeight: 120, maxHeight: 300, resize: "vertical",
+                              background: "#141c2a", border: `1px solid ${customAPL !== null ? C.gold : C.border}`,
+                              borderRadius: 8, color: "#cbd5e1", fontFamily: "'IBM Plex Mono',monospace",
+                              fontSize: 11, lineHeight: 1.6, padding: "10px 12px",
+                              outline: "none", transition: "border-color .2s", marginTop: 6,
+                            }}
+                          />
+                        </details>
+
+                        {/* Validation status */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim }}>
-                            SimC-style syntax: <code style={{ color: C.textMid, fontSize: 10 }}>actions+=/ability,if=condition1&amp;condition2</code>
+                            {aplLines.length} actions · SimC syntax · Supports & (AND) and | (OR)
                           </div>
                           {aplValidation && (
                             <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, fontWeight: 700, color: aplValidation.valid ? '#6ee7b7' : '#f87171' }}>
@@ -3017,19 +3200,16 @@ export default function SurvivalHunterSim() {
                         {aplValidation && (aplValidation.errors.length > 0 || aplValidation.warnings.length > 0) && (
                           <div style={{ marginTop: 8, padding: 10, background: "#1a1020", borderRadius: 6, border: `1px solid ${aplValidation.errors.length > 0 ? '#7f1d1d' : '#78350f'}` }}>
                             {aplValidation.errors.map((e, i) => (
-                              <div key={`e${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#f87171', marginBottom: 3 }}>
-                                {e}
-                              </div>
+                              <div key={`e${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#f87171', marginBottom: 3 }}>{e}</div>
                             ))}
                             {aplValidation.warnings.map((w, i) => (
-                              <div key={`w${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#fbbf24', marginBottom: 3 }}>
-                                {w}
-                              </div>
+                              <div key={`w${i}`} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: '#fbbf24', marginBottom: 3 }}>{w}</div>
                             ))}
                           </div>
                         )}
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   {/* Run Simulation button moved to left column */}
@@ -3231,6 +3411,13 @@ export default function SurvivalHunterSim() {
                                 </div>
                                 <div className="dps-anim" style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 40, fontWeight: 900, color: C.goldLight, lineHeight: 1 }}>{fmt(res.totalDps)}</div>
                                 <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 13, color: C.textMid, marginTop: 2 }}>DPS estimate</div>
+                                {res.stdDev != null && res.iterations && (
+                                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.textDim, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    <span title="95% confidence interval">CI: {fmt(res.p5Dps)}–{fmt(res.p95Dps)}</span>
+                                    <span title="Standard error of the mean">SE: ±{fmt(Math.round(res.stdDev / Math.sqrt(res.iterations)))}</span>
+                                    <span title="Number of iterations">{res.iterations} iter</span>
+                                  </div>
+                                )}
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
                                 <span className="badge" style={{ background: res.hero === "sentinel" ? C.sentBg : C.packBg, color: res.hero === "sentinel" ? C.sentClr : C.packClr, border: `1px solid ${res.hero === "sentinel" ? C.sentBdr : C.packBdr}` }}>{h.icon} {h.name}</span>
@@ -3271,7 +3458,21 @@ export default function SurvivalHunterSim() {
                               </div>
                             ))}
                           </div>
-                          <div style={{ marginTop: 10, fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Normalized to Agility = 1.000 · Base DPS: {fmt(statWeights.baseDps)}</div>
+                          <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim }}>Normalized to Agility = 1.000 · Base DPS: {fmt(statWeights.baseDps)}</div>
+                            <button onClick={() => {
+                              const w = statWeights.weights;
+                              const pawn = `( Pawn: v1: "SurvivalSim": Agility=${w.Agility.normalized.toFixed(2)}, CriticalStrike=${w.Crit.normalized.toFixed(2)}, Haste=${w.Haste.normalized.toFixed(2)}, Mastery=${w.Mastery.normalized.toFixed(2)}, Versatility=${w.Vers.normalized.toFixed(2)} )`;
+                              copy(pawn, 'pawn');
+                            }}
+                              style={{
+                                fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                                background: copied === 'pawn' ? '#166534' : C.surface,
+                                border: `1px solid ${copied === 'pawn' ? '#22c55e' : C.border}`,
+                                borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                                color: copied === 'pawn' ? '#86efac' : C.textMid, transition: "all .15s",
+                              }}>{copied === 'pawn' ? 'Copied!' : 'Copy Pawn String'}</button>
+                          </div>
                         </CARD>
                       )}
 
@@ -3293,6 +3494,126 @@ export default function SurvivalHunterSim() {
                         </CARD>
                       )}
                     </div>
+
+                    {/* ── Stat Weight Heatmap ────────────────── */}
+                    {statWeightHeatmap && (
+                      <CARD>
+                        <LBL>Stat Weight Heatmap — By Target Count</LBL>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Mono',monospace", fontSize: 12 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, borderBottom: `1px solid ${C.border}` }}>STAT</th>
+                                {Object.keys(statWeightHeatmap).sort((a, b) => +a - +b).map(tc => (
+                                  <th key={tc} style={{ textAlign: "center", padding: "6px 10px", fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 1, color: C.textDim, borderBottom: `1px solid ${C.border}` }}>{tc}T</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {['crit', 'haste', 'mastery', 'vers'].map(stat => {
+                                const statColor: Record<string, string> = { crit: '#f59e0b', haste: '#60a5fa', mastery: '#a78bfa', vers: '#34d399' };
+                                const statLabel: Record<string, string> = { crit: 'Crit', haste: 'Haste', mastery: 'Mastery', vers: 'Vers' };
+                                // Find max normalized value across all targets for heat coloring
+                                const vals = Object.values(statWeightHeatmap).map((sw: any) => sw.normalized[stat] as number);
+                                const maxNorm = Math.max(...vals, 0.01);
+                                return (
+                                  <tr key={stat}>
+                                    <td style={{ padding: "6px 10px", color: statColor[stat], fontWeight: 700, borderBottom: `1px solid ${C.borderSub}` }}>{statLabel[stat]}</td>
+                                    {Object.keys(statWeightHeatmap).sort((a, b) => +a - +b).map(tc => {
+                                      const n = (statWeightHeatmap[+tc] as any).normalized[stat] as number;
+                                      const intensity = Math.min(1, n / maxNorm);
+                                      return (
+                                        <td key={tc} style={{
+                                          textAlign: "center", padding: "6px 10px",
+                                          color: intensity > 0.7 ? C.goldLight : C.textMid,
+                                          fontWeight: intensity > 0.7 ? 700 : 400,
+                                          background: `rgba(217,119,6,${intensity * 0.2})`,
+                                          borderBottom: `1px solid ${C.borderSub}`,
+                                        }}>{n.toFixed(3)}</td>
+                                      );
+                                    })}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 6 }}>
+                          Normalized scale factors (Agility = 1.000) across target counts. Brighter = higher value.
+                        </div>
+                      </CARD>
+                    )}
+
+                    {/* ── Gear Comparison Tool ────────────────── */}
+                    <CARD>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <LBL>Gear Comparison</LBL>
+                        <button onClick={() => setGearCompareOpen(!gearCompareOpen)}
+                          style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700, background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer", color: C.textMid }}>
+                          {gearCompareOpen ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                      {gearCompareOpen && (
+                        <div>
+                          <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 12, color: C.textDim, marginBottom: 10 }}>
+                            Enter stat differences for two items. Positive = item adds that much rating.
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                            {[{ label: 'Item A', state: gearCompareStatA, setter: setGearCompareStatA }, { label: 'Item B', state: gearCompareStatB, setter: setGearCompareStatB }].map(({ label, state: st, setter }) => (
+                              <div key={label} style={{ background: C.surface2, borderRadius: 8, padding: 10, border: `1px solid ${C.border}` }}>
+                                <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 8, letterSpacing: 2, color: C.textDim, marginBottom: 8 }}>{label}</div>
+                                {['agility', 'crit', 'haste', 'mastery', 'vers'].map(stat => (
+                                  <div key={stat} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                                    <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textMid, width: 52, textTransform: "capitalize" }}>{stat}</span>
+                                    <input type="number" value={st[stat] || ''} placeholder="0"
+                                      onChange={e => setter((p: any) => ({ ...p, [stat]: parseInt(e.target.value) || 0 }))}
+                                      style={{ width: 70, padding: "3px 6px", fontSize: 11, background: "#141c2a", border: `1px solid ${C.border}`, borderRadius: 4, color: C.goldLight, fontFamily: "'IBM Plex Mono',monospace", outline: "none" }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <button onClick={runGearCompare} disabled={gearCompareRunning || !parsedChar}
+                              style={{
+                                fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1, fontWeight: 700,
+                                background: gearCompareRunning ? C.surface2 : C.gold, color: gearCompareRunning ? C.textDim : '#000',
+                                border: 'none', borderRadius: 6, padding: "8px 16px", cursor: gearCompareRunning ? 'not-allowed' : 'pointer',
+                              }}>{gearCompareRunning ? 'SIMMING...' : 'COMPARE'}</button>
+                            {gearCompareResult && (
+                              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, display: "flex", gap: 12, alignItems: "center" }}>
+                                <span style={{ color: C.textMid }}>A: <span style={{ color: C.goldLight, fontWeight: 700 }}>{fmt(gearCompareResult.dpsA)}</span></span>
+                                <span style={{ color: C.textMid }}>B: <span style={{ color: C.goldLight, fontWeight: 700 }}>{fmt(gearCompareResult.dpsB)}</span></span>
+                                <span style={{ color: gearCompareResult.delta > 0 ? '#6ee7b7' : gearCompareResult.delta < 0 ? '#f87171' : C.textDim, fontWeight: 700 }}>
+                                  {gearCompareResult.delta > 0 ? '+' : ''}{fmt(gearCompareResult.delta)} ({gearCompareResult.pct > 0 ? '+' : ''}{gearCompareResult.pct}%)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CARD>
+
+                    {/* ── SimC Export ────────────────────────── */}
+                    {parsedChar && (
+                      <CARD>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <LBL>SimC Profile Export</LBL>
+                          <button onClick={() => copy(generateSimcExport(), 'simc_export')}
+                            style={{
+                              fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 700,
+                              background: copied === 'simc_export' ? '#166534' : C.surface,
+                              border: `1px solid ${copied === 'simc_export' ? '#22c55e' : C.border}`,
+                              borderRadius: 4, padding: "3px 10px", cursor: "pointer",
+                              color: copied === 'simc_export' ? '#86efac' : C.textMid, transition: "all .15s",
+                            }}>{copied === 'simc_export' ? 'Copied!' : 'Copy SimC String'}</button>
+                        </div>
+                        <div style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: C.textDim, marginTop: 4 }}>
+                          Copy your character profile in SimC format for cross-validation in Raidbots or SimulationCraft.
+                        </div>
+                      </CARD>
+                    )}
                   </div>
                 )}
               </div>
@@ -3313,7 +3634,7 @@ export default function SurvivalHunterSim() {
               [/\b(wildfire bomb)\b/gi, '#f59e0b'],
               [/\b(sentinel)\b/gi, '#38bdf8'],
               [/\b(pack leader)\b/gi, '#c084fc'],
-              [/\b(coordinated assault)\b/gi, '#e879f9'],
+              [/\b(takedown)\b/gi, '#e879f9'],
             ];
             let result = text;
             keywords.forEach(([rx, color]) => {
@@ -3878,10 +4199,9 @@ export default function SurvivalHunterSim() {
                 { name: "Wildfire Bomb", category: "DAMAGE", cd: "18s (2 charges)", range: "40 yd", cost: "Free", description: "Hurls a bomb at the target, dealing Fire damage on impact and leaving a burning area. Has 2 charges via Grenade Juggler. Triggers Lethal Calibration for +15% crit damage.", whyCast: "Free damage on a charge system — never let both charges cap. Applies Lethal Calibration which buffs your entire rotation's crit damage for 12 seconds.", mistake: "Letting both charges sit at full while pressing other abilities. WFB charges should always be cycling." },
                 { name: "Boomstick", category: "DAMAGE", cd: "60s", range: "40 yd", cost: "Free", description: "Fires a massive frontal cone blast dealing heavy Physical damage. Replaces Fury of the Eagle. Shellshock talent gives +40% single-target damage.", whyCast: "Your highest single-hit damage ability. Use on cooldown for burst. Shellshock makes it devastating in single target.", mistake: "Holding Boomstick for AoE when Shellshock is talented — it's a single-target powerhouse, use it on CD." },
                 { name: "Strike as One", category: "PET", cd: "Passive", range: "Melee (pet)", cost: "None", description: "Every damaging ability you cast causes your pet to immediately strike the target. During Takedown, Raptor Swipe triggers it at 300% damage.", whyCast: "Pure passive throughput — the more buttons you press, the more pet attacks fire. ABC (Always Be Casting) directly increases SaO damage.", mistake: "Having dead GCDs or downtime. Every empty GCD is a missed Strike as One proc." },
-                { name: "Takedown", category: "COOLDOWN", cd: "90s", range: "Melee", cost: "Generates 50 Focus", description: "Deals heavy damage and amplifies all your damage by 20% for 8 seconds. Also generates 50 Focus. Your most important burst cooldown.", whyCast: "20% damage amplification for 8 seconds is enormous. Time your highest damage abilities (Raptor Strike at max Fury, Boomstick) inside this window.", mistake: "Using Takedown when your other CDs aren't ready. Always pair with Coordinated Assault when possible." },
+                { name: "Takedown", category: "COOLDOWN", cd: "90s", range: "Melee", cost: "Generates 50 Focus", description: "Deals heavy damage and amplifies all your damage by 20% for 8 seconds. Also generates 50 Focus. Your most important burst cooldown.", whyCast: "20% damage amplification for 8 seconds is enormous. Time your highest damage abilities (Raptor Strike at max Fury, Boomstick) inside this window.", mistake: "Using Takedown when your other CDs aren't ready. Always pair with Boomstick when possible." },
                 { name: "Flamefang Pitch", category: "DAMAGE", cd: "30s (2 charges)", range: "40 yd", cost: "Free", description: "Throws a fiery projectile that creates a fire puddle on the ground, dealing sustained AoE damage. Great for pre-placing damage on incoming adds.", whyCast: "Free AoE damage on a charge system. Pre-place on pull locations in M+ for passive damage while mobs are gathered.", mistake: "Throwing it at targets that will move out of the puddle immediately." },
                 { name: "Raptor Swipe", category: "DAMAGE", cd: "Passive (proc)", range: "Melee", cost: "Free", description: "Apex talent proc — 25% chance on Raptor Strike, 100% during Takedown. Cleaves nearby enemies. Triggers Strike as One.", whyCast: "Free cleave damage that triggers SaO. During Takedown, every Raptor Strike guarantees a Swipe, making it your highest priority window.", mistake: "Trying to 'fish' for procs outside Takedown. Just play normally — procs come naturally." },
-                { name: "Coordinated Assault", category: "COOLDOWN", cd: "120s", range: "Self", cost: "None", description: "Major 2-minute cooldown that enhances your combat effectiveness. Pair with Takedown for maximum burst.", whyCast: "Your anchor cooldown. Every other CD should be planned around CA's availability at 0:00, 2:00, and 4:00.", mistake: "Using Takedown at 1:30 when CA returns at 2:00. Hold Takedown 30s to align." },
                 { name: "Serpent Sting", category: "DOT", cd: "None", range: "40 yd", cost: "10 Focus", description: "Applies a poison DoT to the target. Low priority in the rotation but useful for maintaining damage during movement phases.", whyCast: "Movement filler — when you can't be in melee, Serpent Sting keeps damage rolling.", mistake: "Refreshing the DoT too early or prioritizing it over melee abilities when in range." },
                 { name: "Pet (Kill Command procs)", category: "PET", cd: "Passive", range: "Pet range", cost: "None", description: "Your pet's auto attacks and special abilities triggered by Kill Command. Pet damage scales with your Attack Power and Mastery (Spirit Bond).", whyCast: "Passive throughput. Keep your pet alive and attacking at all times. Pet damage is 15-20% of your total.", mistake: "Letting your pet die or dismissing it accidentally. Always have Mend Pet ready." },
               ];
@@ -4086,13 +4406,12 @@ export default function SurvivalHunterSim() {
                 <SectionDivider id="sequence" label="SIMULATION TIMELINE" icon="⏱" />
                 {isOpen("sequence") && (() => {
                   const ABBREV: Record<string, string> = {
-                    "Kill Command": "KC", "Mongoose Bite": "MB", "Raptor Strike": "RS",
+                    "Kill Command": "KC", "Raptor Strike": "RS",
                     "Wildfire Bomb": "WFB", "Boomstick": "BS", "Serpent Sting": "SS",
                     "Raptor Swipe": "RSw", "Flamefang Pitch": "FP", "Takedown": "TD",
-                    "Coordinated Assault": "CA", "Strike as One": "SaO",
+                    "Strike as One": "SaO",
                     "Moonlight Chakram": "MC", "Lunar Storm": "LS",
-                    "Auto Attack": "AA", "Flanking Strike": "FS",
-                    "Fury of the Eagle": "FE", "Butchery": "BT", "Carve": "CV",
+                    "Auto Attack": "AA", "Carve": "CV",
                     "Sentinel Owl": "Owl", "Pack Leader Beasts": "PLB",
                     "Vicious Wound": "VW",
                   };
@@ -4439,7 +4758,6 @@ export default function SurvivalHunterSim() {
                   const FIGHT_DUR = 300;
                   const isSent = heroTalent === "sentinel";
                   const COOLDOWNS = [
-                    { name: "Coordinated Assault", cd: 120, color: BAR_COLORS["Coord. Assault"] || "#e879f9", abbr: "CA" },
                     { name: "Takedown", cd: 90, color: BAR_COLORS["Takedown"] || "#93c5fd", abbr: "TD" },
                     { name: "Flamefang Pitch", cd: 60, color: BAR_COLORS["Flamefang Pitch"] || "#22d3ee", abbr: "FP" },
                     { name: "Wildfire Bomb", cd: 18, color: BAR_COLORS["Wildfire Bomb"] || "#f59e0b", abbr: "WFB", chargeReset: true },
@@ -4516,7 +4834,7 @@ export default function SurvivalHunterSim() {
                           <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 9, letterSpacing: 1.5, color: C.goldLight, fontWeight: 700 }}>KEY PRINCIPLE</span>
                         </div>
                         <p style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: C.textSec, lineHeight: 1.7, margin: 0 }}>
-                          <strong style={{ color: C.goldLight }}>Coordinated Assault is your anchor.</strong> Plan every other cooldown to be available when CA comes off cooldown at 2:00 and 4:00. If Takedown is not available during a CA window, you lost a burst window — avoid using Takedown outside of CA when possible in longer fights.
+                          <strong style={{ color: C.goldLight }}>Takedown is your anchor.</strong> Plan every other cooldown to be available when Takedown comes off cooldown at 1:30 and 3:00. Stack Boomstick, Wildfire Bomb charges, and Raptor Strike inside the 8s Takedown window for maximum burst.
                         </p>
                       </div>
                     </CARD>

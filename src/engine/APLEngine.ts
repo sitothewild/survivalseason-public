@@ -87,6 +87,10 @@ export function parseAPL(aplText: string): CompiledAPL {
   const actions: APLAction[] = [];
 
   for (const line of lines) {
+    // Skip comment lines
+    if (line.startsWith("#") || line.startsWith("//")) continue;
+
+    // Match: actions=ability or actions+=/ability,if=conditions
     const match = line.match(/^actions(?:\+)?=\/?([a-z_]+)(?:,if=(.+))?$/i);
     if (!match) continue;
 
@@ -95,12 +99,24 @@ export function parseAPL(aplText: string): CompiledAPL {
 
     const conditions: APLCondition[] = [];
     if (condStr) {
+      // Split on & for AND conditions, but each part may contain | for OR
       const parts = condStr.split("&");
       for (const part of parts) {
-        conditions.push({
-          raw: part.trim(),
-          evaluate: compileCondition(part.trim()),
-        });
+        const trimmed = part.trim();
+        // Check for OR groups (pipe-separated)
+        if (trimmed.includes("|")) {
+          const orParts = trimmed.split("|").map(p => p.trim());
+          const orFns = orParts.map(p => compileCondition(p));
+          conditions.push({
+            raw: trimmed,
+            evaluate: (s) => orFns.some(fn => fn(s)),
+          });
+        } else {
+          conditions.push({
+            raw: trimmed,
+            evaluate: compileCondition(trimmed),
+          });
+        }
       }
     }
 
@@ -143,7 +159,6 @@ function compileCondition(expr: string): (state: CombatState) => boolean {
     const val = parseInt(buffStack[3]);
     return (s) => {
       if (buff === "tip_of_the_spear") return compare(s.tipOfTheSpearStacks, op, val);
-      if (buff === "mongoose_fury") return compare(s.mongooseFuryStacks, op, val);
       return compare(s.getAuraStacks(buff), op, val);
     };
   }
@@ -155,10 +170,6 @@ function compileCondition(expr: string): (state: CombatState) => boolean {
     const op = buffRemains[2];
     const val = parseInt(buffRemains[3]);
     return (s) => {
-      if (buff === "mongoose_fury") {
-        const remains = Math.max(0, (s.mongooseFuryExpiresMs - s.nowMs) / 1000);
-        return compare(remains, op, val);
-      }
       const aura = s.auras.get(buff);
       const remains = aura ? Math.max(0, (aura.expiresMs - s.nowMs) / 1000) : 0;
       return compare(remains, op, val);
@@ -229,6 +240,7 @@ function compare(a: number, op: string, b: number): boolean {
 export function evaluateAPL(
   apl: CompiledAPL,
   state: CombatState,
+  activeTalents?: Set<string>,
 ): string | null {
   for (const action of apl.actions) {
     if (action.ability === "auto_attack") continue;
@@ -238,6 +250,9 @@ export function evaluateAPL(
 
     // Check hero requirement
     if (spell.requiresHero && spell.requiresHero !== state.hero) continue;
+
+    // Check talent requirement — skip abilities the character doesn't have
+    if (spell.requiresTalent && activeTalents && !activeTalents.has(spell.requiresTalent)) continue;
 
     // Check GCD
     if (spell.triggersGcd && state.nowMs < state.gcdReadyMs) continue;
@@ -309,10 +324,15 @@ export function validateAPL(aplText: string): APLValidationResult {
     if (condStr) {
       const parts = condStr.split("&");
       for (const part of parts) {
-        const p = part.trim();
-        const knownPattern = /^(!?)(focus|cooldown\.|buff\.|dot\.|spell_targets)/;
-        if (!knownPattern.test(p)) {
-          warnings.push(`Line ${i + 1}: condition "${p}" may not be recognized`);
+        // Split OR groups and validate each sub-condition
+        const orParts = part.trim().split("|");
+        for (const orPart of orParts) {
+          const p = orPart.trim();
+          // Basic syntax check: should match known condition patterns
+          const knownPattern = /^(!?)(focus|cooldown\.|buff\.|dot\.|spell_targets)/;
+          if (!knownPattern.test(p)) {
+            warnings.push(`Line ${i + 1}: condition "${p}" may not be recognized`);
+          }
         }
       }
     }

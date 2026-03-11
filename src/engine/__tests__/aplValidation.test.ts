@@ -78,6 +78,20 @@ actions+=/kill_command,if=cooldown.kill_command.ready`);
     expect(result.valid).toBe(true);
     expect(result.warnings).toHaveLength(0);
   });
+
+  it("validates OR conditions without false warnings", () => {
+    const result = validateAPL(`actions=auto_attack
+actions+=/wildfire_bomb,if=spell_targets>=3|cooldown.wildfire_bomb.charges>=1`);
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toHaveLength(0);
+  });
+
+  it("warns on unrecognized OR sub-conditions", () => {
+    const result = validateAPL(`actions=auto_attack
+actions+=/raptor_strike,if=foo_bar|focus>=50`);
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some(w => w.includes("foo_bar"))).toBe(true);
+  });
 });
 
 describe("parseAPL", () => {
@@ -105,6 +119,53 @@ actions+=/kill_command`);
 garbage line
 actions+=/kill_command`);
     expect(apl.actions).toHaveLength(2);
+  });
+
+  it("skips comment lines in parser", () => {
+    const apl = parseAPL(`# priority list
+actions=auto_attack
+// skip this
+actions+=/kill_command`);
+    expect(apl.actions).toHaveLength(2);
+    expect(apl.actions[0].ability).toBe("auto_attack");
+    expect(apl.actions[1].ability).toBe("kill_command");
+  });
+
+  it("parses OR conditions with pipe operator", () => {
+    const apl = parseAPL(`actions+=/wildfire_bomb,if=spell_targets>=3|cooldown.wildfire_bomb.charges>=1`);
+    expect(apl.actions).toHaveLength(1);
+    // OR group counts as a single condition (the two parts are OR'd together)
+    expect(apl.actions[0].conditions).toHaveLength(1);
+    expect(apl.actions[0].conditions[0].raw).toContain("|");
+  });
+
+  it("evaluates OR conditions correctly — true when either side matches", () => {
+    const apl = parseAPL(`actions+=/wildfire_bomb,if=spell_targets>=3|cooldown.wildfire_bomb.charges>=1`);
+    const cond = apl.actions[0].conditions[0];
+    // Mock a state with 1 target but charges available — OR should pass
+    const mockState = {
+      numTargets: 1,
+      cooldowns: { getCharges: () => 2 },
+    } as any;
+    expect(cond.evaluate(mockState)).toBe(true);
+  });
+
+  it("evaluates OR conditions correctly — false when neither side matches", () => {
+    const apl = parseAPL(`actions+=/wildfire_bomb,if=spell_targets>=3|cooldown.wildfire_bomb.charges>=1`);
+    const cond = apl.actions[0].conditions[0];
+    const mockState = {
+      numTargets: 1,
+      cooldowns: { getCharges: () => 0 },
+    } as any;
+    expect(cond.evaluate(mockState)).toBe(false);
+  });
+
+  it("handles mixed AND + OR conditions", () => {
+    const apl = parseAPL(`actions+=/butchery,if=spell_targets>=3|cooldown.wildfire_bomb.charges>=1&focus>=30`);
+    expect(apl.actions[0].conditions).toHaveLength(2);
+    // First condition is OR group, second is focus check
+    expect(apl.actions[0].conditions[0].raw).toContain("|");
+    expect(apl.actions[0].conditions[1].raw).toBe("focus>=30");
   });
 });
 

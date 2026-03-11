@@ -407,7 +407,7 @@ function createTestInput(hero: HeroTree, seed: number): SimInput {
     "flanked", "primalSurge", "raptorSwipe",
     "alphaPredator", "keenEyesight", "masterMarksman",
     "serratedShots", "deathChakram", "killerInstinct",
-    "flankerAdvantage",
+    "flankerAdvantage", "flamefangPitch", "moonlightChakram",
   ]);
 
   // Add hero-specific talents

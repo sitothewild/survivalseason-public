@@ -32,9 +32,6 @@ export interface SpellInfo {
   consumesTots: boolean;
   /** Does Kill Command grant ToTS stacks? */
   grantsTotsStack: boolean;
-  /** Mongoose Fury: does this ability consume/interact with MF? */
-  consumesMfStacks: boolean;
-  grantsMfStack: boolean;
 }
 
 export interface DotInfo {
@@ -61,7 +58,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   raptor_strike: {
     id: 186270, key: "raptor_strike", label: "Raptor Strike",
@@ -70,16 +66,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "", requiresHero: "",
     consumesTots: true, grantsTotsStack: false,
-    consumesMfStacks: true, grantsMfStack: false,
-  },
-  raptor_swipe: {
-    id: 0, key: "raptor_swipe", label: "Raptor Swipe",
-    apCoef: 1.85, focusCost: 0, cooldownMs: 0, charges: 0,
-    gcdMs: 0, school: "physical", isPet: false, aoeTargetCap: 5,
-    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
-    triggersGcd: false, requiresTalent: "raptorSwipe", requiresHero: "",
-    consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   kill_command: {
     id: 259489, key: "kill_command", label: "Kill Command",
@@ -88,7 +74,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: true, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: true,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   wildfire_bomb: {
     id: 259495, key: "wildfire_bomb", label: "Wildfire Bomb",
@@ -97,7 +82,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   // ─── Midnight 12.0 New Abilities ───────────────────────────
   boomstick: {
@@ -107,7 +91,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0.40,
     triggersGcd: true, requiresTalent: "boomstick", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   takedown: {
     id: 0, key: "takedown", label: "Takedown",
@@ -116,7 +99,22 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "takedown", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+  },
+  serpent_sting: {
+    id: 259491, key: "serpent_sting", label: "Serpent Sting",
+    apCoef: 0.25, focusCost: 10, cooldownMs: 0, charges: 0,
+    gcdMs: 1500, school: "nature", isPet: false, aoeTargetCap: 1,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "serpentSting", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
+  },
+  carve: {
+    id: 187708, key: "carve", label: "Carve",
+    apCoef: 0.80, focusCost: 35, cooldownMs: 6000, charges: 1,
+    gcdMs: 1500, school: "physical", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: true, requiresTalent: "carve", requiresHero: "",
+    consumesTots: true, grantsTotsStack: false,
   },
   flamefang_pitch: {
     id: 0, key: "flamefang_pitch", label: "Flamefang Pitch",
@@ -125,7 +123,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "flamefangPitch", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   moonlight_chakram: {
     id: 0, key: "moonlight_chakram", label: "Moonlight Chakram",
@@ -134,7 +131,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "moonlightChakram", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   death_chakram: {
     id: 375891, key: "death_chakram", label: "Death Chakram",
@@ -143,7 +139,14 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "deathChakram", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+  },
+  raptor_swipe: {
+    id: 0, key: "raptor_swipe", label: "Raptor Swipe",
+    apCoef: 1.85, focusCost: 0, cooldownMs: 0, charges: 0,
+    gcdMs: 0, school: "physical", isPet: false, aoeTargetCap: 5,
+    hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
+    triggersGcd: false, requiresTalent: "raptorSwipe", requiresHero: "",
+    consumesTots: false, grantsTotsStack: false,
   },
   strike_as_one: {
     id: 0, key: "strike_as_one", label: "Strike as One",
@@ -152,7 +155,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "strikeAsOne", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   // ─── Pet Abilities ─────────────────────────────────────────
   pet_claw: {
@@ -162,7 +164,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   pet_melee: {
     id: 0, key: "pet_melee", label: "Pet Melee",
@@ -171,7 +172,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+
   },
   // ─── Sentinel Hero Tree ────────────────────────────────────
   lunar_storm: {
@@ -181,7 +182,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "lunarStorm", requiresHero: "sentinel",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   sentinel_mark: {
     id: 0, key: "sentinel_mark", label: "Sentinel Mark",
@@ -190,7 +190,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "sentinel",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+
   },
   sentinel_owl: {
     id: 0, key: "sentinel_owl", label: "Sentinel Owl",
@@ -199,7 +199,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "sentinel",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   // ─── Pack Leader Hero Tree ─────────────────────────────────
   pack_leader_beasts: {
@@ -209,7 +208,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "pack_leader",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   vicious_wound: {
     id: 0, key: "vicious_wound", label: "Vicious Wound",
@@ -218,7 +216,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "viciousHunt", requiresHero: "pack_leader",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   pack_coordination: {
     id: 0, key: "pack_coordination", label: "Pack Coordination",
@@ -227,7 +224,6 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "packCoordination", requiresHero: "pack_leader",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
   },
   bear_rend: {
     id: 0, key: "bear_rend", label: "Bear (Rend + Melee)",
@@ -236,7 +232,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "pack_leader",
     consumesTots: false, grantsTotsStack: false,
-    consumesMfStacks: false, grantsMfStack: false,
+
   },
 };
 
@@ -295,6 +291,8 @@ export const AOE_RULES: Record<string, AoeRule> = {
   wildfire_bomb:        { targetCap: 8, splitDamage: false },
   boomstick:            { targetCap: 5, splitDamage: false },
   takedown:             { targetCap: 1, splitDamage: false },
+  carve:                { targetCap: 5, splitDamage: false },
+  serpent_sting:        { targetCap: 1, splitDamage: false },
   flamefang_pitch:      { targetCap: 5, splitDamage: false },
   moonlight_chakram:    { targetCap: 5, splitDamage: false },
   death_chakram:        { targetCap: 5, splitDamage: false },

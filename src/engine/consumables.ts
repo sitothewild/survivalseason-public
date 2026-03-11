@@ -4,7 +4,7 @@
 // with real stat values for Midnight 12.0 Season 1.
 // ─────────────────────────────────────────────────────────────
 
-// ── Phials (flask slot — TWW renamed flasks to phials) ──────
+// ── Phials (flask slot) ──────────────────────────────────────
 
 export interface PhialDef {
   key: string;

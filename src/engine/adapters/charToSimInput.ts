@@ -9,7 +9,7 @@ import type {
   HeroTree, FightStyle, EquippedTrinket,
 } from "../types";
 import { buildTalentStateFromConfig } from "./talentsToEngine";
-import { getEquippedTrinkets } from "./trinketsToEngine";
+import { getEquippedTrinkets, getTrinketById } from "./trinketsToEngine";
 import { DEFAULT_APLS, getDefaultAPLKey } from "../APLEngine";
 import { applySimOptions } from "../applySimOptions";
 import { DEFAULT_SIM_OPTIONS } from "../simOptionsPresets";
@@ -69,15 +69,38 @@ function percentToRating(pct: number, stat: keyof typeof RATING_PER_PCT): number
 
 /**
  * Extract trinket data from parsed gear if available.
- * Falls back to default BiS trinkets.
+ * Looks up trinket1/trinket2 itemIds in the MIDNIGHT_TRINKETS database.
+ * Falls back to default BiS trinkets for any slot not matched.
  */
 function resolveTrinkets(
   hero: HeroTree,
-  _gear?: ParsedCharData["gear"],
+  gear?: ParsedCharData["gear"],
 ): [EquippedTrinket, EquippedTrinket] {
-  // TODO: Parse trinket IDs from gear and look up proc data.
-  // For now, use the default BiS trinkets from the engine.
-  return getEquippedTrinkets(hero);
+  const defaults = getEquippedTrinkets(hero);
+  if (!gear || gear.length === 0) return defaults;
+
+  // Find trinket slots from gear
+  const trinketSlots = gear.filter(g =>
+    g.slot === "trinket1" || g.slot === "trinket2" || g.slot === "trinket",
+  );
+
+  const resolved: [EquippedTrinket, EquippedTrinket] = [defaults[0], defaults[1]];
+  let idx = 0;
+  for (const slot of trinketSlots) {
+    if (idx >= 2) break;
+    if (slot.itemId) {
+      const id = typeof slot.itemId === "string" ? parseInt(slot.itemId, 10) : slot.itemId;
+      if (!isNaN(id)) {
+        const trinket = getTrinketById(id);
+        if (trinket) {
+          resolved[idx] = trinket;
+        }
+      }
+    }
+    idx++;
+  }
+
+  return resolved;
 }
 
 /**

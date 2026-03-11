@@ -184,12 +184,8 @@ export class CombatState {
   // Specific buff stacks
   tipOfTheSpearStacks: number = 0;
   tipOfTheSpearMaxStacks: number = 2;
-  mongooseFuryStacks: number = 0;
-  mongooseFuryExpiresMs: number = 0;
   takedownActive: boolean = false;
   takedownExpiresMs: number = 0;
-  coordinatedAssaultActive: boolean = false;
-  coordinatedAssaultExpiresMs: number = 0;
 
   // Hero-specific counters
   sentinelCounter: number = 0;
@@ -328,14 +324,6 @@ export class CombatState {
       this.takedownActive = false;
       this.takedownExpiresMs = 0;
     }
-    if (this.coordinatedAssaultExpiresMs > 0 && this.nowMs >= this.coordinatedAssaultExpiresMs) {
-      this.coordinatedAssaultActive = false;
-      this.coordinatedAssaultExpiresMs = 0;
-    }
-    if (this.mongooseFuryExpiresMs > 0 && this.nowMs >= this.mongooseFuryExpiresMs) {
-      this.mongooseFuryStacks = 0;
-      this.mongooseFuryExpiresMs = 0;
-    }
     this.recalcStats();
   }
 
@@ -365,12 +353,8 @@ export class CombatState {
     this.focus = this.maxFocus;
     this.auras.clear();
     this.tipOfTheSpearStacks = 0;
-    this.mongooseFuryStacks = 0;
-    this.mongooseFuryExpiresMs = 0;
     this.takedownActive = false;
     this.takedownExpiresMs = 0;
-    this.coordinatedAssaultActive = false;
-    this.coordinatedAssaultExpiresMs = 0;
     this.sentinelCounter = 0;
     this.sentinelWisdomStacks = 0;
     this.packCounter = 0;

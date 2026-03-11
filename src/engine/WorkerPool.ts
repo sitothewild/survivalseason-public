@@ -86,13 +86,18 @@ export class WorkerPool {
   /**
    * Compute sim-derived stat weights.
    * Uses common random numbers (same seed) for variance reduction.
+   * If a prebuilt SimInput is provided, uses it as the baseline (user's actual character).
+   * Otherwise falls back to the generic buildSimInput profile.
    */
   async computeSimStatWeights(
     hero: HeroTree,
     fightStyle: FightStyle,
     simOptions?: SimOptions,
+    prebuiltInput?: SimInput,
   ): Promise<StatWeightResult> {
-    const baseInput = buildSimInput(hero, fightStyle, { iterations: 1000 }, simOptions);
+    const baseInput = prebuiltInput
+      ? { ...prebuiltInput, config: { ...prebuiltInput.config, iterations: 1000, captureTimeline: false } }
+      : buildSimInput(hero, fightStyle, { iterations: 1000 }, simOptions);
     const baseDps = (await this.runSim(baseInput)).meanDps;
 
     const stats = ["crit", "haste", "mastery", "vers"] as const;
