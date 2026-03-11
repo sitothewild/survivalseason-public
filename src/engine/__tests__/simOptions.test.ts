@@ -145,7 +145,7 @@ describe("applySimOptions", () => {
   it("injects weapon enhancement flat stat", () => {
     const base = makeBaseStats();
     const noEnh = applySimOptions(base, { ...NAKED_OPTIONS, weaponEnhancement: "none" }, "sentinel");
-    const withEnh = applySimOptions(base, { ...NAKED_OPTIONS, weaponEnhancement: "ironclaw_whetstone" }, "sentinel");
+    const withEnh = applySimOptions(base, { ...NAKED_OPTIONS, weaponEnhancement: "silvermoon_whetstone" }, "sentinel");
 
     expect(withEnh.stats.critRating).toBe(noEnh.stats.critRating + 168);
   });
