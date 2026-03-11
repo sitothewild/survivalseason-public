@@ -1289,7 +1289,10 @@ export default function SurvivalHunterSim() {
       if (data?.error) throw new Error(data.error);
       setSimcLiveData(data.data);
       const status = data.status === 'cached' ? 'Up to date' : 'Updated';
-      setSimcSyncInfo(`${status} (${data.sha?.slice(0, 7)}) · ${new Date().toLocaleDateString()}`);
+      const storageNote = data.storageFiles && Object.keys(data.storageFiles).length > 0
+        ? ` · ${Object.keys(data.storageFiles).length} files archived`
+        : '';
+      setSimcSyncInfo(`${status} (${data.sha?.slice(0, 7)}) · ${new Date().toLocaleDateString()}${storageNote}`);
       setSimcSyncStatus('synced');
       // Build APL weights from pre-parsed actionLists
       try {

@@ -851,10 +851,54 @@ Deno.serve(async (req) => {
     const consumables = parseConsumables(aplSource);
     const simcData = buildSimcData(aplData, spellData, consumables, latestSha);
     
+    // Upload raw source files to storage bucket
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const uploadResults: Record<string, string> = {};
+    
+    try {
+      // Upload current versions (overwrite)
+      const [aplUpload, hunterUpload] = await Promise.all([
+        supabase.storage.from("simc-source-files").upload(
+          `latest/apl_hunter.cpp`,
+          new Blob([aplSource], { type: "text/plain" }),
+          { upsert: true, contentType: "text/plain" }
+        ),
+        supabase.storage.from("simc-source-files").upload(
+          `latest/sc_hunter.cpp`,
+          new Blob([hunterSource], { type: "text/plain" }),
+          { upsert: true, contentType: "text/plain" }
+        ),
+      ]);
+      
+      if (aplUpload.error) console.error("APL upload error:", aplUpload.error.message);
+      else uploadResults["apl_hunter.cpp"] = `latest/apl_hunter.cpp`;
+      
+      if (hunterUpload.error) console.error("Hunter upload error:", hunterUpload.error.message);
+      else uploadResults["sc_hunter.cpp"] = `latest/sc_hunter.cpp`;
+      
+      // Also save versioned snapshots
+      await Promise.all([
+        supabase.storage.from("simc-source-files").upload(
+          `snapshots/${latestSha.slice(0, 8)}/apl_hunter.cpp`,
+          new Blob([aplSource], { type: "text/plain" }),
+          { upsert: true, contentType: "text/plain" }
+        ),
+        supabase.storage.from("simc-source-files").upload(
+          `snapshots/${latestSha.slice(0, 8)}/sc_hunter.cpp`,
+          new Blob([hunterSource], { type: "text/plain" }),
+          { upsert: true, contentType: "text/plain" }
+        ),
+      ]);
+      
+      console.log(`Uploaded raw SimC files to storage (SHA: ${latestSha.slice(0, 8)})`);
+    } catch (uploadErr) {
+      console.error("Storage upload failed (non-fatal):", (uploadErr as Error).message);
+    }
+    
     // Upsert into cache
     const upsertPayload = {
       data_key: "survival_hunter_data",
-      data: simcData,
+      data: { ...simcData, storageFiles: uploadResults },
       github_sha: latestSha,
       updated_at: new Date().toISOString(),
     };
@@ -874,7 +918,8 @@ Deno.serve(async (req) => {
       status: "updated",
       sha: latestSha,
       previousSha: cached?.github_sha || null,
-      data: simcData,
+      data: { ...simcData, storageFiles: uploadResults },
+      storageFiles: uploadResults,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
