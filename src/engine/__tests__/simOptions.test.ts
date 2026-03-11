@@ -316,7 +316,7 @@ describe("SimOptions Integration", () => {
       "sentinel",
       "raid_st",
       { seed: 42, iterations: 200 },
-      createSimOptions({ weaponEnhancement: "howling_rune" }),
+      createSimOptions({ weaponEnhancement: "amani_poison" }),
     );
 
     const result = runSimulation(input);
