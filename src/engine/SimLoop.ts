@@ -60,14 +60,16 @@ const MONGOOSE_FURY_DAMAGE_PER_STACK = 0.15; // +15% per stack
 
 // Howl of the Pack Leader: beast cycle timing
 const HOWL_CD_MS = 20000; // ~20s between beast summons
-const BOAR_CHARGE_AP_COEF = 2.50;
-const BOAR_CHARGE_CLEAVE_AP_COEF = 3.00;
-const BEAR_REND_AP_COEF_PER_TICK = 0.30;
+// Boar charge uses hunter AP (not pet AP) — confirmed from SimC: hunter_ranged_attack_t
+const BOAR_CHARGE_AP_COEF = 20.5;
+const BOAR_CHARGE_CLEAVE_AP_COEF = 24.6;
+const BOAR_CHARGE_USES_HUNTER_AP = true;
+const BEAR_REND_AP_COEF_PER_TICK = 2.0;
 const BEAR_REND_DURATION_MS = 12000;
 const BEAR_REND_TICK_MS = 3000;
-const BEAR_MELEE_AP_COEF = 0.25;
+const BEAR_MELEE_AP_COEF = 1.40;
 const BEAR_DURATION_MS = 12000;
-const STAMPEDE_AP_COEF = 0.40;
+const STAMPEDE_AP_COEF = 2.80;
 const STAMPEDE_DURATION_MS = 4000;
 const STAMPEDE_TICK_MS = 500;
 const WYVERN_CRY_PET_DAMAGE_BONUS = 0.05; // +5% pet damage per stack
@@ -599,8 +601,8 @@ function executeAbility(
       if (t.dots.size > 0) bleedingTargets++;
     }
     if (bleedingTargets > 0) {
-      // Apply as haste rating buff: 3% haste = ~510 haste rating (170 per 1%)
-      const hasteAmount = bleedingTargets * BLOODSEEKER_HASTE_PER_TARGET * 170;
+      // Apply as haste rating buff: 3% haste per target (35.0 rating per 1%)
+      const hasteAmount = bleedingTargets * BLOODSEEKER_HASTE_PER_TARGET * 35.0;
       state.applyAura("bloodseeker", 12000, 1, { haste: hasteAmount });
     }
   }
@@ -936,16 +938,17 @@ function handleHowlBeast(
     state.wyvernsCryExpiresMs = state.nowMs + 20000;
   } else if (cycle === 1) {
     // Boar: Boar Charge direct + cleave damage
-    const petAp = state.currentAP * PET_AP_SCALING;
+    // Boar charge uses hunter AP (hunter_ranged_attack_t in SimC)
+    const boarAp = BOAR_CHARGE_USES_HUNTER_AP ? state.currentAP : state.currentAP * PET_AP_SCALING;
     const { damage: chargeDmg, isCrit: chargeCrit } = computeDamage(
-      state, petAp, BOAR_CHARGE_AP_COEF, "physical", true, rng,
+      state, boarAp, BOAR_CHARGE_AP_COEF, "physical", false, rng,
     );
     state.recordDamage("boar_charge", chargeDmg, chargeCrit, 0);
 
     // Cleave on additional targets
     if (state.numTargets > 1) {
       const { damage: cleaveDmg, isCrit: cleaveCrit } = computeDamage(
-        state, petAp, BOAR_CHARGE_CLEAVE_AP_COEF, "physical", true, rng,
+        state, boarAp, BOAR_CHARGE_CLEAVE_AP_COEF, "physical", false, rng,
       );
       for (let t = 1; t < Math.min(state.numTargets, 5); t++) {
         state.recordDamage("boar_charge", cleaveDmg, cleaveCrit, t);
@@ -1010,16 +1013,10 @@ function consumeHowlBeasts(
   // In SimC this cycles through ready beast buffs
   if (!input.talents.activeTalents.has("howlOfThePackLeader")) return;
 
-  // Stampede: KC triggers stampede_incoming, next beast consumption triggers stampede
-  if (state.stampedePending) {
-    state.stampedePending = false;
-    // Stampede: pet rush attack
-    const petAp = state.currentAP * PET_AP_SCALING;
-    const { damage: stDmg, isCrit: stCrit } = computeDamage(
-      state, petAp, STAMPEDE_AP_COEF, "physical", true, rng,
-    );
-    state.recordDamage("stampede", stDmg, stCrit, 0);
-
+  // Stampede: triggers when Takedown is active (aligned with CD, ~5.3 procs per fight)
+  // In SimC: stampede fires during Takedown window when a beast is consumed
+  if (state.takedownActive && !state.stampedePending) {
+    state.stampedePending = true;
     // Schedule stampede ticks
     const endMs = input.config.durationMs;
     let tickMs = state.nowMs + STAMPEDE_TICK_MS;
@@ -1030,8 +1027,10 @@ function consumeHowlBeasts(
     }
   }
 
-  // Set stampede pending for next KC
-  state.stampedePending = true;
+  // Reset stampede flag when takedown expires
+  if (!state.takedownActive) {
+    state.stampedePending = false;
+  }
 
   // Pack Mentality: beast consumption reduces WFB CD
   state.cooldowns.reduceCooldown("wildfire_bomb", 1000, state.nowMs);
@@ -1087,7 +1086,7 @@ function handleSentinelTriggers(
 
       // Sentinel's Wisdom: +3% crit per owl proc, stacks to 5
       state.sentinelWisdomStacks = Math.min(5, state.sentinelWisdomStacks + 1);
-      state.applyAura("sentinels_wisdom", 15000, 5, { crit: 0.03 * 180 });
+      state.applyAura("sentinels_wisdom", 15000, 5, { crit: 0.03 * 22.3 });
 
       // PRD roll: 30% chance Lunar Storm
       if (talents.has("lunarStorm")) {

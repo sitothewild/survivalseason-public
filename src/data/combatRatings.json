@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "level": 90,
   "ratingPerPercent": {
-    "crit": 180,
-    "haste": 170,
+    "crit": 22.3,
+    "haste": 35.0,
     "mastery": 180,
-    "versatility": 205
+    "versatility": 54.0
   },
   "drBands": [
     { "threshold": 0.30, "efficiency": 1.00 },

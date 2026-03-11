@@ -164,8 +164,8 @@ describe("CombatMath", () => {
   });
 
   it("ratingToPercent converts correctly", () => {
-    // 180 crit rating = 1% crit (before DR)
-    const pct = ratingToPercent("crit", 180);
+    // 22.3 crit rating = 1% crit at level 90 (before DR)
+    const pct = ratingToPercent("crit", 22.3);
     expect(pct).toBeCloseTo(0.01, 3);
   });
 });

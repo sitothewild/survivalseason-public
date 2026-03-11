@@ -69,7 +69,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
   },
   kill_command: {
     id: 259489, key: "kill_command", label: "Kill Command",
-    apCoef: 1.50, focusCost: -20, cooldownMs: 6000, charges: 2,
+    apCoef: 7.26, focusCost: -20, cooldownMs: 6000, charges: 2,
     gcdMs: 1500, school: "physical", isPet: true, aoeTargetCap: 1,
     hasteScalesCPM: true, hasteScalesCD: true, bonusCritMult: 0,
     triggersGcd: true, requiresTalent: "", requiresHero: "",
@@ -150,7 +150,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
   },
   strike_as_one: {
     id: 0, key: "strike_as_one", label: "Strike as One",
-    apCoef: 1.10, focusCost: 0, cooldownMs: 0, charges: 0,
+    apCoef: 9.24, focusCost: 0, cooldownMs: 0, charges: 0,
     gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "strikeAsOne", requiresHero: "",
@@ -159,7 +159,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
   // ─── Pet Abilities ─────────────────────────────────────────
   pet_claw: {
     id: 16827, key: "pet_claw", label: "Pet (Claw)",
-    apCoef: 0.40, focusCost: 0, cooldownMs: 0, charges: 0,
+    apCoef: 2.60, focusCost: 0, cooldownMs: 0, charges: 0,
     gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "",
@@ -167,12 +167,11 @@ export const SPELL_DB: Record<string, SpellInfo> = {
   },
   pet_melee: {
     id: 0, key: "pet_melee", label: "Pet Melee",
-    apCoef: 0.30, focusCost: 0, cooldownMs: 0, charges: 0,
+    apCoef: 0.84, focusCost: 0, cooldownMs: 0, charges: 0,
     gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 1,
     hasteScalesCPM: true, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "",
     consumesTots: false, grantsTotsStack: false,
-
   },
   // ─── Sentinel Hero Tree ────────────────────────────────────
   lunar_storm: {
@@ -203,7 +202,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
   // ─── Pack Leader Hero Tree ─────────────────────────────────
   pack_leader_beasts: {
     id: 0, key: "pack_leader_beasts", label: "Pack Leader Beasts",
-    apCoef: 2.20, focusCost: 0, cooldownMs: 0, charges: 0,
+    apCoef: 5.50, focusCost: 0, cooldownMs: 0, charges: 0,
     gcdMs: 0, school: "physical", isPet: true, aoeTargetCap: 3,
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0,
     triggersGcd: false, requiresTalent: "", requiresHero: "pack_leader",

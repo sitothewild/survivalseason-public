@@ -25,14 +25,14 @@ const SAMPLE_CHAR: ParsedCharData = {
 describe("charToSimInput", () => {
   it("converts parsedChar stats to raw ratings (enchants/gems may add on top)", () => {
     const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
-    // Base hasteRating = 10.0 * 170 = 1700, plus enchants/gems
-    expect(input.stats.hasteRating).toBeGreaterThan(1600);
-    // Base critRating = 19.0 * 170 = 3230, plus enchants/gems
-    expect(input.stats.critRating).toBeGreaterThan(3000);
-    // Base masteryRating = 25.0 * 170 = 4250, plus enchants/gems
-    expect(input.stats.masteryRating).toBeGreaterThan(4000);
-    // Base versatilityRating = 5.0 * 205 / 100 ≈ 10, plus enchants
-    expect(input.stats.versatilityRating).toBeGreaterThanOrEqual(10);
+    // Level 90 conversions: haste 10.0% * 35.0 = 350, plus enchants/gems
+    expect(input.stats.hasteRating).toBeGreaterThan(300);
+    // crit 19.0% * 22.3 = 424, plus enchants/gems
+    expect(input.stats.critRating).toBeGreaterThan(400);
+    // mastery 25.0% * 28.1 = 703, plus enchants/gems
+    expect(input.stats.masteryRating).toBeGreaterThan(600);
+    // vers 5.0% * 54.0 / 100 = 2.7, plus enchants
+    expect(input.stats.versatilityRating).toBeGreaterThanOrEqual(2);
     // Agility from parsed char
     expect(input.stats.agility).toBeGreaterThanOrEqual(1635);
   });

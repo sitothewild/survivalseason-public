@@ -273,7 +273,7 @@ export class CombatState {
 
     // Sentinel's Wisdom: +3% crit per stack (up to 5)
     if (this.hero === "sentinel") {
-      bonusCrit += this.sentinelWisdomStacks * 0.03 * 180; // approx rating
+      bonusCrit += this.sentinelWisdomStacks * 0.03 * 22.3; // +3% crit per stack as rating
     }
 
     const totalAgi = s.agility + bonusAgi;
@@ -281,12 +281,13 @@ export class CombatState {
     // attackPower field holds bonus AP beyond agility (e.g., Battle Shout, augment rune).
     // It should NOT duplicate agility.
     this.currentAP = totalAgi + (s.attackPower ?? 0);
-    this.currentCritPct = (s.critRating + bonusCrit) / 180 + 5; // base 5% crit
-    this.currentHastePct = (s.hasteRating + bonusHaste) / 170;
-    // Base mastery: 8 points (all specs) + rating-based points
+    // Level 90 Midnight stat conversions (verified from Raidbots: 389 crit→17.46%, 370 haste→10.58%)
+    this.currentCritPct = (s.critRating + bonusCrit) / 22.3 + 5; // base 5% crit
+    this.currentHastePct = (s.hasteRating + bonusHaste) / 35.0;
+    // Mastery: 8 base points + rating/180 mastery points, each point = 2.5% Spirit Bond bonus
     // Raidbots verification: 8 + 695/180 = 11.86 points * 2.5% = 29.64% ✓
     this.currentMasteryPct = 8 + (s.masteryRating + bonusMastery) / 180;
-    this.currentVersPct = (s.versatilityRating + bonusVers) / 205 + this.externalVersPctBonus;
+    this.currentVersPct = (s.versatilityRating + bonusVers) / 54.0 + this.externalVersPctBonus;
   }
 
   /** Apply an aura to the player */

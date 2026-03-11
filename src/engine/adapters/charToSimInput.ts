@@ -14,12 +14,16 @@ import { DEFAULT_APLS, getDefaultAPLKey } from "../APLEngine";
 import { applySimOptions } from "../applySimOptions";
 import { DEFAULT_SIM_OPTIONS } from "../simOptionsPresets";
 
-// Rating constants matching combatRatings.json & parseSimcString()
+// Rating constants for level 90 Midnight 12.0 (verified from Raidbots)
+// crit: 389 rating = 17.46% → 22.3 per 1%
+// haste: 370 rating = 10.58% → 35.0 per 1%
+// mastery: uses mastery point system (180 per point, 2.5% per point)
+// vers: 199 rating = 3.685% → 54.0 per 1%
 const RATING_PER_PCT = {
-  crit: 170,      // parseSimcString uses 170 (simpler than 180 in combatRatings)
-  haste: 170,
-  mastery: 170,
-  versatility: 205,
+  crit: 22.3,
+  haste: 35.0,
+  mastery: 28.1,   // This converts mastery% → rating (28.1 per 1% Spirit Bond)
+  versatility: 54.0,
 };
 
 /**
