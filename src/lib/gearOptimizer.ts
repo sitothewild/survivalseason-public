@@ -1038,4 +1038,4 @@ export function rankEnchantsForSlot(slot: string, weights: StatWeights, hero: He
 }
 
 // All distinct enchant slots
-export const ENCHANT_SLOTS = ['Weapon', 'Chest', 'Cloak', 'Wrist', 'Legs', 'Boots', 'Ring'];
+export const ENCHANT_SLOTS = ['Weapon', 'Head', 'Shoulders', 'Chest', 'Cloak', 'Wrist', 'Legs', 'Boots', 'Ring'];
