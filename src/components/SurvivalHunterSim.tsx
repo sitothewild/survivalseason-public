@@ -4471,6 +4471,7 @@ export default function SurvivalHunterSim() {
               const isPL = simHero === 'packLeader' || simHero === 'pack_leader';
               const heroLabel = isPL ? '🐾 Pack Leader' : '🦉 Sentinel';
               const heroColor = isPL ? C.packClr : C.sentClr;
+              const hc = primary.heroCounters || {};
               const heroProcs = isPL
                 ? [
                     { label: "Pack Coordination", value: hc.packCoordinationProcs ?? 0 },
