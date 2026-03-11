@@ -1650,9 +1650,9 @@ export default function SurvivalHunterSim() {
       if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
       if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
       if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
-      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'alchemical_chaos' ? 1.035 : 1.03;
+      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'fleeting_magisters' ? 1.035 : 1.03;
       if (currentSimOptions.food !== 'none') externalMult *= 1.02;
-      if (currentSimOptions.potion !== 'none') externalMult *= currentSimOptions.potion === 'potion_of_unwavering_focus' ? 1.025 : 1.02;
+      if (currentSimOptions.potion !== 'none') externalMult *= 1.02;
       if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
       if (currentSimOptions.augmentRune) externalMult *= 1.005;
       const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
