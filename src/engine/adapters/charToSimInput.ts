@@ -141,6 +141,46 @@ function resolveTrinkets(
 }
 
 /**
+ * Detect weapon configuration from parsed gear.
+ * Returns weapon type (2H vs DW) and estimated DPS from item level.
+ */
+function resolveWeapon(gear?: ParsedCharData["gear"]): PlayerStats["weapon"] {
+  if (!gear || gear.length === 0) {
+    return { type: "2h", mainHandDps: 420, mainHandSpeed: 3.6 };
+  }
+
+  const mh = gear.find(g => g.slot === "main_hand");
+  const oh = gear.find(g => g.slot === "off_hand");
+  const isDW = !!oh;
+
+  // Estimate weapon DPS from item level using Midnight scaling curve
+  // At ilvl 233: ~53 DPS (1H), at ilvl 259: ~65 DPS (1H), at ilvl 276: ~75 DPS (1H)
+  // 2H weapons have ~1.5x the DPS of 1H at same ilvl
+  function estimateWeaponDps(ilvl: number, is2H: boolean): number {
+    if (ilvl <= 0) return is2H ? 420 : 280;
+    // Linear approximation from Midnight S1 weapon data
+    const baseDps1H = 20 + ilvl * 0.17;
+    return is2H ? baseDps1H * 1.5 : baseDps1H;
+  }
+
+  if (isDW) {
+    return {
+      type: "dw",
+      mainHandDps: estimateWeaponDps(mh?.ilvl ?? 0, false),
+      mainHandSpeed: 1.8,    // Standard 1H melee speed for survival
+      offHandDps: estimateWeaponDps(oh?.ilvl ?? 0, false),
+      offHandSpeed: 1.8,
+    };
+  }
+
+  return {
+    type: "2h",
+    mainHandDps: estimateWeaponDps(mh?.ilvl ?? 0, true),
+    mainHandSpeed: 3.6,
+  };
+}
+
+/**
  * Convert parsedChar + UI options into a complete SimInput.
  *
  * @param char       Parsed character data from Armory/SimC import
@@ -169,11 +209,7 @@ export function charToSimInput(
     hasteRating: percentToRating(s.haste || 0, "haste"),
     masteryRating: percentToRating(s.mastery || 0, "mastery"),
     versatilityRating: percentToRating(s.versatility || 0, "versatility"),
-    weapon: {
-      type: "2h",
-      mainHandDps: 420,
-      mainHandSpeed: 3.6,
-    },
+    weapon: resolveWeapon(char.gear),
     // Tier: use SimOptions toggle (which is auto-synced from gear in the UI)
     has2pc: simOptions?.has2pc ?? detectTierSet(char.gear).has2pc,
     has4pc: simOptions?.has4pc ?? detectTierSet(char.gear).has4pc,
@@ -202,8 +238,8 @@ export function charToSimInput(
   const config: SimConfig = {
     durationMs: durationS * 1000,
     durationVariance: 0.2,
-    iterations: opts?.iterations ?? 3000,  // Max iterations (adaptive early-stop)
-    targetError: 0.1,   // Stop when 95% CI error < 0.1%
+    iterations: opts?.iterations ?? 1500,  // Max iterations (adaptive early-stop)
+    targetError: 0.2,   // Stop when 95% CI error < 0.2%
     fightStyle,
     targets,
     bossLevelDelta: 3,
