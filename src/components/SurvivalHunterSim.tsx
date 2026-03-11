@@ -1479,6 +1479,25 @@ export default function SurvivalHunterSim() {
   const userBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, userHeroKey), [primaryTargetCount, userHeroKey]);
   const optimalBuildInfo = useMemo(() => getOptimalTalents(primaryTargetCount, 'sentinel'), [primaryTargetCount]);
 
+  // Pre-compute talent build data for the Talents tab (avoid re-running sims on every render)
+  const talentBuildData = useMemo(() => {
+    const defaultChar = parsedChar || { stats: { agility: 1635, attackPower: 1717, haste: 10.58, crit: 20.13, mastery: 30.16, versatility: 8.28 }, character: {} };
+    const builds = [
+      { key: 'sent-st', hero: 'sentinel', targets: 1, style: 'st' as const },
+      { key: 'pl-st', hero: 'packLeader', targets: 1, style: 'st' as const },
+      { key: 'sent-aoe', hero: 'sentinel', targets: 5, style: 'aoe' as const },
+      { key: 'pl-aoe', hero: 'packLeader', targets: 5, style: 'aoe' as const },
+    ];
+    const results: Record<string, { opt: ReturnType<typeof getOptimalTalents>; estDps: number }> = {};
+    for (const b of builds) {
+      results[b.key] = {
+        opt: getOptimalTalents(b.targets, b.hero),
+        estDps: runSimulation(defaultChar, b.targets, 300, b.hero, b.style, 1.0, simcLiveData).totalDps,
+      };
+    }
+    return results;
+  }, [parsedChar, simcLiveData]);
+
   // First-principles theorycrafting analysis (Heroic Midnight 276 Hero-track, 4pc tier)
   const theoryAnalysis = useMemo(() => {
     const heroKey = (userHeroKey === 'packLeader' ? 'packLeader' : 'sentinel') as 'sentinel' | 'packLeader';
@@ -3728,8 +3747,10 @@ export default function SurvivalHunterSim() {
               {/* ST builds */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
                 {buildRows.filter(b => b.targets === 1).map((build, bi) => {
-                  const opt = getOptimalTalents(build.targets, build.hero);
-                  const estDps = runSimulation(defaultChar, build.targets, 300, build.hero, build.targets > 2 ? 'aoe' : 'st', 1.0, simcLiveData).totalDps;
+                  const bKey = `${build.hero === 'sentinel' ? 'sent' : 'pl'}-st`;
+                  const cached = talentBuildData[bKey];
+                  const opt = cached?.opt ?? getOptimalTalents(build.targets, build.hero);
+                  const estDps = cached?.estDps ?? 0;
                   return (
                     <div key={`st-${bi}`} style={{
                       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden',
@@ -3792,8 +3813,10 @@ export default function SurvivalHunterSim() {
               {/* AoE builds */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {buildRows.filter(b => b.targets === 5).map((build, bi) => {
-                  const opt = getOptimalTalents(build.targets, build.hero);
-                  const estDps = runSimulation(defaultChar, build.targets, 300, build.hero, 'aoe', 1.0, simcLiveData).totalDps;
+                  const bKey = `${build.hero === 'sentinel' ? 'sent' : 'pl'}-aoe`;
+                  const cached = talentBuildData[bKey];
+                  const opt = cached?.opt ?? getOptimalTalents(build.targets, build.hero);
+                  const estDps = cached?.estDps ?? 0;
                   return (
                     <div key={`aoe-${bi}`} style={{
                       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden',

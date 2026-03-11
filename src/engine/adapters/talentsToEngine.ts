@@ -8,6 +8,14 @@ import type { TalentTreeState } from "@/hooks/useTalentTree";
 import type { TalentNodeDef } from "@/lib/talentData";
 import type { TalentState, ChoiceSelections, HeroTree } from "../types";
 
+/** Convert display name to camelCase engine key (e.g., "Kill Command" → "killCommand") */
+function toCamelCase(name: string): string {
+  return name
+    .split(/[\s_-]+/)
+    .map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join("");
+}
+
 /**
  * Build engine TalentState from the interactive tree hook state.
  */
@@ -26,12 +34,12 @@ export function buildTalentState(
     if (node.type === "choice") {
       const side = treeState.choiceSelections[nodeId];
       if (side === 0 && node.choiceA) {
-        activeTalents.add(node.choiceA.name);
+        activeTalents.add(toCamelCase(node.choiceA.name));
       } else if (side === 1 && node.choiceB) {
-        activeTalents.add(node.choiceB.name);
+        activeTalents.add(toCamelCase(node.choiceB.name));
       }
     } else {
-      activeTalents.add(node.name);
+      activeTalents.add(toCamelCase(node.name));
     }
   }
 
@@ -111,10 +119,10 @@ export function buildTalentStateFromConfig(
 
 function detectChoiceSelections(talents: Set<string>): ChoiceSelections {
   return {
-    bomb: talents.has("Shrapnel Bomb") || talents.has("shrapnelBomb")
+    bomb: talents.has("shrapnelBomb")
       ? "shrapnel_bomb"
       : "flamebreak",
-    spender_buff: talents.has("Vulnerability") || talents.has("vulnerability")
+    spender_buff: talents.has("vulnerability")
       ? "vulnerability"
       : "blackrock_munitions",
   };

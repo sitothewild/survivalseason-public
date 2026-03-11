@@ -76,7 +76,7 @@ const PACK_LEADER_HERO: TalentTreeState = {
   points: {
     vicious_hunt: 1,
     lone_wolf: 1, horn: 1, pathfinding_pl: 1, shoes_choice: 1,
-    ursine_choice: 1, cat_charge: 1, boar_head: 1, critical_shot: 1,
+    ursine_choice: 1, cat_charge: 1, boar_head: 1, lethal_barbs: 1,
     go_for_throat: 1, turtle: 1, hoof_choice: 1,
     bestial_discipline: 1,
   },
