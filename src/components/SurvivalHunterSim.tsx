@@ -2961,7 +2961,7 @@ export default function SurvivalHunterSim() {
                             <label style={{ display: "flex", alignItems: "center", gap: 3, cursor: "pointer" }}
                               onClick={() => setHasBlasphemite(!hasBlasphemite)}>
                               <input type="checkbox" checked={hasBlasphemite} readOnly style={{ accentColor: C.gold, width: 11, height: 11, cursor: "pointer" }} />
-                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 10, color: hasBlasphemite ? C.goldLight : C.textDim }}>Blasphemite</span>
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: hasBlasphemite ? C.goldLight : C.textDim }}>Blasphemite</span>
                             </label>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
