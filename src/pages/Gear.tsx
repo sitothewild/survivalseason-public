@@ -13,6 +13,7 @@ import {
   getBiSList, rankTrinkets, rankEnchantsForSlot,
 } from "@/lib/gearOptimizer";
 import { useBlizzardEnchants, triggerEnchantSnapshot } from "@/hooks/useBlizzardEnchants";
+import { useBlizzardItemDB, triggerItemDBSync } from "@/hooks/useBlizzardItemDB";
 import survivalIconImg from "@/assets/survival-icon.png";
 
 // ── Shared colour palette (mirrors SurvivalHunterSim) ────────
