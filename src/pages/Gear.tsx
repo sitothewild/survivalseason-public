@@ -625,7 +625,23 @@ export default function Gear() {
 
           {/* Enchants */}
           <Card>
-            <SecTitle icon="✦">Enchant Recommendations</SecTitle>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <SecTitle icon="✦">Enchant Recommendations</SecTitle>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                {enchantData?.source === "api_cached" && enchantData.fetchedAt && (
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:C.textDim }}>
+                    API {new Date(enchantData.fetchedAt).toLocaleDateString()}
+                  </span>
+                )}
+                <button onClick={handleSyncEnchants} disabled={syncing}
+                  style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, letterSpacing:1,
+                    color: syncing ? C.textDim : C.goldLight, background:C.goldBg,
+                    border:`1px solid ${C.gold}`, borderRadius:4, padding:"3px 8px",
+                    cursor: syncing ? "wait" : "pointer", opacity: syncing ? 0.6 : 1 }}>
+                  {syncing ? "SYNCING…" : "⟳ SYNC API"}
+                </button>
+              </div>
+            </div>
             {ENCHANT_SLOTS.map(slot => {
               const ranked = rankEnchantsForSlot(slot, activeWeights, hero);
               if (!ranked.length) return null;
