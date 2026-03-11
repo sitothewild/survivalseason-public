@@ -144,6 +144,13 @@ export function runSimulation(input: SimInput): SimResult {
   const totalPerTarget = new Map<number, number>();
   let capturedTimeline: TimelineEvent[] | undefined;
 
+  // Adaptive iteration: check target_error every BATCH_SIZE iterations
+  // Like SimC's target_error option — stop early when SE% < threshold
+  const targetErrorPct = config.targetError; // e.g., 0.1 = 0.1%
+  const BATCH_SIZE = 100; // Check convergence every 100 iterations
+  const MIN_ITERS = Math.min(200, config.iterations); // Minimum before checking
+
+  let actualIters = 0;
   for (let iter = 0; iter < config.iterations; iter++) {
     const seed = hash64(config.seed, iter);
     const rng = new RNG(seed);
@@ -171,6 +178,7 @@ export function runSimulation(input: SimInput): SimResult {
     const iterDurationSec = iterDurationMs / 1000;
     const iterDps = state.totalDamage / iterDurationSec;
     dpsAccum.push(iterDps, needSamples);
+    actualIters = iter + 1;
 
     // Accumulate breakdown
     for (const [key, data] of state.breakdown.getAll()) {
@@ -200,11 +208,22 @@ export function runSimulation(input: SimInput): SimResult {
     if (iterResult.timeline) {
       capturedTimeline = iterResult.timeline;
     }
+
+    // Adaptive early-stop: check convergence at batch boundaries
+    if (targetErrorPct !== undefined && actualIters >= MIN_ITERS && actualIters % BATCH_SIZE === 0) {
+      const se = dpsAccum.stdDev / Math.sqrt(actualIters);
+      const sePct = dpsAccum.mean > 0 ? (se / dpsAccum.mean) * 100 : Infinity;
+      // 95% confidence: multiply SE by 1.96 (z-score for 95% CI)
+      const confidenceErrorPct = sePct * 1.96;
+      if (confidenceErrorPct <= targetErrorPct) {
+        break; // Converged — stop early
+      }
+    }
   }
 
   // Build final breakdown
   const durationSec = config.durationMs / 1000;
-  const iters = config.iterations;
+  const iters = actualIters;
   const breakdown: AbilityBreakdown[] = [];
   const totalDmg = dpsAccum.mean * durationSec;
 
@@ -220,6 +239,7 @@ export function runSimulation(input: SimInput): SimResult {
     const dps = avgDmg / durationSec;
     const spell = SPELL_DB[key];
     const isTrinket = trinketLabels.has(key);
+    const avgCrits = data.crits / iters;
     breakdown.push({
       key,
       label: trinketLabels.get(key) ?? spell?.label ?? key,
@@ -229,6 +249,8 @@ export function runSimulation(input: SimInput): SimResult {
       avgHit: avgCasts > 0 ? Math.round(avgDmg / avgCasts) : 0,
       pctOfTotal: totalDmg > 0 ? Math.round((avgDmg / totalDmg) * 1000) / 10 : 0,
       category: isTrinket ? "trinket" : spell?.isPet ? "pet" : "player",
+      crits: Math.round(avgCrits * 10) / 10,
+      critPct: avgCasts > 0 ? Math.round((avgCrits / avgCasts) * 1000) / 10 : 0,
     });
   }
   breakdown.sort((a, b) => b.dps - a.dps);

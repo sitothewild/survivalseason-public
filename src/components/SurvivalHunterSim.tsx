@@ -3546,41 +3546,120 @@ export default function SurvivalHunterSim() {
                               <button
                                 onClick={() => {
                                   const lines: string[] = [];
-                                  lines.push("========================================");
-                                  lines.push("SurvivalSeason Simulation Output");
-                                  lines.push("========================================");
-                                  lines.push(`Timestamp:    ${new Date().toISOString()}`);
-                                  lines.push(`Hero Talent:  ${res.hero}`);
-                                  lines.push(`Targets:      ${res.targets}`);
-                                  lines.push(`Duration:     ${res.duration}s (±20% variance)`);
-                                  lines.push(`Iterations:   ${res.iterations ?? 'N/A'}`);
-                                  lines.push(`Fight Style:  Patchwerk`);
+                                  const iters = res.iterations ?? 1000;
+                                  const se = (res.stdDev ?? 0) / Math.sqrt(iters);
+                                  const sePct = res.totalDps > 0 ? (se / res.totalDps * 100).toFixed(3) : '0';
+                                  const dpsRange = (res.maxDps ?? 0) - (res.minDps ?? 0);
+                                  const rangePct = res.totalDps > 0 ? (dpsRange / res.totalDps * 100).toFixed(2) : '0';
+
+                                  lines.push("SurvivalSeason Engine for World of Warcraft 12.0.1 Midnight");
+                                  lines.push(`Simulating... ( iterations=${iters}, target_error=${sePct}%, max_time=${res.duration}, vary_combat_length=0.20, fight_style=Patchwerk )`);
                                   lines.push("");
-                                  lines.push("--- RESULTS ---");
-                                  lines.push(`DPS:          ${Math.round(res.totalDps).toLocaleString()}`);
-                                  lines.push(`95% CI:       ${Math.round(res.p5Dps ?? 0).toLocaleString()} - ${Math.round(res.p95Dps ?? 0).toLocaleString()}`);
-                                  lines.push(`Std Dev:      ${Math.round(res.stdDev ?? 0).toLocaleString()}`);
-                                  if (res.iterations) lines.push(`Std Error:    ±${Math.round((res.stdDev ?? 0) / Math.sqrt(res.iterations)).toLocaleString()}`);
+                                  lines.push("DPS Ranking:");
+                                  lines.push(`  ${Math.round(res.totalDps).toLocaleString().padStart(8)} 100.0%  Player`);
                                   lines.push("");
-                                  lines.push("--- DPS BREAKDOWN ---");
-                                  lines.push("Ability".padEnd(28) + "DPS".padStart(10) + "Pct".padStart(8));
-                                  lines.push("-".repeat(46));
-                                  Object.entries(res.breakdown)
-                                    .sort((a: any, b: any) => b[1] - a[1])
-                                    .forEach(([k, v]: [string, any]) => {
-                                      lines.push(`${k.padEnd(28)}${Math.round(v).toLocaleString().padStart(10)}${(v / res.totalDps * 100).toFixed(1).padStart(7)}%`);
-                                    });
+                                  lines.push(`Player: hunter survival ${res.hero === 'pack_leader' ? 'Pack Leader' : 'Sentinel'}`);
+                                  lines.push(`  DPS=${res.totalDps.toFixed(1)} DPS-Error=${se.toFixed(1)}/${sePct}% DPS-Range=${dpsRange.toFixed(0)}/${rangePct}%`);
+                                  lines.push("");
+
+                                  // Detailed actions breakdown (SimC-style)
+                                  lines.push("  Actions:");
+                                  const hdr = "    " + "Ability".padEnd(26) + "Count".padStart(7) + "  |" + "Interval".padStart(9) + "  " + "DPE".padStart(8) + "  " + "pDPS".padStart(7) + "  " + "Pct".padStart(6) + "  " + "CritPct".padStart(8);
+                                  lines.push(hdr);
+                                  lines.push("    " + "-".repeat(hdr.length - 4));
+
+                                  // Get full breakdown with crit data from engine result
+                                  const detailedBreakdown = (res as any).engineBreakdown || [];
+                                  const sortedBreakdown = Object.entries(res.breakdown)
+                                    .sort((a: any, b: any) => b[1] - a[1]);
+
+                                  sortedBreakdown.forEach(([k, v]: [string, any]) => {
+                                    const dps = Math.round(v);
+                                    const pct = (v / res.totalDps * 100).toFixed(1);
+                                    // Find matching detailed entry
+                                    const detail = detailedBreakdown.find((d: any) => d.label === k || d.key === k);
+                                    const casts = detail?.casts ?? 0;
+                                    const interval = casts > 1 ? (res.duration / casts).toFixed(1) : '0.0';
+                                    const dpe = casts > 0 ? Math.round(v * res.duration / casts) : 0;
+                                    const critPct = detail?.critPct ?? 0;
+
+                                    lines.push("    " +
+                                      k.padEnd(26) +
+                                      (casts > 0 ? casts.toFixed(1) : '-').padStart(7) + "  |" +
+                                      (interval + 'sec').padStart(9) + "  " +
+                                      dpe.toLocaleString().padStart(8) + "  " +
+                                      dps.toLocaleString().padStart(7) + "  " +
+                                      (pct + '%').padStart(6) + "  " +
+                                      (critPct.toFixed(1) + '%').padStart(8)
+                                    );
+                                  });
+
+                                  // Buff uptimes section
+                                  if (res.detailed?.buffUptimes) {
+                                    lines.push("");
+                                    lines.push("  Dynamic Buffs:");
+                                    for (const [buff, data] of Object.entries(res.detailed.buffUptimes)) {
+                                      const uptimePct = ((data as any).uptime * 100).toFixed(1);
+                                      lines.push(`    ${buff.padEnd(36)} : uptime=${uptimePct}%  ${(data as any).description}`);
+                                    }
+                                  }
+
+                                  // Resource data
+                                  if (res.detailed?.resourceData) {
+                                    const rd = res.detailed.resourceData;
+                                    lines.push("");
+                                    lines.push("  Gains:");
+                                    lines.push(`    ${rd.focusGenerated.toFixed(0).padStart(8)} : Focus Regen  (focus)`);
+                                    for (const gen of rd.generators) {
+                                      lines.push(`    ${gen.total.toFixed(0).padStart(8)} : ${gen.label.padEnd(12)} (focus)  ${gen.casts.toFixed(1)} casts × ${gen.gen} per cast`);
+                                    }
+                                    lines.push("");
+                                    lines.push("  Spenders:");
+                                    for (const sp of rd.spenders) {
+                                      lines.push(`    ${sp.total.toFixed(0).padStart(8)} : ${sp.label.padEnd(12)} (focus)  ${sp.casts.toFixed(1)} casts × ${sp.cost} per cast`);
+                                    }
+                                  }
+
+                                  // Hero counters
+                                  if (res.heroCounters) {
+                                    lines.push("");
+                                    lines.push("  Hero Talent Procs:");
+                                    const hc = res.heroCounters;
+                                    if (hc.packCoordinationProcs) lines.push(`    Pack Coordination: ${hc.packCoordinationProcs} procs`);
+                                    if (hc.viciousHuntProcs) lines.push(`    Vicious Hunt:      ${hc.viciousHuntProcs} procs`);
+                                    if (hc.frenziedTearProcs) lines.push(`    Frenzied Tear:     ${hc.frenziedTearProcs} procs`);
+                                    if (hc.sentinelOwlProcs) lines.push(`    Sentinel Owl:      ${hc.sentinelOwlProcs} procs`);
+                                    if (hc.lunarStormProcs) lines.push(`    Lunar Storm:       ${hc.lunarStormProcs} procs`);
+                                    if (hc.eyesOfEagleResets) lines.push(`    Eyes of Eagle:     ${hc.eyesOfEagleResets} resets`);
+                                  }
+
+                                  // Statistical summary
+                                  lines.push("");
+                                  lines.push("  --- STATISTICAL SUMMARY ---");
+                                  lines.push(`  DPS:          ${Math.round(res.totalDps).toLocaleString()}`);
+                                  lines.push(`  Median DPS:   ${Math.round(res.medianDps ?? 0).toLocaleString()}`);
+                                  lines.push(`  95% CI:       ${Math.round(res.p5Dps ?? 0).toLocaleString()} - ${Math.round(res.p95Dps ?? 0).toLocaleString()}`);
+                                  lines.push(`  Std Dev:      ${Math.round(res.stdDev ?? 0).toLocaleString()}`);
+                                  lines.push(`  Std Error:    ±${se.toFixed(1)} (${sePct}%)`);
+                                  lines.push(`  Min DPS:      ${Math.round(res.minDps ?? 0).toLocaleString()}`);
+                                  lines.push(`  Max DPS:      ${Math.round(res.maxDps ?? 0).toLocaleString()}`);
+                                  lines.push(`  Range:        ${dpsRange.toFixed(0)} (${rangePct}%)`);
+                                  lines.push(`  Iterations:   ${iters}`);
+
+                                  // Stat weights
                                   if (statWeights) {
                                     lines.push("");
-                                    lines.push("--- STAT WEIGHTS ---");
-                                    lines.push(`Base DPS: ${statWeights.baseDps.toLocaleString()}`);
+                                    lines.push("  --- STAT WEIGHTS ---");
+                                    lines.push(`  Base DPS: ${statWeights.baseDps.toLocaleString()}`);
                                     Object.entries(statWeights.weights)
                                       .sort((a: any, b: any) => b[1].normalized - a[1].normalized)
                                       .forEach(([stat, w]: [string, any]) => {
-                                        lines.push(`  ${stat.padEnd(14)} ${w.normalized.toFixed(3)}`);
+                                        lines.push(`    ${stat.padEnd(14)} ${w.normalized.toFixed(3)}`);
                                       });
                                   }
+
                                   lines.push("");
+                                  lines.push(`Timestamp: ${new Date().toISOString()}`);
                                   lines.push("========================================");
                                   const blob = new Blob([lines.join("\n")], { type: "text/plain" });
                                   const url = URL.createObjectURL(blob);
