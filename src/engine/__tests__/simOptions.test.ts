@@ -111,11 +111,11 @@ describe("applySimOptions", () => {
     expect(result.stats.critRating).toBeGreaterThan(base.critRating);
   });
 
-  it("injects phial stats (Alchemical Chaos)", () => {
+  it("injects phial stats (Fleeting Magisters)", () => {
     const base = makeBaseStats();
     const options: SimOptions = {
       ...NAKED_OPTIONS,
-      phial: "alchemical_chaos",
+      phial: "fleeting_magisters",
     };
 
     const result = applySimOptions(base, options, "sentinel");
@@ -125,11 +125,10 @@ describe("applySimOptions", () => {
     expect(result.stats.masteryRating).toBeGreaterThan(base.masteryRating);
   });
 
-  it("injects phial stats (Tempering Sanity = flat agi)", () => {
+  it("injects phial stats (Fleeting Determination = flat agi)", () => {
     const base = makeBaseStats();
-    // Use a baseline without phial to compare
     const noPhial = applySimOptions(base, { ...NAKED_OPTIONS, phial: "none" }, "sentinel");
-    const withPhial = applySimOptions(base, { ...NAKED_OPTIONS, phial: "tempering_sanity" }, "sentinel");
+    const withPhial = applySimOptions(base, { ...NAKED_OPTIONS, phial: "fleeting_determination" }, "sentinel");
 
     expect(withPhial.stats.agility).toBe(noPhial.stats.agility + 360);
     expect(withPhial.stats.attackPower).toBeGreaterThan(noPhial.stats.attackPower);
@@ -138,7 +137,7 @@ describe("applySimOptions", () => {
   it("injects food stats", () => {
     const base = makeBaseStats();
     const noFood = applySimOptions(base, { ...NAKED_OPTIONS, food: "none" }, "sentinel");
-    const withFood = applySimOptions(base, { ...NAKED_OPTIONS, food: "mastery_food" }, "sentinel");
+    const withFood = applySimOptions(base, { ...NAKED_OPTIONS, food: "silvermoon_parade" }, "sentinel");
 
     expect(withFood.stats.masteryRating).toBe(noFood.stats.masteryRating + 90);
   });
@@ -146,7 +145,7 @@ describe("applySimOptions", () => {
   it("injects weapon enhancement flat stat", () => {
     const base = makeBaseStats();
     const noEnh = applySimOptions(base, { ...NAKED_OPTIONS, weaponEnhancement: "none" }, "sentinel");
-    const withEnh = applySimOptions(base, { ...NAKED_OPTIONS, weaponEnhancement: "ironclaw_whetstone" }, "sentinel");
+    const withEnh = applySimOptions(base, { ...NAKED_OPTIONS, weaponEnhancement: "silvermoon_whetstone" }, "sentinel");
 
     expect(withEnh.stats.critRating).toBe(noEnh.stats.critRating + 168);
   });
@@ -155,14 +154,14 @@ describe("applySimOptions", () => {
     const base = makeBaseStats();
     const options: SimOptions = {
       ...NAKED_OPTIONS,
-      weaponEnhancement: "oil_of_deep_toxins",
+      weaponEnhancement: "thalassian_phoenix_oil",
     };
 
     const result = applySimOptions(base, options, "sentinel");
     expect(result.weaponProc).toBeDefined();
-    expect(result.weaponProc!.dmgApCoef).toBe(0.32);
-    expect(result.weaponProc!.dmgCPM).toBe(8.5);
-    expect(result.weaponProc!.school).toBe("nature");
+    expect(result.weaponProc!.dmgApCoef).toBe(0.35);
+    expect(result.weaponProc!.dmgCPM).toBe(9.0);
+    expect(result.weaponProc!.school).toBe("fire");
   });
 
   it("injects augment rune stats", () => {
@@ -186,11 +185,11 @@ describe("applySimOptions", () => {
     expect(result.buffMults.versPctBonus).toBeCloseTo(3.0);
   });
 
-  it("returns potion aura for tempered potion", () => {
+  it("returns potion aura for Light's Potential", () => {
     const base = makeBaseStats();
     const options: SimOptions = {
       ...NAKED_OPTIONS,
-      potion: "tempered_potion",
+      potion: "lights_potential",
     };
 
     const result = applySimOptions(base, options, "sentinel");
@@ -252,7 +251,7 @@ describe("SimOptions Presets", () => {
     expect(custom.potion).toBe("none");
     expect(custom.raidBuffs.battleShout).toBe(false);
     // Rest should be from FULL_RAID
-    expect(custom.phial).toBe("alchemical_chaos");
+    expect(custom.phial).toBe("fleeting_magisters");
   });
 });
 
@@ -261,31 +260,31 @@ describe("SimOptions Presets", () => {
 describe("Consumable Data", () => {
   it("has phial definitions", () => {
     expect(PHIALS.length).toBeGreaterThanOrEqual(2);
-    const chaos = PHIALS.find(p => p.key === "alchemical_chaos");
-    expect(chaos).toBeDefined();
-    expect(chaos!.isProcBased).toBe(true);
+    const magisters = PHIALS.find(p => p.key === "fleeting_magisters");
+    expect(magisters).toBeDefined();
+    expect(magisters!.isProcBased).toBe(true);
   });
 
   it("has food definitions", () => {
     expect(FOOD_BUFFS.length).toBeGreaterThanOrEqual(3);
-    const mastery = FOOD_BUFFS.find(f => f.key === "mastery_food");
+    const mastery = FOOD_BUFFS.find(f => f.key === "silvermoon_parade");
     expect(mastery).toBeDefined();
     expect(mastery!.ratingAmount).toBe(90);
   });
 
   it("has potion definitions", () => {
-    expect(POTIONS.length).toBeGreaterThanOrEqual(2);
-    const tempered = POTIONS.find(p => p.key === "tempered_potion");
-    expect(tempered).toBeDefined();
-    expect(tempered!.ratingAmount).toBe(3648);
-    expect(tempered!.durationSec).toBe(30);
+    expect(POTIONS.length).toBeGreaterThanOrEqual(1);
+    const pot = POTIONS.find(p => p.key === "lights_potential");
+    expect(pot).toBeDefined();
+    expect(pot!.ratingAmount).toBe(3648);
+    expect(pot!.durationSec).toBe(30);
   });
 
   it("has weapon enhancement definitions", () => {
-    expect(WEAPON_ENHANCEMENTS.length).toBeGreaterThanOrEqual(4);
-    const whetstone = WEAPON_ENHANCEMENTS.find(w => w.key === "ironclaw_whetstone");
-    expect(whetstone).toBeDefined();
-    expect(whetstone!.type).toBe("flat_stat");
+    expect(WEAPON_ENHANCEMENTS.length).toBeGreaterThanOrEqual(3);
+    const phoenix = WEAPON_ENHANCEMENTS.find(w => w.key === "thalassian_phoenix_oil");
+    expect(phoenix).toBeDefined();
+    expect(phoenix!.type).toBe("damage_proc");
   });
 
   it("has augment rune definitions", () => {
@@ -317,7 +316,7 @@ describe("SimOptions Integration", () => {
       "sentinel",
       "raid_st",
       { seed: 42, iterations: 200 },
-      createSimOptions({ weaponEnhancement: "howling_rune" }),
+      createSimOptions({ weaponEnhancement: "amani_poison" }),
     );
 
     const result = runSimulation(input);
@@ -333,7 +332,7 @@ describe("SimOptions Integration", () => {
       "sentinel",
       "raid_st",
       { seed, iterations: 200 },
-      createSimOptions({ potion: "tempered_potion" }),
+      createSimOptions({ potion: "lights_potential" }),
     );
     const noPot = buildSimInput(
       "sentinel",

@@ -858,9 +858,9 @@ const RAID_BUFFS = {
 };
 
 const CONSUMABLES = {
-  flask: { label: 'Flask', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'flaskOfAlchemicalChaos', label: 'Alchemical Chaos', mult: 1.035 },{ key: 'flaskOfTemperingSanity', label: 'Tempering Sanity', mult: 1.03 }] },
-  food: { label: 'Food', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'mastery', label: 'Mastery (+90)', mult: 1.025 },{ key: 'crit', label: 'Crit (+90)', mult: 1.02 },{ key: 'haste', label: 'Haste (+90)', mult: 1.018 }] },
-  potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'tempered', label: 'Tempered Potion', mult: 1.02 },{ key: 'frontLoaded', label: 'Unwavering Focus', mult: 1.025 }] },
+  flask: { label: 'Flask', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'fleetingMagisters', label: 'Fleeting Flask of the Magisters', mult: 1.035 },{ key: 'fleetingAlacrity', label: 'Fleeting Flask of Alacrity', mult: 1.03 },{ key: 'fleetingDetermination', label: 'Fleeting Flask of Determination', mult: 1.03 }] },
+  food: { label: 'Food', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'silvermoonParade', label: 'Silvermoon Parade (+90 Mastery)', mult: 1.025 },{ key: 'thalassianFeast', label: 'Thalassian Feast (+90 Crit)', mult: 1.02 },{ key: 'amaniFeast', label: 'Amani Feast (+90 Haste)', mult: 1.018 }] },
+  potion: { label: 'Potion', options: [{ key: 'none', label: 'None', mult: 1.0 },{ key: 'lightsPotential', label: "Light's Potential", mult: 1.02 }] },
 };
 
 // (TalentTreeGrid and its constants removed — replaced by BlizzardTalentTree component)
@@ -1028,9 +1028,9 @@ export default function SurvivalHunterSim() {
   const [simMode, setSimMode] = useState('single');
   const [fightStyle, setFightStyle] = useState('patchwerk');
   const [raidBuffs, setRaidBuffs] = useState<Record<string, boolean>>({ battleShout: true, markOfTheWild: true, mysticTouch: true, huntersMark: true });
-  const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'flaskOfAlchemicalChaos', food: 'mastery', potion: 'tempered' });
+  const [consumables, setConsumables] = useState<Record<string, string>>({ flask: 'fleetingMagisters', food: 'silvermoonParade', potion: 'lightsPotential' });
   // Advanced Options — engine-driven SimOptions state
-  const [weaponEnhancement, setWeaponEnhancement] = useState('ironclaw_whetstone');
+  const [weaponEnhancement, setWeaponEnhancement] = useState('thalassian_phoenix_oil');
   const [augmentRune, setAugmentRune] = useState(true);
   const [gemPrimaryStat, setGemPrimaryStat] = useState<'crit' | 'haste' | 'mastery' | 'vers'>('mastery');
   const [gemSockets, setGemSockets] = useState(6);
@@ -1572,21 +1572,22 @@ export default function SurvivalHunterSim() {
 
   // Build SimOptions from UI state
   const currentSimOptions = useMemo((): SimOptions => {
-    // Map old consumable keys to engine keys
+    // Map UI consumable keys to engine keys
     const phialMap: Record<string, string> = {
-      flaskOfAlchemicalChaos: 'alchemical_chaos',
-      flaskOfTemperingSanity: 'tempering_sanity',
+      fleetingMagisters: 'fleeting_magisters',
+      fleetingAlacrity: 'fleeting_alacrity',
+      fleetingDetermination: 'fleeting_determination',
       none: 'none',
     };
     const foodMap: Record<string, string> = {
-      mastery: 'mastery_food',
-      crit: 'crit_food',
-      haste: 'haste_food',
+      silvermoonParade: 'silvermoon_parade',
+      thalassianFeast: 'thalassian_feast',
+      amaniFeast: 'amani_feast',
+      farstriderRations: 'farstrider_rations',
       none: 'none',
     };
     const potionMap: Record<string, string> = {
-      tempered: 'tempered_potion',
-      frontLoaded: 'potion_of_unwavering_focus',
+      lightsPotential: 'lights_potential',
       none: 'none',
     };
 
@@ -1649,9 +1650,9 @@ export default function SurvivalHunterSim() {
       if (currentSimOptions.raidBuffs.markOfTheWild) externalMult *= 1.025;
       if (currentSimOptions.raidBuffs.mysticTouch) externalMult *= 1.04;
       if (currentSimOptions.raidBuffs.huntersMark) externalMult *= 1.035;
-      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'alchemical_chaos' ? 1.035 : 1.03;
+      if (currentSimOptions.phial !== 'none') externalMult *= currentSimOptions.phial === 'fleeting_magisters' ? 1.035 : 1.03;
       if (currentSimOptions.food !== 'none') externalMult *= 1.02;
-      if (currentSimOptions.potion !== 'none') externalMult *= currentSimOptions.potion === 'potion_of_unwavering_focus' ? 1.025 : 1.02;
+      if (currentSimOptions.potion !== 'none') externalMult *= 1.02;
       if (currentSimOptions.weaponEnhancement !== 'none') externalMult *= 1.01;
       if (currentSimOptions.augmentRune) externalMult *= 1.005;
       const sw = calcStatWeights(parsedChar, primaryTarget, fightDuration, heroTalent, primaryBuild, externalMult, simcLiveData, aplData);
@@ -2946,9 +2947,9 @@ export default function SurvivalHunterSim() {
                             <button key={label} onClick={() => {
                               setRaidBuffs({ battleShout: preset.raidBuffs.battleShout, markOfTheWild: preset.raidBuffs.markOfTheWild, mysticTouch: preset.raidBuffs.mysticTouch, huntersMark: preset.raidBuffs.huntersMark });
                               // Map engine keys back to UI keys
-                              const phialRev: Record<string, string> = { alchemical_chaos: 'flaskOfAlchemicalChaos', tempering_sanity: 'flaskOfTemperingSanity', none: 'none' };
-                              const foodRev: Record<string, string> = { mastery_food: 'mastery', crit_food: 'crit', haste_food: 'haste', none: 'none' };
-                              const potRev: Record<string, string> = { tempered_potion: 'tempered', potion_of_unwavering_focus: 'frontLoaded', none: 'none' };
+                              const phialRev: Record<string, string> = { fleeting_magisters: 'fleetingMagisters', fleeting_alacrity: 'fleetingAlacrity', fleeting_determination: 'fleetingDetermination', none: 'none' };
+                              const foodRev: Record<string, string> = { silvermoon_parade: 'silvermoonParade', thalassian_feast: 'thalassianFeast', amani_feast: 'amaniFeast', none: 'none' };
+                              const potRev: Record<string, string> = { lights_potential: 'lightsPotential', none: 'none' };
                               setConsumables({ flask: phialRev[preset.phial] ?? 'none', food: foodRev[preset.food] ?? 'none', potion: potRev[preset.potion] ?? 'none' });
                               setWeaponEnhancement(preset.weaponEnhancement);
                               setAugmentRune(preset.augmentRune);
