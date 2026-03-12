@@ -622,12 +622,12 @@ function executeAbility(
     state.takedownExpiresMs = state.nowMs + TAKEDOWN_DURATION_MS;
     state.logProc("takedown", `Takedown active — 20% damage amp for ${(TAKEDOWN_DURATION_MS / 1000).toFixed(0)}s`);
 
-    // Pet Takedown component: pet does its own strike (from SimC: pet takedown = 1304 pDPS)
+    // Pet Takedown component: pet does its own strike — merged under 'takedown' key to match Raidbots
     const petAp = state.currentAP * PET_AP_SCALING;
     const { damage: petTdDmg, isCrit: petTdCrit } = computeDamage(
-      state, petAp, SPELL_DB["takedown"].apCoef * 0.80, "physical", true, rng,
+      state, petAp, AP.takedown_pet, "physical", true, rng,
     );
-    state.recordDamage("pet_takedown", petTdDmg, petTdCrit, 0);
+    state.recordDamage("takedown", petTdDmg, petTdCrit, 0);
 
     // Second potion use: align with Takedown
     if (input.potionAura && state.cooldowns.isReady("potion", state.nowMs) && state.nowMs > 0) {
