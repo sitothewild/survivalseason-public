@@ -155,8 +155,8 @@ export const AP_COEFFICIENTS = {
   wildfire_bomb_primary_bonus: 0.60,
   boomstick:           0,       // channeled — no direct hit, all damage via boomstick_dot ticks
   boomstick_tick:      8.45,    // Back-calc: 2905 pDPS, 4 ticks/channel, ~4.8 channels, strip Shellshock +40%
-  takedown:            14.18,   // Raidbots 1240 pDPS, 3.4 casts, merged player+pet
-  takedown_pet:        11.34,   // pet component: 80% of player coef
+  takedown:            11.15,   // Back-calc: 1240 pDPS, 3.4 casts, reduced from 14.18
+  takedown_pet:        8.92,    // pet component: ~80% of player coef, reduced from 11.34
   serpent_sting:       0.53,
   carve:               1.68,
   flamefang_pitch:     2.52,
