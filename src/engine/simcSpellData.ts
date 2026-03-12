@@ -152,7 +152,7 @@ export const AP_COEFFICIENTS = {
   /** WFB primary target bonus: +60% damage to the main target */
   wildfire_bomb_primary_bonus: 0.60,
   boomstick:           0,       // channeled — no direct hit, all damage via boomstick_dot ticks
-  boomstick_tick:      0.90,    // per tick (4 ticks per channel), replaces old boomstick_dot
+  boomstick_tick:      7.40,    // per tick (4 ticks per channel) — back-calc from Raidbots 2905 pDPS
   takedown:            18.00,   // WoWDB: 1800% AP — was 1.80 (10x undercount, tooltip misread)
   takedown_pet:        14.40,   // pet component: 80% of player coef
   serpent_sting:       0.25,
