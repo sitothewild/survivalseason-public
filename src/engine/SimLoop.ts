@@ -414,6 +414,17 @@ function runIteration(
         }
         break;
       }
+      case "damage_proc": {
+        const icdMs = (trinket.procICD ?? 0) * 1000;
+        if (icdMs > 0) {
+          state.cooldowns.init(cdKey, 1, icdMs);
+        }
+        // Apply static agi from trinket
+        if (trinket.primaryAgi > 0) {
+          state.applyAura(cdKey + "_equip", endMs + 10_000, 1, { agi: trinket.primaryAgi });
+        }
+        break;
+      }
       case "equip": {
         if (trinket.primaryAgi > 0) {
           state.applyAura(cdKey, endMs + 10_000, 1, { agi: trinket.primaryAgi });
