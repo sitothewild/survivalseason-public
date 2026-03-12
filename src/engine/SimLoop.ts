@@ -782,6 +782,9 @@ function executeAbility(
         swipeDmg *= 1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS;
         // Versatility
         swipeDmg *= 1 + state.currentVersPct / 100;
+        // Tip of the Spear: Swipe inherits TotS multiplier from the RS that triggered it
+        // In SimC, RS + Swipe are part of the same action and both benefit from TotS
+        swipeDmg *= totsMult;
         // Mongoose Fury affects Raptor Swipe (melee ability)
         if (state.mongooseFuryStacks > 0) {
           swipeDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
