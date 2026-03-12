@@ -8,10 +8,31 @@
 import { describe, it, expect } from "vitest";
 import { runSimulation } from "../SimLoop";
 import { buildSimInput } from "../buildSimInput";
-import type { SimInput, SimOptions } from "../types";
+import type { SimInput, SimOptions, PlayerStats } from "../types";
 
 // ── Raidbots Reference Data ─────────────────────────────────
 const RAIDBOTS_DPS = 33846;
+
+// ── Blezaa's exact stats from Raidbots character import ──────
+// These override the BiS gear stats to match the exact sim conditions
+const BLEZAA_STATS: PlayerStats = {
+  agility: 1477,
+  stamina: 1200,
+  attackPower: 0,  // AP = Agility for hunters
+  critRating: 356,
+  hasteRating: 338,
+  masteryRating: 695,
+  versatilityRating: 199,
+  weapon: {
+    type: "dw",
+    mainHandDps: 280,
+    mainHandSpeed: 2.6,
+    offHandDps: 220,
+    offHandSpeed: 2.6,
+  },
+  has2pc: true,
+  has4pc: true,
+};
 
 // Per-ability pDPS from Raidbots output (player + pet breakdown)
 const RAIDBOTS_BREAKDOWN: Record<string, { pDPS: number; pct: number; casts?: number }> = {
