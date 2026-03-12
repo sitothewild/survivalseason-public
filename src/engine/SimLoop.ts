@@ -703,7 +703,7 @@ function executeAbility(
   }
 
   // Apply DoTs if applicable
-  applySpellDots(state, spell, queue);
+  applySpellDots(state, spell, queue, input);
 
   // Bloodseeker: +10% attack speed per bleeding target (multiplicative, NOT haste)
   // SimC: s /= 1 + buffs.bloodseeker->check_stack_value() where default_value = 0.10
@@ -767,11 +767,36 @@ function executeAbility(
     {
       const swipeSpell = SPELL_DB["raptor_swipe"];
       if (swipeSpell) {
-        const { damage: swipeDmg, isCrit: swipeCrit } = computeDamage(
-          state, state.currentAP, swipeSpell.apCoef, swipeSpell.school, false, rng,
-        );
-        const armorMod = swipeSpell.school === "physical"
-          ? (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K)) : 1;
+        const swipeAp = state.currentAP;
+        let swipeDmg = swipeSpell.apCoef * swipeAp;
+
+        // Apply mastery
+        swipeDmg *= 1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS;
+        // Versatility
+        swipeDmg *= 1 + state.currentVersPct / 100;
+        // Mongoose Fury affects Raptor Swipe (melee ability)
+        if (state.mongooseFuryStacks > 0) {
+          swipeDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+        }
+        // Wyvern's Cry (universal)
+        if (state.wyvernsCryStacks > 0) {
+          swipeDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+        }
+        // Takedown universal buff
+        if (state.takedownActive) {
+          swipeDmg *= 1.20;
+        }
+
+        // Crit
+        const critChance = Math.min(1, state.currentCritPct / 100);
+        const swipeCrit = rng.roll() < critChance;
+        if (swipeCrit) swipeDmg *= 2.0;
+
+        // Armor
+        if (swipeSpell.school === "physical") {
+          swipeDmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
+        }
+
         const swipeTargets = Math.min(state.numTargets, 5);
         for (let t = 0; t < swipeTargets; t++) {
           state.recordDamage("raptor_swipe", swipeDmg, swipeCrit, t);
@@ -779,7 +804,6 @@ function executeAbility(
 
         // Raptor Swipe does NOT trigger Strike as One separately.
         // SAO only fires from TotS consumption on the base Raptor Strike (line 736).
-        // Removing this double-trigger fixes SAO being ~2x Raidbots reference.
       }
     }
   }
@@ -925,7 +949,7 @@ function handleOffHandAutoAttack(
 
   dmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
 
-  state.recordDamage("auto_attack_oh", dmg, isCrit, 0);
+  state.recordDamage("oh_auto_attack", dmg, isCrit, 0);
 
   const hasteMult = 1 + state.currentHastePct / 100;
   const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
@@ -934,7 +958,7 @@ function handleOffHandAutoAttack(
   queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
 
   if (capture) {
-    timeline.push({ tMs: state.nowMs, type: "auto", ability: "auto_attack_oh", damage: Math.round(dmg) });
+    timeline.push({ tMs: state.nowMs, type: "auto", ability: "oh_auto_attack", damage: Math.round(dmg) });
   }
 }
 
@@ -1336,6 +1360,7 @@ function applySpellDots(
   state: CombatState,
   spell: SpellInfo,
   queue: EventQueue,
+  input: SimInput,
 ): void {
   if (spell.key === "wildfire_bomb") {
     const dotKey = "wildfire_bomb_dot";
@@ -1358,13 +1383,25 @@ function applySpellDots(
     }
   }
 
-  // Boomstick: multi-tick ability (4 ticks over 6s)
+  // Boomstick: channeled 4-tick ability — snapshot Shellshock and Takedown into DoT
   if (spell.key === "boomstick") {
     const dotInfo = DOT_DB["boomstick_dot"];
     if (dotInfo) {
+      // Snapshot multipliers into the per-tick AP coef
+      let snapshotCoef = dotInfo.apCoef;
+      // Shellshock: +40% ST, -5% per extra target (snapshot at cast time)
+      if (input.talents.activeTalents.has("shellshock")) {
+        const shellshockBonus = Math.max(0,
+          BUFF_DURATIONS.shellshock.stBonusPct - (state.numTargets - 1) * BUFF_DURATIONS.shellshock.reductionPerTarget);
+        snapshotCoef *= 1 + shellshockBonus;
+      }
+      // Takedown universal buff
+      if (state.takedownActive) {
+        snapshotCoef *= 1.20;
+      }
       const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
       for (let t = 0; t < targets; t++) {
-        applyDot(state, queue, "boomstick_dot", t, dotInfo, state.currentAP);
+        applyDot(state, queue, "boomstick_dot", t, { ...dotInfo, apCoef: snapshotCoef }, state.currentAP);
       }
     }
   }

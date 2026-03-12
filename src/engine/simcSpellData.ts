@@ -152,7 +152,7 @@ export const AP_COEFFICIENTS = {
   /** WFB primary target bonus: +60% damage to the main target */
   wildfire_bomb_primary_bonus: 0.60,
   boomstick:           0,       // channeled — no direct hit, all damage via boomstick_dot ticks
-  boomstick_tick:      0.90,    // per tick (4 ticks per channel), replaces old boomstick_dot
+  boomstick_tick:      4.89,    // per tick (4 ticks per channel) — back-calc: 7.40 * 2905/4395
   takedown:            18.00,   // WoWDB: 1800% AP — was 1.80 (10x undercount, tooltip misread)
   takedown_pet:        14.40,   // pet component: 80% of player coef
   serpent_sting:       0.25,
@@ -165,8 +165,8 @@ export const AP_COEFFICIENTS = {
   strike_as_one:       9.24,    // pet ability, uses pet AP (0.6 scaling)
 
   // ── Pet Abilities ─────────────────────────────────────────
-  pet_claw:            2.00,   // main pet, 0.6 AP scaling — back-calc from Raidbots (avg 2098)
-  pet_melee:           0.70,   // main pet auto, 0.6 AP scaling — back-calc from Raidbots (avg 738)
+  pet_claw:            0.80,   // main pet, 0.6 AP scaling — back-calc from Raidbots (823 pDPS, 57.1 casts)
+  pet_melee:           0.33,   // main pet auto, 0.6 AP scaling — back-calc from Raidbots (634 pDPS, 125 casts)
 
   // ── Pack Leader Hero Tree ─────────────────────────────────
   boar_charge:         17.5,   // uses hunter AP directly — back-calc from Raidbots (avg 30184)
