@@ -328,13 +328,9 @@ function computeDamage(
   // Versatility
   baseDmg *= 1 + state.currentVersPct / 100;
 
-  // Mongoose Fury (applies to abilities affected by it)
-  if (state.mongooseFuryStacks > 0) {
-    baseDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
-  }
-
-  // Wyvern's Cry pet damage bonus
-  if (isPet && state.wyvernsCryStacks > 0) {
+  // Wyvern's Cry damage bonus — applies to ALL hunter abilities (not just pet)
+  // SimC: composite_player_multiplier applies wyverns_cry to all hunter damage
+  if (state.wyvernsCryStacks > 0) {
     baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
   }
 
@@ -570,13 +566,15 @@ function executeAbility(
   // Versatility
   baseDmg *= 1 + state.currentVersPct / 100;
 
-  // FIX #4: Mongoose Fury stacks (+15% per stack, affects melee focus spenders)
+  // FIX #4: Mongoose Fury stacks (+15% per stack)
+  // Only affects melee abilities: Raptor Strike, Carve, Raptor Swipe (per SimC)
   if (state.mongooseFuryStacks > 0 && isAffectedByMongooseFury(spell.key)) {
     baseDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
   }
 
-  // Wyvern's Cry pet damage bonus (Pack Leader)
-  if (isPet && state.wyvernsCryStacks > 0) {
+  // Wyvern's Cry damage bonus — applies to ALL hunter abilities (not just pet)
+  // SimC: composite_player_multiplier applies wyverns_cry to all hunter damage
+  if (state.wyvernsCryStacks > 0) {
     baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
   }
 
@@ -637,8 +635,9 @@ function executeAbility(
       state.tipOfTheSpearStacks + TALENT_EFFECTS.twin_fangs_takedown_tots);
   }
 
-  // Takedown: +20% damage during window for melee spenders
-  if (state.takedownActive && (spell.key === "raptor_strike" || spell.key === "kill_command")) {
+  // Takedown: +20% damage during window — applies to ALL abilities (universal buff)
+  // SimC: composite_player_multiplier applies takedown buff universally
+  if (state.takedownActive && spell.key !== "takedown") {
     baseDmg *= 1.20;
   }
 
@@ -694,7 +693,12 @@ function executeAbility(
   }
 
   for (let t = 0; t < effectiveTargets; t++) {
-    const targetDmg = aoeRule?.splitDamage ? finalDamage / effectiveTargets : finalDamage;
+    let targetDmg = aoeRule?.splitDamage ? finalDamage / effectiveTargets : finalDamage;
+    // WFB primary target bonus: +60% damage to the main target (target 0)
+    // SimC: wildfireBombPrimaryTargetBonus = "effectN(2).percent()" = 60%
+    if (spell.key === "wildfire_bomb" && t === 0) {
+      targetDmg *= 1 + AP.wildfire_bomb_primary_bonus;
+    }
     state.recordDamage(spell.key, targetDmg, isCrit, t);
   }
 
@@ -820,11 +824,9 @@ function executeAbility(
 // ── Mongoose Fury: which abilities are affected ───────────────
 
 function isAffectedByMongooseFury(key: string): boolean {
-  // Mongoose Fury affects melee focus spenders and their procs
-  return key === "raptor_strike" || key === "raptor_swipe" ||
-         key === "kill_command" || key === "boomstick" ||
-         key === "takedown" || key === "wildfire_bomb" ||
-         key === "flamefang_pitch" || key === "carve";
+  // Mongoose Fury only affects melee abilities (per SimC: composite_melee_auto_attack)
+  // Does NOT affect ranged abilities like WFB, Boomstick, KC, Flamefang Pitch
+  return key === "raptor_strike" || key === "raptor_swipe" || key === "carve";
 }
 
 // ── Pack Counter helper ───────────────────────────────────────
@@ -867,9 +869,14 @@ function handleAutoAttack(
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
-  // Mongoose Fury affects auto attacks
-  if (state.mongooseFuryStacks > 0) {
-    dmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+  // Wyvern's Cry applies to all hunter damage including autos
+  if (state.wyvernsCryStacks > 0) {
+    dmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+  }
+
+  // Takedown universal damage buff applies to autos
+  if (state.takedownActive) {
+    dmg *= 1.20;
   }
 
   const critChance = Math.min(1, state.currentCritPct / 100);
@@ -912,8 +919,13 @@ function handleOffHandAutoAttack(
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
-  if (state.mongooseFuryStacks > 0) {
-    dmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+  // Wyvern's Cry applies to all hunter damage
+  if (state.wyvernsCryStacks > 0) {
+    dmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+  }
+  // Takedown universal damage buff
+  if (state.takedownActive) {
+    dmg *= 1.20;
   }
 
   const critChance = Math.min(1, state.currentCritPct / 100);
