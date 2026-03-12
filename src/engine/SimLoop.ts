@@ -652,6 +652,7 @@ function executeAbility(
   // ── Talent damage modifiers ──────────────────────────────────
 
   // Sweeping Spear: +10% Raptor Strike damage per rank (2 ranks = +20%)
+  // Applies to both Raptor Strike and its Raptor Swipe proc (same action in SimC)
   if (spell.key === "raptor_strike" && input.talents.activeTalents.has("sweepingSpear")) {
     baseDmg *= 1 + TALENT_EFFECTS.sweeping_spear_rs_pct_per_rank * 2;
   }
