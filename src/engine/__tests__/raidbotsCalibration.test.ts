@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { runSimulation } from "../SimLoop";
 import { buildSimInput } from "../buildSimInput";
-import type { SimInput, SimOptions, PlayerStats } from "../types";
+import type { SimInput, SimOptions, PlayerStats, EquippedTrinket } from "../types";
 
 // ── Raidbots Reference Data ─────────────────────────────────
 const RAIDBOTS_DPS = 33846;
