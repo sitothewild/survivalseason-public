@@ -703,7 +703,7 @@ function executeAbility(
   }
 
   // Apply DoTs if applicable
-  applySpellDots(state, spell, queue);
+  applySpellDots(state, spell, queue, input);
 
   // Bloodseeker: +10% attack speed per bleeding target (multiplicative, NOT haste)
   // SimC: s /= 1 + buffs.bloodseeker->check_stack_value() where default_value = 0.10
