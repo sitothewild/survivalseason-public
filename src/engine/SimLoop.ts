@@ -1146,7 +1146,7 @@ function handleHowlBeast(
 
   if (cycle === 0) {
     // Wyvern: grants Wyvern's Cry stacking buff
-    state.wyvernsCryStacks = Math.min(10, state.wyvernsCryStacks + 3);
+    state.wyvernsCryStacks = Math.min(20, state.wyvernsCryStacks + 5);
     // Wyvern's Cry expires after ~20s
     state.wyvernsCryExpiresMs = state.nowMs + 20000;
   } else if (cycle === 1) {

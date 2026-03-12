@@ -218,7 +218,7 @@ export const BUFF_DURATIONS = {
   flanked_attack_speed: 1.0,
   sentinels_wisdom:    { durationMs: 15000, maxStacks: 5, critPctPerStack: 3.0 },
   hogstrider:          { durationMs: 15000 },  // hogstrider_buff spell 472640
-  wyverns_cry:         { durationMs: 20000, maxStacks: 10, petDmgPerStack: 0.05 },
+  wyverns_cry:         { durationMs: 20000, maxStacks: 20, petDmgPerStack: 0.05 },
   stargazer:           { durationMs: 0 },
 } as const;
 
