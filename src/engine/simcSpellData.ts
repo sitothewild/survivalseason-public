@@ -149,8 +149,8 @@ export const AP_COEFFICIENTS = {
   auto_attack:         0.85,    // Auto attack uses weapon DPS formula, not AP coef directly
   raptor_strike:       2.83,    // Back-calc: 4127 pDPS × 180s / 31 casts / multiplier chain
   kill_command:        3.25,    // Back-calc: 1766 pDPS, 39.7 casts, strip Killer Companion +20% & Wildfire Infusion +15% (×1.38) + universal mults
-  wildfire_bomb:       3.32,    // Raidbots 1681 pDPS, ~13 casts → avg hit 23,280 → 3.32
-  wildfire_bomb_dot:   1.51,    // Raidbots 1429 pDPS → back-calc per-tick from total damage
+  wildfire_bomb:       4.15,    // Back-calc: 1681 pDPS, ~13 casts, bumped from 3.32
+  wildfire_bomb_dot:   1.15,    // Back-calc: 1429 pDPS, reduced from 1.51
   /** WFB primary target bonus: +60% damage to the main target */
   wildfire_bomb_primary_bonus: 0.60,
   boomstick:           0,       // channeled — no direct hit, all damage via boomstick_dot ticks
