@@ -96,7 +96,7 @@ export const SPELL_DB: Record<string, SpellInfo> = {
   // ─── Midnight 12.0 New Abilities ───────────────────────────
   boomstick: {
     id: 0, key: "boomstick", label: "Boomstick",
-    apCoef: AP.boomstick, focusCost: 0, cooldownMs: CD.boomstick.baseMs, charges: CD.boomstick.charges,
+    apCoef: 0, focusCost: 0, cooldownMs: CD.boomstick.baseMs, charges: CD.boomstick.charges,
     gcdMs: COMBAT_MECHANICS.baseGcdMs, school: "physical", isPet: false, aoeTargetCap: AOE_CAPS.boomstick,
     hasteScalesCPM: false, hasteScalesCD: false, bonusCritMult: 0.40,
     triggersGcd: true, requiresTalent: "boomstick", requiresHero: "",
