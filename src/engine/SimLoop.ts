@@ -729,15 +729,16 @@ function executeAbility(
   // Apply DoTs if applicable
   applySpellDots(state, spell, queue, input);
 
-  // Bloodseeker: +10% attack speed per bleeding target (multiplicative, NOT haste)
-  // SimC: s /= 1 + buffs.bloodseeker->check_stack_value() where default_value = 0.10
-  // Count total active DoTs across all targets (each bleed adds a stack)
+  // Bloodseeker: +10% attack speed per bleeding target (not per-DoT stack)
+  // SimC: counts enemy targets with debuffs.bleeding > 0
   if (input.talents.activeTalents.has("bloodseeker")) {
-    let totalBleedDots = 0;
+    let bleedingTargets = 0;
     for (const t of state.targets) {
-      totalBleedDots += t.dots.size;
+      if (t.dots.has("shrapnel_bomb_dot") || t.dots.has("internal_bleeding") || t.dots.has("vicious_wound_dot") || t.dots.has("bear_rend")) {
+        bleedingTargets++;
+      }
     }
-    state.bloodseekerStacks = totalBleedDots;
+    state.bloodseekerStacks = bleedingTargets;
   }
 
   // Wildfire Infusion: Kill Command reduces Wildfire Bomb cooldown by 1s
