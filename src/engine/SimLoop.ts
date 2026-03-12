@@ -968,8 +968,9 @@ function handleOffHandAutoAttack(
 
   // PvE: 0% miss rate (expertise cap reached). See MH auto comment.
 
-  // Off-hand deals 50% of main-hand damage
-  let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand) * COMBAT_MECHANICS.offHandPenalty
+  // Off-hand deals 50% of main-hand damage, with white-hit penalty
+  let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand)
+    * COMBAT_MECHANICS.offHandPenalty * COMBAT_MECHANICS.whiteMeleeHitFactor
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
