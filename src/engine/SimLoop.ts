@@ -1087,6 +1087,16 @@ function handleDotTick(
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
+  // Wyvern's Cry universal damage bonus applies to DoT ticks too
+  if (state.wyvernsCryStacks > 0) {
+    dmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+  }
+
+  // Takedown universal +20% applies to DoT ticks
+  if (state.takedownActive) {
+    dmg *= 1.20;
+  }
+
   if (!dot.bypassesArmor && dot.school === "physical") {
     dmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
   }
