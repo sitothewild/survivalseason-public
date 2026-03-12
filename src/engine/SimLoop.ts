@@ -919,8 +919,13 @@ function handleOffHandAutoAttack(
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
-  if (state.mongooseFuryStacks > 0) {
-    dmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+  // Wyvern's Cry applies to all hunter damage
+  if (state.wyvernsCryStacks > 0) {
+    dmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+  }
+  // Takedown universal damage buff
+  if (state.takedownActive) {
+    dmg *= 1.20;
   }
 
   const critChance = Math.min(1, state.currentCritPct / 100);
