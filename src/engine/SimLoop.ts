@@ -925,7 +925,7 @@ function handleOffHandAutoAttack(
 
   dmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
 
-  state.recordDamage("auto_attack_oh", dmg, isCrit, 0);
+  state.recordDamage("oh_auto_attack", dmg, isCrit, 0);
 
   const hasteMult = 1 + state.currentHastePct / 100;
   const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
