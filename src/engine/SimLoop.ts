@@ -767,11 +767,36 @@ function executeAbility(
     {
       const swipeSpell = SPELL_DB["raptor_swipe"];
       if (swipeSpell) {
-        const { damage: swipeDmg, isCrit: swipeCrit } = computeDamage(
-          state, state.currentAP, swipeSpell.apCoef, swipeSpell.school, false, rng,
-        );
-        const armorMod = swipeSpell.school === "physical"
-          ? (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K)) : 1;
+        const swipeAp = state.currentAP;
+        let swipeDmg = swipeSpell.apCoef * swipeAp;
+
+        // Apply mastery
+        swipeDmg *= 1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS;
+        // Versatility
+        swipeDmg *= 1 + state.currentVersPct / 100;
+        // Mongoose Fury affects Raptor Swipe (melee ability)
+        if (state.mongooseFuryStacks > 0) {
+          swipeDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
+        }
+        // Wyvern's Cry (universal)
+        if (state.wyvernsCryStacks > 0) {
+          swipeDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+        }
+        // Takedown universal buff
+        if (state.takedownActive) {
+          swipeDmg *= 1.20;
+        }
+
+        // Crit
+        const critChance = Math.min(1, state.currentCritPct / 100);
+        const swipeCrit = rng.roll() < critChance;
+        if (swipeCrit) swipeDmg *= 2.0;
+
+        // Armor
+        if (swipeSpell.school === "physical") {
+          swipeDmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
+        }
+
         const swipeTargets = Math.min(state.numTargets, 5);
         for (let t = 0; t < swipeTargets; t++) {
           state.recordDamage("raptor_swipe", swipeDmg, swipeCrit, t);
@@ -779,7 +804,6 @@ function executeAbility(
 
         // Raptor Swipe does NOT trigger Strike as One separately.
         // SAO only fires from TotS consumption on the base Raptor Strike (line 736).
-        // Removing this double-trigger fixes SAO being ~2x Raidbots reference.
       }
     }
   }
