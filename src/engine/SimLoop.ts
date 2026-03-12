@@ -622,12 +622,12 @@ function executeAbility(
     state.takedownExpiresMs = state.nowMs + TAKEDOWN_DURATION_MS;
     state.logProc("takedown", `Takedown active — 20% damage amp for ${(TAKEDOWN_DURATION_MS / 1000).toFixed(0)}s`);
 
-    // Pet Takedown component: pet does its own strike (from SimC: pet takedown = 1304 pDPS)
+    // Pet Takedown component: pet does its own strike — merged under 'takedown' key to match Raidbots
     const petAp = state.currentAP * PET_AP_SCALING;
     const { damage: petTdDmg, isCrit: petTdCrit } = computeDamage(
-      state, petAp, SPELL_DB["takedown"].apCoef * 0.80, "physical", true, rng,
+      state, petAp, AP.takedown_pet, "physical", true, rng,
     );
-    state.recordDamage("pet_takedown", petTdDmg, petTdCrit, 0);
+    state.recordDamage("takedown", petTdDmg, petTdCrit, 0);
 
     // Second potion use: align with Takedown
     if (input.potionAura && state.cooldowns.isReady("potion", state.nowMs) && state.nowMs > 0) {
@@ -652,6 +652,7 @@ function executeAbility(
   // ── Talent damage modifiers ──────────────────────────────────
 
   // Sweeping Spear: +10% Raptor Strike damage per rank (2 ranks = +20%)
+  // Applies to both Raptor Strike and its Raptor Swipe proc (same action in SimC)
   if (spell.key === "raptor_strike" && input.talents.activeTalents.has("sweepingSpear")) {
     baseDmg *= 1 + TALENT_EFFECTS.sweeping_spear_rs_pct_per_rank * 2;
   }
@@ -783,8 +784,11 @@ function executeAbility(
         // Versatility
         swipeDmg *= 1 + state.currentVersPct / 100;
         // Tip of the Spear: Swipe inherits TotS multiplier from the RS that triggered it
-        // In SimC, RS + Swipe are part of the same action and both benefit from TotS
         swipeDmg *= totsMult;
+        // Sweeping Spear: applies to Swipe as part of the RS action
+        if (input.talents.activeTalents.has("sweepingSpear")) {
+          swipeDmg *= 1 + TALENT_EFFECTS.sweeping_spear_rs_pct_per_rank * 2;
+        }
         // Mongoose Fury affects Raptor Swipe (melee ability)
         if (state.mongooseFuryStacks > 0) {
           swipeDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;

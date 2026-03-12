@@ -55,14 +55,12 @@ actions+=/raptor_strike,if=buff.tip_of_the_spear.stack>=1
 actions+=/kill_command`,
 
   pack_leader_raid_st: `actions=auto_attack
-actions+=/kill_command,if=buff.tip_of_the_spear.stack<2
-actions+=/kill_command,if=cooldown.takedown.ready&buff.tip_of_the_spear.stack<2
+actions+=/kill_command
 actions+=/takedown,if=buff.tip_of_the_spear.stack>=1
 actions+=/flamefang_pitch
 actions+=/boomstick,if=buff.tip_of_the_spear.stack>=1
 actions+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>=1
 actions+=/raptor_strike,if=buff.tip_of_the_spear.stack>=1
-actions+=/kill_command
 actions+=/wildfire_bomb
 actions+=/takedown`,
 
