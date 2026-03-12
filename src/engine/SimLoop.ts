@@ -693,7 +693,12 @@ function executeAbility(
   }
 
   for (let t = 0; t < effectiveTargets; t++) {
-    const targetDmg = aoeRule?.splitDamage ? finalDamage / effectiveTargets : finalDamage;
+    let targetDmg = aoeRule?.splitDamage ? finalDamage / effectiveTargets : finalDamage;
+    // WFB primary target bonus: +60% damage to the main target (target 0)
+    // SimC: wildfireBombPrimaryTargetBonus = "effectN(2).percent()" = 60%
+    if (spell.key === "wildfire_bomb" && t === 0) {
+      targetDmg *= 1 + AP.wildfire_bomb_primary_bonus;
+    }
     state.recordDamage(spell.key, targetDmg, isCrit, t);
   }
 
