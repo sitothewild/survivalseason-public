@@ -302,7 +302,9 @@ export function runSimulation(input: SimInput): SimResult {
 // ── Helper: get melee swing timer ─────────────────────────────
 
 function getMeleeSwingMs(input: SimInput): number {
-  return input.stats.weapon.type === "2h" ? MELEE_SWING_MS_2H : MELEE_SWING_MS_1H;
+  // Use actual weapon speed from character stats, not hardcoded norms
+  const speed = input.stats.weapon.mainHandSpeed;
+  return Math.round(speed * 1000);
 }
 
 // ── Helper: compute damage with all multipliers ───────────────
