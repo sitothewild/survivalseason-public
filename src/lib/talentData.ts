@@ -342,7 +342,7 @@ export const PACK_LEADER_NODES: TalentNodeDef[] = [
   { id:'cat_charge', apiNodeId:94984, spellId:472550, name:'Fury of the Wyvern', type:'passive', maxPts:1, row:3, col:3,
     parents:['horn'], desc:"Your pet's attacks increase your Wyvern's damage bonus by 1%, up to 10%. Casting Kill Command extends the duration of your Wyvern by 0.5 sec, up to 5 additional sec." },
   { id:'boar_head', apiNodeId:94988, spellId:472639, name:'Hogstrider', type:'passive', maxPts:1, row:3, col:5,
-    parents:['pathfinding_pl'], desc:'When your Boar deals damage, the damage of your next Cobra Shot is increased by 200%. Each target damaged by your Boar causes Cobra Shot to strike 1 additional target, up to 4.' },
+    parents:['pathfinding_pl'], desc:'When your Boar deals damage, the damage of your next Raptor Strike is increased by 200%. Each target damaged by your Boar causes Raptor Strike to strike 1 additional target, up to 4.' },
   { id:'lethal_barbs', apiNodeId:109803, spellId:1264781, name:'Lethal Barbs', type:'passive', maxPts:1, row:3, col:7,
     parents:['shoes_choice'], desc:'Your auto shot grants 2 Focus to you and your pet. Auto shot damage increased by 25%.' },
   { id:'go_for_throat', apiNodeId:94969, spellId:472660, name:'No Mercy', type:'passive', maxPts:1, row:4, col:1,
