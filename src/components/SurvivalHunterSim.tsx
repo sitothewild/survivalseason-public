@@ -685,7 +685,7 @@ const SENTINEL_HERO: TalentPill[] = [
 const PACK_LEADER_HERO: TalentPill[] = [
   { name: 'Lethal Barbs',   type: 'hero', points: 1, desc: 'Your auto-attacks generate 2 bonus Focus each. Enables significantly more Kill Command casts → more beast proc opportunities per minute. Strong in all scenarios.' },
   { name: 'Dire Summons',   type: 'hero', points: 1, desc: 'Reduces beast companion spawn cooldown. More frequent Howl of the Pack Leader procs. Stacks with Lethal Barbs\' extra Kill Commands for maximum beast uptime.' },
-  { name: 'Stampede',       type: 'hero', points: 1, desc: 'Capstone node. Takedown now triggers a full beast stampede — maximum beast damage overlap during your burst window. The primary reason Pack Leader leads ST DPS at Mythic track gear.' },
+  { name: 'Stampede!',      type: 'hero', points: 1, desc: 'Capstone node. Takedown now triggers a full beast stampede — maximum beast damage overlap during your burst window. The primary reason Pack Leader leads ST DPS at Mythic track gear.' },
 ];
 
 export const TALENT_LOADOUTS: TalentLoadout[] = [
