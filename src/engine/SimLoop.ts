@@ -1560,6 +1560,13 @@ function processTrinkets(
         if (eventType !== "auto_attack" && eventType !== "gcd_ready") break;
         if (!trinket.dmgApCoef || !trinket.dmgCPM) break;
 
+        // ICD check: if trinket has procICD, enforce it
+        const hasICD = trinket.procICD && trinket.procICD > 0;
+        if (hasICD) {
+          // Initialize ICD tracker on first encounter
+          if (!state.cooldowns.isReady(cdKey, state.nowMs)) break;
+        }
+
         const meleeSwingMs = getMeleeSwingMs(input);
         const hasteMult = 1 + state.currentHastePct / 100;
         const eventsPerSec = eventType === "auto_attack"
@@ -1572,6 +1579,10 @@ function processTrinkets(
           const isCrit = rng.roll() < (state.currentCritPct / 100);
           const finalDmg = isCrit ? dmg * 2 : dmg;
           state.recordDamage(cdKey, finalDmg, isCrit, 0);
+          // Start ICD
+          if (hasICD) {
+            state.cooldowns.use(cdKey, state.nowMs);
+          }
         }
         break;
       }
