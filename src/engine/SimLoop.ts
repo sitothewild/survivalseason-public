@@ -934,7 +934,7 @@ function handleOffHandAutoAttack(
   queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
 
   if (capture) {
-    timeline.push({ tMs: state.nowMs, type: "auto", ability: "auto_attack_oh", damage: Math.round(dmg) });
+    timeline.push({ tMs: state.nowMs, type: "auto", ability: "oh_auto_attack", damage: Math.round(dmg) });
   }
 }
 
