@@ -173,7 +173,7 @@ export const AP_COEFFICIENTS = {
   boar_charge_cleave:  15.6,   // cleave component (1.2x ratio preserved from Raidbots 960/799)
   bear_rend_per_tick:  2.0,    // bear bleed DoT per tick
   bear_melee:          1.30,   // bear auto-attack — back-calc from Raidbots (avg 1349)
-  stampede:            2.20,   // per tick, uses hunter AP directly (not pet AP)
+  stampede:            1.47,   // per tick, uses hunter AP directly — back-calc from Raidbots (avg 3808, Takedown always active)
   pack_leader_beasts:  5.50,   // generic beast damage
   pack_coordination:   0.50,   // every 4 pet attacks
 

@@ -334,6 +334,12 @@ function computeDamage(
     baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
   }
 
+  // Takedown universal +20% damage buff — applies to ALL abilities during window
+  // SimC: composite_player_multiplier applies takedown universally
+  if (state.takedownActive) {
+    baseDmg *= 1.20;
+  }
+
   // Crit
   const critChance = Math.min(1, state.currentCritPct / 100);
   const isCrit = rng.roll() < critChance;
