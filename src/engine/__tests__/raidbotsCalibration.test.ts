@@ -96,11 +96,17 @@ function buildCalibrationInput(iterations: number, seed: number): SimInput {
   const base = buildSimInput("pack_leader", "raid_st", {
     iterations,
     durationMs: 180_000,  // 180s like Raidbots no-buffs sim
+    durationVariance: 0.2, // SimC default: ±20% variance (144-216s)
     seed,
   }, noBuffOptions);
 
   // Override stats with Blezaa's exact Raidbots values
-  return { ...base, stats: BLEZAA_STATS };
+  // Override trinkets with Kroluk's Warbanner (equipped in Raidbots sim)
+  return {
+    ...base,
+    stats: BLEZAA_STATS,
+    trinkets: [KROLUKS_WARBANNER, null as unknown as EquippedTrinket],
+  };
 }
 
 // ── Tests ────────────────────────────────────────────────────
