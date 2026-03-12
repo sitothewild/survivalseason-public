@@ -357,7 +357,7 @@ export const PACK_LEADER_NODES: TalentNodeDef[] = [
     parents:['lethal_barbs'], desc:'Your mastery is increased by 3%.' },
   { id:'bestial_discipline', apiNodeId:94966, spellId:472741, name:'Stampede!', type:'passive', maxPts:1, row:5, col:4,
     parents:['go_for_throat','turtle','hoof_choice','monster_fang'],
-    desc:'CAPSTONE. Casting Bestial Wrath grants Howl of the Pack Leader and causes your next Kill Command to rouse the nearby wildlife into a Stampede, charging your target and dealing Physical damage over 7 sec.' },
+    desc:'CAPSTONE. Casting Takedown grants Howl of the Pack Leader and causes your next Kill Command to rouse the nearby wildlife into a Stampede, charging your target and dealing Physical damage over 7 sec.' },
 ];
 
 // ── ICON FALLBACKS (self-hosted in public/icons/talents/) ────
