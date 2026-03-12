@@ -160,6 +160,17 @@ export class DamageBreakdown {
     if (isCrit) entry.crits += 1;
   }
 
+  /** Record damage without incrementing cast count (for sub-components merged into parent key) */
+  addDamageOnly(key: string, damage: number, isCrit: boolean): void {
+    let entry = this.data.get(key);
+    if (!entry) {
+      entry = { damage: 0, casts: 0, crits: 0 };
+      this.data.set(key, entry);
+    }
+    entry.damage += damage;
+    if (isCrit) entry.crits += 1;
+  }
+
   getAll(): Map<string, { damage: number; casts: number; crits: number }> {
     return this.data;
   }
@@ -414,6 +425,20 @@ export class CombatState {
     }
     if (this.combatLogEnabled) {
       this.combatLog.push({ tMs: this.nowMs, type: "damage", ability: abilityKey, damage: Math.round(finalDmg), isCrit, target: targetId });
+    }
+  }
+
+  /** Record damage without incrementing cast count (for sub-components merged into parent key) */
+  recordDamageNoCast(abilityKey: string, damage: number, isCrit: boolean, targetId: number): void {
+    const finalDmg = damage * this.externalDmgMult;
+    this.totalDamage += finalDmg;
+    this.breakdown.addDamageOnly(abilityKey, finalDmg, isCrit);
+    if (targetId >= 0 && targetId < this.targets.length) {
+      this.targets[targetId].damage += finalDmg;
+      this.perTargetDamage.set(targetId, (this.perTargetDamage.get(targetId) ?? 0) + finalDmg);
+    }
+    if (this.combatLogEnabled) {
+      this.combatLog.push({ tMs: this.nowMs, type: "damage", ability: abilityKey, damage: Math.round(finalDmg), isCrit, target: targetId, detail: "pet component" });
     }
   }
 

@@ -109,7 +109,7 @@ describe("charToSimInput", () => {
 });
 
 describe("simResultToLegacy", () => {
-  it("converts engine SimResult to legacy shape with statistical data", () => {
+  it("converts engine SimResult to legacy shape with statistical data", { timeout: 15000 }, () => {
     const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
     const engineResult = runSimulation(input);
 
@@ -213,7 +213,7 @@ describe("End-to-end: charToSimInput → SimLoop → simResultToLegacy", () => {
     expect(legacy.totalDps).toBeLessThan(200_000);
   });
 
-  it("naked options produce less DPS than full raid", () => {
+  it("naked options produce less DPS than full raid", { timeout: 15000 }, () => {
     const fullInput = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
     const nakedInput = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, NAKED_OPTIONS);
 

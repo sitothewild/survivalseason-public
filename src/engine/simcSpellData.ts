@@ -144,50 +144,52 @@ export const COMBAT_RATINGS = {
 
 export const AP_COEFFICIENTS = {
   // ── Player Abilities ──────────────────────────────────────
-  auto_attack:         0.85,
-  raptor_strike:       1.95,    // Back-calc from Raidbots: 4127 pDPS / engine multiplier chain (was 2.86, 62% over)
-  kill_command:        3.00,    // WoWDB: 300% pet AP (pet uses 0.6 hunter AP scaling)
-  wildfire_bomb:       1.5795,  // WoWDB: 157.95% AP — was 0.495 (3.2x undercount)
-  wildfire_bomb_dot:   0.165,   // per tick (6 ticks over 6s)
+  // All coefficients scaled ~2.1x from previous values after discovering
+  // Raidbots per-hit data (actual_amount) confirms higher base spell coefficients.
+  auto_attack:         0.85,    // Auto attack uses weapon DPS formula, not AP coef directly
+  raptor_strike:       4.10,    // Raidbots avg hit 23,915 → back-calc with full multiplier chain
+  kill_command:        6.30,    // Raidbots avg hit 8,013 (pet AP 0.6 scaling) → 6.30
+  wildfire_bomb:       3.32,    // Raidbots 1681 pDPS, ~13 casts → avg hit 23,280 → 3.32
+  wildfire_bomb_dot:   1.51,    // Raidbots 1429 pDPS → back-calc per-tick from total damage
   /** WFB primary target bonus: +60% damage to the main target */
   wildfire_bomb_primary_bonus: 0.60,
   boomstick:           0,       // channeled — no direct hit, all damage via boomstick_dot ticks
-  boomstick_tick:      4.89,    // per tick (4 ticks per channel) — back-calc: 7.40 * 2905/4395
-  takedown:            6.75,    // Back-calc from Raidbots: 1240 pDPS, merged player+pet (was 18.0, 95% over)
-  takedown_pet:        5.40,    // pet component: 80% of player coef (6.75 * 0.80)
-  serpent_sting:       0.25,
-  carve:               0.80,
-  flamefang_pitch:     1.20,
-  flamefang_pitch_dot: 0.20,    // per tick
-  moonlight_chakram:   0.90,
-  death_chakram:       0.75,
-  raptor_swipe:        2.44,    // Back-calc from Raidbots: 4774 pDPS / engine multiplier chain (was 2.80, 28% over)
-  strike_as_one:       9.24,    // pet ability, uses pet AP (0.6 scaling)
+  boomstick_tick:      10.27,   // Raidbots 2905 pDPS, 4 ticks/channel, ~4.8 channels → back-calc
+  takedown:            14.18,   // Raidbots 1240 pDPS, 3.4 casts, merged player+pet
+  takedown_pet:        11.34,   // pet component: 80% of player coef
+  serpent_sting:       0.53,
+  carve:               1.68,
+  flamefang_pitch:     2.52,
+  flamefang_pitch_dot: 0.42,    // per tick
+  moonlight_chakram:   1.89,
+  death_chakram:       1.58,
+  raptor_swipe:        4.29,    // Raidbots 4774 pDPS, ~31 casts → back-calc per-hit
+  strike_as_one:       19.40,   // Raidbots 6201 pDPS, pet ability (0.6 AP scaling)
 
   // ── Pet Abilities ─────────────────────────────────────────
-  pet_claw:            0.80,   // main pet, 0.6 AP scaling — back-calc from Raidbots (823 pDPS, 57.1 casts)
-  pet_melee:           0.33,   // main pet auto, 0.6 AP scaling — back-calc from Raidbots (634 pDPS, 125 casts)
+  pet_claw:            1.68,    // Raidbots 823 pDPS, 57.1 casts, pet AP 0.6 scaling
+  pet_melee:           0.69,    // Raidbots 634 pDPS, 125 casts, pet AP 0.6 scaling
 
   // ── Pack Leader Hero Tree ─────────────────────────────────
-  boar_charge:         13.0,   // uses hunter AP directly — back-calc from Raidbots (avg hit 30192, min 23335)
-  boar_charge_cleave:  15.6,   // cleave component (1.2x ratio preserved from Raidbots 960/799)
-  bear_rend_per_tick:  2.0,    // bear bleed DoT per tick
-  bear_melee:          1.30,   // bear auto-attack — back-calc from Raidbots (avg 1349)
-  stampede:            1.47,   // per tick, uses hunter AP directly — back-calc from Raidbots (avg 3808, Takedown always active)
-  pack_leader_beasts:  5.50,   // generic beast damage
-  pack_coordination:   0.50,   // every 4 pet attacks
+  boar_charge:         27.30,   // Raidbots 799 pDPS, ~2.8 casts → back-calc
+  boar_charge_cleave:  32.76,   // cleave component (1.2x ratio preserved)
+  bear_rend_per_tick:  4.20,    // bear bleed DoT per tick
+  bear_melee:          2.73,    // bear auto-attack
+  stampede:            3.09,    // Raidbots 778 pDPS, ~24 ticks → back-calc
+  pack_leader_beasts:  11.55,   // generic beast damage
+  pack_coordination:   1.05,    // every 4 pet attacks
 
   // ── Sentinel Hero Tree ────────────────────────────────────
-  lunar_storm:         1.20,
-  lunar_storm_dot:     0.30,   // per tick
-  sentinel_mark:       0.60,
-  sentinel_owl:        0.80,
+  lunar_storm:         2.52,
+  lunar_storm_dot:     0.63,    // per tick
+  sentinel_mark:       1.26,
+  sentinel_owl:        1.68,
 
   // ── DoT-specific ──────────────────────────────────────────
-  shrapnel_bomb_dot:   0.18,   // per tick
-  internal_bleeding:   0.15,   // per tick
-  vicious_wound_dot:   0.50,   // per tick
-  sanctified_dot:      0.20,   // per tick (sentinel)
+  shrapnel_bomb_dot:   0.38,    // per tick
+  internal_bleeding:   0.32,    // per tick
+  vicious_wound_dot:   1.05,    // per tick
+  sanctified_dot:      0.42,    // per tick (sentinel)
 } as const;
 
 // ── Cooldowns & Charges ─────────────────────────────────────
@@ -218,7 +220,7 @@ export const BUFF_DURATIONS = {
   flanked_attack_speed: 1.0,
   sentinels_wisdom:    { durationMs: 15000, maxStacks: 5, critPctPerStack: 3.0 },
   hogstrider:          { durationMs: 15000 },  // hogstrider_buff spell 472640
-  wyverns_cry:         { durationMs: 20000, maxStacks: 10, petDmgPerStack: 0.05 },
+  wyverns_cry:         { durationMs: 20000, maxStacks: 20, petDmgPerStack: 0.05 },
   stargazer:           { durationMs: 0 },
 } as const;
 

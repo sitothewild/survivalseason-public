@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { runSimulation } from "../SimLoop";
 import { buildSimInput } from "../buildSimInput";
-import type { SimInput, SimOptions, PlayerStats } from "../types";
+import type { SimInput, SimOptions, PlayerStats, EquippedTrinket } from "../types";
 
 // ── Raidbots Reference Data ─────────────────────────────────
 const RAIDBOTS_DPS = 33846;
@@ -32,6 +32,18 @@ const BLEZAA_STATS: PlayerStats = {
   },
   has2pc: true,
   has4pc: true,
+};
+
+// Kroluk's Warbanner trinket — 956 pDPS, 14.5 procs in Raidbots
+const KROLUKS_WARBANNER: EquippedTrinket = {
+  id: 225602,
+  name: "Kroluk's Warbanner",
+  ilvl: 276,
+  type: "damage_proc",
+  primaryAgi: 510,
+  dmgApCoef: 2.10,
+  dmgCPM: 4.8,   // Tuned to match Raidbots 14.5 procs in 180s = 4.83 CPM
+  burstAlignable: false,
 };
 
 // Per-ability pDPS from Raidbots output (player + pet breakdown)
@@ -84,18 +96,29 @@ function buildCalibrationInput(iterations: number, seed: number): SimInput {
   const base = buildSimInput("pack_leader", "raid_st", {
     iterations,
     durationMs: 180_000,  // 180s like Raidbots no-buffs sim
+    durationVariance: 0.2, // SimC default: ±20% variance (144-216s)
     seed,
   }, noBuffOptions);
 
   // Override stats with Blezaa's exact Raidbots values
-  return { ...base, stats: BLEZAA_STATS };
+  // Override trinkets with Kroluk's Warbanner (equipped in Raidbots sim)
+  return {
+    ...base,
+    stats: BLEZAA_STATS,
+    trinkets: [KROLUKS_WARBANNER, null as unknown as EquippedTrinket],
+  };
 }
 
 // ── Tests ────────────────────────────────────────────────────
 
 describe("Raidbots Calibration — Pack Leader No-Buffs ST", () => {
-  const input = buildCalibrationInput(2000, 42);
+  const input = buildCalibrationInput(5000, 42);
   const result = runSimulation(input);
+
+  // Map engine trinket key to Raidbots key for comparison
+  const TRINKET_KEY_MAP: Record<string, string> = {
+    "trinket_225602": "kroluks_warbanner",
+  };
 
   it("total DPS comparison against Raidbots target (33,846)", () => {
     const error = Math.abs(result.meanDps - RAIDBOTS_DPS) / RAIDBOTS_DPS;
@@ -121,10 +144,11 @@ describe("Raidbots Calibration — Pack Leader No-Buffs ST", () => {
     console.log("Ability".padEnd(24) + "Engine".padStart(8) + "Raidbots".padStart(10) + "Delta".padStart(8) + " Pct".padStart(7));
     console.log("-".repeat(57));
 
-    // Build lookup from engine results
+    // Build lookup from engine results (remap trinket keys to Raidbots names)
     const engineMap = new Map<string, { dps: number; pct: number; casts: number }>();
     for (const ab of result.breakdown) {
-      engineMap.set(ab.key, { dps: ab.dps, pct: ab.pctOfTotal, casts: ab.casts });
+      const mappedKey = TRINKET_KEY_MAP[ab.key] ?? ab.key;
+      engineMap.set(mappedKey, { dps: ab.dps, pct: ab.pctOfTotal, casts: ab.casts });
     }
 
     let totalEngDps = 0;

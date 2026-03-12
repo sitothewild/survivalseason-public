@@ -623,11 +623,12 @@ function executeAbility(
     state.logProc("takedown", `Takedown active — 20% damage amp for ${(TAKEDOWN_DURATION_MS / 1000).toFixed(0)}s`);
 
     // Pet Takedown component: pet does its own strike — merged under 'takedown' key to match Raidbots
+    // Use recordDamageNoCast so pet component doesn't inflate cast count (6.9 → 3.4)
     const petAp = state.currentAP * PET_AP_SCALING;
     const { damage: petTdDmg, isCrit: petTdCrit } = computeDamage(
       state, petAp, AP.takedown_pet, "physical", true, rng,
     );
-    state.recordDamage("takedown", petTdDmg, petTdCrit, 0);
+    state.recordDamageNoCast("takedown", petTdDmg, petTdCrit, 0);
 
     // Second potion use: align with Takedown
     if (input.potionAura && state.cooldowns.isReady("potion", state.nowMs) && state.nowMs > 0) {
@@ -785,10 +786,8 @@ function executeAbility(
         swipeDmg *= 1 + state.currentVersPct / 100;
         // Tip of the Spear: Swipe inherits TotS multiplier from the RS that triggered it
         swipeDmg *= totsMult;
-        // Sweeping Spear: applies to Swipe as part of the RS action
-        if (input.talents.activeTalents.has("sweepingSpear")) {
-          swipeDmg *= 1 + TALENT_EFFECTS.sweeping_spear_rs_pct_per_rank * 2;
-        }
+        // NOTE: Sweeping Spear does NOT apply to Swipe proc — only to RS direct hit
+        // (SimC: sweeping_spear only modifies raptor_strike damage, not the swipe proc)
         // Mongoose Fury affects Raptor Swipe (melee ability)
         if (state.mongooseFuryStacks > 0) {
           swipeDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
@@ -892,8 +891,8 @@ function handleAutoAttack(
 ): void {
   const ap = state.currentAP;
 
-  // Miss check: Raidbots shows ~19% miss rate on player melee autos
-  // (dodge 3% + parry 3% + miss 3% + glancing ~10%)
+  // Miss check: Raidbots confirms ~19% miss rate (261k misses / 1.37M total swings)
+  // Includes dodge, parry, miss, and glancing blow misses
   const MELEE_MISS_RATE = 0.19;
   if (rng.roll() < MELEE_MISS_RATE) {
     // Miss — schedule next swing and return
@@ -958,7 +957,7 @@ function handleOffHandAutoAttack(
   const ohSpeed = input.stats.weapon.offHandSpeed;
   const ohDps = input.stats.weapon.offHandDps;
 
-  // Miss check: ~19% miss rate on OH autos (same as MH)
+  // Miss check: 19% (confirmed from Raidbots data)
   const MELEE_MISS_RATE = 0.19;
   if (rng.roll() < MELEE_MISS_RATE) {
     const hasteMult = 1 + state.currentHastePct / 100;
@@ -1088,6 +1087,19 @@ function handleDotTick(
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
+  // Wyvern's Cry universal damage bonus applies to DoT ticks too
+  // (except boomstick_dot which snapshots all multipliers at cast time)
+  const isSnapshotted = payload.dotKey === "boomstick_dot";
+  if (!isSnapshotted && state.wyvernsCryStacks > 0) {
+    dmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
+  }
+
+  // Takedown universal +20% applies to DoT ticks
+  // (except boomstick_dot which already snapshots Takedown into coefficient)
+  if (!isSnapshotted && state.takedownActive) {
+    dmg *= 1.20;
+  }
+
   if (!dot.bypassesArmor && dot.school === "physical") {
     dmg *= (1 - computeArmorMitigation(BOSS_ARMOR, ARMOR_K));
   }
@@ -1134,7 +1146,7 @@ function handleHowlBeast(
 
   if (cycle === 0) {
     // Wyvern: grants Wyvern's Cry stacking buff
-    state.wyvernsCryStacks = Math.min(10, state.wyvernsCryStacks + 3);
+    state.wyvernsCryStacks = Math.min(20, state.wyvernsCryStacks + 5);
     // Wyvern's Cry expires after ~20s
     state.wyvernsCryExpiresMs = state.nowMs + 20000;
   } else if (cycle === 1) {
