@@ -195,7 +195,7 @@ export const AP_COEFFICIENTS = {
 // ── Cooldowns & Charges ─────────────────────────────────────
 
 export const COOLDOWNS = {
-  kill_command:        { baseMs: 6000,  charges: 2,  hasteScales: true  },
+  kill_command:        { baseMs: 5000,  charges: 2,  hasteScales: true  },
   wildfire_bomb:       { baseMs: 18000, charges: 1,  hasteScales: false },
   boomstick:           { baseMs: 60000, charges: 1,  hasteScales: false },
   takedown:            { baseMs: 90000, charges: 1,  hasteScales: false },

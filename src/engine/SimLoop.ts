@@ -414,6 +414,17 @@ function runIteration(
         }
         break;
       }
+      case "damage_proc": {
+        const icdMs = (trinket.procICD ?? 0) * 1000;
+        if (icdMs > 0) {
+          state.cooldowns.init(cdKey, 1, icdMs);
+        }
+        // Apply static agi from trinket
+        if (trinket.primaryAgi > 0) {
+          state.applyAura(cdKey + "_equip", endMs + 10_000, 1, { agi: trinket.primaryAgi });
+        }
+        break;
+      }
       case "equip": {
         if (trinket.primaryAgi > 0) {
           state.applyAura(cdKey, endMs + 10_000, 1, { agi: trinket.primaryAgi });
@@ -891,18 +902,10 @@ function handleAutoAttack(
 ): void {
   const ap = state.currentAP;
 
-  // Miss check: Raidbots confirms ~19% miss rate (261k misses / 1.37M total swings)
-  // Includes dodge, parry, miss, and glancing blow misses
-  const MELEE_MISS_RATE = 0.19;
-  if (rng.roll() < MELEE_MISS_RATE) {
-    // Miss — schedule next swing and return
-    const hasteMult = 1 + state.currentHastePct / 100;
-    const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
-    const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
-    const swingMs = Math.round(meleeSwingMs / (hasteMult * bloodseekerMult * flankedAsMult));
-    queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
-    return;
-  }
+  // PvE miss rate: in Midnight, melee hit cap is easily reached with expertise.
+  // Raidbots shows ~0% miss for abilities. The "misses" in log are glancing blows
+  // which reduce damage but don't prevent hits. Use 0% miss rate for auto attacks.
+  // Glancing blows are already factored into average weapon DPS.
 
   // Auto attack damage = weapon_DPS * weapon_speed * modifiers
   const weaponSpeed = input.stats.weapon.mainHandSpeed;
@@ -957,16 +960,7 @@ function handleOffHandAutoAttack(
   const ohSpeed = input.stats.weapon.offHandSpeed;
   const ohDps = input.stats.weapon.offHandDps;
 
-  // Miss check: 19% (confirmed from Raidbots data)
-  const MELEE_MISS_RATE = 0.19;
-  if (rng.roll() < MELEE_MISS_RATE) {
-    const hasteMult = 1 + state.currentHastePct / 100;
-    const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
-    const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
-    const swingMs = Math.round((ohSpeed * 1000) / (hasteMult * bloodseekerMult * flankedAsMult));
-    queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
-    return;
-  }
+  // PvE: 0% miss rate (expertise cap reached). See MH auto comment.
 
   // Off-hand deals 50% of main-hand damage
   let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand) * COMBAT_MECHANICS.offHandPenalty
@@ -1560,6 +1554,13 @@ function processTrinkets(
         if (eventType !== "auto_attack" && eventType !== "gcd_ready") break;
         if (!trinket.dmgApCoef || !trinket.dmgCPM) break;
 
+        // ICD check: if trinket has procICD, enforce it
+        const hasICD = trinket.procICD && trinket.procICD > 0;
+        if (hasICD) {
+          // Initialize ICD tracker on first encounter
+          if (!state.cooldowns.isReady(cdKey, state.nowMs)) break;
+        }
+
         const meleeSwingMs = getMeleeSwingMs(input);
         const hasteMult = 1 + state.currentHastePct / 100;
         const eventsPerSec = eventType === "auto_attack"
@@ -1572,6 +1573,10 @@ function processTrinkets(
           const isCrit = rng.roll() < (state.currentCritPct / 100);
           const finalDmg = isCrit ? dmg * 2 : dmg;
           state.recordDamage(cdKey, finalDmg, isCrit, 0);
+          // Start ICD
+          if (hasICD) {
+            state.cooldowns.use(cdKey, state.nowMs);
+          }
         }
         break;
       }
