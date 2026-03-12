@@ -1382,13 +1382,25 @@ function applySpellDots(
     }
   }
 
-  // Boomstick: multi-tick ability (4 ticks over 6s)
+  // Boomstick: channeled 4-tick ability — snapshot Shellshock and Takedown into DoT
   if (spell.key === "boomstick") {
     const dotInfo = DOT_DB["boomstick_dot"];
     if (dotInfo) {
+      // Snapshot multipliers into the per-tick AP coef
+      let snapshotCoef = dotInfo.apCoef;
+      // Shellshock: +40% ST, -5% per extra target (snapshot at cast time)
+      if (input.talents.activeTalents.has("shellshock")) {
+        const shellshockBonus = Math.max(0,
+          BUFF_DURATIONS.shellshock.stBonusPct - (state.numTargets - 1) * BUFF_DURATIONS.shellshock.reductionPerTarget);
+        snapshotCoef *= 1 + shellshockBonus;
+      }
+      // Takedown universal buff
+      if (state.takedownActive) {
+        snapshotCoef *= 1.20;
+      }
       const targets = Math.min(state.numTargets, dotInfo.aoeTargetCap);
       for (let t = 0; t < targets; t++) {
-        applyDot(state, queue, "boomstick_dot", t, dotInfo, state.currentAP);
+        applyDot(state, queue, "boomstick_dot", t, { ...dotInfo, apCoef: snapshotCoef }, state.currentAP);
       }
     }
   }
