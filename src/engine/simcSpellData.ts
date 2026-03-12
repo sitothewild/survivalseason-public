@@ -148,7 +148,7 @@ export const AP_COEFFICIENTS = {
   raptor_strike:       1.95,    // Back-calc from Raidbots: 4127 pDPS / engine multiplier chain (was 2.86, 62% over)
   kill_command:        3.00,    // WoWDB: 300% pet AP (pet uses 0.6 hunter AP scaling)
   wildfire_bomb:       1.5795,  // WoWDB: 157.95% AP — was 0.495 (3.2x undercount)
-  wildfire_bomb_dot:   0.165,   // per tick (6 ticks over 6s)
+  wildfire_bomb_dot:   0.72,   // per tick (6 ticks over 6s) — back-calc from Raidbots: 1429 pDPS × 180s / ~60 ticks / (AP × mastery × vers × crit)
   /** WFB primary target bonus: +60% damage to the main target */
   wildfire_bomb_primary_bonus: 0.60,
   boomstick:           0,       // channeled — no direct hit, all damage via boomstick_dot ticks
