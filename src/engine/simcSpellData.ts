@@ -163,7 +163,7 @@ export const AP_COEFFICIENTS = {
   flamefang_pitch_dot: 0.42,    // per tick
   moonlight_chakram:   1.89,
   death_chakram:       1.58,
-  raptor_swipe:        3.50,    // Back-calc: 4774 pDPS × 180s / 30.5 casts, accounting for Sweeping Spear +20%
+  raptor_swipe:        2.91,    // Back-calc: 4774 pDPS, reverted from 3.50 (was double-dipping Sweeping Spear)
   strike_as_one:       15.80,   // Back-calc: 6201 pDPS × 180s / 43.3 casts = 25,776 avg hit, pet AP 886 × mastery × vers
 
   // ── Pet Abilities ─────────────────────────────────────────
