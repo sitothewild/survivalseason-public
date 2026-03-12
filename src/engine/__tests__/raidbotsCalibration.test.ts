@@ -34,6 +34,18 @@ const BLEZAA_STATS: PlayerStats = {
   has4pc: true,
 };
 
+// Kroluk's Warbanner trinket — 956 pDPS, 14.5 procs in Raidbots
+const KROLUKS_WARBANNER: EquippedTrinket = {
+  id: 225602,
+  name: "Kroluk's Warbanner",
+  ilvl: 276,
+  type: "damage_proc",
+  primaryAgi: 510,
+  dmgApCoef: 2.10,
+  dmgCPM: 4.8,   // Tuned to match Raidbots 14.5 procs in 180s = 4.83 CPM
+  burstAlignable: false,
+};
+
 // Per-ability pDPS from Raidbots output (player + pet breakdown)
 const RAIDBOTS_BREAKDOWN: Record<string, { pDPS: number; pct: number; casts?: number }> = {
   // Player abilities
