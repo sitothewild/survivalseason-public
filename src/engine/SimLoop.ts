@@ -882,8 +882,21 @@ function handleAutoAttack(
   meleeSwingMs: number,
 ): void {
   const ap = state.currentAP;
+
+  // Miss check: Raidbots shows ~19% miss rate on player melee autos
+  // (dodge 3% + parry 3% + miss 3% + glancing ~10%)
+  const MELEE_MISS_RATE = 0.19;
+  if (rng.roll() < MELEE_MISS_RATE) {
+    // Miss — schedule next swing and return
+    const hasteMult = 1 + state.currentHastePct / 100;
+    const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
+    const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
+    const swingMs = Math.round(meleeSwingMs / (hasteMult * bloodseekerMult * flankedAsMult));
+    queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
+    return;
+  }
+
   // Auto attack damage = weapon_DPS * weapon_speed * modifiers
-  // Normalized: baseDmg ≈ AP * weaponSpeedNormalized / 3.5
   const weaponSpeed = input.stats.weapon.mainHandSpeed;
   const weaponDps = input.stats.weapon.mainHandDps;
   let dmg = (weaponDps * weaponSpeed + ap * weaponSpeed / WEAPON_NORMS.twoHand)
