@@ -22,6 +22,8 @@ export interface TalentNodeDef {
   choiceB?: { name: string; spellId: number; desc: string };
   /** Visual hint: render as small tier dot */
   tier?: boolean;
+  /** Hero keystone: always selected, does not cost a point */
+  free?: boolean;
 }
 
 export type NodeState = 'LOCKED' | 'AVAILABLE' | 'SELECTED' | 'PARTIAL';
@@ -284,7 +286,7 @@ export const APEX_NODES: TalentNodeDef[] = [
 
 export const SENTINEL_NODES: TalentNodeDef[] = [
   { id:'sentinel_keystone', apiNodeId:94976, spellId:1253599, name:'Sentinel', type:'passive', maxPts:1, row:1, col:4,
-    parents:[], desc:'KEYSTONE. Your Eagle is replaced with a Sentinel Owl that applies an enhanced Sentinel\'s Mark. Your next Wildfire Bomb deals 40% increased direct damage to the marked target.' },
+    parents:[], free: true, desc:'KEYSTONE. Your Eagle is replaced with a Sentinel Owl that applies an enhanced Sentinel\'s Mark. Your next Wildfire Bomb deals 40% increased direct damage to the marked target.' },
   { id:'dont_look_back', apiNodeId:94989, spellId:450373, name:"Don't Look Back", type:'passive', maxPts:1, row:2, col:1,
     parents:['sentinel_keystone'], desc:"Consuming Sentinel's Mark grants you an absorb shield equal to 10.0% of your maximum health." },
   { id:'moons_blessing', apiNodeId:94973, spellId:1253825, name:"Moon's Blessing", type:'passive', maxPts:1, row:2, col:3,
@@ -324,7 +326,7 @@ export const SENTINEL_NODES: TalentNodeDef[] = [
 
 export const PACK_LEADER_NODES: TalentNodeDef[] = [
   { id:'vicious_hunt', apiNodeId:94991, spellId:471876, name:'Howl of the Pack Leader', type:'passive', maxPts:1, row:1, col:4,
-    parents:[], desc:'KEYSTONE. While in combat, every 30 sec your next Kill Command summons the aid of a Beast: Wyvern (damage buff), Boar (charge damage), or Bear (rend AoE).' },
+    parents:[], free: true, desc:'KEYSTONE. While in combat, every 30 sec your next Kill Command summons the aid of a Beast: Wyvern (damage buff), Boar (charge damage), or Bear (rend AoE).' },
   { id:'lone_wolf', apiNodeId:94985, spellId:472358, name:'Pack Mentality', type:'passive', maxPts:1, row:2, col:1,
     parents:['vicious_hunt'], desc:'Howl of the Pack Leader increases the damage of your Kill Command by 50%. Summoning a Beast reduces the cooldown of Barbed Shot by 4.0 sec.' },
   { id:'horn', apiNodeId:94992, spellId:472352, name:'Dire Summons', type:'passive', maxPts:1, row:2, col:3,

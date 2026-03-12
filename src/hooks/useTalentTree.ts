@@ -25,8 +25,17 @@ export function useTalentTree(
   /** External gate: e.g. hero tree requires N spec points */
   externalGateMet: boolean = true,
 ): UseTalentTreeReturn {
+  // Auto-select free nodes (hero keystones) on initialization
+  const freePoints = useMemo(() => {
+    const pts: Record<string, number> = {};
+    for (const n of nodes) {
+      if (n.free) pts[n.id] = n.maxPts;
+    }
+    return pts;
+  }, [nodes]);
+
   const [state, setState] = useState<TalentTreeState>({
-    points: {},
+    points: { ...freePoints },
     choiceSelections: {},
   });
 
@@ -36,9 +45,12 @@ export function useTalentTree(
     return m;
   }, [nodes]);
 
+  // Free nodes (keystones) don't count toward the point budget
+  const freeNodeIds = useMemo(() => new Set(nodes.filter(n => n.free).map(n => n.id)), [nodes]);
+
   const totalPoints = useMemo(() => {
-    return Object.values(state.points).reduce((s, p) => s + p, 0);
-  }, [state.points]);
+    return Object.entries(state.points).reduce((s, [id, p]) => s + (freeNodeIds.has(id) ? 0 : p), 0);
+  }, [state.points, freeNodeIds]);
 
   const hasParentSelected = useCallback((node: TalentNodeDef): boolean => {
     if (node.parents.length === 0) return true;
@@ -46,6 +58,7 @@ export function useTalentTree(
   }, [state.points]);
 
   const getNodeState = useCallback((node: TalentNodeDef): NodeState => {
+    if (node.free) return 'SELECTED'; // Keystones always selected
     const pts = state.points[node.id] ?? 0;
     if (pts >= node.maxPts) return 'SELECTED';
     if (pts > 0) return 'PARTIAL';
@@ -107,6 +120,7 @@ export function useTalentTree(
   }, [nodes]);
 
   const deallocatePoint = useCallback((nodeId: string) => {
+    if (freeNodeIds.has(nodeId)) return; // Can't deallocate free keystones
     const pts = state.points[nodeId] ?? 0;
     if (pts <= 0) return;
 
@@ -198,12 +212,13 @@ export function useTalentTree(
   }, [nodeMap, state, totalPoints, maxPoints, getNodeState]);
 
   const reset = useCallback(() => {
-    setState({ points: {}, choiceSelections: {} });
-  }, []);
+    setState({ points: { ...freePoints }, choiceSelections: {} });
+  }, [freePoints]);
 
   const loadBuild = useCallback((newState: TalentTreeState) => {
-    setState(newState);
-  }, []);
+    // Always ensure free nodes are selected
+    setState({ ...newState, points: { ...freePoints, ...newState.points } });
+  }, [freePoints]);
 
   return {
     state,
