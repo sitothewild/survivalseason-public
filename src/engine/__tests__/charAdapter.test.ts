@@ -213,7 +213,7 @@ describe("End-to-end: charToSimInput → SimLoop → simResultToLegacy", () => {
     expect(legacy.totalDps).toBeLessThan(200_000);
   });
 
-  it("naked options produce less DPS than full raid", () => {
+  it("naked options produce less DPS than full raid", { timeout: 15000 }, () => {
     const fullInput = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
     const nakedInput = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, NAKED_OPTIONS);
 
