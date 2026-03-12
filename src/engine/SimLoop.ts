@@ -942,7 +942,6 @@ function handleAutoAttack(
   const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
   const swingMs = Math.round(meleeSwingMs / (hasteMult * bloodseekerMult * flankedAsMult));
   queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
-
   if (capture) {
     timeline.push({ tMs: state.nowMs, type: "auto", ability: "auto_attack", damage: Math.round(dmg) });
   }
