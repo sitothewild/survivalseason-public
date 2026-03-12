@@ -349,6 +349,13 @@ export const COMBAT_MECHANICS = {
   offHandPenalty: 0.5,
   /** Pandemic DoT extension cap (30% of base duration) */
   pandemicMaxPct: 0.3,
+  /**
+   * White-hit (auto attack) damage reduction factor vs +3 level boss.
+   * Accounts for glancing blows (~24% chance at ~75% damage) plus
+   * boss-level defense scaling. Back-calculated from Raidbots reference:
+   * MH target 1997 pDPS / engine 2275 = 0.878.
+   */
+  whiteMeleeHitFactor: 0.878,
 } as const;
 
 // ── Tier Set Effects (Midnight S1) ──────────────────────────
