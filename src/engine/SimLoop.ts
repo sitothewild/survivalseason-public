@@ -623,11 +623,12 @@ function executeAbility(
     state.logProc("takedown", `Takedown active — 20% damage amp for ${(TAKEDOWN_DURATION_MS / 1000).toFixed(0)}s`);
 
     // Pet Takedown component: pet does its own strike — merged under 'takedown' key to match Raidbots
+    // Use recordDamageNoCast so pet component doesn't inflate cast count (6.9 → 3.4)
     const petAp = state.currentAP * PET_AP_SCALING;
     const { damage: petTdDmg, isCrit: petTdCrit } = computeDamage(
       state, petAp, AP.takedown_pet, "physical", true, rng,
     );
-    state.recordDamage("takedown", petTdDmg, petTdCrit, 0);
+    state.recordDamageNoCast("takedown", petTdDmg, petTdCrit, 0);
 
     // Second potion use: align with Takedown
     if (input.potionAura && state.cooldowns.isReady("potion", state.nowMs) && state.nowMs > 0) {
