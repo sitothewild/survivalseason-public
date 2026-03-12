@@ -1179,9 +1179,10 @@ function handleStampedeTick(
   queue: EventQueue,
   endMs: number,
 ): void {
-  const petAp = state.currentAP * PET_AP_SCALING;
+  // Stampede uses hunter AP directly (hunter_ranged_attack_t in SimC), NOT pet AP
+  const hunterAp = state.currentAP;
   const { damage: dmg, isCrit } = computeDamage(
-    state, petAp, STAMPEDE_AP_COEF * 0.5, "physical", true, rng,
+    state, hunterAp, STAMPEDE_AP_COEF, "physical", false, rng,
   );
   state.recordDamage("stampede", dmg, isCrit, 0);
 }
