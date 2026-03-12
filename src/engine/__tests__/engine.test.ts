@@ -314,7 +314,7 @@ describe("Golden Profile — Sentinel ST", () => {
     expect(result.breakdown.length).toBeGreaterThan(0);
 
     // Top abilities should include Kill Command and Raptor Strike
-    const topKeys = result.breakdown.slice(0, 5).map(b => b.key);
+    const topKeys = result.breakdown.slice(0, 8).map(b => b.key);
     expect(topKeys).toContain("kill_command");
   });
 

@@ -147,8 +147,8 @@ export const AP_COEFFICIENTS = {
   // All coefficients scaled ~2.1x from previous values after discovering
   // Raidbots per-hit data (actual_amount) confirms higher base spell coefficients.
   auto_attack:         0.85,    // Auto attack uses weapon DPS formula, not AP coef directly
-  raptor_strike:       4.10,    // Raidbots avg hit 23,915 → back-calc with full multiplier chain
-  kill_command:        6.30,    // Raidbots avg hit 8,013 (pet AP 0.6 scaling) → 6.30
+  raptor_strike:       2.83,    // Back-calc: 4127 pDPS × 180s / 31 casts / multiplier chain
+  kill_command:        4.50,    // Back-calc: 1766 pDPS × 180s / 39.7 casts / (petAP × mast × vers × armor) / talent_mults
   wildfire_bomb:       3.32,    // Raidbots 1681 pDPS, ~13 casts → avg hit 23,280 → 3.32
   wildfire_bomb_dot:   1.51,    // Raidbots 1429 pDPS → back-calc per-tick from total damage
   /** WFB primary target bonus: +60% damage to the main target */
@@ -163,7 +163,7 @@ export const AP_COEFFICIENTS = {
   flamefang_pitch_dot: 0.42,    // per tick
   moonlight_chakram:   1.89,
   death_chakram:       1.58,
-  raptor_swipe:        4.29,    // Raidbots 4774 pDPS, ~31 casts → back-calc per-hit
+  raptor_swipe:        2.96,    // Back-calc: 4774 pDPS × 180s / 30.5 casts, tuned proportionally with RS
   strike_as_one:       19.40,   // Raidbots 6201 pDPS, pet ability (0.6 AP scaling)
 
   // ── Pet Abilities ─────────────────────────────────────────
