@@ -13,6 +13,8 @@ import type {
   TreeSection,
 } from "@/types/talentTreeTypes";
 
+import { applySurvivalSubstitutions } from "@/utils/survivalSpellSubstitutions";
+
 import {
   HUNTER_TREE_ID,
   SURVIVAL_SPEC_ID,
@@ -105,7 +107,7 @@ function mapSingleNode(
       talentId: tt.talent.id,
       spellId: tt.spell_tooltip.spell.id,
       name: tt.talent.name,
-      description: tt.spell_tooltip.description,
+      description: applySurvivalSubstitutions(tt.spell_tooltip.description),
     }));
   }
 
