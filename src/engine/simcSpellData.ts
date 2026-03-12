@@ -165,15 +165,15 @@ export const AP_COEFFICIENTS = {
   strike_as_one:       9.24,    // pet ability, uses pet AP (0.6 scaling)
 
   // ── Pet Abilities ─────────────────────────────────────────
-  pet_claw:            2.60,   // main pet, 0.6 AP scaling
-  pet_melee:           0.84,   // main pet auto, 0.6 AP scaling
+  pet_claw:            2.00,   // main pet, 0.6 AP scaling — back-calc from Raidbots (avg 2098)
+  pet_melee:           0.70,   // main pet auto, 0.6 AP scaling — back-calc from Raidbots (avg 738)
 
   // ── Pack Leader Hero Tree ─────────────────────────────────
-  boar_charge:         20.5,   // uses hunter AP directly (hunter_ranged_attack_t)
-  boar_charge_cleave:  24.6,   // cleave component
+  boar_charge:         17.5,   // uses hunter AP directly — back-calc from Raidbots (avg 30184)
+  boar_charge_cleave:  21.0,   // cleave component (proportionally reduced)
   bear_rend_per_tick:  2.0,    // bear bleed DoT per tick
-  bear_melee:          1.40,   // bear auto-attack
-  stampede:            2.80,   // per tick, uses hunter AP directly
+  bear_melee:          1.30,   // bear auto-attack — back-calc from Raidbots (avg 1349)
+  stampede:            2.20,   // per tick, uses hunter AP directly (not pet AP)
   pack_leader_beasts:  5.50,   // generic beast damage
   pack_coordination:   0.50,   // every 4 pet attacks
 

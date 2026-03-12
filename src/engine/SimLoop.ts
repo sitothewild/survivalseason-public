@@ -777,18 +777,9 @@ function executeAbility(
           state.recordDamage("raptor_swipe", swipeDmg, swipeCrit, t);
         }
 
-        // Raptor Swipe also triggers Strike as One (reduced effectiveness per SimC)
-        if (input.talents.activeTalents.has("strikeAsOne")) {
-          const saoSpell = SPELL_DB["strike_as_one"];
-          if (saoSpell) {
-            const petAp = state.currentAP * PET_AP_SCALING;
-            const reducedCoef = saoSpell.apCoef * 0.5; // reduced effectiveness for swipe
-            const { damage: saoDmg, isCrit: saoCrit } = computeDamage(
-              state, petAp, reducedCoef, saoSpell.school, true, rng,
-            );
-            state.recordDamage("strike_as_one", saoDmg, saoCrit, 0);
-          }
-        }
+        // Raptor Swipe does NOT trigger Strike as One separately.
+        // SAO only fires from TotS consumption on the base Raptor Strike (line 736).
+        // Removing this double-trigger fixes SAO being ~2x Raidbots reference.
       }
     }
   }
@@ -1188,9 +1179,10 @@ function handleStampedeTick(
   queue: EventQueue,
   endMs: number,
 ): void {
-  const petAp = state.currentAP * PET_AP_SCALING;
+  // Stampede uses hunter AP directly (hunter_ranged_attack_t in SimC), NOT pet AP
+  const hunterAp = state.currentAP;
   const { damage: dmg, isCrit } = computeDamage(
-    state, petAp, STAMPEDE_AP_COEF * 0.5, "physical", true, rng,
+    state, hunterAp, STAMPEDE_AP_COEF, "physical", false, rng,
   );
   state.recordDamage("stampede", dmg, isCrit, 0);
 }
