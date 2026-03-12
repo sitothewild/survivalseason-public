@@ -943,7 +943,7 @@ function handleAutoAttack(
   const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
   const takedownAsMult = state.takedownActive ? (1 + TAKEDOWN_ATTACK_SPEED_BONUS) : 1.0;
   const swingMs = Math.round(meleeSwingMs / (hasteMult * bloodseekerMult * takedownAsMult));
-
+  queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
   if (capture) {
     timeline.push({ tMs: state.nowMs, type: "auto", ability: "auto_attack", damage: Math.round(dmg) });
   }
