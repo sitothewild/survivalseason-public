@@ -891,9 +891,9 @@ function handleAutoAttack(
 ): void {
   const ap = state.currentAP;
 
-  // Miss check: Raidbots shows ~19% miss rate on player melee autos
-  // (dodge 3% + parry 3% + miss 3% + glancing ~10%)
-  const MELEE_MISS_RATE = 0.19;
+  // Miss check: Modern WoW (Midnight) with hit/expertise cap = ~0% miss rate
+  // Glancing blows removed in modern expansions. Previous 19% was overcounting.
+  const MELEE_MISS_RATE = 0.0;
   if (rng.roll() < MELEE_MISS_RATE) {
     // Miss — schedule next swing and return
     const hasteMult = 1 + state.currentHastePct / 100;
