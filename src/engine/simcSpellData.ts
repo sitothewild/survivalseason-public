@@ -167,8 +167,8 @@ export const AP_COEFFICIENTS = {
   strike_as_one:       15.80,   // Back-calc: 6201 pDPS × 180s / 43.3 casts = 25,776 avg hit, pet AP 886 × mastery × vers
 
   // ── Pet Abilities ─────────────────────────────────────────
-  pet_claw:            1.68,    // Raidbots 823 pDPS, 57.1 casts, pet AP 0.6 scaling
-  pet_melee:           0.69,    // Raidbots 634 pDPS, 125 casts, pet AP 0.6 scaling
+  pet_claw:            0.95,    // Back-calc: 823 pDPS × 180s / 57.1 casts = 2594 avg hit, strip universal mults
+  pet_melee:           0.45,    // Back-calc: 634 pDPS × 180s / 125 casts = 913 avg hit, strip universal mults
 
   // ── Pack Leader Hero Tree ─────────────────────────────────
   boar_charge:         14.68,   // Raidbots 799 pDPS, ÷1.86 correction for universal mults (Wyvern's Cry, Takedown)
