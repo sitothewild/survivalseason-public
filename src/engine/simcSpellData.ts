@@ -145,22 +145,24 @@ export const COMBAT_RATINGS = {
 export const AP_COEFFICIENTS = {
   // ── Player Abilities ──────────────────────────────────────
   auto_attack:         0.85,
-  raptor_strike:       2.86,
-  kill_command:        7.26,   // pet ability but scales with hunter AP via 0.6 pet scaling
-  wildfire_bomb:       0.495,
-  wildfire_bomb_dot:   0.165,  // per tick (6 ticks over 6s)
-  boomstick:           0.90,   // initial + DoT ticks
-  boomstick_dot:       0.90,   // per tick (4 ticks over 6s)
-  takedown:            1.80,
-  takedown_pet:        1.44,   // pet component: 80% of player coef
+  raptor_strike:       2.86,    // WoWDB: 286% AP — verified
+  kill_command:        3.00,    // WoWDB: 300% pet AP (pet uses 0.6 hunter AP scaling)
+  wildfire_bomb:       1.5795,  // WoWDB: 157.95% AP — was 0.495 (3.2x undercount)
+  wildfire_bomb_dot:   0.165,   // per tick (6 ticks over 6s)
+  /** WFB primary target bonus: +60% damage to the main target */
+  wildfire_bomb_primary_bonus: 0.60,
+  boomstick:           0.90,    // initial + DoT ticks
+  boomstick_dot:       0.90,    // per tick (4 ticks over 6s)
+  takedown:            18.00,   // WoWDB: 1800% AP — was 1.80 (10x undercount, tooltip misread)
+  takedown_pet:        14.40,   // pet component: 80% of player coef
   serpent_sting:       0.25,
   carve:               0.80,
   flamefang_pitch:     1.20,
-  flamefang_pitch_dot: 0.20,   // per tick
+  flamefang_pitch_dot: 0.20,    // per tick
   moonlight_chakram:   0.90,
   death_chakram:       0.75,
-  raptor_swipe:        1.85,
-  strike_as_one:       9.24,   // pet ability, uses pet AP (0.6 scaling)
+  raptor_swipe:        2.80,    // WoWDB: 280% AP — was 1.85
+  strike_as_one:       9.24,    // pet ability, uses pet AP (0.6 scaling)
 
   // ── Pet Abilities ─────────────────────────────────────────
   pet_claw:            2.60,   // main pet, 0.6 AP scaling

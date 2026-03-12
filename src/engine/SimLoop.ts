@@ -819,11 +819,9 @@ function executeAbility(
 // ── Mongoose Fury: which abilities are affected ───────────────
 
 function isAffectedByMongooseFury(key: string): boolean {
-  // Mongoose Fury affects melee focus spenders and their procs
-  return key === "raptor_strike" || key === "raptor_swipe" ||
-         key === "kill_command" || key === "boomstick" ||
-         key === "takedown" || key === "wildfire_bomb" ||
-         key === "flamefang_pitch" || key === "carve";
+  // Mongoose Fury only affects melee abilities (per SimC: composite_melee_auto_attack)
+  // Does NOT affect ranged abilities like WFB, Boomstick, KC, Flamefang Pitch
+  return key === "raptor_strike" || key === "raptor_swipe" || key === "carve";
 }
 
 // ── Pack Counter helper ───────────────────────────────────────
