@@ -148,7 +148,7 @@ export const AP_COEFFICIENTS = {
   // Raidbots per-hit data (actual_amount) confirms higher base spell coefficients.
   auto_attack:         0.85,    // Auto attack uses weapon DPS formula, not AP coef directly
   raptor_strike:       2.83,    // Back-calc: 4127 pDPS × 180s / 31 casts / multiplier chain
-  kill_command:        4.50,    // Back-calc: 1766 pDPS × 180s / 39.7 casts / (petAP × mast × vers × armor) / talent_mults
+  kill_command:        3.25,    // Back-calc: 1766 pDPS, 39.7 casts, strip Killer Companion +20% & Wildfire Infusion +15% (×1.38) + universal mults
   wildfire_bomb:       3.32,    // Raidbots 1681 pDPS, ~13 casts → avg hit 23,280 → 3.32
   wildfire_bomb_dot:   1.51,    // Raidbots 1429 pDPS → back-calc per-tick from total damage
   /** WFB primary target bonus: +60% damage to the main target */
