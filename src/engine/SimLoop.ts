@@ -988,8 +988,8 @@ function handleOffHandAutoAttack(
 
   const hasteMult = 1 + state.currentHastePct / 100;
   const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
-  const takedownAsMult = state.takedownActive ? (1 + TAKEDOWN_ATTACK_SPEED_BONUS) : 1.0;
-  const swingMs = Math.round((ohSpeed * 1000) / (hasteMult * bloodseekerMult * takedownAsMult));
+  const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
+  const swingMs = Math.round((ohSpeed * 1000) / (hasteMult * bloodseekerMult * flankedAsMult));
   queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
 
   if (capture) {
