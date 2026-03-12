@@ -81,11 +81,14 @@ function buildCalibrationInput(iterations: number, seed: number): SimInput {
     has4pc: true,
   };
 
-  return buildSimInput("pack_leader", "raid_st", {
+  const base = buildSimInput("pack_leader", "raid_st", {
     iterations,
     durationMs: 180_000,  // 180s like Raidbots no-buffs sim
     seed,
   }, noBuffOptions);
+
+  // Override stats with Blezaa's exact Raidbots values
+  return { ...base, stats: BLEZAA_STATS };
 }
 
 // ── Tests ────────────────────────────────────────────────────
