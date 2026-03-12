@@ -587,11 +587,13 @@ function executeAbility(
   // Tip of the Spear consumption + Strike as One trigger
   // Primal Surge: increases TotS damage per stack from 25% → 30%
   let consumedTip = false;
+  let totsMult = 1.0; // Store for Raptor Swipe inheritance
   if (spell.consumesTots && state.tipOfTheSpearStacks > 0) {
     const totsDmgPerStack = input.talents.activeTalents.has("primalSurge")
       ? TALENT_EFFECTS.primal_surge_tots_dmg_per_stack
       : TIP_DAMAGE_PER_STACK;
-    baseDmg *= 1 + state.tipOfTheSpearStacks * totsDmgPerStack;
+    totsMult = 1 + state.tipOfTheSpearStacks * totsDmgPerStack;
+    baseDmg *= totsMult;
     state.tipOfTheSpearStacks = 0;
     consumedTip = true;
   }
