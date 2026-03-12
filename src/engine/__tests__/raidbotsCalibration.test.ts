@@ -35,14 +35,17 @@ const BLEZAA_STATS: PlayerStats = {
 };
 
 // Kroluk's Warbanner trinket — 956 pDPS, 14.5 procs in Raidbots
+// Back-calc: 956*180 = 172,080 total / 14.5 procs = 11,868 per hit
+// Per hit = AP * coef * avg_crit_mult = 1477 * coef * 1.21 → coef = 6.64
 const KROLUKS_WARBANNER: EquippedTrinket = {
   id: 225602,
   name: "Kroluk's Warbanner",
   ilvl: 276,
   type: "damage_proc",
   primaryAgi: 510,
-  dmgApCoef: 2.10,
-  dmgCPM: 4.8,   // Tuned to match Raidbots 14.5 procs in 180s = 4.83 CPM
+  dmgApCoef: 6.64,
+  dmgCPM: 15.0,   // High CPM ensures proc fires whenever ICD is up
+  procICD: 12.4,   // 12.4s ICD → 180/12.4 = 14.5 procs per fight
   burstAlignable: false,
 };
 

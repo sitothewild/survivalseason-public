@@ -949,16 +949,7 @@ function handleOffHandAutoAttack(
   const ohSpeed = input.stats.weapon.offHandSpeed;
   const ohDps = input.stats.weapon.offHandDps;
 
-  // Miss check: 19% (confirmed from Raidbots data)
-  const MELEE_MISS_RATE = 0.19;
-  if (rng.roll() < MELEE_MISS_RATE) {
-    const hasteMult = 1 + state.currentHastePct / 100;
-    const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
-    const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
-    const swingMs = Math.round((ohSpeed * 1000) / (hasteMult * bloodseekerMult * flankedAsMult));
-    queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
-    return;
-  }
+  // PvE: 0% miss rate (expertise cap reached). See MH auto comment.
 
   // Off-hand deals 50% of main-hand damage
   let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand) * COMBAT_MECHANICS.offHandPenalty
