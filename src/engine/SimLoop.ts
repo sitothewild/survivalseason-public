@@ -566,13 +566,15 @@ function executeAbility(
   // Versatility
   baseDmg *= 1 + state.currentVersPct / 100;
 
-  // FIX #4: Mongoose Fury stacks (+15% per stack, affects melee focus spenders)
+  // FIX #4: Mongoose Fury stacks (+15% per stack)
+  // Only affects melee abilities: Raptor Strike, Carve, Raptor Swipe (per SimC)
   if (state.mongooseFuryStacks > 0 && isAffectedByMongooseFury(spell.key)) {
     baseDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
   }
 
-  // Wyvern's Cry pet damage bonus (Pack Leader)
-  if (isPet && state.wyvernsCryStacks > 0) {
+  // Wyvern's Cry damage bonus — applies to ALL hunter abilities (not just pet)
+  // SimC: composite_player_multiplier applies wyverns_cry to all hunter damage
+  if (state.wyvernsCryStacks > 0) {
     baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
   }
 
