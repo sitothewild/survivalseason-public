@@ -1360,6 +1360,7 @@ function applySpellDots(
   state: CombatState,
   spell: SpellInfo,
   queue: EventQueue,
+  input: SimInput,
 ): void {
   if (spell.key === "wildfire_bomb") {
     const dotKey = "wildfire_bomb_dot";
