@@ -160,6 +160,17 @@ export class DamageBreakdown {
     if (isCrit) entry.crits += 1;
   }
 
+  /** Record damage without incrementing cast count (for sub-components merged into parent key) */
+  addDamageOnly(key: string, damage: number, isCrit: boolean): void {
+    let entry = this.data.get(key);
+    if (!entry) {
+      entry = { damage: 0, casts: 0, crits: 0 };
+      this.data.set(key, entry);
+    }
+    entry.damage += damage;
+    if (isCrit) entry.crits += 1;
+  }
+
   getAll(): Map<string, { damage: number; casts: number; crits: number }> {
     return this.data;
   }
