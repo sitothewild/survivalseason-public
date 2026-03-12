@@ -256,12 +256,16 @@ describe("SpellDB", () => {
   it("has all core abilities defined", () => {
     const required = [
       "auto_attack", "raptor_strike", "kill_command",
-      "wildfire_bomb", "boomstick", "takedown",
+      "wildfire_bomb", "takedown",
     ];
     for (const key of required) {
       expect(SPELL_DB[key]).toBeDefined();
       expect(SPELL_DB[key].apCoef).toBeGreaterThan(0);
     }
+    // Boomstick is channeled (apCoef=0, damage via boomstick_dot ticks)
+    expect(SPELL_DB["boomstick"]).toBeDefined();
+    expect(DOT_DB["boomstick_dot"]).toBeDefined();
+    expect(DOT_DB["boomstick_dot"].apCoef).toBeGreaterThan(0);
   });
 
   it("has DoT definitions", () => {
