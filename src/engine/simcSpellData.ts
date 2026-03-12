@@ -164,7 +164,7 @@ export const AP_COEFFICIENTS = {
   moonlight_chakram:   1.89,
   death_chakram:       1.58,
   raptor_swipe:        2.96,    // Back-calc: 4774 pDPS × 180s / 30.5 casts, tuned proportionally with RS
-  strike_as_one:       19.40,   // Raidbots 6201 pDPS, pet ability (0.6 AP scaling)
+  strike_as_one:       15.80,   // Back-calc: 6201 pDPS × 180s / 43.3 casts = 25,776 avg hit, pet AP 886 × mastery × vers
 
   // ── Pet Abilities ─────────────────────────────────────────
   pet_claw:            1.68,    // Raidbots 823 pDPS, 57.1 casts, pet AP 0.6 scaling
