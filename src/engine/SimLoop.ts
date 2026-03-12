@@ -85,6 +85,7 @@ const STAMPEDE_DURATION_MS = HOWL_BEAST_CYCLE.stampedeDurationMs;
 const STAMPEDE_TICK_MS = HOWL_BEAST_CYCLE.stampedeTickMs;
 const WYVERN_CRY_PET_DAMAGE_BONUS = BUFF_DURATIONS.wyverns_cry.petDmgPerStack;
 const BLOODSEEKER_ATTACK_SPEED_PER_TARGET = BUFF_DURATIONS.bloodseeker.attackSpeedPctPerTarget / 100; // 0.10
+const TAKEDOWN_ATTACK_SPEED_BONUS = BUFF_DURATIONS.flanked_attack_speed; // SimC uses Takedown aura effect for +AS
 
 // ── Welford's online algorithm for mean/variance ──────────────
 
