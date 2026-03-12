@@ -328,13 +328,9 @@ function computeDamage(
   // Versatility
   baseDmg *= 1 + state.currentVersPct / 100;
 
-  // Mongoose Fury (applies to abilities affected by it)
-  if (state.mongooseFuryStacks > 0) {
-    baseDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
-  }
-
-  // Wyvern's Cry pet damage bonus
-  if (isPet && state.wyvernsCryStacks > 0) {
+  // Wyvern's Cry damage bonus — applies to ALL hunter abilities (not just pet)
+  // SimC: composite_player_multiplier applies wyverns_cry to all hunter damage
+  if (state.wyvernsCryStacks > 0) {
     baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
   }
 
