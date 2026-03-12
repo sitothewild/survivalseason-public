@@ -171,11 +171,11 @@ export const AP_COEFFICIENTS = {
   pet_melee:           0.69,    // Raidbots 634 pDPS, 125 casts, pet AP 0.6 scaling
 
   // ── Pack Leader Hero Tree ─────────────────────────────────
-  boar_charge:         27.30,   // Raidbots 799 pDPS, ~2.8 casts → back-calc
-  boar_charge_cleave:  32.76,   // cleave component (1.2x ratio preserved)
+  boar_charge:         14.68,   // Raidbots 799 pDPS, ÷1.86 correction for universal mults (Wyvern's Cry, Takedown)
+  boar_charge_cleave:  17.61,   // cleave component (1.2x ratio preserved)
   bear_rend_per_tick:  4.20,    // bear bleed DoT per tick
   bear_melee:          2.73,    // bear auto-attack
-  stampede:            3.09,    // Raidbots 778 pDPS, ~24 ticks → back-calc
+  stampede:            1.74,    // Raidbots 778 pDPS, ÷1.78 correction for universal mults
   pack_leader_beasts:  11.55,   // generic beast damage
   pack_coordination:   1.05,    // every 4 pet attacks
 
