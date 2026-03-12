@@ -913,9 +913,11 @@ function handleAutoAttack(
   // Glancing blows are already factored into average weapon DPS.
 
   // Auto attack damage = weapon_DPS * weapon_speed * modifiers
+  // Apply white-hit penalty (glancing blows + boss defense) — only affects auto attacks
   const weaponSpeed = input.stats.weapon.mainHandSpeed;
   const weaponDps = input.stats.weapon.mainHandDps;
   let dmg = (weaponDps * weaponSpeed + ap * weaponSpeed / WEAPON_NORMS.twoHand)
+    * COMBAT_MECHANICS.whiteMeleeHitFactor
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 
