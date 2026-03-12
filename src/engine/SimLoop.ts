@@ -730,12 +730,13 @@ function executeAbility(
 
   // Bloodseeker: +10% attack speed per bleeding target (multiplicative, NOT haste)
   // SimC: s /= 1 + buffs.bloodseeker->check_stack_value() where default_value = 0.10
+  // Count total active DoTs across all targets (each bleed adds a stack)
   if (input.talents.activeTalents.has("bloodseeker")) {
-    let bleedingTargets = 0;
+    let totalBleedDots = 0;
     for (const t of state.targets) {
-      if (t.dots.size > 0) bleedingTargets++;
+      totalBleedDots += t.dots.size;
     }
-    state.bloodseekerStacks = bleedingTargets;
+    state.bloodseekerStacks = totalBleedDots;
   }
 
   // Wildfire Infusion: Kill Command reduces Wildfire Bomb cooldown by 1s
