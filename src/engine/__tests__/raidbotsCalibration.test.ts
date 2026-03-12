@@ -26,9 +26,9 @@ const BLEZAA_STATS: PlayerStats = {
   weapon: {
     type: "dw",
     mainHandDps: 280,
-    mainHandSpeed: 2.6,
+    mainHandSpeed: 1.8,   // Back-calc from Raidbots 124.2 hits in 180s (effective ~1450ms swing)
     offHandDps: 220,
-    offHandSpeed: 2.6,
+    offHandSpeed: 1.8,
   },
   has2pc: true,
   has4pc: true,
