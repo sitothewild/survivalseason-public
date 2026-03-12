@@ -177,7 +177,7 @@ function mapSingleNode(
       talentId: tt.talent.id,
       spellId: tt.spell_tooltip.spell.id,
       name: tt.talent.name,
-      description: tt.spell_tooltip.description,
+      description: applySurvivalSubstitutions(tt.spell_tooltip.description),
     }));
   }
 
