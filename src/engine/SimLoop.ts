@@ -334,6 +334,12 @@ function computeDamage(
     baseDmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
   }
 
+  // Takedown universal +20% damage buff — applies to ALL abilities during window
+  // SimC: composite_player_multiplier applies takedown universally
+  if (state.takedownActive) {
+    baseDmg *= 1.20;
+  }
+
   // Crit
   const critChance = Math.min(1, state.currentCritPct / 100);
   const isCrit = rng.roll() < critChance;
@@ -581,11 +587,13 @@ function executeAbility(
   // Tip of the Spear consumption + Strike as One trigger
   // Primal Surge: increases TotS damage per stack from 25% → 30%
   let consumedTip = false;
+  let totsMult = 1.0; // Store for Raptor Swipe inheritance
   if (spell.consumesTots && state.tipOfTheSpearStacks > 0) {
     const totsDmgPerStack = input.talents.activeTalents.has("primalSurge")
       ? TALENT_EFFECTS.primal_surge_tots_dmg_per_stack
       : TIP_DAMAGE_PER_STACK;
-    baseDmg *= 1 + state.tipOfTheSpearStacks * totsDmgPerStack;
+    totsMult = 1 + state.tipOfTheSpearStacks * totsDmgPerStack;
+    baseDmg *= totsMult;
     state.tipOfTheSpearStacks = 0;
     consumedTip = true;
   }
@@ -774,6 +782,9 @@ function executeAbility(
         swipeDmg *= 1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS;
         // Versatility
         swipeDmg *= 1 + state.currentVersPct / 100;
+        // Tip of the Spear: Swipe inherits TotS multiplier from the RS that triggered it
+        // In SimC, RS + Swipe are part of the same action and both benefit from TotS
+        swipeDmg *= totsMult;
         // Mongoose Fury affects Raptor Swipe (melee ability)
         if (state.mongooseFuryStacks > 0) {
           swipeDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
@@ -876,8 +887,21 @@ function handleAutoAttack(
   meleeSwingMs: number,
 ): void {
   const ap = state.currentAP;
+
+  // Miss check: Raidbots shows ~19% miss rate on player melee autos
+  // (dodge 3% + parry 3% + miss 3% + glancing ~10%)
+  const MELEE_MISS_RATE = 0.19;
+  if (rng.roll() < MELEE_MISS_RATE) {
+    // Miss — schedule next swing and return
+    const hasteMult = 1 + state.currentHastePct / 100;
+    const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
+    const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
+    const swingMs = Math.round(meleeSwingMs / (hasteMult * bloodseekerMult * flankedAsMult));
+    queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
+    return;
+  }
+
   // Auto attack damage = weapon_DPS * weapon_speed * modifiers
-  // Normalized: baseDmg ≈ AP * weaponSpeedNormalized / 3.5
   const weaponSpeed = input.stats.weapon.mainHandSpeed;
   const weaponDps = input.stats.weapon.mainHandDps;
   let dmg = (weaponDps * weaponSpeed + ap * weaponSpeed / WEAPON_NORMS.twoHand)
@@ -929,6 +953,18 @@ function handleOffHandAutoAttack(
   const ap = state.currentAP;
   const ohSpeed = input.stats.weapon.offHandSpeed;
   const ohDps = input.stats.weapon.offHandDps;
+
+  // Miss check: ~19% miss rate on OH autos (same as MH)
+  const MELEE_MISS_RATE = 0.19;
+  if (rng.roll() < MELEE_MISS_RATE) {
+    const hasteMult = 1 + state.currentHastePct / 100;
+    const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
+    const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
+    const swingMs = Math.round((ohSpeed * 1000) / (hasteMult * bloodseekerMult * flankedAsMult));
+    queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "oh_auto_attack" });
+    return;
+  }
+
   // Off-hand deals 50% of main-hand damage
   let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand) * COMBAT_MECHANICS.offHandPenalty
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)

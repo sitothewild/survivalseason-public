@@ -41,7 +41,7 @@ const RAIDBOTS_BREAKDOWN: Record<string, { pDPS: number; pct: number; casts?: nu
   oh_auto_attack:       { pDPS: 974,  pct: 2.88, casts: 124.2 },
   raptor_strike:        { pDPS: 4127, pct: 12.19, casts: 31.0 },
   raptor_swipe:         { pDPS: 4774, pct: 14.10, casts: 30.5 },
-  boomstick:            { pDPS: 2905, pct: 8.56, casts: 17.9 },
+  boomstick_dot:        { pDPS: 2905, pct: 8.56, casts: 17.9 },
   takedown:             { pDPS: 1240, pct: 3.66, casts: 3.4 },
   wildfire_bomb:        { pDPS: 1681, pct: 4.97 },
   wildfire_bomb_dot:    { pDPS: 1429, pct: 4.23 },

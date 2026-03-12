@@ -76,23 +76,32 @@ export class CooldownTracker {
   use(key: string, nowMs: number): boolean {
     const ch = this.charges.get(key);
     if (ch === undefined) return true;
-    if (ch <= 0 && nowMs < (this.readyAt.get(key) ?? Infinity)) return false;
 
-    // If was recharging and time passed, gain the charge back first
-    if (ch <= 0 && nowMs >= (this.readyAt.get(key) ?? 0)) {
-      this.charges.set(key, 1);
+    // Recover any charges that have finished recharging
+    const maxCh = this.maxCharges.get(key) ?? 1;
+    const rechMs = this.rechargeMs.get(key) ?? 0;
+    const readyAt = this.readyAt.get(key) ?? 0;
+    let current = this.charges.get(key)!;
+
+    if (current < maxCh && nowMs >= readyAt) {
+      // How many charges recovered since readyAt was set?
+      const elapsed = nowMs - readyAt;
+      const recovered = 1 + (rechMs > 0 ? Math.floor(elapsed / rechMs) : 0);
+      current = Math.min(maxCh, current + recovered);
+      this.charges.set(key, current);
     }
 
-    const current = this.charges.get(key)!;
     if (current <= 0) return false;
 
     this.charges.set(key, current - 1);
-    const maxCh = this.maxCharges.get(key) ?? 1;
-    const rechMs = this.rechargeMs.get(key) ?? 0;
 
-    // Start recharge if below max
+    // Start/continue recharge if below max
     if (current - 1 < maxCh) {
-      this.readyAt.set(key, nowMs + rechMs);
+      // If already recharging (readyAt in the future), don't reset the timer
+      if (readyAt <= nowMs || current === maxCh) {
+        this.readyAt.set(key, nowMs + rechMs);
+      }
+      // else: keep existing readyAt (charge was already recovering)
     }
     return true;
   }
