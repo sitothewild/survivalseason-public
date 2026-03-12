@@ -14,6 +14,8 @@ import type {
   TreeSection,
 } from "./talentTreeTypes";
 
+import { applySurvivalSubstitutions } from "@/utils/survivalSpellSubstitutions";
+
 import {
   HUNTER_TREE_ID,
   SURVIVAL_SPEC_ID,
