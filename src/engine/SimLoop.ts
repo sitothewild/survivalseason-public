@@ -800,8 +800,10 @@ function executeAbility(
         swipeDmg *= 1 + state.currentVersPct / 100;
         // Tip of the Spear: Swipe inherits TotS multiplier from the RS that triggered it
         swipeDmg *= totsMult;
-        // NOTE: Sweeping Spear does NOT apply to Swipe proc — only to RS direct hit
-        // (SimC: sweeping_spear only modifies raptor_strike damage, not the swipe proc)
+        // Sweeping Spear applies to Swipe too — inherits from raptor_strike_base_t in SimC
+        if (input.talents.activeTalents.has("sweepingSpear")) {
+          swipeDmg *= 1 + TALENT_EFFECTS.sweeping_spear_rs_pct_per_rank * 2;
+        }
         // Mongoose Fury affects Raptor Swipe (melee ability)
         if (state.mongooseFuryStacks > 0) {
           swipeDmg *= 1 + state.mongooseFuryStacks * MONGOOSE_FURY_DAMAGE_PER_STACK;
