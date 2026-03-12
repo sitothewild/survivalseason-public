@@ -1088,12 +1088,15 @@ function handleDotTick(
     * (1 + state.currentVersPct / 100);
 
   // Wyvern's Cry universal damage bonus applies to DoT ticks too
-  if (state.wyvernsCryStacks > 0) {
+  // (except boomstick_dot which snapshots all multipliers at cast time)
+  const isSnapshotted = payload.dotKey === "boomstick_dot";
+  if (!isSnapshotted && state.wyvernsCryStacks > 0) {
     dmg *= 1 + state.wyvernsCryStacks * WYVERN_CRY_PET_DAMAGE_BONUS;
   }
 
   // Takedown universal +20% applies to DoT ticks
-  if (state.takedownActive) {
+  // (except boomstick_dot which already snapshots Takedown into coefficient)
+  if (!isSnapshotted && state.takedownActive) {
     dmg *= 1.20;
   }
 
