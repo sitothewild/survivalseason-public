@@ -43,7 +43,7 @@ const KROLUKS_WARBANNER: EquippedTrinket = {
   ilvl: 276,
   type: "damage_proc",
   primaryAgi: 510,
-  dmgApCoef: 6.64,
+  dmgApCoef: 5.10,
   dmgCPM: 15.0,   // High CPM ensures proc fires whenever ICD is up
   procICD: 12.4,   // 12.4s ICD → 180/12.4 = 14.5 procs per fight
   burstAlignable: false,
