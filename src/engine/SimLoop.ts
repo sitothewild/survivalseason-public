@@ -635,8 +635,9 @@ function executeAbility(
       state.tipOfTheSpearStacks + TALENT_EFFECTS.twin_fangs_takedown_tots);
   }
 
-  // Takedown: +20% damage during window for melee spenders
-  if (state.takedownActive && (spell.key === "raptor_strike" || spell.key === "kill_command")) {
+  // Takedown: +20% damage during window — applies to ALL abilities (universal buff)
+  // SimC: composite_player_multiplier applies takedown buff universally
+  if (state.takedownActive && spell.key !== "takedown") {
     baseDmg *= 1.20;
   }
 
