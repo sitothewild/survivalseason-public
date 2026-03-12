@@ -428,6 +428,20 @@ export class CombatState {
     }
   }
 
+  /** Record damage without incrementing cast count (for sub-components merged into parent key) */
+  recordDamageNoCast(abilityKey: string, damage: number, isCrit: boolean, targetId: number): void {
+    const finalDmg = damage * this.externalDmgMult;
+    this.totalDamage += finalDmg;
+    this.breakdown.addDamageOnly(abilityKey, finalDmg, isCrit);
+    if (targetId >= 0 && targetId < this.targets.length) {
+      this.targets[targetId].damage += finalDmg;
+      this.perTargetDamage.set(targetId, (this.perTargetDamage.get(targetId) ?? 0) + finalDmg);
+    }
+    if (this.combatLogEnabled) {
+      this.combatLog.push({ tMs: this.nowMs, type: "damage", ability: abilityKey, damage: Math.round(finalDmg), isCrit, target: targetId, detail: "pet component" });
+    }
+  }
+
   /** Full reset for new iteration */
   reset(): void {
     this.nowMs = 0;

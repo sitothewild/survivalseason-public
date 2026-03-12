@@ -161,7 +161,7 @@ export const AP_COEFFICIENTS = {
   flamefang_pitch_dot: 0.20,    // per tick
   moonlight_chakram:   0.90,
   death_chakram:       0.75,
-  raptor_swipe:        2.44,    // Back-calc from Raidbots: 4774 pDPS / engine multiplier chain (was 2.80, 28% over)
+  raptor_swipe:        2.04,    // Back-calc from Raidbots: 4774 pDPS — reduced from 2.44 (21.8% over); Sweeping Spear only on RS direct
   strike_as_one:       9.24,    // pet ability, uses pet AP (0.6 scaling)
 
   // ── Pet Abilities ─────────────────────────────────────────
