@@ -891,9 +891,9 @@ function handleAutoAttack(
 ): void {
   const ap = state.currentAP;
 
-  // Miss check: Modern WoW (Midnight) with hit/expertise cap = ~0% miss rate
-  // Glancing blows removed in modern expansions. Previous 19% was overcounting.
-  const MELEE_MISS_RATE = 0.0;
+  // Miss check: Raidbots confirms ~19% miss rate (261k misses / 1.37M total swings)
+  // Includes dodge, parry, miss, and glancing blow misses
+  const MELEE_MISS_RATE = 0.19;
   if (rng.roll() < MELEE_MISS_RATE) {
     // Miss — schedule next swing and return
     const hasteMult = 1 + state.currentHastePct / 100;
