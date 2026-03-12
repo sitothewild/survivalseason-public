@@ -957,8 +957,8 @@ function handleOffHandAutoAttack(
   const ohSpeed = input.stats.weapon.offHandSpeed;
   const ohDps = input.stats.weapon.offHandDps;
 
-  // Miss check: 0% with hit/expertise cap
-  const MELEE_MISS_RATE = 0.0;
+  // Miss check: 19% (confirmed from Raidbots data)
+  const MELEE_MISS_RATE = 0.19;
   if (rng.roll() < MELEE_MISS_RATE) {
     const hasteMult = 1 + state.currentHastePct / 100;
     const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
