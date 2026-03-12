@@ -891,18 +891,10 @@ function handleAutoAttack(
 ): void {
   const ap = state.currentAP;
 
-  // Miss check: Raidbots confirms ~19% miss rate (261k misses / 1.37M total swings)
-  // Includes dodge, parry, miss, and glancing blow misses
-  const MELEE_MISS_RATE = 0.19;
-  if (rng.roll() < MELEE_MISS_RATE) {
-    // Miss — schedule next swing and return
-    const hasteMult = 1 + state.currentHastePct / 100;
-    const bloodseekerMult = 1 + state.bloodseekerStacks * BLOODSEEKER_ATTACK_SPEED_PER_TARGET;
-    const flankedAsMult = state.takedownActive && input.talents.activeTalents.has("flanked") ? 2.0 : 1.0;
-    const swingMs = Math.round(meleeSwingMs / (hasteMult * bloodseekerMult * flankedAsMult));
-    queue.enqueue({ tMs: state.nowMs + swingMs, priority: EventPriority.AUTO_ATTACK, type: "auto_attack" });
-    return;
-  }
+  // PvE miss rate: in Midnight, melee hit cap is easily reached with expertise.
+  // Raidbots shows ~0% miss for abilities. The "misses" in log are glancing blows
+  // which reduce damage but don't prevent hits. Use 0% miss rate for auto attacks.
+  // Glancing blows are already factored into average weapon DPS.
 
   // Auto attack damage = weapon_DPS * weapon_speed * modifiers
   const weaponSpeed = input.stats.weapon.mainHandSpeed;
