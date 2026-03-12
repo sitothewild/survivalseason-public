@@ -144,10 +144,11 @@ describe("Raidbots Calibration — Pack Leader No-Buffs ST", () => {
     console.log("Ability".padEnd(24) + "Engine".padStart(8) + "Raidbots".padStart(10) + "Delta".padStart(8) + " Pct".padStart(7));
     console.log("-".repeat(57));
 
-    // Build lookup from engine results
+    // Build lookup from engine results (remap trinket keys to Raidbots names)
     const engineMap = new Map<string, { dps: number; pct: number; casts: number }>();
     for (const ab of result.breakdown) {
-      engineMap.set(ab.key, { dps: ab.dps, pct: ab.pctOfTotal, casts: ab.casts });
+      const mappedKey = TRINKET_KEY_MAP[ab.key] ?? ab.key;
+      engineMap.set(mappedKey, { dps: ab.dps, pct: ab.pctOfTotal, casts: ab.casts });
     }
 
     let totalEngDps = 0;
