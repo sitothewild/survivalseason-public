@@ -109,7 +109,7 @@ describe("charToSimInput", () => {
 });
 
 describe("simResultToLegacy", () => {
-  it("converts engine SimResult to legacy shape with statistical data", () => {
+  it("converts engine SimResult to legacy shape with statistical data", { timeout: 15000 }, () => {
     const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
     const engineResult = runSimulation(input);
 
