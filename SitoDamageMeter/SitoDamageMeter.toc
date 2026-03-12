@@ -1,0 +1,15 @@
+## Interface: 110100
+## Title: Sito Damage Meter
+## Notes: A lightweight damage and healing meter for WoW Midnight
+## Author: Sito
+## Version: 1.0.0
+## SavedVariables: SitoDamageMeterDB
+## IconTexture: Interface\Icons\Ability_Warrior_Bladestorm
+
+SitoDamageMeter_Core.lua
+SitoDamageMeter_Data.lua
+SitoDamageMeter_Segments.lua
+SitoDamageMeter_UI.lua
+SitoDamageMeter_Bars.lua
+SitoDamageMeter_Details.lua
+SitoDamageMeter_Commands.lua
