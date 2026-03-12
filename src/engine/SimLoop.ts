@@ -1159,14 +1159,14 @@ function handleHowlBeast(
     );
     state.recordDamage("boar_charge", chargeDmg, chargeCrit, 0);
 
-    // Cleave on additional targets
-    if (state.numTargets > 1) {
+    // Cleave component always fires — hits primary target + additional targets
+    // In Raidbots ST, boar_charge_cleave does 960 pDPS on the main target
+    const cleaveTargets = Math.min(state.numTargets, 5);
+    for (let t = 0; t < cleaveTargets; t++) {
       const { damage: cleaveDmg, isCrit: cleaveCrit } = computeDamage(
         state, boarAp, BOAR_CHARGE_CLEAVE_AP_COEF, "physical", false, rng,
       );
-      for (let t = 1; t < Math.min(state.numTargets, 5); t++) {
-        state.recordDamage("boar_charge", cleaveDmg, cleaveCrit, t);
-      }
+      state.recordDamage("boar_charge_cleave", cleaveDmg, cleaveCrit, t);
     }
   } else {
     // Bear: Summon bear that melees and applies Rend
