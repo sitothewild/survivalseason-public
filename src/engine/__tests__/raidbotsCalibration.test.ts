@@ -112,8 +112,13 @@ function buildCalibrationInput(iterations: number, seed: number): SimInput {
 // ── Tests ────────────────────────────────────────────────────
 
 describe("Raidbots Calibration — Pack Leader No-Buffs ST", () => {
-  const input = buildCalibrationInput(2000, 42);
+  const input = buildCalibrationInput(5000, 42);
   const result = runSimulation(input);
+
+  // Map engine trinket key to Raidbots key for comparison
+  const TRINKET_KEY_MAP: Record<string, string> = {
+    "trinket_225602": "kroluks_warbanner",
+  };
 
   it("total DPS comparison against Raidbots target (33,846)", () => {
     const error = Math.abs(result.meanDps - RAIDBOTS_DPS) / RAIDBOTS_DPS;
