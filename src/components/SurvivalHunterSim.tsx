@@ -158,14 +158,16 @@ function parseSimcString(simcText) {
     if (key === 'server' || key === 'realm') result.character.realm = val;
     if (key === 'region') result.character.region = val;
   });
+  // Rating-to-percent divisors from combatRatings.json (Midnight 12.0)
+  const RATING_PER_PCT = { haste: 35.0, crit: 22.3, mastery: 180, versatility: 54.0 };
   lines.forEach(line => {
     const statMatch = line.match(/^(\w+)=([0-9.]+)$/); if (!statMatch) return;
     const [, key, val] = statMatch; const v = parseFloat(val);
     if (key === 'agility') result.stats.agility = v;
-    if (key === 'haste_rating') result.stats.haste = +(v / 170).toFixed(2);
-    if (key === 'crit_rating') result.stats.crit = +(v / 170).toFixed(2);
-    if (key === 'mastery_rating') result.stats.mastery = +(v / 170).toFixed(2);
-    if (key === 'versatility_rating') result.stats.versatility = +(v / 205 * 100).toFixed(2);
+    if (key === 'haste_rating') result.stats.haste = +(v / RATING_PER_PCT.haste).toFixed(2);
+    if (key === 'crit_rating') result.stats.crit = +(5 + v / RATING_PER_PCT.crit).toFixed(2);
+    if (key === 'mastery_rating') result.stats.mastery = +(v / RATING_PER_PCT.mastery).toFixed(2);
+    if (key === 'versatility_rating') result.stats.versatility = +(v / RATING_PER_PCT.versatility).toFixed(2);
     if (key === 'attack_power') result.stats.attackPower = v;
   });
 
