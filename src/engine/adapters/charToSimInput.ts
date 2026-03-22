@@ -159,14 +159,15 @@ function resolveWeapon(gear?: ParsedCharData["gear"]): PlayerStats["weapon"] {
   const oh = gear.find(g => g.slot === "off_hand");
   const isDW = !!oh;
 
-  // Estimate weapon DPS from item level using Midnight scaling curve
-  // At ilvl 233: ~53 DPS (1H), at ilvl 259: ~65 DPS (1H), at ilvl 276: ~75 DPS (1H)
-  // 2H weapons have ~1.5x the DPS of 1H at same ilvl
+  // Estimate weapon DPS from item level using Midnight S1 scaling curve
+  // At ilvl 636: ~420 DPS (2H polearm), ~280 DPS (1H)
+  // Regression from observed Midnight weapon data
   function estimateWeaponDps(ilvl: number, is2H: boolean): number {
     if (ilvl <= 0) return is2H ? 420 : 280;
-    // Linear approximation from Midnight S1 weapon data
-    const baseDps1H = 20 + ilvl * 0.17;
-    return is2H ? baseDps1H * 1.5 : baseDps1H;
+    // Piecewise linear fit: anchor at ilvl 636 = 420 2H DPS, ~1.6 DPS per ilvl
+    const baseDps2H = 420 + (ilvl - 636) * 1.6;
+    const dps2H = Math.max(200, baseDps2H);
+    return is2H ? dps2H : dps2H * 0.667;
   }
 
   if (isDW) {

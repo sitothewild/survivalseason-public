@@ -568,7 +568,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
 function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null, aplData = null) {
   const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData, aplData).totalDps;
   const DELTA = { agility: 200, haste: 1.5, crit: 1.5, mastery: 1.5, versatility: 1.5 };
-  const RATING_PER_PERCENT = { haste: 170, crit: 170, mastery: 170, versatility: 205 };
+  const RATING_PER_PERCENT = { haste: 35.0, crit: 22.3, mastery: 180, versatility: 54.0 };
   const weights = {};
   const agiChar = JSON.parse(JSON.stringify(charData)); agiChar.stats.agility += DELTA.agility; agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
   const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData, aplData).totalDps;
