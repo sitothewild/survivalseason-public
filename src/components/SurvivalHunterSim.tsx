@@ -158,14 +158,16 @@ function parseSimcString(simcText) {
     if (key === 'server' || key === 'realm') result.character.realm = val;
     if (key === 'region') result.character.region = val;
   });
+  // Rating-to-percent divisors from combatRatings.json (Midnight 12.0)
+  const RATING_PER_PCT = { haste: 35.0, crit: 22.3, mastery: 180, versatility: 54.0 };
   lines.forEach(line => {
     const statMatch = line.match(/^(\w+)=([0-9.]+)$/); if (!statMatch) return;
     const [, key, val] = statMatch; const v = parseFloat(val);
     if (key === 'agility') result.stats.agility = v;
-    if (key === 'haste_rating') result.stats.haste = +(v / 170).toFixed(2);
-    if (key === 'crit_rating') result.stats.crit = +(v / 170).toFixed(2);
-    if (key === 'mastery_rating') result.stats.mastery = +(v / 170).toFixed(2);
-    if (key === 'versatility_rating') result.stats.versatility = +(v / 205 * 100).toFixed(2);
+    if (key === 'haste_rating') result.stats.haste = +(v / RATING_PER_PCT.haste).toFixed(2);
+    if (key === 'crit_rating') result.stats.crit = +(5 + v / RATING_PER_PCT.crit).toFixed(2);
+    if (key === 'mastery_rating') result.stats.mastery = +(v / RATING_PER_PCT.mastery).toFixed(2);
+    if (key === 'versatility_rating') result.stats.versatility = +(v / RATING_PER_PCT.versatility).toFixed(2);
     if (key === 'attack_power') result.stats.attackPower = v;
   });
 
@@ -518,7 +520,7 @@ function generateSampleExecutionLog(duration, heroTalent) {
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null, aplData = null) {
   const stats = charData.stats; const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
   const hastePct = stats.haste || 10.58, critPct = stats.crit || 20.13, masteryPct = stats.mastery || 30.16, versPct = stats.versatility || 8.28;
-  const ANCHOR_AP = 1635, ANCHOR_DPS = 51024, ANCHOR_CRIT = 20.13, ANCHOR_HASTE = 10.58, ANCHOR_MASTERY = 30.16, ANCHOR_VERS = 8.28;
+  const ANCHOR_AP = 1635, ANCHOR_DPS = 33846, ANCHOR_CRIT = 20.13, ANCHOR_HASTE = 10.58, ANCHOR_MASTERY = 30.16, ANCHOR_VERS = 8.28;
   const calcStatMult = (c, h, m, v) => (1 + c / 100 * 1.0) * (1 + h / 100 * 0.80) * (1 + m / 100 * 1.0) * (1 + v / 100);
   const anchorStatMult = calcStatMult(ANCHOR_CRIT, ANCHOR_HASTE, ANCHOR_MASTERY, ANCHOR_VERS);
   const currentStatMult = calcStatMult(critPct, hastePct, masteryPct, versPct);
@@ -566,7 +568,7 @@ function runSimulation(charData, targetCount, fightDuration, heroTalent, build, 
 function calcStatWeights(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null, aplData = null) {
   const baseDps = runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData, aplData).totalDps;
   const DELTA = { agility: 200, haste: 1.5, crit: 1.5, mastery: 1.5, versatility: 1.5 };
-  const RATING_PER_PERCENT = { haste: 170, crit: 170, mastery: 170, versatility: 205 };
+  const RATING_PER_PERCENT = { haste: 35.0, crit: 22.3, mastery: 180, versatility: 54.0 };
   const weights = {};
   const agiChar = JSON.parse(JSON.stringify(charData)); agiChar.stats.agility += DELTA.agility; agiChar.stats.attackPower = Math.round(agiChar.stats.agility * 1.05);
   const agiDps = runSimulation(agiChar, targetCount, fightDuration, heroTalent, build, externalMult, simcLiveData, aplData).totalDps;
