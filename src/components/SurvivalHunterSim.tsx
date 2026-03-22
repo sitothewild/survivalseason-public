@@ -520,7 +520,7 @@ function generateSampleExecutionLog(duration, heroTalent) {
 function runSimulation(charData, targetCount, fightDuration, heroTalent, build, externalMult = 1.0, simcLiveData = null, aplData = null) {
   const stats = charData.stats; const ap = stats.attackPower || Math.round((stats.agility || 1500) * 1.05);
   const hastePct = stats.haste || 10.58, critPct = stats.crit || 20.13, masteryPct = stats.mastery || 30.16, versPct = stats.versatility || 8.28;
-  const ANCHOR_AP = 1635, ANCHOR_DPS = 51024, ANCHOR_CRIT = 20.13, ANCHOR_HASTE = 10.58, ANCHOR_MASTERY = 30.16, ANCHOR_VERS = 8.28;
+  const ANCHOR_AP = 1635, ANCHOR_DPS = 33846, ANCHOR_CRIT = 20.13, ANCHOR_HASTE = 10.58, ANCHOR_MASTERY = 30.16, ANCHOR_VERS = 8.28;
   const calcStatMult = (c, h, m, v) => (1 + c / 100 * 1.0) * (1 + h / 100 * 0.80) * (1 + m / 100 * 1.0) * (1 + v / 100);
   const anchorStatMult = calcStatMult(ANCHOR_CRIT, ANCHOR_HASTE, ANCHOR_MASTERY, ANCHOR_VERS);
   const currentStatMult = calcStatMult(critPct, hastePct, masteryPct, versPct);
