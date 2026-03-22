@@ -164,7 +164,7 @@ export const AP_COEFFICIENTS = {
   moonlight_chakram:   1.89,
   death_chakram:       1.58,
   raptor_swipe:        2.91,    // Back-calc: 4774 pDPS, reverted from 3.50 (was double-dipping Sweeping Spear)
-  strike_as_one:       15.80,   // Back-calc: 6201 pDPS × 180s / 43.3 casts = 25,776 avg hit, pet AP 886 × mastery × vers
+  strike_as_one:       16.03,   // Back-calc: 6201 pDPS × 180s / 43.3 casts = 25,776 avg hit, pet AP 886 × mastery × vers
 
   // ── Pet Abilities ─────────────────────────────────────────
   pet_claw:            0.89,    // Back-calc: 823 pDPS × 180s / 57.1 casts = 2594 avg hit, strip universal mults
