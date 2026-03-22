@@ -970,7 +970,7 @@ function handleOffHandAutoAttack(
 
   // Off-hand deals 50% of main-hand damage, with white-hit penalty
   let dmg = (ohDps * ohSpeed + ap * ohSpeed / WEAPON_NORMS.twoHand)
-    * COMBAT_MECHANICS.offHandPenalty * COMBAT_MECHANICS.whiteMeleeHitFactor
+    * COMBAT_MECHANICS.offHandPenalty * COMBAT_MECHANICS.whiteOHHitFactor
     * (1 + state.currentMasteryPct * MASTERY_PLAYER_BONUS)
     * (1 + state.currentVersPct / 100);
 

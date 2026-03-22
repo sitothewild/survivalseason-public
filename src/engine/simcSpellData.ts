@@ -356,6 +356,12 @@ export const COMBAT_MECHANICS = {
    * MH target 1997 pDPS / engine 2275 = 0.878.
    */
   whiteMeleeHitFactor: 0.878,
+  /**
+   * Off-hand white-hit factor — higher than MH because OH already has
+   * the 50% offHandPenalty applied; the glancing/defense component is
+   * proportionally smaller. Back-calculated: 974 target pDPS.
+   */
+  whiteOHHitFactor: 0.935,
 } as const;
 
 // ── Tier Set Effects (Midnight S1) ──────────────────────────
