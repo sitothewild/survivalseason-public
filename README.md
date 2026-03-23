@@ -1,197 +1,199 @@
-# Survival Hunter Simulator — Technical Documentation
+# Survival Hunter Simulator — Midnight (12.0)
 
-A **World of Warcraft: Midnight (12.0) Survival Hunter DPS simulator and toolkit** built as a single-page React application.
+A **World of Warcraft: Midnight (12.0) Survival Hunter DPS simulator and toolkit** built as a single-page React application with a full event-driven simulation engine.
 
 **Published URL:** https://survivalseason.lovable.app
 
+---
+
 ## Purpose
 
-Allows players to:
-
-- **Simulate DPS** with customizable gear stats (Agility, Haste, Crit, Mastery, Versatility)
-- **Compare hero talent trees** (Pack Leader vs Sentinel)
-- **View live rotation priorities** parsed from SimulationCraft's open-source APL (Action Priority List)
-- **Browse live patch notes** aggregated from Wowhead, MMO-Champion, and Blizzard
-- **Look up character data** via Blizzard's official API
+- **Simulate DPS** with a tick-level event-driven engine (deterministic, seedable, multi-iteration with target-error convergence)
+- **Import characters** from the Blizzard Armory — gear, stats, talents, and trinkets auto-populate
+- **Compare hero talent trees** (Pack Leader vs Sentinel) with per-hero APLs sourced from SimC
+- **Browse rotation priorities** parsed from SimulationCraft's `midnight` branch APL
+- **Gear optimization** with enchant, gem, consumable, and weapon enhancement support
+- **Stat weights** computed via delta-sim methodology
+- **Live patch notes** aggregated from Wowhead, MMO-Champion, and Blizzard
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│  React SPA (Vite + TypeScript + Tailwind)       │
-│  ┌───────────────┐  ┌────────────────────────┐  │
-│  │ SurvivalHunter│  │ aplParser.ts           │  │
-│  │ Sim.tsx (UI)  │──│ (weight calculation)   │  │
-│  └───────┬───────┘  └────────────────────────┘  │
-│          │                                       │
-│          │ supabase-js SDK                       │
-└──────────┼──────────────────────────────────────┘
-           │
-┌──────────▼──────────────────────────────────────┐
-│  Lovable Cloud (Supabase)                        │
-│  ┌──────────────────┐  ┌──────────────────────┐ │
-│  │ simc_data_cache   │  │ Edge Functions:      │ │
-│  │ (table)           │  │ • simc-data-sync     │ │
-│  │ - data_key (PK)   │  │ • blizzard-character │ │
-│  │ - data (JSONB)    │  │ • blizzard-game-data │ │
-│  │ - github_sha      │  │ • fetch-patch-notes  │ │
-│  │ - updated_at      │  └──────────┬───────────┘ │
-│  └──────────────────┘              │             │
-└────────────────────────────────────┼─────────────┘
-                                     │
-                    ┌────────────────▼────────────┐
-                    │ External APIs:              │
-                    │ • GitHub (SimC repo)        │
-                    │ • Blizzard Battle.net API   │
-                    │ • Wowhead RSS               │
-                    │ • MMO-Champion RSS          │
-                    └─────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  React SPA (Vite + TypeScript + Tailwind + shadcn/ui)    │
+│                                                          │
+│  ┌──────────────────┐  ┌──────────────────────────────┐  │
+│  │ Pages:           │  │ Simulation Engine:            │  │
+│  │  Index (Sim UI)  │  │  SimLoop → EventQueue → RNG  │  │
+│  │  Gear            │  │  APLEngine (condition parser) │  │
+│  │  Guide           │  │  SpellDB + CombatMath         │  │
+│  │  TalentOptimizer │  │  FocusModel + CombatState     │  │
+│  └──────────────────┘  │  PRD (bad-luck protection)    │  │
+│                        │  WorkerPool (Web Workers)     │  │
+│                        └──────────────────────────────┘  │
+│                                                          │
+│  supabase-js SDK                                         │
+└────────────┬─────────────────────────────────────────────┘
+             │
+┌────────────▼─────────────────────────────────────────────┐
+│  Lovable Cloud (Supabase)                                 │
+│  ┌──────────────────┐  ┌───────────────────────────────┐ │
+│  │ simc_data_cache   │  │ Edge Functions:               │ │
+│  │ (table)           │  │ • simc-data-sync              │ │
+│  │ - data_key (PK)   │  │ • blizzard-character          │ │
+│  │ - data (JSONB)    │  │ • blizzard-game-data          │ │
+│  │ - github_sha      │  │ • blizzard-item-db            │ │
+│  │ - updated_at      │  │ • blizzard-data-snapshot      │ │
+│  │                   │  │ • fetch-patch-notes           │ │
+│  └──────────────────┘  └──────────────┬────────────────┘ │
+└───────────────────────────────────────┼──────────────────┘
+                                        │
+                      ┌─────────────────▼─────────────────┐
+                      │ External APIs:                    │
+                      │ • GitHub (SimC midnight branch)   │
+                      │ • Blizzard Battle.net API         │
+                      │ • Wowhead / MMO-Champion RSS      │
+                      └───────────────────────────────────┘
 ```
-
----
-
-## Data Pipeline: SimC → Live Weights
-
-### Edge Function: `simc-data-sync`
-
-**File:** `supabase/functions/simc-data-sync/index.ts`
-
-**Flow:**
-
-1. Client calls the function (POST, optionally `{force: true}`)
-2. Function fetches the **latest commit SHA** from `simulationcraft/simc` GitHub repo, **`midnight` branch**
-3. Compares SHA against cached value in `simc_data_cache` table
-4. If stale (or forced), fetches two raw C++ files:
-   - `engine/class_modules/apl/apl_hunter.cpp` — contains the APL (rotation logic)
-   - `engine/class_modules/sc_hunter.cpp` — contains spell implementations
-5. **Parses the APL** using regex to extract action lists per hero spec:
-   - `plst` / `plcleave` = Pack Leader single-target / cleave
-   - `sentst` / `sentcleave` = Sentinel single-target / cleave
-   - `cds` = cooldown usage
-6. **Parses spell data** — extracts references to Tip of the Spear, Coordinated Assault, Mongoose Fury, tier set bonuses, hardcoded multipliers
-7. **Upserts** the parsed JSON into `simc_data_cache` with key `"survival_hunter_data"`
-8. Returns `{status: "cached"|"updated", sha, data}`
-
-### Client-Side Parser: `src/utils/aplParser.ts`
-
-**Two entry points:**
-
-1. **`parseSimcAPL(rawText)`** — Parses raw APL text with section detection (comments like `// SENTINEL ST`). Used if raw text were available.
-
-2. **`buildAPLFromActionLists(actionLists)`** — **Primary path.** Takes the pre-parsed `actionLists` map from the edge function and converts it into the `ParsedAPL` format:
-
-```ts
-interface ParsedAPL {
-  sentinel: { st: RotationData; aoe: RotationData };
-  packLeader: { st: RotationData; aoe: RotationData };
-}
-interface RotationData {
-  ordered: string[];           // priority-ordered ability names
-  weights: Record<string, number>; // normalized 0–1 weights
-}
-```
-
-**Weight calculation:** Uses inverse-rank weighting (`1/(i+1)`), normalized to sum to 1.0. First ability in the APL gets highest weight.
-
-**Stale data protection:**
-
-- `DEPRECATED_ABILITIES` array (`spearhead`, `mongoose_bite`, `flanking_strike`, etc.) — if detected in APL text, parser rejects and falls back
-- `isValidBreakdown` in the sim engine — if any single ability > 35% of damage, falls back to defaults
-- `isStaleSimcData` in the UI component — scans cached data for deprecated ability names and auto-triggers a force refresh
-
-**Name mapping:** SimC snake_case → engine camelCase via `SIMC_TO_ENGINE` lookup table (e.g., `kill_command` → `killCommand`).
 
 ---
 
 ## Simulation Engine
 
-**Location:** Embedded in `src/components/SurvivalHunterSim.tsx`
+**Location:** `src/engine/`
 
-### Inputs
+The engine is a **tick-level, event-driven DPS simulator** — not a weight-based estimator. It models every GCD, cooldown, proc, DoT tick, and pet action across hundreds of iterations.
 
-- **Stat sliders:** Agility, Haste%, Crit%, Mastery%, Versatility%
-- **Hero talent toggle:** Pack Leader vs Sentinel
-- **Target count:** Single-target vs AoE (determines which weight set to use)
+### Core Modules
 
-### DPS Calculation
+| Module | Purpose |
+|--------|---------|
+| `SimLoop.ts` | Main simulation loop — processes events, evaluates APL, handles damage, hero talent triggers, DoT ticks. Deterministic: same seed → same result. |
+| `APLEngine.ts` | Parses SimC-style APL syntax with conditional evaluation (`buff.X.up`, `cooldown.X.remains<gcd`, `talent.X`, `!talent.X`, OR operators). Ships with 4 default APLs from SimC midnight branch. |
+| `SpellDB.ts` | Spell definitions with AP coefficients, cooldowns, focus costs, schools, AoE caps, and talent requirements. Data sourced from `simcSpellData.ts`. |
+| `CombatState.ts` | Tracks all runtime state: buffs, debuffs, cooldowns, DoTs, focus, combo points, pet state, hero counters, and a full combat log. |
+| `EventQueue.ts` | Priority queue for simulation events (casts, ticks, procs, auras expiring). |
+| `FocusModel.ts` | Models focus generation and spending with haste-scaled regen. |
+| `CombatMath.ts` | Armor mitigation, rating-to-percent conversions, diminishing returns. Uses Midnight 12.0 combat ratings. |
+| `RNG.ts` | Deterministic PRNG (hash64-based) for reproducible results. |
+| `PRD.ts` | Pseudo-Random Distribution for bad-luck protection on proc abilities. |
+| `WorkerPool.ts` | Distributes iterations across Web Workers for parallel execution. |
+| `SimWorker.ts` | Worker entry point — runs a batch of iterations and returns aggregated results. |
 
-The engine applies ability weights to stat-scaled base damage:
+### Simulation Flow
 
-- Each ability has a base damage scaled by Agility
-- Secondary stats modify via multipliers (Crit adds expected value, Haste reduces GCD, Mastery/Vers are flat multipliers)
-- Weights from the parsed APL determine how much each ability contributes to total DPS
-- Hero talent selection changes which weight set is active
+1. **Build `SimInput`** from character data (gear, talents, trinkets, consumables, enchants, gems)
+2. **Resolve buff multipliers** (Battle Shout, Mark of the Wild, Mystic Touch, Hunter's Mark)
+3. **Parse APL** — selects the correct APL based on hero tree + fight style
+4. **Run N iterations** (or until target error threshold met):
+   - Initialize `CombatState`, `FocusModel`, `EventQueue`
+   - Schedule auto-attacks (player + pet), potion at pull
+   - Each tick: process events → evaluate APL → cast next ability → apply damage/buffs/debuffs
+   - Track all damage events, crit counts, hero-specific counters
+5. **Aggregate** mean/median/stddev/p5/p95 DPS, per-ability breakdown, timeline
 
-### Output
+### Hero Talent Support
 
-- Total DPS number
-- Per-ability DPS breakdown (bar chart via Recharts)
-- Stat weights (how much 1% of each stat is worth in DPS)
+- **Pack Leader:** Howl of the Pack beast cycling (Boar → Bear → Wyvern), howl beast buff tracking, Frenzied Tear procs, Pack Coordination
+- **Sentinel:** Sentinel Owl procs, Lunar Storm, Eyes of the Eagle resets, Sentinel's Mark debuff, Vicious Hunt procs
+
+### APL System
+
+Four pre-built APLs from SimC `midnight` branch (`apl_hunter.cpp`):
+
+| Key | Description |
+|-----|-------------|
+| `pack_leader_raid_st` | Pack Leader single-target raid |
+| `pack_leader_mplus_aoe` | Pack Leader M+ AoE |
+| `sentinel_raid_st` | Sentinel single-target raid |
+| `sentinel_mplus_aoe` | Sentinel M+ AoE |
+
+Conditions supported: `buff.X.up/down`, `buff.X.stack`, `cooldown.X.remains<gcd`, `cooldown.X.on_cooldown`, `talent.X`/`!talent.X`, `debuff.X.remains`, `fury_of_the_wyvern_extendable`, `full_recharge_time`, and `|` (OR) operators.
+
+### SimOptions (Advanced Configuration)
+
+| Category | Options |
+|----------|---------|
+| **Raid Buffs** | Battle Shout (+5% AP), Mark of the Wild (+3% Vers), Mystic Touch (+5% phys dmg taken), Hunter's Mark (+5% dmg to target) |
+| **Consumables** | Phials, food, potions (stat-based, applied at pull) |
+| **Weapon Enhancement** | Damage procs (AP coefficient + CPM) |
+| **Enchants** | Per-slot or "auto" BiS selection |
+| **Gems** | Single-stat (88 rating) or dual-stat (44+44) fills, Blasphemite support |
+| **Augment Rune** | Flat stat bonus |
+
+Tier set bonuses (2pc/4pc) are **auto-detected from equipped gear** — no manual toggle.
+
+---
+
+## Adapters
+
+**Location:** `src/engine/adapters/`
+
+| Adapter | Purpose |
+|---------|---------|
+| `charToSimInput.ts` | Converts Blizzard Armory character data → `SimInput`. Auto-detects tier set, maps gear to stats, resolves talents. |
+| `gearToStats.ts` | Extracts stat totals from equipped gear items. |
+| `talentsToEngine.ts` | Maps talent tree selections → `TalentState` with active talent set. |
+| `trinketsToEngine.ts` | Resolves trinket items → `EquippedTrinket` with proc/on-use data. |
+| `simResultToLegacy.ts` | Converts `SimResult` → legacy format for backward-compatible UI rendering. |
 
 ---
 
 ## Edge Functions
 
-### `blizzard-character`
+### `simc-data-sync`
+Fetches latest SimC survival hunter APL + spell data from GitHub (`midnight` branch). Compares commit SHA for cache invalidation. Parses C++ source files via regex. Upserts to `simc_data_cache`.
 
-- Proxies Blizzard Profile API calls
-- Uses OAuth2 client credentials flow (`BLIZZARD_CLIENT_ID` / `BLIZZARD_CLIENT_SECRET`)
-- Fetches character profile, equipment, stats, media renders
-- Handles regionality (US/EU/KR/TW)
+### `blizzard-character`
+Proxies Blizzard Profile API (OAuth2 client credentials). Fetches profile, equipment, stats, media renders. Handles US/EU/KR/TW regions.
 
 ### `blizzard-game-data`
+Proxies Blizzard Game Data API for item/spell/talent lookups.
 
-- Proxies Blizzard Game Data API calls
-- Used for item lookups, spell data, talent tree data
-- Same OAuth2 flow
+### `blizzard-item-db`
+Item database queries against Blizzard's item API.
+
+### `blizzard-data-snapshot`
+Bulk data snapshot of game data for offline reference.
 
 ### `fetch-patch-notes`
+Aggregates news from Wowhead, MMO-Champion, and Blizzard RSS feeds. Filters for hunter-relevant content.
 
-- Aggregates news from multiple RSS sources:
-  - Wowhead retail RSS
-  - MMO-Champion RSS
-  - Blizzard official
-- Filters for relevant content (hotfixes, class tuning, patch notes)
-- Returns unified JSON array with title, source, date, URL, description
-
-### `simc-data-sync`
-
-Detailed in the Data Pipeline section above.
-
-All edge functions have `verify_jwt = false` in `supabase/config.toml` — they're publicly callable (no auth required).
+All edge functions are publicly callable (`verify_jwt = false`).
 
 ---
 
-## UI Structure
+## UI Pages
 
-Single page app with tab-based navigation in `SurvivalHunterSim.tsx`:
-
-| Tab | Content |
-|-----|---------|
-| **Simulate** | Stat sliders, DPS output, breakdown chart, stat weights |
-| **Talents** | Hero talent comparison (Pack Leader vs Sentinel), live patch notes feed |
-| **Guide** | APL rotation display, SimC data status (branch, SHA, last sync), rotation priorities per hero/mode |
-| **Gear** | Character lookup via Blizzard API, equipment display |
-
-### Patch Notes Display
-
-- Fetched on mount via `fetch-patch-notes` edge function
-- Each article shows source badge, date, title, description snippet
-- Hunter-specific content highlighted with 🏹 badge
-- Ability keywords color-coded (e.g., "Wildfire Bomb" in gold, "Survival" in sky blue)
-
-### Guide / APL Display
-
-- Shows current SimC branch (`midnight`) and commit SHA
-- Displays rotation priority for selected hero talent + target mode
-- Shows whether engine is using **live APL weights** or **fallback weights**
-- Manual "Sync SimC Data" button with force-refresh option
+| Route | Page | Content |
+|-------|------|---------|
+| `/` | **Index** | Main simulation UI — stat inputs, DPS output, ability breakdown chart, stat weights, combat log, advanced options (buffs, consumables, enchants, gems) |
+| `/gear` | **Gear** | Character import via Blizzard Armory, equipment display, gear optimization |
+| `/guide` | **Guide** | APL rotation display, SimC sync status (branch, SHA), rotation priorities per hero/fight style |
+| `/talent-optimizer` | **Talent Optimizer** | Talent tree visualization and optimization |
 
 ---
 
-## Database Schema
+## Data Pipeline: SimC → Live APL
+
+1. Client calls `simc-data-sync` edge function
+2. Function fetches latest commit SHA from `simulationcraft/simc` GitHub repo (`midnight` branch)
+3. If SHA changed, fetches `apl_hunter.cpp` + `sc_hunter.cpp`
+4. Parses APL action lists and spell data via regex
+5. Upserts parsed JSON to `simc_data_cache` table
+6. Client-side `aplParser.ts` converts cached data to rotation weights for the legacy UI path
+7. Engine's `APLEngine.ts` uses its own compiled APL strings for tick-level simulation
+
+**Stale data protection** operates at 3 layers:
+- Edge function parser filters deprecated abilities
+- Client-side `DEPRECATED_ABILITIES` array rejects stale APL data
+- UI-level `isStaleSimcData` triggers force refresh
+
+---
+
+## Database
 
 **Single table:** `simc_data_cache`
 
@@ -199,39 +201,12 @@ Single page app with tab-based navigation in `SurvivalHunterSim.tsx`:
 |--------|------|-------------|
 | `id` | UUID (PK) | Auto-generated |
 | `data_key` | TEXT (unique) | Cache key, e.g. `"survival_hunter_data"` |
-| `data` | JSONB | Full parsed SimC data blob |
+| `data` | JSONB | Parsed SimC data blob |
 | `github_sha` | TEXT | Git commit SHA for cache invalidation |
 | `created_at` | TIMESTAMPTZ | Row creation time |
 | `updated_at` | TIMESTAMPTZ | Last refresh time |
 
-No RLS policies — table is accessed only via service role key in edge functions (not directly from client).
-
----
-
-## Secrets / Environment
-
-| Secret | Purpose |
-|--------|---------|
-| `BLIZZARD_CLIENT_ID` | Blizzard API OAuth2 |
-| `BLIZZARD_CLIENT_SECRET` | Blizzard API OAuth2 |
-| `LOVABLE_API_KEY` | AI gateway (if used) |
-| `SUPABASE_*` | Auto-configured by Lovable Cloud |
-
-Client-side `.env` has `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` — all auto-managed.
-
----
-
-## Key Design Decisions
-
-1. **Cache-first architecture:** SimC data is fetched once, cached in DB, and only refreshed when the GitHub SHA changes. This avoids rate-limiting and speeds up page loads.
-
-2. **Deprecated ability detection at 3 layers:** Edge function parser, client-side APL parser (`DEPRECATED_ABILITIES`), and UI-level stale check (`isStaleSimcData`). Belt-and-suspenders approach because the SimC repo may still contain War Within (11.x) code.
-
-3. **Fallback weights:** Hardcoded Midnight-accurate weights ensure the sim always produces reasonable output even if GitHub is down or the parser fails.
-
-4. **No authentication:** This is a public tool — no user accounts, no RLS needed. Edge functions use service role key for DB access.
-
-5. **Edge functions as API proxies:** Blizzard API requires OAuth2 with client secret, which can't be exposed client-side. Edge functions handle the token exchange.
+No RLS — accessed only via service role in edge functions.
 
 ---
 
@@ -240,12 +215,13 @@ Client-side `.env` has `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VI
 | Layer | Technology |
 |-------|-----------|
 | Framework | React 18 + TypeScript |
-| Build | Vite |
+| Build | Vite 5 |
 | Styling | Tailwind CSS + shadcn/ui |
 | Charts | Recharts |
 | State/Data | TanStack React Query |
 | Routing | React Router v6 |
-| Backend | Lovable Cloud (Supabase) — Edge Functions (Deno), PostgreSQL |
+| Backend | Lovable Cloud — Edge Functions (Deno), PostgreSQL |
+| Testing | Vitest + Testing Library |
 | External | Blizzard Battle.net API, GitHub API, Wowhead/MMO-Champion RSS |
 
 ---
@@ -259,4 +235,10 @@ npm i
 npm run dev
 ```
 
-Requires Node.js & npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+### Testing
+
+```sh
+npm test
+```
+
+Tests include: engine validation, APL correctness, Raidbots calibration, character adapter mapping, trinket proc modeling, and stat weight computation.
