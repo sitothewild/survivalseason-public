@@ -73,11 +73,19 @@ export interface ParsedCharData {
   };
   stats: {
     agility: number;
-    haste: number;        // percentage (e.g. 10.58 = 10.58%)
+    haste: number;        // percentage (e.g. 10.58 = 10.58%) — for UI display
     crit: number;         // percentage
     mastery: number;      // percentage
     versatility: number;  // percentage
     attackPower: number;
+  };
+  /** Raw combat ratings — when present, charToSimInput uses these directly
+   *  instead of reverse-converting percentages (which is lossy/error-prone). */
+  rawRatings?: {
+    critRating: number;
+    hasteRating: number;
+    masteryRating: number;
+    versatilityRating: number;
   };
   gear?: Array<{
     slot: string;
@@ -89,6 +97,7 @@ export interface ParsedCharData {
   }>;
   talents?: string | null;
   valid?: boolean;
+  heroTalentTree?: string;
 }
 
 /**
@@ -206,21 +215,33 @@ export function charToSimInput(
   opts?: { captureTimeline?: boolean; iterations?: number; customAPL?: string },
 ): SimInput {
   const s = char.stats;
+  const rr = char.rawRatings;
 
-  // Convert parsed percentages back to raw ratings
+  // Use raw ratings directly when available (Armory / SimC parser provide these).
+  // Only fall back to lossy percentage→rating conversion when rawRatings is missing.
+  const agi = s.agility || 1500;
   const baseStats: PlayerStats = {
-    agility: s.agility || 1500,
-    stamina: Math.round((s.agility || 1500) * 0.9),
+    agility: agi,
+    stamina: Math.round(agi * 0.9),
     attackPower: 0, // AP = Agility for hunters; bonus AP from buffs applied later
-    critRating: percentToRating(s.crit || 0, "crit"),
-    hasteRating: percentToRating(s.haste || 0, "haste"),
-    masteryRating: percentToRating(s.mastery || 0, "mastery"),
-    versatilityRating: percentToRating(s.versatility || 0, "versatility"),
+    critRating:         rr?.critRating         ?? percentToRating(s.crit || 0, "crit"),
+    hasteRating:        rr?.hasteRating        ?? percentToRating(s.haste || 0, "haste"),
+    masteryRating:      rr?.masteryRating      ?? percentToRating(s.mastery || 0, "mastery"),
+    versatilityRating:  rr?.versatilityRating  ?? percentToRating(s.versatility || 0, "versatility"),
     weapon: resolveWeapon(char.gear),
-    // Tier: use SimOptions toggle (which is auto-synced from gear in the UI)
     has2pc: simOptions?.has2pc ?? detectTierSet(char.gear).has2pc,
     has4pc: simOptions?.has4pc ?? detectTierSet(char.gear).has4pc,
   };
+
+  console.log('[charToSimInput] stats pipeline', {
+    rawRatingsProvided: !!rr,
+    agility: agi,
+    critRating: baseStats.critRating,
+    hasteRating: baseStats.hasteRating,
+    masteryRating: baseStats.masteryRating,
+    versatilityRating: baseStats.versatilityRating,
+    weapon: baseStats.weapon,
+  });
 
   // Determine fight style from targets
   const fightStyle: FightStyle = targets <= 1

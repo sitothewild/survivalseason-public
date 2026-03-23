@@ -141,6 +141,7 @@ const MIDNIGHT_DATA = {
 function parseSimcString(simcText) {
   const result = {
     character: {}, stats: { agility: 0, haste: 0, crit: 0, mastery: 0, versatility: 0, attackPower: 0 },
+    rawRatings: { critRating: 0, hasteRating: 0, masteryRating: 0, versatilityRating: 0 },
     gear: [], talents: null, valid: false, errors: []
   };
   if (!simcText || simcText.trim().length < 20) { result.errors.push("Input appears empty or too short."); return result; }
@@ -164,10 +165,10 @@ function parseSimcString(simcText) {
     const statMatch = line.match(/^(\w+)=([0-9.]+)$/); if (!statMatch) return;
     const [, key, val] = statMatch; const v = parseFloat(val);
     if (key === 'agility') result.stats.agility = v;
-    if (key === 'haste_rating') result.stats.haste = +(v / RATING_PER_PCT.haste).toFixed(2);
-    if (key === 'crit_rating') result.stats.crit = +(5 + v / RATING_PER_PCT.crit).toFixed(2);
-    if (key === 'mastery_rating') result.stats.mastery = +(v / RATING_PER_PCT.mastery).toFixed(2);
-    if (key === 'versatility_rating') result.stats.versatility = +(v / RATING_PER_PCT.versatility).toFixed(2);
+    if (key === 'haste_rating') { result.rawRatings.hasteRating = v; result.stats.haste = +(v / RATING_PER_PCT.haste).toFixed(2); }
+    if (key === 'crit_rating') { result.rawRatings.critRating = v; result.stats.crit = +(5 + v / RATING_PER_PCT.crit).toFixed(2); }
+    if (key === 'mastery_rating') { result.rawRatings.masteryRating = v; result.stats.mastery = +(v / RATING_PER_PCT.mastery).toFixed(2); }
+    if (key === 'versatility_rating') { result.rawRatings.versatilityRating = v; result.stats.versatility = +(v / RATING_PER_PCT.versatility).toFixed(2); }
     if (key === 'attack_power') result.stats.attackPower = v;
   });
 

@@ -12,28 +12,30 @@ const SAMPLE_CHAR: ParsedCharData = {
   character: { name: "TestHunter", level: 90, spec: "survival" },
   stats: {
     agility: 1635,
-    haste: 10.0,    // 10% = 1700 rating
-    crit: 19.0,     // 19% = 3230 rating
-    mastery: 25.0,  // 25% = 4250 rating
-    versatility: 5.0, // 5% = rating / 205 * 100, so rating = 1025
+    haste: 10.0,    // display percentage
+    crit: 19.0,     // display percentage (includes 5% base)
+    mastery: 25.0,  // display percentage
+    versatility: 5.0,
     attackPower: 1717,
+  },
+  rawRatings: {
+    hasteRating: 350,      // 10% * 35.0
+    critRating: 312,       // (19% - 5%) * 22.3
+    masteryRating: 4500,   // realistic mastery rating
+    versatilityRating: 270, // 5% * 54.0
   },
   gear: [],
   talents: null,
 };
 
 describe("charToSimInput", () => {
-  it("converts parsedChar stats to raw ratings (enchants/gems may add on top)", () => {
+  it("uses rawRatings directly when provided (enchants/gems may add on top)", () => {
     const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, FULL_RAID_OPTIONS);
-    // Level 90 conversions: haste 10.0% * 35.0 = 350, plus enchants/gems
-    expect(input.stats.hasteRating).toBeGreaterThan(300);
-    // crit 19.0% * 22.3 = 424, plus enchants/gems
-    expect(input.stats.critRating).toBeGreaterThan(400);
-    // mastery 25.0% * 28.1 = 703, plus enchants/gems
-    expect(input.stats.masteryRating).toBeGreaterThan(600);
-    // vers 5.0% * 54.0 / 100 = 2.7, plus enchants
-    expect(input.stats.versatilityRating).toBeGreaterThanOrEqual(2);
-    // Agility from parsed char
+    // rawRatings should be used directly, plus enchant/gem additions
+    expect(input.stats.hasteRating).toBeGreaterThanOrEqual(350);
+    expect(input.stats.critRating).toBeGreaterThanOrEqual(312);
+    expect(input.stats.masteryRating).toBeGreaterThanOrEqual(4500);
+    expect(input.stats.versatilityRating).toBeGreaterThanOrEqual(270);
     expect(input.stats.agility).toBeGreaterThanOrEqual(1635);
   });
 
