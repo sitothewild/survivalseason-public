@@ -66,8 +66,6 @@ export const NAKED_OPTIONS: SimOptions = {
     primaryStat: "mastery",
     hasBlasphemite: false,
   },
-  has2pc: false,
-  has4pc: false,
 };
 
 /** Default = full raid */

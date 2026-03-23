@@ -3060,8 +3060,6 @@ export default function SurvivalHunterSim() {
                               setGemPrimaryStat(preset.gems.primaryStat);
                               setGemSockets(preset.gems.totalSockets);
                               setHasBlasphemite(preset.gems.hasBlasphemite);
-                              setHas2pc(preset.has2pc);
-                              setHas4pc(preset.has4pc);
                               setEnchantMode(preset.enchants === 'auto' ? 'auto' : 'manual');
                               if (preset.enchants !== 'auto') setManualEnchants(preset.enchants);
                             }}

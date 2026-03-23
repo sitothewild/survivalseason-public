@@ -86,9 +86,7 @@ export function applySimOptions(
     weapon: { ...baseStats.weapon },
   };
 
-  // Apply tier set from options
-  stats.has2pc = options.has2pc;
-  stats.has4pc = options.has4pc;
+  // Tier set (has2pc/has4pc) is auto-detected from gear — not overridden here
 
   // ── 1. Enchants ──────────────────────────────────────────
   const enchantMap = options.enchants === "auto"
