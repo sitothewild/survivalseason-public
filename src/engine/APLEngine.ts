@@ -54,7 +54,6 @@ actions+=/flamefang_pitch
 actions+=/boomstick,if=buff.tip_of_the_spear.up
 actions+=/wildfire_bomb,if=buff.tip_of_the_spear.up
 actions+=/raptor_strike,if=buff.tip_of_the_spear.up
-actions+=/raptor_strike
 actions+=/kill_command,if=cooldown.takedown.on_cooldown
 actions+=/wildfire_bomb
 actions+=/takedown`,
