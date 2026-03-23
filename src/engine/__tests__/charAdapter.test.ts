@@ -12,11 +12,17 @@ const SAMPLE_CHAR: ParsedCharData = {
   character: { name: "TestHunter", level: 90, spec: "survival" },
   stats: {
     agility: 1635,
-    haste: 10.0,    // 10% = 1700 rating
-    crit: 19.0,     // 19% = 3230 rating
-    mastery: 25.0,  // 25% = 4250 rating
-    versatility: 5.0, // 5% = rating / 205 * 100, so rating = 1025
+    haste: 10.0,    // display percentage
+    crit: 19.0,     // display percentage (includes 5% base)
+    mastery: 25.0,  // display percentage
+    versatility: 5.0,
     attackPower: 1717,
+  },
+  rawRatings: {
+    hasteRating: 350,      // 10% * 35.0
+    critRating: 312,       // (19% - 5%) * 22.3
+    masteryRating: 4500,   // realistic mastery rating
+    versatilityRating: 270, // 5% * 54.0
   },
   gear: [],
   talents: null,
