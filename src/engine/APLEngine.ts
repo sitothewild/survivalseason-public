@@ -102,7 +102,6 @@ actions+=/takedown,if=buff.tip_of_the_spear.up
 actions+=/moonlight_chakram,if=buff.tip_of_the_spear.up
 actions+=/flamefang_pitch,if=buff.tip_of_the_spear.up
 actions+=/raptor_strike,if=buff.tip_of_the_spear.up
-actions+=/raptor_strike
 actions+=/kill_command`,
 };
 
