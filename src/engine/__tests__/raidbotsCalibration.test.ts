@@ -92,8 +92,6 @@ function buildCalibrationInput(iterations: number, seed: number): SimInput {
     augmentRune: false,
     enchants: "auto",
     gems: { totalSockets: 0, primaryStat: "mastery", hasBlasphemite: false },
-    has2pc: true,
-    has4pc: true,
   };
 
   const base = buildSimInput("pack_leader", "raid_st", {

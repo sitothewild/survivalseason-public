@@ -1041,8 +1041,6 @@ export default function SurvivalHunterSim() {
   const [gemPrimaryStat, setGemPrimaryStat] = useState<string>('mastery');
   const [gemSockets, setGemSockets] = useState(0);
   const [hasBlasphemite, setHasBlasphemite] = useState(true);
-  const [has2pc, setHas2pc] = useState(false);
-  const [has4pc, setHas4pc] = useState(false);
   const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('manual');
   const [manualEnchants, setManualEnchants] = useState<Record<string, string>>({});
   const [showEnchants, setShowEnchants] = useState(false);
@@ -1337,11 +1335,6 @@ export default function SurvivalHunterSim() {
 
   // Auto-detect tier set from equipped gear whenever parsedChar changes
   useEffect(() => {
-    if (parsedChar?.gear) {
-      const tier = detectTierSet(parsedChar.gear);
-      setHas2pc(tier.has2pc);
-      setHas4pc(tier.has4pc);
-    }
   }, [parsedChar]);
 
   const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); setProfessions(null); };
@@ -1656,10 +1649,8 @@ export default function SurvivalHunterSim() {
         primaryStat: gemPrimaryStat,
         hasBlasphemite,
       },
-      has2pc,
-      has4pc,
     };
-  }, [raidBuffs, consumables, weaponEnhancement, augmentRune, enchantMode, manualEnchants, gemSockets, gemPrimaryStat, hasBlasphemite, has2pc, has4pc]);
+  }, [raidBuffs, consumables, weaponEnhancement, augmentRune, enchantMode, manualEnchants, gemSockets, gemPrimaryStat, hasBlasphemite]);
 
   const handleSim = useCallback(async () => {
     if (!parsedChar) return;
@@ -2923,19 +2914,12 @@ export default function SurvivalHunterSim() {
                           </label>
                           {(() => {
                             const tierInfo = parsedChar?.gear ? detectTierSet(parsedChar.gear) : null;
-                            const tierLabel = tierInfo ? ` (${tierInfo.tierCount}/5)` : '';
-                            return (<>
-                              <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
-                                onClick={() => setHas2pc(!has2pc)}>
-                                <input type="checkbox" checked={has2pc} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: has2pc ? 700 : 500, color: has2pc ? C.goldLight : C.textMid }}>2pc{tierLabel}</span>
-                              </label>
-                              <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
-                                onClick={() => setHas4pc(!has4pc)}>
-                                <input type="checkbox" checked={has4pc} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: has4pc ? 700 : 500, color: has4pc ? C.goldLight : C.textMid }}>4pc</span>
-                              </label>
-                            </>);
+                            if (!tierInfo) return null;
+                            return (
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 500, color: tierInfo.has2pc ? C.goldLight : C.textDim }}>
+                                Tier {tierInfo.tierCount}/5 {tierInfo.has4pc ? '(4pc ✓)' : tierInfo.has2pc ? '(2pc ✓)' : ''}
+                              </span>
+                            );
                           })()}
                         </div>
 
@@ -3076,8 +3060,6 @@ export default function SurvivalHunterSim() {
                               setGemPrimaryStat(preset.gems.primaryStat);
                               setGemSockets(preset.gems.totalSockets);
                               setHasBlasphemite(preset.gems.hasBlasphemite);
-                              setHas2pc(preset.has2pc);
-                              setHas4pc(preset.has4pc);
                               setEnchantMode(preset.enchants === 'auto' ? 'auto' : 'manual');
                               if (preset.enchants !== 'auto') setManualEnchants(preset.enchants);
                             }}

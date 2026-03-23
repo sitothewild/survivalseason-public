@@ -62,14 +62,12 @@ describe("charToSimInput", () => {
     expect(input.buffMults!.dmgMult).toBeGreaterThan(1);
   });
 
-  it("propagates has2pc/has4pc from SimOptions", () => {
-    const noTier = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300, {
-      ...FULL_RAID_OPTIONS,
-      has2pc: false,
-      has4pc: false,
-    });
-    expect(noTier.stats.has2pc).toBe(false);
-    expect(noTier.stats.has4pc).toBe(false);
+  it("auto-detects tier set from gear (no manual override)", () => {
+    // With no tier gear, should default to false
+    const input = charToSimInput(SAMPLE_CHAR, "sentinel", 1, 300);
+    // Tier detection depends on gear itemIds - sample char has no tier pieces
+    expect(input.stats.has2pc).toBe(false);
+    expect(input.stats.has4pc).toBe(false);
   });
 
   it("resolves trinkets from gear itemIds when available", () => {

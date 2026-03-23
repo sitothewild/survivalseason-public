@@ -234,9 +234,6 @@ export interface SimOptions {
     hasBlasphemite: boolean;
   };
 
-  // ── Tier Set ────────────────────────────────────────────
-  has2pc: boolean;
-  has4pc: boolean;
 }
 
 // ── Resolved multipliers from raid buffs ─────────────────────

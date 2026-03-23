@@ -24,8 +24,6 @@ export const FULL_RAID_OPTIONS: SimOptions = {
     primaryStat: "mastery",
     hasBlasphemite: true,
   },
-  has2pc: true,
-  has4pc: true,
 };
 
 /** M+ casual: most buffs, basic consumables, enchants/gems */
@@ -47,8 +45,6 @@ export const MPLUS_CASUAL_OPTIONS: SimOptions = {
     primaryStat: "mastery",
     hasBlasphemite: true,
   },
-  has2pc: true,
-  has4pc: true,
 };
 
 /** Naked: no external buffs, no consumables, no enhancements, no tier, no gems/enchants */
@@ -70,8 +66,6 @@ export const NAKED_OPTIONS: SimOptions = {
     primaryStat: "mastery",
     hasBlasphemite: false,
   },
-  has2pc: false,
-  has4pc: false,
 };
 
 /** Default = full raid */
