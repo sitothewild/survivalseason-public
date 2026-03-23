@@ -229,8 +229,8 @@ export function charToSimInput(
     masteryRating:      rr?.masteryRating      ?? percentToRating(s.mastery || 0, "mastery"),
     versatilityRating:  rr?.versatilityRating  ?? percentToRating(s.versatility || 0, "versatility"),
     weapon: resolveWeapon(char.gear),
-    has2pc: simOptions?.has2pc ?? detectTierSet(char.gear).has2pc,
-    has4pc: simOptions?.has4pc ?? detectTierSet(char.gear).has4pc,
+    has2pc: detectTierSet(char.gear).has2pc,
+    has4pc: detectTierSet(char.gear).has4pc,
   };
 
   console.log('[charToSimInput] stats pipeline', {
