@@ -197,42 +197,35 @@ export function equipmentToSimData(fullData: any, region = "us") {
   });
 
   // Extract stats from Blizzard API character statistics
-  // The API may return stats in different structures depending on the endpoint version
-  // Try multiple paths to ensure we get the most accurate values
   const agility = charStats?.agility?.effective ?? charStats?.agility?.base ?? (charStats?.agility || 0);
   const rawAP = charStats?.attack_power?.effective ?? (typeof charStats?.attack_power === 'number' ? charStats.attack_power : 0);
   const attackPower = rawAP || Math.round((typeof agility === 'number' ? agility : 0) * 1.05);
 
-  // For secondary stats, prefer the percentage value, then calculate from rating
-  // Blizzard API may use: melee_crit, spell_crit, or just crit_rating
-  let haste = 0, crit = 0, mastery = 0, versatility = 0;
+  // ── Extract RAW RATINGS directly from the Blizzard API ──
+  // These are the ground-truth values the engine needs. No conversion needed.
+  const hasteRating = charStats?.melee_haste?.rating ?? charStats?.ranged_haste?.rating ?? charStats?.haste_rating ?? 0;
+  const critRating = charStats?.melee_crit?.rating ?? charStats?.ranged_crit?.rating ?? charStats?.crit_rating ?? 0;
+  const masteryRating = charStats?.mastery?.rating ?? charStats?.mastery_rating ?? 0;
+  const versatilityRating = charStats?.versatility ?? 0; // Blizzard API "versatility" field IS the raw rating
 
-  // Haste: try melee_haste.value (percentage), then ranged_haste, then rating conversion
-  haste = charStats?.melee_haste?.value ?? charStats?.ranged_haste?.value ?? charStats?.spell_haste?.value ?? 0;
-  if (!haste && charStats?.melee_haste?.rating) haste = +(charStats.melee_haste.rating / 170).toFixed(2);
-  if (!haste && charStats?.haste_rating) haste = +(charStats.haste_rating / 170).toFixed(2);
+  // ── Extract PERCENTAGES for UI display only ──
+  let haste = charStats?.melee_haste?.value ?? charStats?.ranged_haste?.value ?? charStats?.spell_haste?.value ?? 0;
+  if (!haste && hasteRating > 0) haste = +(hasteRating / 35.0).toFixed(2);
 
-  // Crit: try melee_crit.value, then ranged_crit, then rating
-  crit = charStats?.melee_crit?.value ?? charStats?.ranged_crit?.value ?? charStats?.spell_crit?.value ?? 0;
-  if (!crit && charStats?.melee_crit?.rating) crit = +(charStats.melee_crit.rating / 170).toFixed(2);
-  if (!crit && charStats?.crit_rating) crit = +(charStats.crit_rating / 170).toFixed(2);
+  let crit = charStats?.melee_crit?.value ?? charStats?.ranged_crit?.value ?? charStats?.spell_crit?.value ?? 0;
+  if (!crit && critRating > 0) crit = +(5 + critRating / 22.3).toFixed(2);
 
-  // Mastery
-  mastery = charStats?.mastery?.value ?? 0;
-  if (!mastery && charStats?.mastery?.rating) mastery = +(charStats.mastery.rating / 170).toFixed(2);
-  if (!mastery && charStats?.mastery_rating) mastery = +(charStats.mastery_rating / 170).toFixed(2);
+  let mastery = charStats?.mastery?.value ?? 0;
+  if (!mastery && masteryRating > 0) mastery = +(masteryRating / 180).toFixed(2);
 
-  // Versatility
-  versatility = charStats?.versatility_damage_done_bonus ?? 0;
-  if (!versatility && charStats?.versatility) {
-    const rawVers = typeof charStats.versatility === 'number' ? charStats.versatility : 0;
-    versatility = +(rawVers / 205 * 100).toFixed(2);
-  }
+  let versatility = charStats?.versatility_damage_done_bonus ?? 0;
+  if (!versatility && versatilityRating > 0) versatility = +(versatilityRating / 54.0).toFixed(2);
 
   // Log raw stats for debugging (visible in browser console)
   console.log('[Armory Stats Debug]', {
-    raw: { agility: charStats?.agility, attack_power: charStats?.attack_power, melee_haste: charStats?.melee_haste, melee_crit: charStats?.melee_crit, mastery: charStats?.mastery, versatility: charStats?.versatility, versatility_damage_done_bonus: charStats?.versatility_damage_done_bonus },
-    parsed: { agility, attackPower, haste, crit, mastery, versatility },
+    rawRatings: { hasteRating, critRating, masteryRating, versatilityRating },
+    percentages: { haste, crit, mastery, versatility },
+    raw: { agility: charStats?.agility, attack_power: charStats?.attack_power },
   });
 
   const simStats = {
@@ -242,6 +235,13 @@ export function equipmentToSimData(fullData: any, region = "us") {
     crit: +Number(crit).toFixed(2),
     mastery: +Number(mastery).toFixed(2),
     versatility: +Number(versatility).toFixed(2),
+  };
+
+  const rawRatings = {
+    critRating,
+    hasteRating,
+    masteryRating,
+    versatilityRating,
   };
 
   const avgIlvl = gear.length > 0
