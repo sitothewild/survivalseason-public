@@ -262,6 +262,7 @@ export function equipmentToSimData(fullData: any, region = "us") {
       spec: profile?.active_spec?.name || "",
     },
     stats: simStats,
+    rawRatings,
     gear,
     talents: (() => {
       // The Blizzard /specializations endpoint returns:
