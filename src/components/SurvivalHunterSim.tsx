@@ -1041,8 +1041,6 @@ export default function SurvivalHunterSim() {
   const [gemPrimaryStat, setGemPrimaryStat] = useState<string>('mastery');
   const [gemSockets, setGemSockets] = useState(0);
   const [hasBlasphemite, setHasBlasphemite] = useState(true);
-  const [has2pc, setHas2pc] = useState(false);
-  const [has4pc, setHas4pc] = useState(false);
   const [enchantMode, setEnchantMode] = useState<'auto' | 'manual'>('manual');
   const [manualEnchants, setManualEnchants] = useState<Record<string, string>>({});
   const [showEnchants, setShowEnchants] = useState(false);
