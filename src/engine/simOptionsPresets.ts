@@ -24,8 +24,6 @@ export const FULL_RAID_OPTIONS: SimOptions = {
     primaryStat: "mastery",
     hasBlasphemite: true,
   },
-  has2pc: true,
-  has4pc: true,
 };
 
 /** M+ casual: most buffs, basic consumables, enchants/gems */
