@@ -45,8 +45,6 @@ export const MPLUS_CASUAL_OPTIONS: SimOptions = {
     primaryStat: "mastery",
     hasBlasphemite: true,
   },
-  has2pc: true,
-  has4pc: true,
 };
 
 /** Naked: no external buffs, no consumables, no enhancements, no tier, no gems/enchants */
