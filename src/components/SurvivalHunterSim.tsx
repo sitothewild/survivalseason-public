@@ -2914,19 +2914,12 @@ export default function SurvivalHunterSim() {
                           </label>
                           {(() => {
                             const tierInfo = parsedChar?.gear ? detectTierSet(parsedChar.gear) : null;
-                            const tierLabel = tierInfo ? ` (${tierInfo.tierCount}/5)` : '';
-                            return (<>
-                              <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
-                                onClick={() => setHas2pc(!has2pc)}>
-                                <input type="checkbox" checked={has2pc} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: has2pc ? 700 : 500, color: has2pc ? C.goldLight : C.textMid }}>2pc{tierLabel}</span>
-                              </label>
-                              <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
-                                onClick={() => setHas4pc(!has4pc)}>
-                                <input type="checkbox" checked={has4pc} readOnly style={{ accentColor: C.gold, width: 12, height: 12, cursor: "pointer" }} />
-                                <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: has4pc ? 700 : 500, color: has4pc ? C.goldLight : C.textMid }}>4pc</span>
-                              </label>
-                            </>);
+                            if (!tierInfo) return null;
+                            return (
+                              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 11, fontWeight: 500, color: tierInfo.has2pc ? C.goldLight : C.textDim }}>
+                                Tier {tierInfo.tierCount}/5 {tierInfo.has4pc ? '(4pc ✓)' : tierInfo.has2pc ? '(2pc ✓)' : ''}
+                              </span>
+                            );
                           })()}
                         </div>
 
