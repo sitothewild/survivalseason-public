@@ -1649,10 +1649,8 @@ export default function SurvivalHunterSim() {
         primaryStat: gemPrimaryStat,
         hasBlasphemite,
       },
-      has2pc,
-      has4pc,
     };
-  }, [raidBuffs, consumables, weaponEnhancement, augmentRune, enchantMode, manualEnchants, gemSockets, gemPrimaryStat, hasBlasphemite, has2pc, has4pc]);
+  }, [raidBuffs, consumables, weaponEnhancement, augmentRune, enchantMode, manualEnchants, gemSockets, gemPrimaryStat, hasBlasphemite]);
 
   const handleSim = useCallback(async () => {
     if (!parsedChar) return;
