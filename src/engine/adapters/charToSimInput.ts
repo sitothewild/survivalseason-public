@@ -73,11 +73,19 @@ export interface ParsedCharData {
   };
   stats: {
     agility: number;
-    haste: number;        // percentage (e.g. 10.58 = 10.58%)
+    haste: number;        // percentage (e.g. 10.58 = 10.58%) — for UI display
     crit: number;         // percentage
     mastery: number;      // percentage
     versatility: number;  // percentage
     attackPower: number;
+  };
+  /** Raw combat ratings — when present, charToSimInput uses these directly
+   *  instead of reverse-converting percentages (which is lossy/error-prone). */
+  rawRatings?: {
+    critRating: number;
+    hasteRating: number;
+    masteryRating: number;
+    versatilityRating: number;
   };
   gear?: Array<{
     slot: string;
@@ -89,6 +97,7 @@ export interface ParsedCharData {
   }>;
   talents?: string | null;
   valid?: boolean;
+  heroTalentTree?: string;
 }
 
 /**
