@@ -89,7 +89,6 @@ actions+=/boomstick,if=buff.tip_of_the_spear.up
 actions+=/moonlight_chakram,if=buff.tip_of_the_spear.up
 actions+=/flamefang_pitch
 actions+=/raptor_strike,if=buff.tip_of_the_spear.up
-actions+=/raptor_strike
 actions+=/kill_command,if=cooldown.takedown.on_cooldown
 actions+=/takedown`,
 
