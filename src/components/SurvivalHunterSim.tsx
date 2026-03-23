@@ -1335,11 +1335,6 @@ export default function SurvivalHunterSim() {
 
   // Auto-detect tier set from equipped gear whenever parsedChar changes
   useEffect(() => {
-    if (parsedChar?.gear) {
-      const tier = detectTierSet(parsedChar.gear);
-      setHas2pc(tier.has2pc);
-      setHas4pc(tier.has4pc);
-    }
   }, [parsedChar]);
 
   const handleLoadSample = () => { setSimcInput(SAMPLE_SIMC); setParsedChar(null); setSimResults(null); setParseError(''); setImportedTalentSource(null); setImportedTalentString(''); setProfessions(null); };
